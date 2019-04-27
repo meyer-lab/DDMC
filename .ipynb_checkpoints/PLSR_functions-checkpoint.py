@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 
 ###------------ Scaling Matrices ------------------###
 '''
-Note that the sklearn PLSRegression function already handles regression 
+Note that the sklearn PLSRegression function already handles scaling 
 '''
 def zscore_columns(matrix):
     matrix_z = np.zeros((matrix.shape[0],matrix.shape[1]))
@@ -104,7 +104,7 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
         AvgsArr = np.transpose(ClusterAvgs_arr)
     return AvgsArr
 
-###------------ GridSearch ------------------###
+###------------ k-means GridSearch ------------------###
 '''
 Exhaustive search over specified parameter values for an estimator
 '''
@@ -119,11 +119,15 @@ def GridSearch_nClusters(X):
     CVresults_min = pd.DataFrame(data=std_scores)
     return CVresults_max, CVresults_min
 
+###------------ Composite Estimator & GridSearch ------------------###
 
-def PipeGridSearch_nClusters(pipe):
-    param_grd = dict(kmeans__n_clusters = [1,2,10])
-    grid_search = GridSearchCV(pipe, param_grid=param_grid)
-    CV_results = grid_search.cv_results_
-    best_param = grid_search.best_params_
-    return CV_results, best_param
+def CompositeEstimator_GridSearch(X,Y):
+    pipe = make_pipeline(KMeans(), PLSRegression())
+    param_grid = dict(kmeans__n_clusters = [1,2,10], plsregression__n_components = [1,3,10])
+    grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[1])
+    fit = grid.fit(np.transpose(X), Y)
+    CVresults = pd.DataFrame(data=fit.cv_results_)
+    return pipe, CVResults
+
+
 
