@@ -1,14 +1,17 @@
-import scipy as sp, numpy as np
+import scipy as sp, numpy as np, pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import GridSearchCV
 from sklearn.cluster import KMeans
+
 
 ###------------ Scaling Matrices ------------------###
 '''
-Note that the sklearn PLSRegression function already handles regression 
+Note that the sklearn PLSRegression function already handles scaling 
 '''
 def zscore_columns(matrix):
     matrix_z = np.zeros((matrix.shape[0],matrix.shape[1]))
@@ -19,8 +22,7 @@ def zscore_columns(matrix):
         column_std = np.std(column)
         matrix_z[:,a] = np.asmatrix([(column-column_mean)/column_std])
     return matrix_z
-
-
+    
 ###------------ Q2Y/R2Y ------------------###
 '''
 Description
@@ -101,3 +103,31 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
         ClusterAvgs_arr[i,:] = CurrentAvgs
         AvgsArr = np.transpose(ClusterAvgs_arr)
     return AvgsArr
+
+###------------ k-means GridSearch ------------------###
+'''
+Exhaustive search over specified parameter values for an estimator
+'''
+
+def GridSearch_nClusters(X):
+    kmeans = KMeans(init="k-means++")
+    parameters = {'n_clusters': np.arange(2,16)}
+    grid = GridSearchCV(kmeans, parameters, cv=X.shape[1])
+    fit = grid.fit(np.transpose(X))
+    CVresults_max = pd.DataFrame(data=fit.cv_results_)
+    std_scores = { '#Clusters': CVresults_max['param_n_clusters'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
+    CVresults_min = pd.DataFrame(data=std_scores)
+    return CVresults_max, CVresults_min
+
+###------------ Composite Estimator & GridSearch ------------------###
+
+def CompositeEstimator_GridSearch(X,Y):
+    pipe = make_pipeline(KMeans(), PLSRegression())
+    param_grid = dict(kmeans__n_clusters = [1,2,10], plsregression__n_components = [1,3,10])
+    grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[1])
+    fit = grid.fit(np.transpose(X), Y)
+    CVresults = pd.DataFrame(data=fit.cv_results_)
+    return pipe, CVResults
+
+
+
