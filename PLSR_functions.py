@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import GridSearchCV
 from sklearn.cluster import KMeans
+
 
 ###------------ Scaling Matrices ------------------###
 '''
@@ -20,7 +23,13 @@ def zscore_columns(matrix):
         matrix_z[:,a] = np.asmatrix([(column-column_mean)/column_std])
     return matrix_z
 
+###------------ Composite Estimator ------------------###
 
+def PLSR_KMeansEst(nComp, nClusters):
+    pipe = make_pipeline(PLSRegression(), KMeans())
+    pipe.set_params(plsregression__n_components=nComp, kmeans__n_clusters = nClusters)
+    return pipe
+    
 ###------------ Q2Y/R2Y ------------------###
 '''
 Description
@@ -101,3 +110,15 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
         ClusterAvgs_arr[i,:] = CurrentAvgs
         AvgsArr = np.transpose(ClusterAvgs_arr)
     return AvgsArr
+
+###------------ GridSearch ------------------###
+'''
+Exhaustive search over specified parameter values for an estimator
+'''
+
+def GridSearch_nClusters(pipe):
+    param_grd = dict(kmeans__n_clusters = [1,2,10])
+    grid_search = GridSearchCV(pipe, param_grid=param_grid)
+    CV_results = grid_search.cv_results_
+    best_param = grid_search.best_params_
+    return CV_results, best_param
