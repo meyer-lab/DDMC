@@ -86,7 +86,7 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
     X_FCl = np.insert(X_, 0, cluster_assignments, axis = 0)   #11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)                        #96:11
     ClusterAvgs = []
-    ClusterAvgs_arr = np.zeros((nClusters,nObs))              #5:10
+    ClusterAvgs_arr = np.zeros((nClusters,nObs-1))              #5:10   #!! -1 COMPOSITE ESTIMATOR
     for i in range(nClusters):
         CurrentCluster = []
         for idx, arr in enumerate(X_FCl):
@@ -118,16 +118,6 @@ def GridSearch_nClusters(X):
     std_scores = { '#Clusters': CVresults_max['param_n_clusters'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
     CVresults_min = pd.DataFrame(data=std_scores)
     return CVresults_max, CVresults_min
-
-###------------ Composite Estimator & GridSearch ------------------###
-
-def CompositeEstimator_GridSearch(X,Y):
-    pipe = make_pipeline(KMeans(), PLSRegression())
-    param_grid = dict(kmeans__n_clusters = [1,2,10], plsregression__n_components = [1,3,10])
-    grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[1])
-    fit = grid.fit(np.transpose(X), Y)
-    CVresults = pd.DataFrame(data=fit.cv_results_)
-    return pipe, CVResults
 
 
 
