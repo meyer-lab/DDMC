@@ -20,7 +20,7 @@ Unresolved issues / questions:
     - Current error... Incorrect number of features. Got 1 features, expected 9
 '''
 
-class MyOwnKMEANS(BaseEstimator):
+class Kmeans_Plsr(BaseEstimator, ClusterMixin, RegressorMixin):
     
     def __init__(self, n_clusters=2, n_components = 2):
         self.n_clusters = n_clusters
@@ -28,22 +28,20 @@ class MyOwnKMEANS(BaseEstimator):
     
     def fit(self, X, Y):
         print("fit", X)
-        self.kmeans = KMeans(n_clusters=self.n_clusters).fit(np.transpose(X))
+        self.cluster_assignments = KMeans(n_clusters=self.n_clusters).fit_predict(np.transpose(X))
         return self
         
     def transform(self, X, Y):
-        print(X)
-        raise SystemExit
-        cluster_assignments = self.kmeans.predict(np.transpose(X))
-        self.X_Filt_Clust_Avgs = ClusterAverages(X, cluster_assignments, self.n_clusters, 10)
+        print("trans", X)
+        self.X_Filt_Clust_Avgs = ClusterAverages(X, self.cluster_assignments, self.n_clusters, 10)
         return self
     
     def fit_plsr(self,X, Y):
-        self.plsr = PLSRegression(n_components = self.n_components).fit(self.transform(X),Y)
+        self.plsr = PLSRegression(n_components = self.n_components).fit(self.transform(X,Y),Y)
         return self
     
     def score(self, X, Y):
-        print("Sc", X)
+        print("Score", X)
         R2Y = self.fit_plsr(self.transform(X, Y),Y).score(self.transform(X, Y),Y)
         y_pred = cross_val_predict(self.plsr, self.X_Filt_Clust_Avgs, Y, cv=self.Y.size)
         return R2Y, explained_variance_score(Y, y_pred) #Q2Y    
@@ -59,7 +57,7 @@ class MyOwnKMEANS(BaseEstimator):
 ###------------ Building Pipeline and Tunning Hyperparameters ------------------###
 
 def TunningHyperpar(X,Y):
-    estimator = MyOwnKMEANS()
+    estimator = Kmeans_Plsr()
     param_grid = { 'n_clusters': np.arange(3,11), 'n_components': np.arange(3,11)}
     grid = GridSearchCV(estimator, param_grid=param_grid, cv=X.shape[0])
     fit = grid.fit(X, Y)
