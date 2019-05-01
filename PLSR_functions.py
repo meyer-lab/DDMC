@@ -47,6 +47,27 @@ def Q2Y_across_components(X,Y,max_comps):
         Q2Ys.append(explained_variance_score(Y, y_pred))
     return Q2Ys
 
+def Q2Y_across_comp_manual(X_z,Y_z,max_comps,sublabel):
+    PRESS = 0
+    SS = 0
+    Q2Ys = []
+    for b in range(1,max_comps):
+        plsr_model = PLSRegression(n_components = b)
+        for train_index, test_index in loo.split(X_z, Y_z):
+            X_train, X_test = X_z[train_index], X_z[test_index]
+            Y_train, Y_test = Y_z[train_index], Y_z[test_index]
+            X_train = zscore_columns(X_train)
+            Y_train = sp.stats.zscore(Y_train)
+            plsr_model.fit_transform(X_train,Y_train)
+            Y_predict_cv = plsr_model.predict(X_test)
+            PRESS_i = (Y_predict_cv - Y_test) ** 2
+            SS_i = (Y_test) ** 2
+            PRESS = PRESS + PRESS_i
+            SS = SS + SS_i
+        Q2Y = 1 - (PRESS/SS)
+        Q2Ys.append(Q2Y)
+    return Q2Ys
+
 ###------------ Fitting PLSR and CV ------------------###
 
 def PLSR(X, Y, nComponents):
@@ -86,7 +107,7 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
     X_FCl = np.insert(X_, 0, cluster_assignments, axis = 0)   #11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)                        #96:11
     ClusterAvgs = []
-    ClusterAvgs_arr = np.zeros((nClusters,nObs-1))              #5:10   #!! -1 COMPOSITE ESTIMATOR
+    ClusterAvgs_arr = np.zeros((nClusters,nObs))              #5:10   #!! -1 COMPOSITE ESTIMATOR
     for i in range(nClusters):
         CurrentCluster = []
         for idx, arr in enumerate(X_FCl):
