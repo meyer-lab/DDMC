@@ -13,9 +13,10 @@ from sklearn.model_selection import GridSearchCV
 ###------------ Creating Own Estimators ------------------###
 '''
 Unresolved issues / questions: 
-    - Q2Y method, currently only R2Y
+    - Q2Y method, currently only R2Y?
     - Fit only X_train and y_train? 
     - Error in Scores_Loadings: operands could not be broadcast together with shapes (10,5) (96,) (10,5). self.plsr_ not correcly imported?
+    - How does GridsearchCV's CV work? Way to get a score for the KMeans alone? 
 '''
 
 class MyEstimator(BaseEstimator):
@@ -35,12 +36,16 @@ class MyEstimator(BaseEstimator):
     def transform(self,X):
         check_is_fitted(self, ['X_', 'Y_'])
         X = check_array(X)
-        self.cluster_assignments_ = self.kmeans_.predict(np.transpose(X))
-        X_Filt_Clust_Avgs = ClusterAverages(X, self.cluster_assignments_, self.n_clusters, 10)
-        return X_Filt_Clust_Avgs
+        cluster_assignments_ = self.kmeans_.predict(np.transpose(X))
+        X_Filt_Clust_Avgs = ClusterAverages(X, cluster_assignments_, self.n_clusters, 10)
+        print(X_Filt_Clust_Avgs)
+        raise SystemExit
+        return X
     
     def score(self,X,Y):
-        #KMscore = self.kmeans_.score(self.X_)
+        print(X.shape)
+        print(Y.shape)
+        raise  SystemExit
         R2Y = self.plsr_.score(X,Y)
         return R2Y #,KMscore
         
