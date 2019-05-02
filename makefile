@@ -7,7 +7,7 @@ test:
 	pytest
 
 testcover:
-	pytest --junitxml=junit.xml --cov=lineage --cov-report xml:coverage.xml
+	pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
 docs:
 	sphinx-apidoc -o doc/source msresist
