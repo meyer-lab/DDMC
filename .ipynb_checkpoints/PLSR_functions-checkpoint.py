@@ -103,11 +103,11 @@ def FilteringOutPeptides(X):
 
 ###------------ Computing Cluster Averages ------------------###
 
-def ClusterAverages(X_, cluster_assignments, nClusters, nObs):
+def ClusterAverages(X_, cluster_assignments, nClusters, nObs): # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
     X_FCl = np.insert(X_, 0, cluster_assignments, axis = 0)   #11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)                        #96:11
     ClusterAvgs = []
-    ClusterAvgs_arr = np.zeros((nClusters,nObs-1))              #5:10   #!! -1 COMPOSITE ESTIMATOR
+    ClusterAvgs_arr = np.zeros((nClusters,nObs))              #5:10   #!! -1 COMPOSITE ESTIMATOR
     for i in range(nClusters):
         CurrentCluster = []
         for idx, arr in enumerate(X_FCl):
