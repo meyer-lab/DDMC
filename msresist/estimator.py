@@ -6,9 +6,8 @@ from sklearn.base import BaseEstimator, RegressorMixin, ClusterMixin, Transforme
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.model_selection import GridSearchCV
-from .plsr import FilteringOutPeptides, ClusterAverages
+from .plsr import ClusterAverages
 
 
 ###------------ Creating Own Estimators ------------------###
