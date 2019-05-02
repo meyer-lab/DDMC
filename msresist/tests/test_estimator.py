@@ -12,9 +12,9 @@ class TestEstimator(unittest.TestCase):
 
     def test_fitting(self):
         """ Check that we can in fact perform fitting in one case. """
-        
+
         X, y = load_diabetes(return_X_y=True)
-        
+
         est = kmeansPLSR(3, 2)
-        
+
         est.fit(X, y)
