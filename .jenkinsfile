@@ -16,7 +16,7 @@ pipeline {
         }
         stage('Lint') {
           steps {
-            sh '(pylint --rcfile=.pylintrc lineage > pylint.log || echo "pylint exited with $?")'
+            sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
             recordIssues(tools: [pyLint(pattern: 'pylint.log')])
           }
         }
