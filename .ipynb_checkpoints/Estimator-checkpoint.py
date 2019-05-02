@@ -22,18 +22,24 @@ Unresolved issues / questions:
 class MyEstimator(BaseEstimator):
     
     def __init__(self, n_clusters, n_components):
-        self.n_clusters = n_clusters
-        self.n_components = n_components
+        self.kmeans_ = KMeans(n_clusters=n_clusters)
+        self.plsr_ = PLSRegression(n_components=n_components)
     
     def fit(self, X, Y):
-#         self.cluster_assignments_ = KMeans(n_clusters=self.n_clusters).fit_predict(np.transpose(X))
-        self.kmeans_ = KMeans(n_clusters=self.n_clusters).fit(np.transpose(X))
-        self.plsr_ = PLSRegression(n_components = self.n_components).fit(X,Y)
-        self.X_ = X
-        self.Y_ = Y
-        return self
+        self.kmeans_.fit(np.transpose(X))
         
-    def transform(self,X):
+        # Cluster centers are the averages, per definition of kmeans
+        centers = np.array(self.kmeans_.cluster_centers_)
+        
+        # Fit PLSR model. Result saved in the PLSR class.
+        self.plsr_.fit(centers.T, Y)
+    
+    def predict(self, X):
+        # TODO: Should add assertions about the expected size of X, based upon training
+        clustPred = ClusterAverages(X, self.kmeans_.labels_)
+        # Not sure this is what the function handles?
+    
+    def transform(self, X):
         check_is_fitted(self, ['X_', 'Y_'])
         X = check_array(X)
         cluster_assignments_ = self.kmeans_.predict(np.transpose(X))
