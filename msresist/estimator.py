@@ -69,7 +69,7 @@ class kmeansPLSR(BaseEstimator):
 
 def TunningHyperpar(X, Y):
     parameters = {'n_clusters': np.arange(2, 11), 'n_components': np.arange(2, 11)}
-    grid = GridSearchCV(MyEstimator(2, 2), parameters, cv=X.shape[0])
+    grid = GridSearchCV(kmeansPLSR(2, 2), parameters, cv=X.shape[0])
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {'#Clusters': CVresults_max['param_n_clusters'], '#Components': CVresults_max['param_n_components'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
