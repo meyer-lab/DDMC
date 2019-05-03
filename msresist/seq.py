@@ -1,4 +1,4 @@
-#Code from Adam Weiner, obtained March 2019
+# Code from Adam Weiner, obtained March 2019
 
 from Bio import SeqIO
 import os
@@ -13,29 +13,29 @@ def trim(seqFile):
     homeDir = cwd[1:5]
     if (homeDir == 'home'):
         print('using path from server to load sequences')
-        pathToFile = os.path.join("/home","adamw","flu-vax","fluv", str(seqFile)) #aretha server
+        pathToFile = os.path.join("/home", "adamw", "flu-vax", "fluv", str(seqFile))  # aretha server
     else:
         print('using path from windows machine to load sequences')
         pathToFile = './trial_seq.fa'
-        #pathToFile = os.path.join(Users","Marc","Documents","flu-vax", str(seqFile))  #windows machine
-    
+        # pathToFile = os.path.join(Users","Marc","Documents","flu-vax", str(seqFile))  #windows machine
+
     allSeqs = []
     allLabels = []
     for seq_record in SeqIO.parse(pathToFile, """fasta"""):
-            allSeqs.append(seq_record.seq)
-            allLabels.append(seq_record.id)
-    
+        allSeqs.append(seq_record.seq)
+        allLabels.append(seq_record.id)
+
     seqMat = np.array(allSeqs)
     label = np.array(allLabels)
-    
+
     sequence = seqMat[:, 0:317]
-    
+
     # filtering out residues not included in PAM250 pymsa distance matrix (http://www.matrixscience.com/blog/non-standard-amino-acid-residues.html)
     for i in range(0, sequence.shape[0]):
-        for j in range(0,sequence.shape[1]):
-            if (sequence[i,j] == 'J'):
-                sequence[i,j] = random.choice(['I', 'L'])
-    
+        for j in range(0, sequence.shape[1]):
+            if (sequence[i, j] == 'J'):
+                sequence[i, j] = random.choice(['I', 'L'])
+
     return (label, sequence)
 
 
@@ -51,7 +51,6 @@ class Distance:
             self.M = FLU_sub()
         self.numSeq = self.sequences.shape[0]
 
-        
     def seq_dist(self, seq1, seq2):
         if (len(seq1) != len(seq2)):
             print('the sequences are of different length')
@@ -60,40 +59,41 @@ class Distance:
             dist = np.zeros((len(seq1)))
             for ii in range(len(seq1)):
                 temp_dist = self.M.get_distance(seq1[ii], seq2[ii])
-                if self.subMat is "PAM250": # convert log-scaled PAM250 values to true values
+                if self.subMat is "PAM250":  # convert log-scaled PAM250 values to true values
                     temp_dist = np.exp(temp_dist)
-                dist[ii] = 1 / temp_dist # large distances have small values in matrices
+                dist[ii] = 1 / temp_dist  # large distances have small values in matrices
             avg_dist = np.sum(dist) / 317.0
 
             return avg_dist
-   
+
     def test_mat(self):
         """ function is the same as "dist_mat()" except that it only looks at first 10 sequences
-        in order to get a proof of concept for all my functions before scaling up to the full dataset 
+        in order to get a proof of concept for all my functions before scaling up to the full dataset
         """
-        testMat = np.zeros((1000,1000))
+        testMat = np.zeros((1000, 1000))
         print('calculating the test distance matrix based on PAM250')
-        for i in range(0,1000):
-            for j in range(i,1000):
-                testMat[i,j] = self.seq_dist(self.sequences[i], self.sequences[j])
+        for i in range(0, 1000):
+            for j in range(i, 1000):
+                testMat[i, j] = self.seq_dist(self.sequences[i], self.sequences[j])
                 # plug in values for mirror images
-                testMat[j,i] = testMat[i,j]
+                testMat[j, i] = testMat[i, j]
 
         return testMat
-        
+
     def dist_mat(self):
         distMat = np.zeros((self.numSeq, self.numSeq))
         print('calculating the full distance matrix based on PAM250')
-        for i in range(0,self.numSeq):
-            for j in range(i,self.numSeq):
-                distMat[i,j] = self.seq_dist(self.sequences[i], self.sequences[j])
-                distMat[j,i] = distMat[i,j] # plug in mirror image values
+        for i in range(0, self.numSeq):
+            for j in range(i, self.numSeq):
+                distMat[i, j] = self.seq_dist(self.sequences[i], self.sequences[j])
+                distMat[j, i] = distMat[i, j]  # plug in mirror image values
         return distMat
-    
+
 
 ###------------ Substitution Matrix (PAM250) ------------------###
-    
+
 """ Code for substitution matrices is inspired by https://github.com/benhid/pyMSA/blob/master/pymsa/core/substitution_matrix.py """
+
 
 class SubstitutionMatrix:
     """ Class representing a substitution matrix, such as PAM250, Blosum62, etc. """
@@ -125,9 +125,11 @@ class SubstitutionMatrix:
     def get_distance_matrix(self) -> None:
         pass
 
+
 class PAM250(SubstitutionMatrix):
     """ Class implementing the PAM250 substitution matrix
     Reference: https://en.wikipedia.org/wiki/Point_accepted_mutation"""
+
     def __init__(self, gap_penalty=-8, gap_character: str = '-'):
         super(PAM250, self).__init__(gap_penalty, gap_character)
         self.distance_matrix = \
@@ -202,9 +204,11 @@ class PAM250(SubstitutionMatrix):
     def get_distance_matrix(self) -> dict:
         return self.distance_matrix
 
+
 class FLU_sub(SubstitutionMatrix):
     """ Class implementing the FLU substitution matrix
     Reference: https://doi.org/10.1186/1471-2148-10-99 """
+
     def __init__(self, gap_penalty=3.354626E-4, gap_character: str = '-'):
         super(FLU_sub, self).__init__(gap_penalty, gap_character)
         # 'B' values are averages of 'N' & 'D'. 'Z' values are averages of 'E' & 'Q'. 'X' is an unknown (kept same as in PAM250)
@@ -214,7 +218,7 @@ class FLU_sub(SubstitutionMatrix):
              ('W', 'A'): 0.0182892882245349, ('Y', 'M'): 4.90484223478739, ('G', 'R'): 1.87956993845887, ('Y', 'I'): 14.3940521944257, ('Y', 'E'): 0.285047948309311, ('B', 'Y'): 0.0102575172450253,
              ('Y', 'A'): 3.53200526987468,
              ('V', 'D'): 0.0478596, ('B', 'S'): 1.137906774491807, ('Y', 'Y'): 0.167581646770807, ('G', 'N'): 1.38709603234116, ('E', 'C'): 0.116941459124876, ('Y', 'Q'): 0.406697814049488,
-             ('Z', 'Z'): 0.7512076573675385, # 4-way average between (E,E), (E, Q), (Q, E) and (Q, Q)
+             ('Z', 'Z'): 0.7512076573675385,  # 4-way average between (E,E), (E, Q), (Q, E) and (Q, Q)
              ('V', 'A'): 0.0470718, ('C', 'C'): 0.00254733397966779, ('M', 'R'): 0.0160550314767596, ('V', 'E'): 0.0545874, ('T', 'N'): 0.000536284040016542, ('P', 'P'): 2.08738534433198, ('V', 'I'): 0.0671336,
              ('V', 'S'): 0.0884091, ('Z', 'P'): 0.397481398280146, ('V', 'M'): 0.0181507, ('T', 'F'): 0.814753093809928, ('V', 'Q'): 0.0333036, ('K', 'K'): 1.33129161941264,
              ('P', 'D'): 0.338372183381345,
@@ -272,11 +276,11 @@ class FLU_sub(SubstitutionMatrix):
              ('M', 'G'): 0.00123664495412902,
              ('T', 'S'): 0.0998357527014247, ('I', 'E'): 0.016499535540562, ('P', 'M'): 0.00702658828739369, ('M', 'K'): 0.319895904499071, ('I', 'A'): 0.0231169515264061, ('P', 'I'): 0.290381075260226,
              ('R', 'R'): 0.161000889039552,
-             ('X', 'M'): 0.36788, ('L', 'I'): 0.227707997165566, ('X', 'I'): 0.36788, ('Z', 'B'): 1.922380225804995, # 4-way average of (E, N), (E, D), (Q, N), (Q, D)
+             ('X', 'M'): 0.36788, ('L', 'I'): 0.227707997165566, ('X', 'I'): 0.36788, ('Z', 'B'): 1.922380225804995,  # 4-way average of (E, N), (E, D), (Q, N), (Q, D)
              ('X', 'E'): 0.36788, ('Z', 'N'): 0.1920884200256602, ('X', 'A'): 1,
              ('B', 'R'): 0.086989425265, ('B', 'N'): 3.86869643525678, ('F', 'D'): 0.188539456415654, ('X', 'Y'): 0.135335, ('Z', 'R'): 0.657761041050487, ('F', 'H'): 0.924466914225534,
              ('B', 'F'): 0.1124906141609879,
-             ('F', 'L'): 0.634308520867322, ('X', 'Q'): 0.36788, ('B', 'B'): 1.93788774574589} # 4-way average of (N, N), (N, D), (D, N), (D, D)
+             ('F', 'L'): 0.634308520867322, ('X', 'Q'): 0.36788, ('B', 'B'): 1.93788774574589}  # 4-way average of (N, N), (N, D), (D, N), (D, D)
 
     def get_distance_matrix(self) -> dict:
         return self.distance_matrix
