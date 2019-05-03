@@ -1,0 +1,31 @@
+pipeline {
+  agent any
+  options {
+    timeout(time: 1, unit: 'HOURS')
+    parallelsAlwaysFailFast()
+  }
+  stages {
+    stage('Clean') { steps { sh 'git clean -ffdx' } }
+    stage('Build/Test') {
+      parallel {
+        stage('Test') {
+          steps {
+            sh 'make testcover'
+            cobertura coberturaReportFile: 'coverage.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+          }
+        }
+        stage('Lint') {
+          steps {
+            sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
+            recordIssues(tools: [pyLint(pattern: 'pylint.log')])
+          }
+        }
+      }
+    }
+  }
+  post {
+    always {
+      junit allowEmptyResults: true, testResults: 'junit.xml'
+    }
+  }
+}
