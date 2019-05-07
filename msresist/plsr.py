@@ -119,13 +119,13 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):  # XXX: Shouldn't
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
     ClusterAvgs = []
-    ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10   #!! -1 COMPOSITE ESTIMATOR
+    ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10   
     for i in range(nClusters):
         CurrentCluster = []
         for idx, arr in enumerate(X_FCl):
             if i == arr[0]:  # arr[0] is the location of the cluster assignment of the specific peptide
                 CurrentCluster.append(arr)  # array with 96:11, so every arr contains a single peptide's values
-        CurrentCluster_T = np.transpose(CurrentCluster)  # 11:96, so every arr contains a singlie condition's values (eg. all peptides values within cluster X in Erl)
+        CurrentCluster_T = np.transpose(CurrentCluster)  # 11:96, so every arr contains a single condition's values (eg. all peptides values within cluster X in Erl)
         CurrentAvgs = []
         for x, arr in enumerate(CurrentCluster_T):
             if x == 0:  # cluster assignments
@@ -138,18 +138,19 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):  # XXX: Shouldn't
     return AvgsArr
 
 
-###------------ k-means GridSearch ------------------###
+###------------ GridSearch ------------------###
 '''
 Exhaustive search over specified parameter values for an estimator
 '''
 
-
-def GridSearch_nClusters(X):
-    kmeans = KMeans(init="k-means++")
-    parameters = {'n_clusters': np.arange(2, 16)}
-    grid = GridSearchCV(kmeans, parameters, cv=X.shape[1])
-    fit = grid.fit(np.transpose(X))
+def GridSearch_CV(model, X, Y, parameters, cv):
+    grid = GridSearchCV(model, param_grid = parameters, cv = cv)
+    fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
-    std_scores = {'#Clusters': CVresults_max['param_n_clusters'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
-    CVresults_min = pd.DataFrame(data=std_scores)
-    return CVresults_max, CVresults_min
+    return CVresults_max
+
+
+
+
+
+    
