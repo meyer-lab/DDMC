@@ -1,61 +1,52 @@
 import numpy as np
 import pandas as pd
+from msresist.plsr import ClusterAverages
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.cluster import KMeans
-from sklearn.base import BaseEstimator, RegressorMixin, ClusterMixin, TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import explained_variance_score
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.metrics import explained_variance_score, r2_score
+from sklearn.utils import check_consistent_length
 from sklearn.model_selection import GridSearchCV
-from .plsr import ClusterAverages
+from sklearn.utils.validation import check_is_fitted, check_array
 
 
 ###------------ Creating Own Estimators ------------------###
 '''
 Unresolved issues / questions:
-    - Q2Y method, currently only R2Y?
-    - Fit only X_train and y_train?
-    - Error in Scores_Loadings: operands could not be broadcast together with shapes (10,5) (96,) (10,5). self.plsr_ not correcly imported?
-    - How does GridsearchCV's CV work? Way to get a score for the KMeans alone?
+    - R2Y method
 '''
-
 
 class kmeansPLSR(BaseEstimator):
 
     def __init__(self, n_clusters, n_components):
+        self.n_clusters = n_clusters
+        self.n_components = n_components
         self.kmeans_ = KMeans(n_clusters=n_clusters)
         self.plsr_ = PLSRegression(n_components=n_components)
 
     def fit(self, X, Y):
-        self.kmeans_.fit(np.transpose(X))
-
-        # Cluster centers are the averages, per definition of kmeans
-        centers = np.array(self.kmeans_.cluster_centers_)
-
-        # Fit PLSR model. Result saved in the PLSR class.
-        self.plsr_.fit(centers.T, Y)
-
+        assignments_ = self.kmeans_.fit_predict(np.transpose(X))
+        self.centers_ = ClusterAverages(X, assignments_, self.n_clusters, X.shape[0])
+#         self.centers_ = np.array(self.kmeans_.cluster_centers_).T    #cond(10):pept(96)
+        self.plsr_.fit(self.centers_, Y)       #cond(9):clusters(2) 
+        return self
+    
     def predict(self, X):
         # TODO: Should add assertions about the expected size of X, based upon training
-        clustPred = ClusterAverages(X, self.kmeans_.labels_)
-        # Not sure this is what the function handles?
-
-    def transform(self, X):
-        check_is_fitted(self, ['X_', 'Y_'])
-        X = check_array(X)
-        cluster_assignments_ = self.kmeans_.predict(np.transpose(X))
-        X_Filt_Clust_Avgs = ClusterAverages(X, cluster_assignments_, self.n_clusters, 10)
-        print(X_Filt_Clust_Avgs)
-        raise SystemExit
-        return X
-
-    def score(self, X, Y):
-        print(X.shape)
-        print(Y.shape)
-        raise SystemExit
-        R2Y = self.plsr_.score(X, Y)
-        return R2Y  # ,KMscore
-
+        y_pred = self.plsr_.predict(X)
+        return y_pred
+    
+    def score(self, X, Y):   #self.predict only works if the shape of test is 9,2 (broadcast shape?)
+        print(X)
+        print(Y)
+        print(self.centers_)
+        print(self.plsr_.predict(np.reshape(self.centers_.T[0], (9,1))))
+        currentX = np.reshape(self.centers_, (9,2))
+        R2Y = self.plsr_.score(currentX,Y)
+        print("R2Y")
+        return R2Y
+    
     def Scores_Loadings(self, X, Y):
         X_scores, Y_scores = self.plsr_.transform(X, Y)
         PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
