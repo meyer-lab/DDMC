@@ -91,14 +91,13 @@ def PLSR(X, Y, nComponents):
 def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
     Y_predictions = np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size))
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
+    print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
     if ax == "none":
-        print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
         plt.scatter(Y, np.squeeze(Y_predictions))
         plt.title("Correlation Measured vs Predicted")
         plt.xlabel("Measured Cell Viability")
         plt.ylabel("Predicted Cell Viability")
     else:
-        print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
         axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
 
@@ -145,7 +144,7 @@ Exhaustive search over specified parameter values for an estimator
 
 def GridSearch_CV(model, X, Y, parameters, cv):
     grid = GridSearchCV(model, param_grid = parameters, cv = cv)
-    fit = grid.fit(X, Y)
+    fit = grid.fit(X,Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     return CVresults_max
 
