@@ -14,7 +14,7 @@ from sklearn.utils.validation import check_is_fitted, check_array
 ###------------ Creating Own Estimators ------------------###
 '''
 Unresolved issues / questions:
-    - R2Y method
+    - score error: non-broadcastable output operand with shape (9,1) doesn't match the broadcast shape (9,2)
 '''
 
 class kmeansPLSR(BaseEstimator):
@@ -34,17 +34,13 @@ class kmeansPLSR(BaseEstimator):
     
     def predict(self, X):
         # TODO: Should add assertions about the expected size of X, based upon training
-        y_pred = self.plsr_.predict(X)
+        y_pred = self.plsr_.predict(self.centers_)
         return y_pred
     
-    def score(self, X, Y):   #self.predict only works if the shape of test is 9,2 (broadcast shape?)
-        print(X)
-        print(Y)
-        print(self.centers_)
-        print(self.plsr_.predict(np.reshape(self.centers_.T[0], (9,1))))
-        currentX = np.reshape(self.centers_, (9,2))
-        R2Y = self.plsr_.score(currentX,Y)
-        print("R2Y")
+    def score(self, X, Y):
+        currentX = np.reshape(self.centers_[0,:], (1,2))
+        R2Y = self.plsr_.score(np.reshape(self.centers_[0,:], (1,2)), Y)
+        print(R2Y)
         return R2Y
     
     def Scores_Loadings(self, X, Y):
@@ -59,9 +55,10 @@ class kmeansPLSR(BaseEstimator):
 
 def TunningHyperpar(X, Y):
     parameters = {'n_clusters': np.arange(2, 11), 'n_components': np.arange(2, 11)}
-    grid = GridSearchCV(kmeansPLSR(2, 2), parameters, cv=X.shape[0])
+    param_grid = dict(n_clusters = [2], n_components = [1,2]), dict(n_clusters = [3], n_components = np.arange(1,4)), dict(n_clusters = [4], n_components = np.arange(1,5)), dict(n_clusters = [5], n_components = np.arange(1,6)), dict(n_clusters = [6], n_components = np.arange(1,7)), dict(n_clusters = [7], n_components = np.arange(1,8)), dict(n_clusters = [8], n_components = np.arange(1,9)), dict(n_clusters = [9], n_components = np.arange(1,10)), dict(n_clusters = [10], n_components = np.arange(1,11)), dict(n_clusters = [11], n_components = np.arange(1,12)), dict(n_clusters = [12], n_components = np.arange(1,13)), dict(n_clusters = [13], n_components = np.arange(1,14)), dict(n_clusters = [14], n_components = np.arange(1,15)), dict(n_clusters = [15], n_components = np.arange(1,16))
+    grid = GridSearchCV(kmeansPLSR(2,1), param_grid = param_grid, cv = X.shape[0], return_train_score = True)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
-    std_scores = {'#Clusters': CVresults_max['param_n_clusters'], '#Components': CVresults_max['param_n_components'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
+    std_scores = { '#Clusters': CVresults_max['param_kmeans__n_clusters'], '#Components': CVresults_max['param_plsr__n_components'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
     CVresults_min = pd.DataFrame(data=std_scores)
-    return CVresults_max, CVresults_min
+    return CVresults_max, CVresults_min, fit.best_params_
