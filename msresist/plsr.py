@@ -142,8 +142,8 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):  # XXX: Shouldn't
 Exhaustive search over specified parameter values for an estimator
 '''
 
-def GridSearch_CV(model, X, Y, parameters, cv):
-    grid = GridSearchCV(model, param_grid = parameters, cv = cv)
+def GridSearch_CV(model, X, Y, parameters, cv, scoring=None):
+    grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring)
     fit = grid.fit(X,Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     return CVresults_max
