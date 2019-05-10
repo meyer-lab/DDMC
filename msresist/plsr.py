@@ -113,17 +113,23 @@ def FilteringOutPeptides(X):
 
 ###------------ Computing Cluster Averages ------------------###
 
-
-def ClusterAverages(X_, cluster_assignments, nClusters, nObs):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
+def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
     ClusterAvgs = []
     ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10   
+    DictClusterToMembers = {}
     for i in range(nClusters):
         CurrentCluster = []
+#         DictMemberToSeq = {}
+        ClusterMembers = []
+        ClusterSeqs = []
         for idx, arr in enumerate(X_FCl):
             if i == arr[0]:  # arr[0] is the location of the cluster assignment of the specific peptide
                 CurrentCluster.append(arr)  # array with 96:11, so every arr contains a single peptide's values
+                ClusterMembers.append(ProtNames[idx])
+                ClusterSeqs.append(peptide_phosphosite[idx])
+#                 DictMemberToSeq[ProtNames[idx]] = peptide_phosphosite[idx]
         CurrentCluster_T = np.transpose(CurrentCluster)  # 11:96, so every arr contains a single condition's values (eg. all peptides values within cluster X in Erl)
         CurrentAvgs = []
         for x, arr in enumerate(CurrentCluster_T):
@@ -132,9 +138,12 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs):  # XXX: Shouldn't
             else:
                 avg = np.mean(arr)
                 CurrentAvgs.append(avg)
+        CurrentKey = []
+        DictClusterToMembers[i+1] = (ClusterMembers)
+        DictClusterToMembers["Seqs_Cluster_" + str(i+1)] = ClusterSeqs
         ClusterAvgs_arr[i, :] = CurrentAvgs
         AvgsArr = np.transpose(ClusterAvgs_arr)
-    return AvgsArr
+    return AvgsArr, DictClusterToMembers
 
 
 ###------------ GridSearch ------------------###
