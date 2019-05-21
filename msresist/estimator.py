@@ -19,15 +19,17 @@ Unresolved issues / questions:
 
 class kmeansPLSR(BaseEstimator):
 
-    def __init__(self, n_clusters, n_components):
+    def __init__(self, n_clusters, n_components, ProtNames, peptide_phosphosite):
         self.n_clusters = n_clusters
         self.n_components = n_components
+        self.ProtNames = ProtNames
+        self.peptide_phosphosite = peptide_phosphosite
         self.kmeans_ = KMeans(n_clusters=n_clusters)
         self.plsr_ = PLSRegression(n_components=n_components)
 
     def fit(self, X, Y):
         assignments_ = self.kmeans_.fit_predict(np.transpose(X))
-        self.centers_ = ClusterAverages(X, assignments_, self.n_clusters, X.shape[0])
+        self.centers_, self.DictClusterToMembers = ClusterAverages(X, assignments_, self.n_clusters, X.shape[0], self.ProtNames, self.peptide_phosphosite)
 #         self.centers_ = np.array(self.kmeans_.cluster_centers_).T    #cond(10):pept(96)
         self.plsr_.fit(self.centers_, Y)       #cond(9):clusters(2) 
         return self
@@ -53,10 +55,10 @@ class kmeansPLSR(BaseEstimator):
 ###-------------- Tunning Hyperparameters ------------------###
 
 
-def TunningHyperpar(X, Y):
+def TunningHyperpar(X, Y, ProtNames, peptide_phosphosite):
     parameters = {'n_clusters': np.arange(2, 11), 'n_components': np.arange(2, 11)}
     param_grid = dict(n_clusters = [2], n_components = [1,2]), dict(n_clusters = [3], n_components = np.arange(1,4)), dict(n_clusters = [4], n_components = np.arange(1,5)), dict(n_clusters = [5], n_components = np.arange(1,6)), dict(n_clusters = [6], n_components = np.arange(1,7)), dict(n_clusters = [7], n_components = np.arange(1,8)), dict(n_clusters = [8], n_components = np.arange(1,9)), dict(n_clusters = [9], n_components = np.arange(1,10)), dict(n_clusters = [10], n_components = np.arange(1,11)), dict(n_clusters = [11], n_components = np.arange(1,12)), dict(n_clusters = [12], n_components = np.arange(1,13)), dict(n_clusters = [13], n_components = np.arange(1,14)), dict(n_clusters = [14], n_components = np.arange(1,15)), dict(n_clusters = [15], n_components = np.arange(1,16))
-    grid = GridSearchCV(kmeansPLSR(2,1), param_grid = param_grid, cv = X.shape[0], return_train_score = True)
+    grid = GridSearchCV(kmeansPLSR(2,1, ProtNames, peptide_phosphosite), param_grid = param_grid, cv = X.shape[0], return_train_score = True)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = { '#Clusters': CVresults_max['param_kmeans__n_clusters'], '#Components': CVresults_max['param_plsr__n_components'], 'std_test_scores': CVresults_max["std_test_score"], 'std_train_scores': CVresults_max["std_train_score"]}
