@@ -16,7 +16,6 @@ from sklearn.cluster import KMeans
 Note that the sklearn PLSRegression function already handles scaling
 '''
 
-
 def zscore_columns(matrix):
     matrix_z = np.zeros((matrix.shape[0], matrix.shape[1]))
     for a in range(matrix.shape[1]):
@@ -104,13 +103,25 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 ###------------ Phosphopeptide Filter ------------------###
 
 
-def FilteringOutPeptides(X):
-    NewX = []
-    for i, row in enumerate(np.transpose(X)):
-        if any(value <= 0.5 or value >= 2 for value in row):
-            NewX.append(np.array(list(map(lambda x: np.log(x), row))))
-    return np.transpose(np.squeeze(NewX))
+# def FilteringOutPeptides(X):
+#     NewX = []
+#     for i, row in enumerate(np.transpose(X)):
+#         if any(value <= 0.5 or value >= 2 for value in row):
+#             NewX.append(np.array(list(map(lambda x: np.log(x), row))))
+#     return np.transpose(np.squeeze(NewX))
 
+def FilteringOutPeptides(X, header):
+    Xf, Xf_protnames, Xf_seqs = [], [], []
+    for idx, row in X.iterrows():
+        if any(value <= 0.5 or value >= 2 for value in row[2:]):
+            Xf.append(np.array(list(map(lambda x: np.log(x), row[2:]))))
+            Xf_seqs.append(row[0])
+            Xf_protnames.append(row[1].split("OS")[0])    
+    
+    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames),pd.DataFrame(Xf)]
+    Xf = pd.concat(frames, axis = 1)
+    Xf.columns = [header]
+    return Xf
 ###------------ Computing Cluster Averages ------------------###
 
 def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
