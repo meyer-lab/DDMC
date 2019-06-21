@@ -52,7 +52,7 @@ def AvsBacrossCond(A,B,t):
         tup = (A.iloc[:,i], B.iloc[:,i])
         data.append(tup)
 
-    fig, axs = plt.subplots(10, sharex = True, sharey = True, figsize = (30, 60))
+    fig, axs = plt.subplots(10, sharex = True, sharey = True, figsize = (10, 20))
     
     #label xticks with peptide sequences and manipulate space between ticks
     N = A.shape[0]
@@ -72,10 +72,10 @@ def AvsBacrossCond(A,B,t):
 
     for data, group, i in zip(data, groups, ax_i):
         x, y = data  
-        axs[i].plot(x, 'r.--', alpha = 0.7, label='BR1: ' + group, linewidth = 0.5)   #linestyle = ''
-        axs[i].plot(y, 'bx--', alpha = 0.7, label='BR2: ' + group, linewidth = 0.5)
+        axs[i].plot(x, 'r.--', alpha = 0.7, label=group, linewidth = 0.5)   #linestyle = ''
+        axs[i].plot(y, 'bx--', alpha = 0.7, linewidth = 0.5)
         axs[i].legend(loc=0)
-    #     axs[i].set_ylim([0, 2.5])
+        axs[i].set_ylim([0, 2.5])
     return fig
     
 def AvsBvsCacrossCond(A,B,C,t):
@@ -106,7 +106,7 @@ def AvsBvsCacrossCond(A,B,C,t):
         tup = (A.iloc[:,i], B.iloc[:,i], C.iloc[:,i])
         data.append(tup)
     
-    fig, axs = plt.subplots(10, sharex = True, sharey = True, figsize = (30, 45))
+    fig, axs = plt.subplots(10, sharex = True, sharey = True, figsize = (10, 20)) 
     plt.xticks(np.arange(A.shape[0]), ([str(i) for i in np.arange(A.shape[0])]), rotation=90)
     
     #label xticks with peptide sequences and manipulate space between ticks
@@ -129,9 +129,9 @@ def AvsBvsCacrossCond(A,B,C,t):
 
     for data, group, i in zip(data, groups, ax_i):
         x, y, z = data  
-        axs[i].plot(x, 'r.--', alpha = 0.7, label='BR1: ' + group, linewidth = 0.5)   #linestyle = ''
-        axs[i].plot(y, 'bx--', alpha = 0.7, label='BR2: ' + group, linewidth = 0.5)
-        axs[i].plot(z, 'k^--', alpha = 0.7, label='BR3: ' + group, linewidth = 0.5)
-        axs[i].legend(loc=0)
-    #     axs[i].set_ylim([0, 2.5])
+        axs[i].plot(x, 'r.--', alpha = 0.7, label= group, linewidth = 0.5)   #linestyle = ''
+        axs[i].plot(y, 'bx--', alpha = 0.7, linewidth = 0.5)
+        axs[i].plot(z, 'k^--', alpha = 0.7, linewidth = 0.5)
+        axs[i].legend(loc=2)
+        axs[i].set_ylim([0, 2.5])
     return fig

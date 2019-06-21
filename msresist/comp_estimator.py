@@ -22,11 +22,11 @@ class MyOwnKMEANS(BaseEstimator):
         return self
 
     def transform(self, X):
-        centers, DictClusterToMembers = ClusterAverages(X, self.kmeans_.labels_, self.n_clusters, X.shape[0], self.ProtNames, self.peptide_phosphosite)
+        centers, DictClusterToMembers = ClusterAverages(np.array(X), self.kmeans_.labels_, self.n_clusters, X.shape[0], self.ProtNames, self.peptide_phosphosite)
         return centers 
     
     def ClusterMembers(self, X):
-        centers, DictClusterToMembers = ClusterAverages(X, self.kmeans_.labels_, self.n_clusters, X.shape[0], self.ProtNames, self.peptide_phosphosite)
+        centers, DictClusterToMembers = ClusterAverages(np.array(X), self.kmeans_.labels_, self.n_clusters, X.shape[0], self.ProtNames, self.peptide_phosphosite)
         return DictClusterToMembers
                                                               
                                                               
