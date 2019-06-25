@@ -1,0 +1,574 @@
+>Alpha-enolase OS=Homo sapiens GN=ENO1 PE=1 SV=2 - [ENOA_HUMAN]
+aAVPSGASTGIyEALELR-1
+>Alpha-enolase OS=Homo sapiens GN=ENO1 PE=1 SV=2 - [ENOA_HUMAN]
+aAVPSGASTGIyEALELRDNDk-1
+>Alpha-enolase OS=Homo sapiens GN=ENO1 PE=1 SV=2 - [ENOA_HUMAN]
+aAVPSGAStGIYEALELRDNDkTR-1
+>40S ribosomal protein SA OS=Homo sapiens GN=RPSA PE=1 SV=4 - [RSSA_HUMAN]
+aDHQPLTEASyVNLPTIALcNTDSPLR-1
+>Plakophilin-3 OS=Homo sapiens GN=PKP3 PE=1 SV=1 - [PKP3_HUMAN]
+aDyDTLSLR-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+aEDGSVIDyELIDQDAR-1
+>Tyrosine-protein kinase Lyn OS=Homo sapiens GN=LYN PE=1 SV=3 - [LYN_HUMAN]
+aEERPTFDYLQSVLDDFYTATEGQyQQQP-1
+>Phosphoprotein associated with glycosphingolipid-enriched microdomains 1 OS=Homo sapiens GN=PAG1 PE=1 SV=2 - [PHAG1_HUMAN]
+aEFAEyASVDR-1
+>Pyruvate kinase PKM OS=Homo sapiens GN=PKM PE=1 SV=4 - [KPYM_HUMAN]
+aEGSDVANAVLDGADcIMLSGETAkGDyPLEAVR-1
+>Desmoplakin OS=Homo sapiens GN=DSP PE=1 SV=3 - [DESP_HUMAN]
+aESGPDLRyEVTSGGGGTSR-1
+>Tetraspanin-6 OS=Homo sapiens GN=TSPAN6 PE=1 SV=1 - [TSN6_HUMAN]
+aITNNQyEIV-1
+>Inosine-5'-monophosphate dehydrogenase 2 OS=Homo sapiens GN=IMPDH2 PE=1 SV=2 - [IMDH2_HUMAN]
+aLALGASTVMMGSLLAATTEAPGEyFFSDGIR-1
+>Talin-1 OS=Homo sapiens GN=TLN1 PE=1 SV=3 - [TLN1_HUMAN]
+aLDyYMLR-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+aLLyLcGGDD-1
+>Activated CDC42 kinase 1 OS=Homo sapiens GN=TNK2 PE=1 SV=3 - [ACK1_HUMAN]
+aLPQNDDHyVMQEHR-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+aLyDNVPEcAEELAFR-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+aNPQERDGVyDVPLHNPPDAk-1
+>Septin-9 OS=Homo sapiens GN=SEPT9 PE=1 SV=2 - [SEPT9_HUMAN]
+aPVDFGyVGIDSILEQMR-1
+>Protein LAP2 OS=Homo sapiens GN=ERBB2IP PE=1 SV=2 - [LAP2_HUMAN]
+aQIPEGDyLSYR-1
+>Keratin, type I cytoskeletal 18 OS=Homo sapiens GN=KRT18 PE=1 SV=2 - [K1C18_HUMAN]
+aQyDELAR-1
+>Homeodomain-interacting protein kinase 2 OS=Homo sapiens GN=HIPK2 PE=1 SV=2 - [HIPK2_HUMAN]
+aVcSTyLQSR-1
+>Kin of IRRE-like protein 1 OS=Homo sapiens GN=KIRREL PE=1 SV=2 - [KIRR1_HUMAN]
+aVLyADYR-1
+>Retinoic acid-induced protein 3 OS=Homo sapiens GN=GPRC5A PE=1 SV=2 - [RAI3_HUMAN]
+aYSQEEITQGFEETGDtLYAPYSTHFQLQNQPPQk-1
+>Retinoic acid-induced protein 3 OS=Homo sapiens GN=GPRC5A PE=1 SV=2 - [RAI3_HUMAN]
+aYSQEEITQGFEETGDTLyAPYStHFQLQNQPPQk-2
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+ayTNFDAER-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+ayTNFDAERDALNIETAIk-1
+>Protein tweety homolog 3 OS=Homo sapiens GN=TTYH3 PE=1 SV=3 - [TTYH3_HUMAN]
+cENTPLIGREsPPPSyTSSMR-2
+>Breast cancer anti-estrogen resistance protein 3 OS=Homo sapiens GN=BCAR3 PE=1 SV=1 - [BCAR3_HUMAN]
+cLEEHyGTSPGQAR-1
+>GRB2-associated-binding protein 1 OS=Homo sapiens GN=GAB1 PE=1 SV=2 - [GAB1_HUMAN]
+dASSQDcyDIPR-1
+>Receptor tyrosine-protein kinase erbB-3 OS=Homo sapiens GN=ERBB3 PE=1 SV=1 - [ERBB3_HUMAN]
+dGGGPGGDYAAMGAcPASEQGyEEMR-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+dGVyDVPLHNPPDAk-1
+>Glycosaminoglycan xylosylkinase OS=Homo sapiens GN=FAM20B PE=1 SV=1 - [XYLK_HUMAN]
+dHVVEGEPyAGYDR-1
+>Actin-related protein 3C OS=Homo sapiens GN=ACTR3C PE=2 SV=1 - [ARP3C_HUMAN]
+dITyFIQQLLR-1
+>Insulin-like growth factor 1 receptor OS=Homo sapiens GN=IGF1R PE=1 SV=1 - [IGF1R_HUMAN]
+dIYETDyYR-1
+>SH2 domain-containing adapter protein B OS=Homo sapiens GN=SHB PE=1 SV=2 - [SHB_HUMAN]
+dkVTIADDySDPFDAk-1
+>Actin filament-associated protein 1-like 2 OS=Homo sapiens GN=AFAP1L2 PE=1 SV=1 - [AF1L2_HUMAN]
+dNHLHFyQDR-1
+>Breast cancer anti-estrogen resistance protein 3 OS=Homo sapiens GN=BCAR3 PE=1 SV=1 - [BCAR3_HUMAN]
+dPHLLDPTVEyVk-1
+>Phosphatidylinositol 3-kinase regulatory subunit alpha OS=Homo sapiens GN=PIK3R1 PE=1 SV=2 - [P85A_HUMAN]
+dQyLMWLTQk-1
+>Actin-related protein 2/3 complex subunit 3 OS=Homo sapiens GN=ARPC3 PE=1 SV=3 - [ARPC3_HUMAN]
+dTDIVDEAIyYFk-1
+>Keratin, type II cytoskeletal 7 OS=Homo sapiens GN=KRT7 PE=1 SV=5 - [K2C7_HUMAN]
+dVDAAyMSk-1
+>Keratin, type II cytoskeletal 7 OS=Homo sapiens GN=KRT7 PE=1 SV=5 - [K2C7_HUMAN]
+dVDAAyMSkVELEAk-1
+>E3 ubiquitin-protein ligase RNF13 OS=Homo sapiens GN=RNF13 PE=1 SV=1 - [RNF13_HUMAN]
+dYNIANtV-1
+>Keratin, type I cytoskeletal 19 OS=Homo sapiens GN=KRT19 PE=1 SV=4 - [K1C19_HUMAN]
+dYSHyYTTIQDLR-1
+>Integrin beta-4 OS=Homo sapiens GN=ITGB4 PE=1 SV=5 - [ITB4_HUMAN]
+dySTLTSVSSHDSR-1
+>Pyruvate kinase PKM OS=Homo sapiens GN=PKM PE=1 SV=4 - [KPYM_HUMAN]
+eAEAAIyHLQLFEELRR-1
+>Transmembrane protein 106B OS=Homo sapiens GN=TMEM106B PE=1 SV=2 - [T106B_HUMAN]
+eDAyDGVTSENMR-1
+>Heat shock protein HSP 90-beta OS=Homo sapiens GN=HSP90AB1 PE=1 SV=4 - [HS90B_HUMAN]|Heat shock protein HSP 90-alpha OS=Homo sapiens GN=HSP90AA1 PE=1 SV=5 - [HS90A_HUMAN]
+eDQTEyLEER-1
+>Ankyrin repeat and SAM domain-containing protein 1A OS=Homo sapiens GN=ANKS1A PE=1 SV=4 - [ANS1A_HUMAN]
+eEDEHPyELLLTAETk-1
+>Tyrosine-protein kinase Lyn OS=Homo sapiens GN=LYN PE=1 SV=3 - [LYN_HUMAN]
+eEPIyIITEYMAk-1
+>Testin OS=Homo sapiens GN=TES PE=1 SV=1 - [TES_HUMAN]
+eGDPAIyAER-1
+>Brain-specific angiogenesis inhibitor 1-associated protein 2-like protein 1 OS=Homo sapiens GN=BAIAP2L1 PE=1 SV=2 - [BI2L1_HUMAN]
+eIEyVETVTSR-1
+>Tyrosine-protein phosphatase non-receptor type substrate 1 OS=Homo sapiens GN=SIRPA PE=1 SV=2 - [SHPS1_HUMAN]
+eITQDTNDITyADLNLPk-1
+>Ras and Rab interactor 1 OS=Homo sapiens GN=RIN1 PE=1 SV=4 - [RIN1_HUMAN]
+ekPAQDPLyDVPNASGGQAGGPQRPGR-1
+>SHC-transforming protein 1 OS=Homo sapiens GN=SHC1 PE=1 SV=4 - [SHC1_HUMAN]
+eLFDDPSyVNVQNLDk-1
+>Phosphoprotein associated with glycosphingolipid-enriched microdomains 1 OS=Homo sapiens GN=PAG1 PE=1 SV=2 - [PHAG1_HUMAN]
+eNDyESISDLQQGR-1
+>Niban-like protein 1 OS=Homo sapiens GN=FAM129B PE=1 SV=3 - [NIBL1_HUMAN]
+eQMDNAVyTFETLLHQELGk-1
+>Partitioning defective 3 homolog OS=Homo sapiens GN=PARD3 PE=1 SV=2 - [PARD3_HUMAN]
+eRDyAEIQDFHR-1
+>Tensin-3 OS=Homo sapiens GN=TNS3 PE=1 SV=2 - [TENS3_HUMAN]
+eSMcSTPAFPVSPETPyVk-1
+>Oligoribonuclease, mitochondrial OS=Homo sapiens GN=REXO2 PE=1 SV=3 - [ORN_HUMAN]
+eSTITLQQAEyEFLSFVR-1
+>Actin-related protein 2/3 complex subunit 3 OS=Homo sapiens GN=ARPC3 PE=1 SV=3 - [ARPC3_HUMAN]
+eTkDTDIVDEAIyYFk-1
+>SLAM family member 7 OS=Homo sapiens GN=SLAMF7 PE=1 SV=1 - [SLAF7_HUMAN]
+eTPNIcPHSGENTEyDTIPHTNR-1
+>Cysteine-rich protein 1 OS=Homo sapiens GN=CRIP1 PE=1 SV=3 - [CRIP1_HUMAN]
+eVyFAER-1
+>Phosphatidylinositol 3-kinase regulatory subunit beta OS=Homo sapiens GN=PIK3R2 PE=1 SV=2 - [P85B_HUMAN]
+eYDQLyEEYTR-1
+>Palmitoyltransferase ZDHHC7 OS=Homo sapiens GN=ZDHHC7 PE=2 SV=2 - [ZDHC7_HUMAN]
+eYMESLQLkPGEVIyk-1
+>Thioredoxin reductase 1, cytoplasmic OS=Homo sapiens GN=TXNRD1 PE=1 SV=3 - [TRXR1_HUMAN]
+fGEENIEVYHsYFWPLEWTIPSR-1
+>Probable ATP-dependent RNA helicase DDX6 OS=Homo sapiens GN=DDX6 PE=1 SV=2 - [DDX6_HUMAN]
+fGHLGLAINLITyDDRFNLk-1
+>Paxillin OS=Homo sapiens GN=PXN PE=1 SV=3 - [PAXI_HUMAN]
+fIHQQPQSSsPVyGSSAk-2
+>Ephrin type-B receptor 3 OS=Homo sapiens GN=EPHB3 PE=1 SV=2 - [EPHB3_HUMAN]
+fLEDDPSDPtYTSSLGGk-1
+>Nucleoside diphosphate kinase A OS=Homo sapiens GN=NME1 PE=1 SV=1 - [NDKA_HUMAN]
+fMQASEDLLkEHyVDLk-1
+>Glutathione S-transferase P OS=Homo sapiens GN=GSTP1 PE=1 SV=2 - [GSTP1_HUMAN]
+fQDGDLTLyQSNTILR-1
+>Sodium-coupled neutral amino acid transporter 2 OS=Homo sapiens GN=SLC38A2 PE=1 SV=2 - [S38A2_HUMAN]
+fSISPDEDSSSYSSNSDFNySYPTk-1
+>Cingulin OS=Homo sapiens GN=CGN PE=1 SV=2 - [CING_HUMAN]
+gANDQGASGALSSDLELPENPySQVk-1
+>GRB2-associated-binding protein 1 OS=Homo sapiens GN=GAB1 PE=1 SV=2 - [GAB1_HUMAN]
+gDkQVEyLDLDLDSGk-1
+>Glycogen synthase kinase-3 beta OS=Homo sapiens GN=GSK3B PE=1 SV=2 - [GSK3B_HUMAN]
+gEPNVsYIcSR-1
+>SH2 domain-containing adapter protein B OS=Homo sapiens GN=SHB PE=1 SV=2 - [SHB_HUMAN]
+gESAGyMEPYEAQR-1
+>Desmoplakin OS=Homo sapiens GN=DSP PE=1 SV=3 - [DESP_HUMAN]
+gGGGyTcQSGSGWDEFTk-1
+>Tubulin beta chain OS=Homo sapiens GN=TUBB PE=1 SV=2 - [TBB5_HUMAN]
+gHyTEGAELVDSVLDVVR-1
+>Sodium/potassium-transporting ATPase subunit alpha-1 OS=Homo sapiens GN=ATP1A1 PE=1 SV=1 - [AT1A1_HUMAN]
+gIVVyTGDR-1
+>Platelet endothelial aggregation receptor 1 OS=Homo sapiens GN=PEAR1 PE=1 SV=1 - [PEAR1_HUMAN]
+gLISEEELGASVASLSSENPYAtIR-1
+>Breast cancer anti-estrogen resistance protein 1 OS=Homo sapiens GN=BCAR1 PE=1 SV=2 - [BCAR1_HUMAN]
+gLLPSQYGQEVyDTPPMAVk-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+gPVFSVPVGEIkPQGVyDIPPTk-1
+>SH3 and multiple ankyrin repeat domains protein 2 OS=Homo sapiens GN=SHANK2 PE=1 SV=3 - [SHAN2_HUMAN]
+gQMPENPySEVGk-1
+>Epidermal growth factor receptor OS=Homo sapiens GN=EGFR PE=1 SV=2 - [EGFR_HUMAN]
+gSHQISLDNPDyQQDFFPk-1
+>Epidermal growth factor receptor OS=Homo sapiens GN=EGFR PE=1 SV=2 - [EGFR_HUMAN]
+gSTAENAEyLR-1
+>Desmoplakin OS=Homo sapiens GN=DSP PE=1 SV=3 - [DESP_HUMAN]
+gVITDQNSDGycQTGTMSR-1
+>Actin, cytoplasmic 1 OS=Homo sapiens GN=ACTB PE=1 SV=1 - [ACTB_HUMAN]
+gySFTTTAER-1
+>Serine/threonine-protein kinase mTOR OS=Homo sapiens GN=MTOR PE=1 SV=1 - [MTOR_HUMAN]
+gYTLADEEEDPLIyQHR-1
+>Mitogen-activated protein kinase 13 OS=Homo sapiens GN=MAPK13 PE=1 SV=1 - [MK13_HUMAN]
+hADAEMTGyVVTR-1
+>Cofilin-1 OS=Homo sapiens GN=CFL1 PE=1 SV=3 - [COF1_HUMAN]
+hELQANcyEEVkDR-1
+>Breast cancer anti-estrogen resistance protein 1 OS=Homo sapiens GN=BCAR1 PE=1 SV=2 - [BCAR1_HUMAN]
+hLLAPGPQDIyDVPPVR-1
+>Mitogen-activated protein kinase 14 OS=Homo sapiens GN=MAPK14 PE=1 SV=3 - [MK14_HUMAN]
+hTDDEMTGyVATR-1
+>Uncharacterized protein C11orf52 OS=Homo sapiens GN=C11orf52 PE=2 SV=2 - [CK052_HUMAN]
+hVHLENATEYAtLR-1
+>Catenin delta-1 OS=Homo sapiens GN=CTNND1 PE=1 SV=1 - [CTND1_HUMAN]
+hYEDGYPGGsDNYGSLSR-1
+>Catenin delta-1 OS=Homo sapiens GN=CTNND1 PE=1 SV=1 - [CTND1_HUMAN]
+hYEDGYPGGSDNyGsLSR-2
+>Mitogen-activated protein kinase 3 OS=Homo sapiens GN=MAPK3 PE=1 SV=4 - [MK03_HUMAN]
+iADPEHDHTGFLTEyVATR-1
+>Mitogen-activated protein kinase 3 OS=Homo sapiens GN=MAPK3 PE=1 SV=4 - [MK03_HUMAN]
+iADPEHDHTGFLtEyVATR-2
+>Protein BRICK1 OS=Homo sapiens GN=BRK1 PE=1 SV=1 - [BRK1_HUMAN]
+iEyIEAR-1
+>Cyclin-dependent kinase 1 OS=Homo sapiens GN=CDK1 PE=1 SV=3 - [CDK1_HUMAN]
+iGEGTyGVVYk-1
+>Cyclin-dependent kinase 1 OS=Homo sapiens GN=CDK1 PE=1 SV=3 - [CDK1_HUMAN]
+iGEGtyGVVYk-2
+>60S acidic ribosomal protein P0 OS=Homo sapiens GN=RPLP0 PE=1 SV=1 - [RLA0_HUMAN]
+iIQLLDDyPk-1
+>60S acidic ribosomal protein P0 OS=Homo sapiens GN=RPLP0 PE=1 SV=1 - [RLA0_HUMAN]
+iIQLLDDyPkcFIVGADNVGSk-1
+>Tyrosine-protein phosphatase non-receptor type 11 OS=Homo sapiens GN=PTPN11 PE=1 SV=2 - [PTN11_HUMAN]
+iQNTGDyYDLYGGEk-1
+>Band 4.1-like protein 1 OS=Homo sapiens GN=EPB41L1 PE=1 SV=2 - [E41L1_HUMAN]
+iRPGEyEQFESTIGFk-1
+>Alpha-actinin-4 OS=Homo sapiens GN=ACTN4 PE=1 SV=2 - [ACTN4_HUMAN]
+iSIEMNGTLEDQLSHLkQyER-1
+>Keratinocyte-associated transmembrane protein 2 OS=Homo sapiens GN=KCT2 PE=2 SV=2 - [KCT2_HUMAN]
+iTNDyIF-1
+>Cytoplasmic dynein 1 heavy chain 1 OS=Homo sapiens GN=DYNC1H1 PE=1 SV=5 - [DYHC1_HUMAN]
+iTNQVIyLNPPIEEcR-1
+>Ephrin type-B receptor 2 OS=Homo sapiens GN=EPHB2 PE=1 SV=5 - [EPHB2_HUMAN]
+iyIDPFTYEDPNEAVR-1
+>Cell differentiation protein RCD1 homolog OS=Homo sapiens GN=RQCD1 PE=1 SV=1 - [RCD1_HUMAN]
+iyQWINELSSPETR-1
+>Dual specificity tyrosine-phosphorylation-regulated kinase 1A OS=Homo sapiens GN=DYRK1A PE=1 SV=2 - [DYR1A_HUMAN]
+iYQyIQSR-1
+>Pyruvate kinase PKM OS=Homo sapiens GN=PKM PE=1 SV=4 - [KPYM_HUMAN]
+iyVDDGLISLQVk-1
+>GRB2-associated-binding protein 1 OS=Homo sapiens GN=GAB1 PE=1 SV=2 - [GAB1_HUMAN]
+kDASSQDcyDIPR-1
+>Actin, cytoplasmic 1 OS=Homo sapiens GN=ACTB PE=1 SV=1 - [ACTB_HUMAN]
+kDLyANTVLSGGTTMYPGIADR-1
+>Twinfilin-2 OS=Homo sapiens GN=TWF2 PE=1 SV=2 - [TWF2_HUMAN]
+kIEIGDGAELTAEFLyDEVHPk-1
+>Tyrosine-protein kinase Fyn OS=Homo sapiens GN=FYN PE=1 SV=3 - [FYN_HUMAN]|Tyrosine-protein kinase Yes OS=Homo sapiens GN=YES1 PE=1 SV=3 - [YES_HUMAN]
+kLDNGGYyITTR-1
+>Tensin-3 OS=Homo sapiens GN=TNS3 PE=1 SV=2 - [TENS3_HUMAN]
+kLSLGQyDNDAGGQLPFSk-1
+>Activated CDC42 kinase 1 OS=Homo sapiens GN=TNK2 PE=1 SV=3 - [ACK1_HUMAN]
+kPTyDPVSEDQDPLSSDFk-1
+>Activated CDC42 kinase 1 OS=Homo sapiens GN=TNK2 PE=1 SV=3 - [ACK1_HUMAN]
+kPTyDPVSEDQDPLSSDFkR-1
+>TOM1-like protein 2 OS=Homo sapiens GN=TOM1L2 PE=1 SV=1 - [TM1L2_HUMAN]
+kTVTyEDPQAVGGLASALDNR-1
+>Thioredoxin reductase 1, cytoplasmic OS=Homo sapiens GN=TXNRD1 PE=1 SV=3 - [TRXR1_HUMAN]
+kVVYENAyGQFIGPHR-1
+>Phosphatidylcholine:ceramide cholinephosphotransferase 2 OS=Homo sapiens GN=SGMS2 PE=1 SV=1 - [SMS2_HUMAN]
+kYPDyIQIAMPTESR-1
+>Solute carrier family 12 member 7 OS=Homo sapiens GN=SLC12A7 PE=1 SV=3 - [S12A7_HUMAN]
+lANyTNLSQGVVEHEEDEESR-1
+>Keratin, type I cytoskeletal 19 OS=Homo sapiens GN=KRT19 PE=1 SV=4 - [K1C19_HUMAN]
+lASyLDk-1
+>Keratin, type I cytoskeletal 18 OS=Homo sapiens GN=KRT18 PE=1 SV=2 - [K1C18_HUMAN]
+lASyLDR-1
+>Serine/threonine-protein kinase PRP4 homolog OS=Homo sapiens GN=PRPF4B PE=1 SV=3 - [PRP4B_HUMAN]
+lcDFGSASHVADNDITPyLVSR-1
+>Actin, cytoplasmic 1 OS=Homo sapiens GN=ACTB PE=1 SV=1 - [ACTB_HUMAN]
+lcyVALDFEQEMATAASSSSLEk-1
+>SH2 domain-containing adapter protein B OS=Homo sapiens GN=SHB PE=1 SV=2 - [SHB_HUMAN]
+lDycGGSGEPGGVQR-1
+>Tyrosine-protein kinase Lck OS=Homo sapiens GN=LCK PE=1 SV=6 - [LCK_HUMAN]|Tyrosine-protein kinase Fyn OS=Homo sapiens GN=FYN PE=1 SV=3 - [FYN_HUMAN]|Tyrosine-protein kinase Yes OS=Homo sapiens GN=YES1 PE=1 SV=3 - [YES_HUMAN]
+lIEDNEyTAR-1
+>Receptor tyrosine-protein kinase erbB-2 OS=Homo sapiens GN=ERBB2 PE=1 SV=1 - [ERBB2_HUMAN]
+lLDIDETEyHADGGk-1
+>Receptor tyrosine-protein kinase erbB-2 OS=Homo sapiens GN=ERBB2 PE=1 SV=1 - [ERBB2_HUMAN]
+lLDIDETEyHADGGkVPIk-1
+>Src substrate cortactin OS=Homo sapiens GN=CTTN PE=1 SV=2 - [SRC8_HUMAN]
+lPSSPVyEDAASFk-1
+>Receptor-interacting serine/threonine-protein kinase 1 OS=Homo sapiens GN=RIPK1 PE=1 SV=3 - [RIPK1_HUMAN]
+lQDEANyHLYGSR-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+lSLEGDHSTPPSAyGSVk-1
+>Tensin-3 OS=Homo sapiens GN=TNS3 PE=1 SV=2 - [TENS3_HUMAN]
+lSLGQyDNDAGGQLPFSk-1
+>Keratin, type II cytoskeletal 7 OS=Homo sapiens GN=KRT7 PE=1 SV=5 - [K2C7_HUMAN]
+lSSARPGGLGSSsLyGLGASRPR-2
+>Protein-tyrosine kinase 6 OS=Homo sapiens GN=PTK6 PE=1 SV=1 - [PTK6_HUMAN]
+lSSFTSyENPT-1
+>Probable palmitoyltransferase ZDHHC20 OS=Homo sapiens GN=ZDHHC20 PE=1 SV=1 - [ZDH20_HUMAN]
+lVGMDPEQASVTNQNEyAR-1
+>Tyrosine-protein kinase Yes OS=Homo sapiens GN=YES1 PE=1 SV=3 - [YES_HUMAN]
+lVPLyAVVSEEPIYIVTEFMSk-1
+>Heat shock protein HSP 90-beta OS=Homo sapiens GN=HSP90AB1 PE=1 SV=4 - [HS90B_HUMAN]
+lVSSPccIVTSTyGWTANMER-1
+>Annexin A5 OS=Homo sapiens GN=ANXA5 PE=1 SV=2 - [ANXA5_HUMAN]
+lYDAyELk-1
+>Malignant T-cell-amplified sequence 1 OS=Homo sapiens GN=MCTS1 PE=1 SV=1 - [MCTS1_HUMAN]
+lyPAAVDTIVAIMAEGk-1
+>Vigilin OS=Homo sapiens GN=HDLBP PE=1 SV=2 - [VIGLN_HUMAN]
+mDyVEINIDHk-1
+>Rab GDP dissociation inhibitor beta OS=Homo sapiens GN=GDI2 PE=1 SV=2 - [GDIB_HUMAN]
+mLLyTEVTR-1
+>Amyloid-like protein 2 OS=Homo sapiens GN=APLP2 PE=1 SV=2 - [APLP2_HUMAN]
+mQNHGyENPTYk-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+mQQyTEHFMAAGYTAIEk-1
+>Eukaryotic translation initiation factor 3 subunit B OS=Homo sapiens GN=EIF3B PE=1 SV=3 - [EIF3B_HUMAN]
+mTLDTLSIyETPSMGLLDkk-1
+>L-lactate dehydrogenase B chain OS=Homo sapiens GN=LDHB PE=1 SV=2 - [LDHB_HUMAN]
+mVVESAyEVIk-1
+>Pseudopodium-enriched atypical kinase 1 OS=Homo sapiens GN=PEAK1 PE=1 SV=4 - [PEAK1_HUMAN]
+nAIkVPIVINPNAyDNLAIYk-1
+>Src substrate cortactin OS=Homo sapiens GN=CTTN PE=1 SV=2 - [SRC8_HUMAN]
+nASTFEDVTQVSSAyQk-1
+>Lipoma-preferred partner OS=Homo sapiens GN=LPP PE=1 SV=1 - [LPP_HUMAN]
+nDSDPTyGQQGHPNTWk-1
+>Rho GTPase-activating protein 35 OS=Homo sapiens GN=ARHGAP35 PE=1 SV=3 - [RHG35_HUMAN]
+nEEENIYsVPHDSTQGk-1
+>Sickle tail protein homolog OS=Homo sapiens GN=KIAA1217 PE=1 SV=2 - [SKT_HUMAN]
+nEGFYADPyLYHEGR-1
+>Transmembrane protein 106B OS=Homo sapiens GN=TMEM106B PE=1 SV=2 - [T106B_HUMAN]
+nGDVSQFPyVEFTGR-1
+>Syntaxin-4 OS=Homo sapiens GN=STX4 PE=1 SV=2 - [STX4_HUMAN]
+nILSSADyVER-1
+>Tyrosine-protein kinase Lck OS=Homo sapiens GN=LCK PE=1 SV=6 - [LCK_HUMAN]
+nLDNGGFyISPR-1
+>Transketolase OS=Homo sapiens GN=TKT PE=1 SV=3 - [TKT_HUMAN]
+nMAEQIIQEIySQIQSk-1
+>Heterogeneous nuclear ribonucleoproteins A2/B1 OS=Homo sapiens GN=HNRNPA2B1 PE=1 SV=2 - [ROA2_HUMAN]
+nMGGPyGGGNYGPGGSGGSGGYGGR-1
+>Vinculin OS=Homo sapiens GN=VCL PE=1 SV=4 - [VINC_HUMAN]
+nPGNQAAyEHFETMk-1
+>Glucose-6-phosphate 1-dehydrogenase OS=Homo sapiens GN=G6PD PE=1 SV=4 - [G6PD_HUMAN]
+nSYVAGQyDDAASYQR-1
+>Lysosomal-associated transmembrane protein 4A OS=Homo sapiens GN=LAPTM4A PE=1 SV=1 - [LAP4A_HUMAN]
+nVPEIAVYPAFEAPPQYVLPTyEMAVk-1
+>Sickle tail protein homolog OS=Homo sapiens GN=KIAA1217 PE=1 SV=2 - [SKT_HUMAN]
+nVyYELNDVR-1
+>Mitogen-activated protein kinase 12 OS=Homo sapiens GN=MAPK12 PE=1 SV=3 - [MK12_HUMAN]
+qADSEMTGyVVTR-1
+>Tyrosine-protein kinase SgK223 OS=Homo sapiens GN=SGK223 PE=1 SV=4 - [SG223_HUMAN]
+qEDAPVVyLGSFR-1
+>Tyrosine-protein kinase SYK OS=Homo sapiens GN=SYK PE=1 SV=1 - [KSYK_HUMAN]
+qESTVSFNPyEPELAPWAADkGPQR-1
+>Putative nucleoside diphosphate kinase OS=Homo sapiens GN=NME2P1 PE=5 SV=1 - [NDK8_HUMAN]
+qHyIDLk-1
+>Low molecular weight phosphotyrosine protein phosphatase OS=Homo sapiens GN=ACP1 PE=1 SV=3 - [PPAC_HUMAN]
+qLIIEDPyYGNDSDFETVYQQcVR-1
+>Cysteine-rich motor neuron 1 protein OS=Homo sapiens GN=CRIM1 PE=1 SV=1 - [CRIM1_HUMAN]
+qNHLQADNFYQtV-1
+>Epidermal growth factor receptor kinase substrate 8 OS=Homo sapiens GN=EPS8 PE=1 SV=1 - [EPS8_HUMAN]
+qNVPVINITyDSTPEDVk-1
+>Tyrosine-protein phosphatase non-receptor type substrate 1 OS=Homo sapiens GN=SIRPA PE=1 SV=2 - [SHPS1_HUMAN]
+qPAPkPEPSFSEyASVQVPR-1
+>Brain-specific angiogenesis inhibitor 1-associated protein 2 OS=Homo sapiens GN=BAIAP2 PE=1 SV=1 - [BAIP2_HUMAN]
+qRPYSVAVPAFSQGLDDyGAR-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+qSPEDVyFSk-1
+>Spectrin alpha chain, non-erythrocytic 1 OS=Homo sapiens GN=SPTAN1 PE=1 SV=3 - [SPTN1_HUMAN]
+qVEELyHSLLELGEk-1
+>L-lactate dehydrogenase A chain OS=Homo sapiens GN=LDHA PE=1 SV=2 - [LDHA_HUMAN]
+qVVESAyEVIk-1
+>Secretory carrier-associated membrane protein 3 OS=Homo sapiens GN=SCAMP3 PE=1 SV=3 - [SCAM3_HUMAN]
+qyATLDVYNPFETR-1
+>Epidermal growth factor receptor kinase substrate 8 OS=Homo sapiens GN=EPS8 PE=1 SV=1 - [EPS8_HUMAN]
+qyHEQEETPEMMAAR-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+rAEDGSVIDyELIDQDAR-1
+>Protein LAP2 OS=Homo sapiens GN=ERBB2IP PE=1 SV=2 - [LAP2_HUMAN]
+rAQIPEGDyLSYR-1
+>Disks large homolog 1 OS=Homo sapiens GN=DLG1 PE=1 SV=2 - [DLG1_HUMAN]
+rDYEVDGRDyHFVTSR-1
+>Desmoplakin OS=Homo sapiens GN=DSP PE=1 SV=3 - [DESP_HUMAN]
+rGVITDQNSDGycQTGTMSR-1
+>Protein BRICK1 OS=Homo sapiens GN=BRK1 PE=1 SV=1 - [BRK1_HUMAN]
+rIEyIEAR-1
+>Epidermal growth factor receptor OS=Homo sapiens GN=EGFR PE=1 SV=2 - [EGFR_HUMAN]
+rPAGSVQNPVyHNQPLNPAPSR-1
+>Breast cancer anti-estrogen resistance protein 1 OS=Homo sapiens GN=BCAR1 PE=1 SV=2 - [BCAR1_HUMAN]
+rPGPGTLyDVPR-1
+>Protein kinase C delta type OS=Homo sapiens GN=PRKCD PE=1 SV=2 - [KPCD_HUMAN]
+rSDSASSEPVGIyQGFEk-1
+>Rho guanine nucleotide exchange factor 5 OS=Homo sapiens GN=ARHGEF5 PE=1 SV=3 - [ARHG5_HUMAN]
+rTEELIyLSQk-1
+>Adapter molecule crk OS=Homo sapiens GN=CRK PE=1 SV=2 - [CRK_HUMAN]
+rVPNAyDkTALALEVGELVk-1
+>Transferrin receptor protein 1 OS=Homo sapiens GN=TFRC PE=1 SV=2 - [TFR1_HUMAN]
+sAFSNLFGGEPLSYtR-1
+>Protein-glutamine gamma-glutamyltransferase 2 OS=Homo sapiens GN=TGM2 PE=1 SV=2 - [TGM2_HUMAN]
+sEGTyccGPVPVR-1
+>Myelin protein zero-like protein 1 OS=Homo sapiens GN=MPZL1 PE=1 SV=1 - [MPZL1_HUMAN]
+sESVVyADIR-1
+>Alpha-enolase OS=Homo sapiens GN=ENO1 PE=1 SV=2 - [ENOA_HUMAN]
+sFIkDyPVVSIEDPFDQDDWGAWQk-1
+>Vinculin OS=Homo sapiens GN=VCL PE=1 SV=4 - [VINC_HUMAN]
+sFLDSGyR-1
+>Phosphoprotein associated with glycosphingolipid-enriched microdomains 1 OS=Homo sapiens GN=PAG1 PE=1 SV=2 - [PHAG1_HUMAN]
+sGQSLTVPESTyTSIQGDPQR-1
+>Sodium-coupled neutral amino acid transporter 2 OS=Homo sapiens GN=SLC38A2 PE=1 SV=2 - [S38A2_HUMAN]
+sHyADVDPENQNFLLESNLGk-1
+>Sodium-coupled neutral amino acid transporter 2 OS=Homo sapiens GN=SLC38A2 PE=1 SV=2 - [S38A2_HUMAN]
+sHyADVDPENQNFLLESNLGkk-1
+>Proteasome subunit alpha type-2 OS=Homo sapiens GN=PSMA2 PE=1 SV=2 - [PSA2_HUMAN]
+sILyDER-1
+>Peptidyl-tRNA hydrolase ICT1, mitochondrial OS=Homo sapiens GN=ICT1 PE=1 SV=1 - [ICT1_HUMAN]
+sIYSLDkLyPESQGSDTAWR-1
+>Serine/threonine-protein kinase ICK OS=Homo sapiens GN=ICK PE=1 SV=1 - [ICK_HUMAN]
+skPPYtDyVSTR-2
+>Tyrosine-protein kinase Lyn OS=Homo sapiens GN=LYN PE=1 SV=3 - [LYN_HUMAN]
+sLDNGGYyISPR-1
+>Catenin delta-1 OS=Homo sapiens GN=CTNND1 PE=1 SV=1 - [CTND1_HUMAN]
+sLDNNySTPNER-1
+>Receptor tyrosine-protein kinase erbB-3 OS=Homo sapiens GN=ERBB3 PE=1 SV=1 - [ERBB3_HUMAN]
+sLEATDSAFDNPDyWHSR-1
+>Keratin, type I cytoskeletal 19 OS=Homo sapiens GN=KRT19 PE=1 SV=4 - [K1C19_HUMAN]
+sLLEGQEDHyNNLSASk-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+sLyYYIQQDTk-1
+>Keratin, type II cytoskeletal 8 OS=Homo sapiens GN=KRT8 PE=1 SV=7 - [K2C8_HUMAN]
+sNMDNMFESyINNLRR-1
+>Ezrin OS=Homo sapiens GN=EZR PE=1 SV=4 - [EZRI_HUMAN]
+sQEQLAAELAEyTAk-1
+>Lipolysis-stimulated lipoprotein receptor OS=Homo sapiens GN=LSR PE=1 SV=4 - [LSR_HUMAN]
+sRDPHyDDFR-1
+>Phosphatidylinositol 3-kinase regulatory subunit beta OS=Homo sapiens GN=PIK3R2 PE=1 SV=2 - [P85B_HUMAN]
+sREYDQLyEEYTR-1
+>GRB2-associated-binding protein 1 OS=Homo sapiens GN=GAB1 PE=1 SV=2 - [GAB1_HUMAN]
+sSGSGSSVADERVDyVVVDQQk-1
+>Actin filament-associated protein 1-like 2 OS=Homo sapiens GN=AFAP1L2 PE=1 SV=1 - [AF1L2_HUMAN]
+sSSSDEEyIYMNk-1
+>Filamin-B OS=Homo sapiens GN=FLNB PE=1 SV=2 - [FLNB_HUMAN]
+sSTETcySAIPk-1
+>Keratin, type I cytoskeletal 18 OS=Homo sapiens GN=KRT18 PE=1 SV=2 - [K1C18_HUMAN]
+sTFSTNyR-1
+>Tyrosine-protein kinase Lck OS=Homo sapiens GN=LCK PE=1 SV=6 - [LCK_HUMAN]
+sVLEDFFTAtEGQYQPQP-1
+>Hepatocyte growth factor receptor OS=Homo sapiens GN=MET PE=1 SV=4 - [MET_HUMAN]
+sVSPTTEMVSNESVDyR-1
+>Rho GTPase-activating protein 35 OS=Homo sapiens GN=ARHGAP35 PE=1 SV=3 - [RHG35_HUMAN]
+sVSSSPWLPQDGFDPSDyAEPMDAVVkPR-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+sWMDDYDyVHLQGkEEFER-1
+>Thioredoxin reductase 1, cytoplasmic OS=Homo sapiens GN=TXNRD1 PE=1 SV=3 - [TRXR1_HUMAN]
+sYDyDLIIIGGGSGGLAAAk-1
+>Actin, cytoplasmic 1 OS=Homo sapiens GN=ACTB PE=1 SV=1 - [ACTB_HUMAN]
+syELPDGQVITIGNER-1
+>Anion exchange protein 2 OS=Homo sapiens GN=SLC4A2 PE=1 SV=4 - [B3A2_HUMAN]
+sYGEEDFEyHR-1
+>Annexin A2 OS=Homo sapiens GN=ANXA2 PE=1 SV=2 - [ANXA2_HUMAN]
+sYsPYDMLESIR-1
+>Mitogen-activated protein kinase 9 OS=Homo sapiens GN=MAPK9 PE=1 SV=2 - [MK09_HUMAN]
+tAcTNFMMtPyVVTR-2
+>Ephrin-B2 OS=Homo sapiens GN=EFNB2 PE=1 SV=1 - [EFNB2_HUMAN]
+tADSVFcPHyEk-1
+>Mitogen-activated protein kinase 8 OS=Homo sapiens GN=MAPK8 PE=1 SV=2 - [MK08_HUMAN]
+tAGTSFMMTPyVVTR-1
+>Mitogen-activated protein kinase 8 OS=Homo sapiens GN=MAPK8 PE=1 SV=2 - [MK08_HUMAN]
+tAGTSFMMtPyVVTR-2
+>Pyruvate kinase PKM OS=Homo sapiens GN=PKM PE=1 SV=4 - [KPYM_HUMAN]
+tATESFASDPILyRPVAVALDTk-1
+>Enhancer of filamentation 1 OS=Homo sapiens GN=NEDD9 PE=1 SV=1 - [CASL_HUMAN]
+tGHGYVyEYPSR-1
+>Focal adhesion kinase 1 OS=Homo sapiens GN=PTK2 PE=1 SV=2 - [FAK1_HUMAN]
+tHAVSVSETDDyAEIIDEEDTYTMPSTR-1
+>Abl interactor 1 OS=Homo sapiens GN=ABI1 PE=1 SV=4 - [ABI1_HUMAN]
+tLEPVkPPTVPNDyMTSPAR-1
+>Crk-like protein OS=Homo sapiens GN=CRKL PE=1 SV=1 - [CRKL_HUMAN]
+tLyDFPGNDAEDLPFk-1
+>Crk-like protein OS=Homo sapiens GN=CRKL PE=1 SV=1 - [CRKL_HUMAN]
+tLyDFPGNDAEDLPFkk-1
+>Talin-1 OS=Homo sapiens GN=TLN1 PE=1 SV=3 - [TLN1_HUMAN]
+tMQFEPSTMVyDAcR-1
+>Kin of IRRE-like protein 1 OS=Homo sapiens GN=KIRREL PE=1 SV=2 - [KIRR1_HUMAN]
+tPyEAYDPIGk-1
+>FYN-binding protein OS=Homo sapiens GN=FYB PE=1 SV=2 - [FYB_HUMAN]
+tTAVEIDyDSLk-1
+>Low-density lipoprotein receptor OS=Homo sapiens GN=LDLR PE=1 SV=1 - [LDLR_HUMAN]
+tTEDEVHIcHNQDGySYPSR-1
+>Actin, cytoplasmic 1 OS=Homo sapiens GN=ACTB PE=1 SV=1 - [ACTB_HUMAN]
+tTGIVMDSGDGVTHTVPIyEGYALPHAILR-1
+>Protein phosphatase Slingshot homolog 2 OS=Homo sapiens GN=SSH2 PE=1 SV=1 - [SSH2_HUMAN]
+tTNPFYNtM-1
+>Homeodomain-interacting protein kinase 3 OS=Homo sapiens GN=HIPK3 PE=1 SV=1 - [HIPK3_HUMAN]
+tVcSTyLQSR-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+tYVDPHTyEDPNQAVLk-1
+>Mitogen-activated protein kinase 1 OS=Homo sapiens GN=MAPK1 PE=1 SV=3 - [MK01_HUMAN]
+vADPDHDHTGFLTEyVATR-1
+>Mitogen-activated protein kinase 1 OS=Homo sapiens GN=MAPK1 PE=1 SV=3 - [MK01_HUMAN]
+vADPDHDHTGFLtEyVATR-2
+>Filamin-A OS=Homo sapiens GN=FLNA PE=1 SV=4 - [FLNA_HUMAN]
+vANPSGNLTETyVQDR-1
+>Actin filament-associated protein 1-like 2 OS=Homo sapiens GN=AFAP1L2 PE=1 SV=1 - [AF1L2_HUMAN]
+vAQQPLSLVGcEVVPDPSPDHLYsFR-1
+>Integrin beta-4 OS=Homo sapiens GN=ITGB4 PE=1 SV=5 - [ITB4_HUMAN]
+vcAYGAQGEGPySSLVScR-1
+>Hepatocyte growth factor-regulated tyrosine kinase substrate OS=Homo sapiens GN=HGS PE=1 SV=1 - [HGS_HUMAN]
+vcEPcyEQLNR-1
+>Band 4.1-like protein 2 OS=Homo sapiens GN=EPB41L2 PE=1 SV=1 - [E41L2_HUMAN]
+vEGDNIyVR-1
+>Tyrosine-protein kinase Lyn OS=Homo sapiens GN=LYN PE=1 SV=3 - [LYN_HUMAN]
+vENcPDELyDIMk-1
+>Calmodulin OS=Homo sapiens GN=CALM1 PE=1 SV=2 - [CALM_HUMAN]
+vFDkDGNGyISAAELR-1
+>Paxillin OS=Homo sapiens GN=PXN PE=1 SV=3 - [PAXI_HUMAN]
+vGEEEHVySFPNk-1
+>Breast cancer anti-estrogen resistance protein 1 OS=Homo sapiens GN=BCAR1 PE=1 SV=2 - [BCAR1_HUMAN]
+vGQGYVYEAAQPEQDEyDIPR-1
+>Filamin-A OS=Homo sapiens GN=FLNA PE=1 SV=4 - [FLNA_HUMAN]
+vHSPSGALEEcyVTEIDQDkYAVR-1
+>Tyrosine-protein kinase Lyn OS=Homo sapiens GN=LYN PE=1 SV=3 - [LYN_HUMAN]
+vIEDNEYtAR-1
+>Desmoglein-2 OS=Homo sapiens GN=DSG2 PE=1 SV=2 - [DSG2_HUMAN]
+vIQPHGGGSNPLEGTQHLQDVPyVMVR-1
+>Ephrin type-A receptor 3 OS=Homo sapiens GN=EPHA3 PE=1 SV=2 - [EPHA3_HUMAN]
+vLEDDPEAAyTTR-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+vLEDDPEATyTTSGGk-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+vLEDDPEAtYTTSGGkIPIR-1
+>Adapter molecule crk OS=Homo sapiens GN=CRK PE=1 SV=2 - [CRK_HUMAN]
+vPNAyDkTALALEVGELVk-1
+>G-protein coupled receptor family C group 5 member C OS=Homo sapiens GN=GPRC5C PE=1 SV=2 - [GPC5C_HUMAN]
+vPSEGAyDIILPR-1
+>Integrin beta-4 OS=Homo sapiens GN=ITGB4 PE=1 SV=5 - [ITB4_HUMAN]
+vPSVELTNLyPYcDYEMk-1
+>Glucose-6-phosphate 1-dehydrogenase OS=Homo sapiens GN=G6PD PE=1 SV=4 - [G6PD_HUMAN]
+vQPNEAVyTk-1
+>Flotillin-1 OS=Homo sapiens GN=FLOT1 PE=1 SV=3 - [FLOT1_HUMAN]
+vSAQyLSEIEMAk-1
+>Atypical chemokine receptor 3 OS=Homo sapiens GN=ACKR3 PE=1 SV=3 - [ACKR3_HUMAN]
+vSETEySALEQSTk-1
+>Filamin-B OS=Homo sapiens GN=FLNB PE=1 SV=2 - [FLNB_HUMAN]
+vTASGPGLSSyGVPASLPVDFAIDAR-1
+>SH2 domain-containing adapter protein B OS=Homo sapiens GN=SHB PE=1 SV=2 - [SHB_HUMAN]
+vTIADDySDPFDAkNDLk-1
+>Receptor-type tyrosine-protein phosphatase alpha OS=Homo sapiens OX=9606 GN=PTPRA PE=1 SV=3 - [PTPRA_HUMAN]
+vVQEYIDAFSDyANFk-1
+>Thioredoxin reductase 1, cytoplasmic OS=Homo sapiens GN=TXNRD1 PE=1 SV=3 - [TRXR1_HUMAN]
+vVYENAyGQFIGPHR-1
+>Desmoglein-2 OS=Homo sapiens GN=DSG2 PE=1 SV=2 - [DSG2_HUMAN]
+vyAPASTLVDQPYANEGTVVVTER-1
+>Tyrosine-protein phosphatase non-receptor type 11 OS=Homo sapiens GN=PTPN11 PE=1 SV=2 - [PTN11_HUMAN]
+vyENVGLMQQQk-1
+>MAGUK p55 subfamily member 5 OS=Homo sapiens GN=MPP5 PE=1 SV=3 - [MPP5_HUMAN]
+vyESIGQYGGETVk-1
+>Protein phosphatase 1 regulatory subunit 14B OS=Homo sapiens GN=PPP1R14B PE=1 SV=3 - [PP14B_HUMAN]
+vyFQSPPGAAGEGPGGADDEGPVRR-1
+>Ephrin type-B receptor 3 OS=Homo sapiens GN=EPHB3 PE=1 SV=2 - [EPHB3_HUMAN]
+vyIDPFTYEDPNEAVR-1
+>Dual specificity tyrosine-phosphorylation-regulated kinase 4 OS=Homo sapiens GN=DYRK4 PE=1 SV=2 - [DYRK4_HUMAN]
+vYTyIQSR-1
+>Tensin-3 OS=Homo sapiens GN=TNS3 PE=1 SV=2 - [TENS3_HUMAN]
+wDsYENLSADGEVLHTQGPVDGSLyAk-2
+>Integrin beta-1 OS=Homo sapiens GN=ITGB1 PE=1 SV=2 - [ITB1_HUMAN]
+wDTGENPIyk-1
+>Tyrosine-protein kinase FRK OS=Homo sapiens GN=FRK PE=1 SV=1 - [FRK_HUMAN]
+wkLEDYFETDSSySDANNFIR-1
+>Oligoribonuclease, mitochondrial OS=Homo sapiens GN=REXO2 PE=1 SV=3 - [ORN_HUMAN]
+wYPEEyEFAPk-1
+>Serine incorporator 5 OS=Homo sapiens GN=SERINC5 PE=2 SV=1 - [SERC5_HUMAN]
+yAAPELEIAR-1
+>Phosphatidylinositol 4-kinase alpha OS=Homo sapiens GN=PI4KA PE=1 SV=4 - [PI4KA_HUMAN]
+yAGEVyGMIR-1
+>Vacuolar protein sorting-associated protein VTA1 homolog OS=Homo sapiens GN=VTA1 PE=1 SV=1 - [VTA1_HUMAN]
+yAGSALQYEDVSTAVQNLQk-1
+>Cofilin-1 OS=Homo sapiens GN=CFL1 PE=1 SV=3 - [COF1_HUMAN]
+yALyDATYETk-1
+>Signal transducer and activator of transcription 3 OS=Homo sapiens GN=STAT3 PE=1 SV=2 - [STAT3_HUMAN]
+ycRPESQEHPEADPGSAAPyLk-1
+>Vesicle transport through interaction with t-SNAREs homolog 1B OS=Homo sapiens GN=VTI1B PE=1 SV=3 - [VTI1B_HUMAN]
+yGIyAVENEHMNR-1
+>Protein-tyrosine kinase 2-beta OS=Homo sapiens GN=PTK2B PE=1 SV=2 - [FAK2_HUMAN]
+yIEDEDYykASVTR-1
+>Aldose reductase OS=Homo sapiens GN=AKR1B1 PE=1 SV=3 - [ALDR_HUMAN]
+ykPAVNQIEcHPyLTQEk-1
+>Ephrin type-A receptor 2 OS=Homo sapiens GN=EPHA2 PE=1 SV=2 - [EPHA2_HUMAN]
+ykPMMIITEyMENGALDk-1
+>Proteasome subunit alpha type-6 OS=Homo sapiens GN=PSMA6 PE=1 SV=1 - [PSA6_HUMAN]
+ykyGYEIPVDMLck-1
+>Focal adhesion kinase 1 OS=Homo sapiens GN=PTK2 PE=1 SV=2 - [FAK1_HUMAN]
+yMEDSTYyk-1
+>Epidermal growth factor receptor OS=Homo sapiens GN=EGFR PE=1 SV=2 - [EGFR_HUMAN]
+ySSDPTGALTEDSIDDTFLPVPEyINQSVPk-1
+>Caveolin-1 OS=Homo sapiens GN=CAV1 PE=1 SV=4 - [CAV1_HUMAN]
+yVDSEGHLyTVPIR-1
+>Tyrosine-protein kinase receptor UFO OS=Homo sapiens OX=9606 GN=AXL PE=1 SV=4 - [UFO_HUMAN]
+yVLcPSTTPSPAQPADR-1
+>Phospholysine phosphohistidine inorganic pyrophosphate phosphatase OS=Homo sapiens GN=LHPP PE=1 SV=2 - [LHPP_HUMAN]
+yYkETSGLMLDVGPYMk-1
+>GDP-mannose 4,6 dehydratase OS=Homo sapiens GN=GMDS PE=1 SV=1 - [GMDS_HUMAN]
+yYRPTEVDFLQGDcTk-1

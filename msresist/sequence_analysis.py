@@ -1,12 +1,53 @@
-# Code from Adam Weiner, obtained March 2019
-
 from Bio import SeqIO
 import os
 import numpy as np
 import random
 
+
 ###------------ Sequence processor ------------------###
 
+def GenerateFastaFile(PathToFile, PN, X_seqs):
+    FileHandle = open(FileName, "w+")
+    for i in range(len(X_seqs)):
+        FileHandle.write('>'+ str(PN[i]))
+        FileHandle.write("\n")
+        FileHandle.write(str(X_seqs[i]))
+        FileHandle.write("\n")
+
+        
+###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
+# TO DO: include names manually and account for peptides with multiple y,t,s... use MS_seq
+        
+DictProtToSeq_UP = {}
+for rec2 in SeqIO.parse(proteome, "fasta"):
+    UP_seq = str(rec2.seq)
+    UP_name = rec2.description.split("HUMAN ")[1].split(" OS")[0]
+    DictProtToSeq_UP[UP_name] = str(UP_seq)
+
+
+ExtSeq = []
+counter = 0
+for rec1 in SeqIO.parse(MS_seqs, "fasta"):
+    MS_seq = str(rec1.seq)
+    MS_seqU = str(rec1.seq.split("-")[0].upper())
+    MS_name = str(rec1.description.split(" OS")[0])
+    try:
+        UP_seq = DictProtToSeq_UP[MS_name]
+        if MS_seqU in UP_seq and MS_name == list(DictProtToSeq_UP.keys())[list(DictProtToSeq_UP.values()).index(UP_seq)]:
+            counter += 1
+            regexPattern = re.compile(MS_seqU)
+            MatchObs = regexPattern.finditer(UP_seq)
+            indices = []
+            for i in MatchObs:
+                indices.append(i.start())
+                indices.append(i.end())
+            ExtSeq.append(UP_seq[indices[0]:indices[1]])
+    except:
+        print("find ", MS_name, "in proteome_uniprot.txt and change name")
+        pass
+
+###------------ Sequence processor ------------------###
+# Code from Adam Weiner, obtained March 2019
 
 def trim(seqFile):
     cwd = os.getcwd()
@@ -40,6 +81,8 @@ def trim(seqFile):
 
 
 ###------------ Seq Distance Calculator ------------------###
+# Code from Adam Weiner, obtained March 2019
+
 
 class Distance:
     def __init__(self, seqFile, subMat):
@@ -91,6 +134,7 @@ class Distance:
 
 
 ###------------ Substitution Matrix (PAM250) ------------------###
+# Code from Adam Weiner, obtained March 2019
 
 """ Code for substitution matrices is inspired by https://github.com/benhid/pyMSA/blob/master/pymsa/core/substitution_matrix.py """
 
@@ -127,6 +171,7 @@ class SubstitutionMatrix:
 
 
 class PAM250(SubstitutionMatrix):
+# Code from Adam Weiner, obtained March 2019
     """ Class implementing the PAM250 substitution matrix
     Reference: https://en.wikipedia.org/wiki/Point_accepted_mutation"""
 
