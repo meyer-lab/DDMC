@@ -114,7 +114,7 @@ def FilteringOutPeptides(X, header):
     Xf, Xf_protnames, Xf_seqs = [], [], []
     for idx, row in X.iterrows():
         if any(value <= 0.5 or value >= 2 for value in row[2:]):
-            Xf.append(np.array(list(map(lambda x: np.log(x), row[2:]))))
+            Xf.append(np.array(list(map(lambda x: x, row[2:]))))
             Xf_seqs.append(row[0])
             Xf_protnames.append(row[1].split("OS")[0])    
     
