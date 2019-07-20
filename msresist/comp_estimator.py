@@ -18,7 +18,6 @@ class MyOwnKMEANS(BaseEstimator):
         self.peptide_phosphosite = peptide_phosphosite
     
     def fit(self, X, Y):
-#         X_f = 
         self.kmeans_ = KMeans(n_clusters=self.n_clusters).fit(np.transpose(X))
         return self
 
