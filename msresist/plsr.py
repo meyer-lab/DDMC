@@ -118,9 +118,9 @@ def FilteringOutPeptides(X, header):
             Xf_seqs.append(row[0])
             Xf_protnames.append(row[1].split("OS")[0])    
     
-    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames),pd.DataFrame(Xf)]
+    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
     Xf = pd.concat(frames, axis = 1)
-    Xf.columns = [header]
+    Xf.columns = header
     return Xf
 ###------------ Computing Cluster Averages ------------------###
 
