@@ -28,6 +28,8 @@ def MergeDfbyMean(A,B,C, t):
     return ABC_avg
 
 
+
+
 def AvsBacrossCond(A,B,t):
     frames = [A,B]
     ConcDf = pd.concat(frames)
@@ -121,8 +123,6 @@ def AvsBvsCacrossCond(A,B,C,t):
     margin = m/plt.gcf().get_size_inches()[0]
     plt.gcf().subplots_adjust(left=margin, right=1.-margin)
     plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
-    
-    
     
     groups = t
     ax_i = np.arange(10)
