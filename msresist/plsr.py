@@ -1,5 +1,6 @@
 import scipy as sp
 import numpy as np
+from numpy import sign, log10, abs
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -103,14 +104,22 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 ###------------ Phosphopeptide Filter ------------------###
 
 
-# def FilteringOutPeptides(X):
-#     NewX = []
-#     for i, row in enumerate(np.transpose(X)):
-#         if any(value <= 0.5 or value >= 2 for value in row):
-#             NewX.append(np.array(list(map(lambda x: np.log(x), row))))
-#     return np.transpose(np.squeeze(NewX))
+def MeanCenterAndFilter(X, header):
+    Xf, Xf_protnames, Xf_seqs = [], [], []
+    for idx, row in X.iterrows():
+        m = np.mean(row[2:])
+        if any(value <= m/2 or value >= m*2 for value in row[2:]):
+            centered = np.array(list(map(lambda x: x - m, row[2:])))
+            Xf.append(np.array(list(map(lambda x: sign(x)*(np.log10(abs(x)+1)), centered))))
+            Xf_seqs.append(row[0])
+            Xf_protnames.append(row[1].split("OS")[0])    
+    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
+    Xf = pd.concat(frames, axis = 1)
+    Xf.columns = header
+    return Xf
 
-def FilteringOutPeptides(X, header):
+
+def FoldChangeFilter(X, header):
     Xf, Xf_protnames, Xf_seqs = [], [], []
     for idx, row in X.iterrows():
         if any(value <= 0.5 or value >= 2 for value in row[2:]):
@@ -122,6 +131,8 @@ def FilteringOutPeptides(X, header):
     Xf = pd.concat(frames, axis = 1)
     Xf.columns = header
     return Xf
+    
+
 ###------------ Computing Cluster Averages ------------------###
 
 def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
