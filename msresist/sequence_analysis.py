@@ -205,8 +205,6 @@ class Distance:
         self.subMat = subMat
         if subMat is "PAM250":
             self.M = PAM250()
-        elif subMat is "FLU":
-            self.M = FLU_sub()
         self.numSeq = self.sequences.shape[0]
 
     def seq_dist(self, seq1, seq2):
@@ -286,6 +284,9 @@ class SubstitutionMatrix:
         return distance
 
     def get_distance_matrix(self):
+        if self.distance_matrix is None:
+            raise RuntimeError("Do not call the abstract class.")
+
         return self.distance_matrix
 
 
