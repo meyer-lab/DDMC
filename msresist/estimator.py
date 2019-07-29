@@ -49,8 +49,8 @@ class kmeansPLSR(BaseEstimator):
     def Scores_Loadings(self, X, Y):
         X_scores, Y_scores = self.plsr_.transform(X, Y)
         PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-        PC1_xload, PC2_xload = plsr.x_loadings_[:, 0], plsr.x_loadings_[:, 1]
-        PC1_yload, PC2_yload = plsr.y_loadings_[:, 0], plsr.y_loadings_[:, 1]
+        PC1_xload, PC2_xload = self.plsr_.x_loadings_[:, 0], self.plsr_.x_loadings_[:, 1]
+        PC1_yload, PC2_yload = self.plsr_.y_loadings_[:, 0], self.plsr_.y_loadings_[:, 1]
         return PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
 
 ###-------------- Tunning Hyperparameters ------------------###
