@@ -15,41 +15,41 @@ def GenerateFastaFile(PathToFile, PN, X_seqs):
     FileHandle.close()
 
 
-def YTSsequences(X_seqs):
-    """ Dictionary to Check Motifs
-        Input: Phosphopeptide sequences 
-        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
-        Useful to check def GeneratingKinaseMotifs results """
-    YTSsequences = {}
-    seq1 , seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
-    for i, seq in enumerate(X_seqs):
-        if "y" in seq and "t" not in seq and "s" not in seq:
-            seq1.append(seq)
-        if "t" in seq and "y" not in seq and "s" not in seq:
-            seq2.append(seq)
-            DictProtNameToPhospho["t: "] = seq2
-        if "s" in seq and "y" not in seq and "t" not in seq:
-            seq3.append(seq)
-            DictProtNameToPhospho["s: "] = seq3
-        if "y" in seq and "t" in seq and "s" not in seq:
-            seq4.append(seq)
-            DictProtNameToPhospho["y/t: "] = seq4
-        if "y" in seq and "s" in seq and "t" not in seq:
-            seq5.append(seq)
-            DictProtNameToPhospho["y/s: "] = seq5
-        if "t" in seq and "s" in seq and "y" not in seq:
-            seq6.append(seq)
-
-    DictProtNameToPhospho["y: "] = seq1
-    DictProtNameToPhospho["t: "] = seq2
-    DictProtNameToPhospho["s: "] = seq3
-    DictProtNameToPhospho["y/t: "] = seq4
-    DictProtNameToPhospho["y/s: "] = seq5
-    DictProtNameToPhospho["t/s: "] = seq6
-
-    SeqsBySites = pd.DataFrame(dict([ (k, pd.Series(v)) for k,v in DictProtNameToPhospho.items() ]))
-    
-    return SeqsBySites
+#def YTSsequences(X_seqs):
+#    """ Dictionary to Check Motifs
+#        Input: Phosphopeptide sequences 
+#        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
+#        Useful to check def GeneratingKinaseMotifs results """
+#    YTSsequences = {}
+#    seq1 , seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
+#    for i, seq in enumerate(X_seqs):
+#        if "y" in seq and "t" not in seq and "s" not in seq:
+#            seq1.append(seq)
+#        if "t" in seq and "y" not in seq and "s" not in seq:
+#            seq2.append(seq)
+#            DictProtNameToPhospho["t: "] = seq2
+#        if "s" in seq and "y" not in seq and "t" not in seq:
+#            seq3.append(seq)
+#            DictProtNameToPhospho["s: "] = seq3
+#        if "y" in seq and "t" in seq and "s" not in seq:
+#            seq4.append(seq)
+#            DictProtNameToPhospho["y/t: "] = seq4
+#        if "y" in seq and "s" in seq and "t" not in seq:
+#            seq5.append(seq)
+#            DictProtNameToPhospho["y/s: "] = seq5
+#        if "t" in seq and "s" in seq and "y" not in seq:
+#            seq6.append(seq)
+#
+#    DictProtNameToPhospho["y: "] = seq1
+#    DictProtNameToPhospho["t: "] = seq2
+#    DictProtNameToPhospho["s: "] = seq3
+#    DictProtNameToPhospho["y/t: "] = seq4
+#    DictProtNameToPhospho["y/s: "] = seq5
+#    DictProtNameToPhospho["t/s: "] = seq6
+#
+#    SeqsBySites = pd.DataFrame(dict([ (k, pd.Series(v)) for k,v in DictProtNameToPhospho.items() ]))
+#    
+#    return SeqsBySites
 
 
 ###------------ Match protein names from MS to Uniprot's data set ------------------###        
@@ -60,28 +60,28 @@ def YTSsequences(X_seqs):
 """
 
 
-def MatchProtNames(PathToNewFile, MS_seqs):
-#     FileHandle = open("./msresist/data/MS_seqs_matched.fa", "w+")
-    FileHandle = open(PathToNewFile, "w+")
-    # counter = 0
-    for rec1 in SeqIO.parse(MS_seqs, "fasta"):
-        MS_seq = str(rec1.seq)
-        MS_seqU = str(rec1.seq.upper())
-        MS_name = str(rec1.description.split(" OS")[0])
-        try:
-            UP_seq = DictProtToSeq_UP[MS_name]
-            FileHandle.write(">" + MS_name)
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")
-        except:
-            # counter += 1
-            Fixed_name = getKeysByValue(DictProtToSeq_UP, MS_seqU)
-            FileHandle.write(">" + Fixed_name[0])
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")       
-    FileHandle.close()
+#def MatchProtNames(PathToNewFile, MS_seqs):
+##     FileHandle = open("./msresist/data/MS_seqs_matched.fa", "w+")
+#    FileHandle = open(PathToNewFile, "w+")
+#    # counter = 0
+#    for rec1 in SeqIO.parse(MS_seqs, "fasta"):
+#        MS_seq = str(rec1.seq)
+#        MS_seqU = str(rec1.seq.upper())
+#        MS_name = str(rec1.description.split(" OS")[0])
+#        try:
+#            UP_seq = DictProtToSeq_UP[MS_name]
+#            FileHandle.write(">" + MS_name)
+#            FileHandle.write("\n")
+#            FileHandle.write(MS_seq)
+#            FileHandle.write("\n")
+#        except:
+#            # counter += 1
+#            Fixed_name = getKeysByValue(DictProtToSeq_UP, MS_seqU)
+#            FileHandle.write(">" + Fixed_name[0])
+#            FileHandle.write("\n")
+#            FileHandle.write(MS_seq)
+#            FileHandle.write("\n")       
+#    FileHandle.close()
 
     
 ###------------ Generate Phosphopeptide Motifs ------------------###        
