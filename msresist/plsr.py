@@ -4,10 +4,9 @@ from numpy import sign, log10, abs
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_predict, LeaveOneOut
+from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.cluster import KMeans
 
@@ -107,7 +106,7 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 
 def MeanCenterAndFilter(X, header):
     Xf, Xf_protnames, Xf_seqs = [], [], []
-    for idx, row in X.iterrows():
+    for _, row in X.iterrows():
         m = np.mean(row[2:])
         if any(value <= m / 2 or value >= m * 2 for value in row[2:]):
             centered = np.array(list(map(lambda x: x - m, row[2:])))
