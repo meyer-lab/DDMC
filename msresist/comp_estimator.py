@@ -36,7 +36,7 @@ def ComHyperPar(X, Y, ProtNames, peptide_phosphosite):
     estimators = [('kmeans', MyOwnKMEANS(5, ProtNames, peptide_phosphosite)), ('plsr', PLSRegression(2))]
     pipe = Pipeline(estimators)
     param_grid = []
-    
+
     for nn in range(2, 16):
         param_grid.append(dict(n_clusters=[nn], n_components=np.arange(1, nn + 1)))
 
