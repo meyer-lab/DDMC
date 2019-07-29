@@ -18,10 +18,10 @@ def GenerateFastaFile(PathToFile, PN, X_seqs):
 
 ###------------ Dictionary to Check Motifs ------------------###
 
- """Input: Phosphopeptide sequences 
-    Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
-    Useful to check def GeneratingKinaseMotifs results 
- """
+"""Input: Phosphopeptide sequences 
+   Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
+   Useful to check def GeneratingKinaseMotifs results 
+"""
 
 def YTSsequences(X_seqs):
     YTSsequences = {}
