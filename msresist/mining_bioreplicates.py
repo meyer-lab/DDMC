@@ -1,9 +1,6 @@
-import scipy as sp
-from scipy import stats
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 
 def MergeDfbyMean(A, B, C, t):
