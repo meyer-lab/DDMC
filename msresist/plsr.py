@@ -2,13 +2,11 @@ import scipy as sp
 import numpy as np
 from numpy import sign, log10, abs
 import pandas as pd
-from scipy import stats
 import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import GridSearchCV
-from sklearn.cluster import KMeans
 
 
 ###------------ Scaling Matrices ------------------###
@@ -121,7 +119,7 @@ def MeanCenterAndFilter(X, header):
 
 def FoldChangeFilter(X, header):
     Xf, Xf_protnames, Xf_seqs = [], [], []
-    for idx, row in X.iterrows():
+    for _, row in X.iterrows():
         if any(value <= 0.5 or value >= 2 for value in row[2:]):
             Xf.append(np.array(list(map(lambda x: np.log(x), row[2:]))))
             Xf_seqs.append(row[0])
@@ -138,7 +136,6 @@ def FoldChangeFilter(X, header):
 def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
-    ClusterAvgs = []
     ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10
     DictClusterToMembers = {}
     for i in range(nClusters):
@@ -160,7 +157,6 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide
             else:
                 avg = np.mean(arr)
                 CurrentAvgs.append(avg)
-        CurrentKey = []
         DictClusterToMembers[i + 1] = (ClusterMembers)
         DictClusterToMembers["Seqs_Cluster_" + str(i + 1)] = ClusterSeqs
         ClusterAvgs_arr[i, :] = CurrentAvgs
@@ -168,13 +164,8 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide
     return AvgsArr, DictClusterToMembers
 
 
-###------------ GridSearch ------------------###
-'''
-Exhaustive search over specified parameter values for an estimator
-'''
-
-
 def GridSearch_CV(model, X, Y, parameters, cv, scoring=None):
+    """ Exhaustive search over specified parameter values for an estimator. """
     grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
