@@ -17,7 +17,7 @@ pipeline {
         stage('Lint') {
           steps {
             sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
-            recordIssues(tools: [pyLint(pattern: 'pylint.log')])
+            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
           }
         }
       }
