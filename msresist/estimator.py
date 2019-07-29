@@ -59,7 +59,7 @@ class kmeansPLSR(BaseEstimator):
 def TunningHyperpar(X, Y, ProtNames, peptide_phosphosite):
     parameters = {'n_clusters': np.arange(2, 11), 'n_components': np.arange(2, 11)}
     param_grid = []
-    
+
     for nn in range(2, 16):
         param_grid.append(dict(n_clusters=[nn], n_components=np.arange(1, nn + 1)))
 
