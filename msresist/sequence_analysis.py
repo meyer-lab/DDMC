@@ -4,9 +4,8 @@ import numpy as np
 import random
 
 
-###------------ Sequence processor ------------------###
-
 def GenerateFastaFile(PathToFile, PN, X_seqs):
+    """ Sequence processor """
     FileHandle = open(PathToFile, "w+")
     for i in range(len(X_seqs)):
         FileHandle.write('>' + str(PN[i]))
@@ -16,14 +15,11 @@ def GenerateFastaFile(PathToFile, PN, X_seqs):
     FileHandle.close()
 
 
-###------------ Dictionary to Check Motifs ------------------###
-
-"""Input: Phosphopeptide sequences 
-   Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
-   Useful to check def GeneratingKinaseMotifs results 
-"""
-
 def YTSsequences(X_seqs):
+    """ Dictionary to Check Motifs
+        Input: Phosphopeptide sequences 
+        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
+        Useful to check def GeneratingKinaseMotifs results """
     YTSsequences = {}
     seq1 , seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
     for i, seq in enumerate(X_seqs):
@@ -199,12 +195,9 @@ def trim(seqFile):
     return (label, sequence)
 
 
-
-###------------ Seq Distance Calculator ------------------###
-# Code from Adam Weiner, obtained March 2019
-
-
 class Distance:
+    """ Seq Distance Calculator
+        Code from Adam Weiner, obtained March 2019 """
     def __init__(self, seqFile, subMat):
         self.labels, self.sequences = trim(seqFile)
         self.subMat = subMat
