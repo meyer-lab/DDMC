@@ -20,6 +20,9 @@ pipeline {
             recordIssues(tools: [pyLint(pattern: 'pylint.log')])
           }
         }
+        stage('Build Notebooks') {
+          steps { sh 'jupyter nbconvert --execute --to notebook --inplace *.ipynb' }
+        }
       }
     }
   }
