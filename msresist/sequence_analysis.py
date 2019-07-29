@@ -58,10 +58,10 @@ def YTSsequences(X_seqs):
 
 ###------------ Match protein names from MS to Uniprot's data set ------------------###        
 
- """Input: Path to new file and MS fasta file  
-    Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file
-    Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s)
- """
+"""Input: Path to new file and MS fasta file  
+   Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file
+   Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s)
+"""
 
 
 def MatchProtNames(PathToNewFile, MS_seqs)
@@ -90,10 +90,10 @@ def MatchProtNames(PathToNewFile, MS_seqs)
     
 ###------------ Generate Phosphopeptide Motifs ------------------###        
 
- """Input: Fasta file and Uniprot's proteome dictionary key: Protein accession value: protein sequence
-    Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file
-    Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s)
- """
+"""Input: Fasta file and Uniprot's proteome dictionary key: Protein accession value: protein sequence
+   Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file
+   Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s)
+"""
 
 
 def GeneratingKinaseMotifs(PathToFile, DictProtToSeq_UP):
