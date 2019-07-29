@@ -64,7 +64,7 @@ def YTSsequences(X_seqs):
 """
 
 
-def MatchProtNames(PathToNewFile, MS_seqs)
+def MatchProtNames(PathToNewFile, MS_seqs):
 #     FileHandle = open("./msresist/data/MS_seqs_matched.fa", "w+")
     FileHandle = open(PathToNewFile, "w+")
     # counter = 0
