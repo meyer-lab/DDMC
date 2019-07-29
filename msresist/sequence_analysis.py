@@ -92,70 +92,70 @@ def GenerateFastaFile(PathToFile, PN, X_seqs):
 """
 
 
-def GeneratingKinaseMotifs(PathToFile, DictProtToSeq_UP):
-    ExtSeqs = []
-    MS_names = []
-    for rec1 in SeqIO.parse(MS_seqs_matched, "fasta"):
-        MS_seq = str(rec1.seq)
-        MS_seqU = str(rec1.seq.upper())
-        MS_name = str(rec1.description.split(" OS")[0])
-        MS_names.append(MS_name)
-        try:
-            UP_seq = DictProtToSeq_UP[MS_name]
-            if MS_seqU in UP_seq and MS_name == list(DictProtToSeq_UP.keys())[list(DictProtToSeq_UP.values()).index(UP_seq)]:
-                counter += 1
-                regexPattern = re.compile(MS_seqU)
-                MatchObs = regexPattern.finditer(UP_seq)
-                indices = []
-                for i in MatchObs:
-                    indices.append(i.start())  # VHLENATEYAtLR   #YNIANtV
-                    indices.append(i.end())
-                if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeqs.append(UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6])
-
-                if "t" in MS_seq and "y" not in MS_seq and "s" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeqs.append(UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6])
-
-                if "s" in MS_seq and "y" not in MS_seq and "t" not in MS_seq:
-                    s_idx = MS_seq.index("s") + indices[0]
-                    ExtSeqs.append(UP_seq[s_idx - 5:s_idx] + "s" + UP_seq[s_idx + 1:s_idx + 6])
-
-                if "y" in MS_seq and "t" in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
-                    else:
-                        ExtSeqs.append(ExtSeq)
-
-                if "y" in MS_seq and "s" in MS_seq and "t" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "s" in MS_seq[y_idx - 5:y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
-                    else:
-                        ExtSeqs.append(ExtSeq)
-
-                if "t" in MS_seq and "s" in MS_seq and "y" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeq = UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6]
-                    t_idx = MS_seq.index("t")
-                    if "s" in MS_seq[t_idx - 5:t_idx + 6]:
-                        s_idx = MS_seq[t_idx - 5:t_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
-                    else:
-                        ExtSeqs.append(ExtSeq)
-        except BaseException:
-            print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
-            pass
-
-        return MS_names, ExtSeqs
+# def GeneratingKinaseMotifs(PathToFile, DictProtToSeq_UP):
+#    ExtSeqs = []
+#    MS_names = []
+#    for rec1 in SeqIO.parse(MS_seqs_matched, "fasta"):
+#        MS_seq = str(rec1.seq)
+#        MS_seqU = str(rec1.seq.upper())
+#        MS_name = str(rec1.description.split(" OS")[0])
+#        MS_names.append(MS_name)
+#        try:
+#            UP_seq = DictProtToSeq_UP[MS_name]
+#            if MS_seqU in UP_seq and MS_name == list(DictProtToSeq_UP.keys())[list(DictProtToSeq_UP.values()).index(UP_seq)]:
+#                counter += 1
+#                regexPattern = re.compile(MS_seqU)
+#                MatchObs = regexPattern.finditer(UP_seq)
+#                indices = []
+#                for i in MatchObs:
+#                    indices.append(i.start())  # VHLENATEYAtLR   #YNIANtV
+#                    indices.append(i.end())
+#                if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
+#                    y_idx = MS_seq.index("y") + indices[0]
+#                    ExtSeqs.append(UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6])
+#
+#                if "t" in MS_seq and "y" not in MS_seq and "s" not in MS_seq:
+#                    t_idx = MS_seq.index("t") + indices[0]
+#                    ExtSeqs.append(UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6])
+#
+#                if "s" in MS_seq and "y" not in MS_seq and "t" not in MS_seq:
+#                    s_idx = MS_seq.index("s") + indices[0]
+#                    ExtSeqs.append(UP_seq[s_idx - 5:s_idx] + "s" + UP_seq[s_idx + 1:s_idx + 6])
+#
+#                if "y" in MS_seq and "t" in MS_seq and "s" not in MS_seq:
+#                    y_idx = MS_seq.index("y") + indices[0]
+#                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
+#                    y_idx = MS_seq.index("y")
+#                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
+#                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
+#                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
+#                    else:
+#                        ExtSeqs.append(ExtSeq)
+#
+#                if "y" in MS_seq and "s" in MS_seq and "t" not in MS_seq:
+#                    y_idx = MS_seq.index("y") + indices[0]
+#                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
+#                    y_idx = MS_seq.index("y")
+#                    if "s" in MS_seq[y_idx - 5:y_idx + 6]:
+#                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
+#                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
+#                    else:
+#                        ExtSeqs.append(ExtSeq)
+#
+#                if "t" in MS_seq and "s" in MS_seq and "y" not in MS_seq:
+#                    t_idx = MS_seq.index("t") + indices[0]
+#                    ExtSeq = UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6]
+#                    t_idx = MS_seq.index("t")
+#                    if "s" in MS_seq[t_idx - 5:t_idx + 6]:
+#                        s_idx = MS_seq[t_idx - 5:t_idx + 6].index("s")
+#                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
+#                    else:
+#                        ExtSeqs.append(ExtSeq)
+#        except BaseException:
+#            print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
+#            pass
+#
+#        return MS_names, ExtSeqs
 
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
