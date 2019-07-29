@@ -9,14 +9,14 @@ import random
 def GenerateFastaFile(PathToFile, PN, X_seqs):
     FileHandle = open(PathToFile, "w+")
     for i in range(len(X_seqs)):
-        FileHandle.write('>'+ str(PN[i]))
+        FileHandle.write('>' + str(PN[i]))
         FileHandle.write("\n")
         FileHandle.write(str(X_seqs[i]))
         FileHandle.write("\n")
     FileHandle.close()
-    
 
-###------------ Dictionary to Check Motifs ------------------###        
+
+###------------ Dictionary to Check Motifs ------------------###
 
  """Input: Phosphopeptide sequences 
     Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
@@ -67,7 +67,7 @@ def YTSsequences(X_seqs):
 def MatchProtNames(PathToNewFile, MS_seqs)
 #     FileHandle = open("./msresist/data/MS_seqs_matched.fa", "w+")
     FileHandle = open(PathToNewFile, "w+")
-    #counter = 0
+    # counter = 0
     for rec1 in SeqIO.parse(MS_seqs, "fasta"):
         MS_seq = str(rec1.seq)
         MS_seqU = str(rec1.seq.upper())
@@ -79,7 +79,7 @@ def MatchProtNames(PathToNewFile, MS_seqs)
             FileHandle.write(MS_seq)
             FileHandle.write("\n")
         except:
-            #counter += 1
+            # counter += 1
             Fixed_name = getKeysByValue(DictProtToSeq_UP, MS_seqU)
             FileHandle.write(">" + Fixed_name[0])
             FileHandle.write("\n")

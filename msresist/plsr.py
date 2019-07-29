@@ -17,6 +17,7 @@ from sklearn.cluster import KMeans
 Note that the sklearn PLSRegression function already handles scaling
 '''
 
+
 def zscore_columns(matrix):
     matrix_z = np.zeros((matrix.shape[0], matrix.shape[1]))
     for a in range(matrix.shape[1]):
@@ -108,13 +109,13 @@ def MeanCenterAndFilter(X, header):
     Xf, Xf_protnames, Xf_seqs = [], [], []
     for idx, row in X.iterrows():
         m = np.mean(row[2:])
-        if any(value <= m/2 or value >= m*2 for value in row[2:]):
+        if any(value <= m / 2 or value >= m * 2 for value in row[2:]):
             centered = np.array(list(map(lambda x: x - m, row[2:])))
-            Xf.append(np.array(list(map(lambda x: sign(x)*(np.log10(abs(x)+1)), centered))))
+            Xf.append(np.array(list(map(lambda x: sign(x) * (np.log10(abs(x) + 1)), centered))))
             Xf_seqs.append(row[0])
-            Xf_protnames.append(row[1].split("OS")[0])    
-    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
-    Xf = pd.concat(frames, axis = 1)
+            Xf_protnames.append(row[1].split("OS")[0])
+    frames = [pd.DataFrame(Xf_seqs), pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
+    Xf = pd.concat(frames, axis=1)
     Xf.columns = header
     return Xf
 
@@ -125,13 +126,13 @@ def FoldChangeFilter(X, header):
         if any(value <= 0.5 or value >= 2 for value in row[2:]):
             Xf.append(np.array(list(map(lambda x: np.log(x), row[2:]))))
             Xf_seqs.append(row[0])
-            Xf_protnames.append(row[1].split("OS")[0])    
-    
-    frames = [pd.DataFrame(Xf_seqs),pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
-    Xf = pd.concat(frames, axis = 1)
+            Xf_protnames.append(row[1].split("OS")[0])
+
+    frames = [pd.DataFrame(Xf_seqs), pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
+    Xf = pd.concat(frames, axis=1)
     Xf.columns = header
     return Xf
-    
+
 
 ###------------ Computing Cluster Averages ------------------###
 
@@ -139,7 +140,7 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
     ClusterAvgs = []
-    ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10   
+    ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10
     DictClusterToMembers = {}
     for i in range(nClusters):
         CurrentCluster = []
@@ -161,8 +162,8 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide
                 avg = np.mean(arr)
                 CurrentAvgs.append(avg)
         CurrentKey = []
-        DictClusterToMembers[i+1] = (ClusterMembers)
-        DictClusterToMembers["Seqs_Cluster_" + str(i+1)] = ClusterSeqs
+        DictClusterToMembers[i + 1] = (ClusterMembers)
+        DictClusterToMembers["Seqs_Cluster_" + str(i + 1)] = ClusterSeqs
         ClusterAvgs_arr[i, :] = CurrentAvgs
         AvgsArr = np.transpose(ClusterAvgs_arr)
     return AvgsArr, DictClusterToMembers
@@ -173,14 +174,9 @@ def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide
 Exhaustive search over specified parameter values for an estimator
 '''
 
+
 def GridSearch_CV(model, X, Y, parameters, cv, scoring=None):
     grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring)
-    fit = grid.fit(X,Y)
+    fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     return CVresults_max
-
-
-
-
-
-    
