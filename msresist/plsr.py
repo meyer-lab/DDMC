@@ -4,7 +4,7 @@ from numpy import sign, log10, abs
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import GridSearchCV
@@ -61,7 +61,7 @@ def Q2Y_across_comp_manual(X_z, Y_z, max_comps, sublabel):
     Q2Ys = []
     for b in range(1, max_comps):
         plsr_model = PLSRegression(n_components=b)
-        for train_index, test_index in loo.split(X_z, Y_z):
+        for train_index, test_index in LeaveOneOut().split(X_z, Y_z):
             X_train, X_test = X_z[train_index], X_z[test_index]
             Y_train, Y_test = Y_z[train_index], Y_z[test_index]
             X_train = zscore_columns(X_train)
