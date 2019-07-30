@@ -1,4 +1,5 @@
 import scipy as sp
+from scipy.stats import zscore
 import numpy as np
 from numpy import sign, log10, abs
 import pandas as pd
@@ -16,14 +17,8 @@ Note that the sklearn PLSRegression function already handles scaling
 
 
 def zscore_columns(matrix):
-    matrix_z = np.zeros((matrix.shape[0], matrix.shape[1]))
-    for a in range(matrix.shape[1]):
-        column = []
-        column = matrix[:, a]
-        column_mean = np.mean(column)
-        column_std = np.std(column)
-        matrix_z[:, a] = np.asmatrix([(column - column_mean) / column_std])
-    return matrix_z
+    """ Z-score each column of the matrix. """
+    return zscore(matrix, axis=0)
 
 
 ###------------ Q2Y/R2Y ------------------###
@@ -102,33 +97,27 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 ###------------ Phosphopeptide Filter ------------------###
 
 
-def MeanCenterAndFilter(X, header):
-    Xf, Xf_protnames, Xf_seqs = [], [], []
-    for _, row in X.iterrows():
-        m = np.mean(row[2:])
-        if any(value <= m / 2 or value >= m * 2 for value in row[2:]):
-            centered = np.array(list(map(lambda x: x - m, row[2:])))
-            Xf.append(np.array(list(map(lambda x: sign(x) * (np.log10(abs(x) + 1)), centered))))
-            Xf_seqs.append(row[0])
-            Xf_protnames.append(row[1].split("OS")[0])
-    frames = [pd.DataFrame(Xf_seqs), pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
-    Xf = pd.concat(frames, axis=1)
-    Xf.columns = header
-    return Xf
+def MeanCenter(X, logT=False):
+    """ Mean centers each row of values. logT also optionally log2-transforms. """
+    if logT:
+        X.iloc[:, 2:] = np.log2(X.iloc[:, 2:].values)
+
+    X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
+    return X
 
 
-def FoldChangeFilter(X, header):
-    Xf, Xf_protnames, Xf_seqs = [], [], []
-    for _, row in X.iterrows():
-        if any(value <= 0.5 or value >= 2 for value in row[2:]):
-            Xf.append(np.array(list(map(lambda x: np.log(x), row[2:]))))
-            Xf_seqs.append(row[0])
-            Xf_protnames.append(row[1].split("OS")[0])
+def VarianceFilter(X, varCut=0.1):
+    """ Filter rows for those containing more than cutoff variance.
+    Note this should only be used with log-scaled, mean-centered data. """
+    Xidx = np.variance(X.iloc[:, 2:].values, axis=1) > varCut
+    return X.iloc[Xidx, :]
 
-    frames = [pd.DataFrame(Xf_seqs), pd.DataFrame(Xf_protnames), pd.DataFrame(Xf)]
-    Xf = pd.concat(frames, axis=1)
-    Xf.columns = header
-    return Xf
+
+def FoldChangeFilter(X):
+    """ Filter rows for those containing more than a two-fold change.
+    Note this should only be used with linear-scale data normalized to the control. """
+    Xidx = np.any(X.iloc[:, 2:].values <= 0.5, axis=1) | np.any(X.iloc[:, 2:].values >= 2.0, axis=1)
+    return X.iloc[Xidx, :]
 
 
 ###------------ Computing Cluster Averages ------------------###
