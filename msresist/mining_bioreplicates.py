@@ -25,6 +25,7 @@ def FormatSeq(X):
     X['peptide-phosphosite'] = ABC_seqs
     return X
 
+
 def MapOverlappingPeptides(ABC):
     """ Find what peptides show up only 1, 2, or 3 times across all three replicates. 
     Note that it's easier to create two independent files with each group to use aggfunc later. """
@@ -33,6 +34,7 @@ def MapOverlappingPeptides(ABC):
     print("total number of recurrences:", dups_counter)
     dups = pd.DataFrame(dups)
     return dups
+
 
 def BuildDupsMatrix(DupPeptides, ABC):
     """ Using the df of peptides (names and seqs) that show up in 2 replicates, 
@@ -54,6 +56,7 @@ def BuildDupsMatrix(DupPeptides, ABC):
             print(pepts)
     return pd.DataFrame(dupslist).reset_index(drop=True).iloc[:,1:]
 
+
 def BuildTripsMatrix(TripPeptides, ABC):
     """ Build matrix with all values across conditions for each peptide showing up in all 3 experients. """
     tripslist = []   #should be shape 492
@@ -71,6 +74,7 @@ def BuildTripsMatrix(TripPeptides, ABC):
             print("check this")
     return pd.DataFrame(tripslist).reset_index(drop=True).iloc[:,1:]
     
+    
 def DupsMeanAndRange(duplicates, t, header):
     """ Merge all duplicates by mean and range across conditions. Note this means the header
     is multilevel meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Reange). """
@@ -81,6 +85,7 @@ def DupsMeanAndRange(duplicates, t, header):
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
+
 def TripsMeanAndStd(triplicates, t, header):
     """ Merge all triplicates by mean and standard deviation across conditions. """
     func_tri = {}
@@ -89,6 +94,7 @@ def TripsMeanAndStd(triplicates, t, header):
     ABC_trips_avg = pd.pivot_table(triplicates, values = t, index = ['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc = func_tri)
     ABC_trips_avg = ABC_trips_avg.reset_index()[header]
     return ABC_trips_avg
+
 
 def FilterByRange(ABC_dups_avg, header):
     """ Iterates across the df and filters by range. """
@@ -113,6 +119,7 @@ def FilterByRange(ABC_dups_avg, header):
     dups_final = dups_final.sort_values(by = "Master Protein Descriptions")
     return dups_final
 
+
 def FilterByStdev(ABC_trips_avg, header):
     """ Iterates across the df and filters by standard deviation. """
     ABC_trips_avg = ABC_trips_avg.set_index(['Master Protein Descriptions', 'peptide-phosphosite'])
@@ -136,15 +143,13 @@ def FilterByStdev(ABC_trips_avg, header):
     trips_final = trips_final.sort_values(by = "Master Protein Descriptions")
     return trips_final
 
+
 def MergeDfbyMean(X, t):
     """ Compute mean across duplicates. """
     func = {}
     for i in t:
         func[i] = np.mean
-    ABC_avg = pd.pivot_table(ABC, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
-
-    dups2 = ABC_avg.pivot_table(index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size")  # Add assertion, size always 1. Substract shapes.
-    print("shape of averaged matrix:", ABC_avg.shape)
+    ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
     return ABC_avg
 
 

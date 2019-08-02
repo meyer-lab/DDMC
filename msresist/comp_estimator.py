@@ -40,36 +40,6 @@ def ComHyperPar(X, Y, ProtNames, peptide_phosphosite):
     for nn in range(2, 16):
         param_grid.append(dict(kmeans__n_clusters=[nn], plsr__n_components= list(np.arange(1, nn + 1))))
 
-#         param_grid = dict(
-#         kmeans__n_clusters=[2], plsr__n_components=[
-#             1, 2]), dict(
-#         kmeans__n_clusters=[3], plsr__n_components=np.arange(
-#             1, 4)), dict(
-#         kmeans__n_clusters=[4], plsr__n_components=np.arange(
-#             1, 5)), dict(
-#         kmeans__n_clusters=[5], plsr__n_components=np.arange(
-#             1, 6)), dict(
-#         kmeans__n_clusters=[6], plsr__n_components=np.arange(
-#             1, 7)), dict(
-#         kmeans__n_clusters=[7], plsr__n_components=np.arange(
-#             1, 8)), dict(
-#         kmeans__n_clusters=[8], plsr__n_components=np.arange(
-#             1, 9)), dict(
-#         kmeans__n_clusters=[9], plsr__n_components=np.arange(
-#             1, 10)), dict(
-#         kmeans__n_clusters=[10], plsr__n_components=np.arange(
-#             1, 11)), dict(
-#         kmeans__n_clusters=[11], plsr__n_components=np.arange(
-#             1, 12)), dict(
-#         kmeans__n_clusters=[12], plsr__n_components=np.arange(
-#             1, 13)), dict(
-#         kmeans__n_clusters=[13], plsr__n_components=np.arange(
-#             1, 14)), dict(
-#         kmeans__n_clusters=[14], plsr__n_components=np.arange(
-#             1, 15)), dict(
-#         kmeans__n_clusters=[15], plsr__n_components=np.arange(
-#             1, 16))
-
     grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring='neg_mean_squared_error')
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
