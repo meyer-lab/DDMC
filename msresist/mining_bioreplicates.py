@@ -67,7 +67,7 @@ def BuildTripsMatrix(TripPeptides, ABC):
         seq = pepts.iloc[:,1]
         if trip_name == "(blank)":
             continue
-        if len(pepts) == 3 and len(set(names)) == 1:
+        if len(pepts) >= 3 and len(set(names)) == 1:
             for i in range(len(pepts)):
                 tripslist.append(pepts.iloc[i, :])
         else:
