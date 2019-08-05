@@ -107,10 +107,10 @@ def MeanCenter(X, logT=False):
 
 
 def VarianceFilter(X, varCut=0.1):
-    """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide. 
+    """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut       #This uses booleans to determine if a peptides passes the filter "True" or not "False".
-    return X.iloc[Xidx, :]           #.iloc keeps only those peptide labeled as "True"
+    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  # This uses booleans to determine if a peptides passes the filter "True" or not "False".
+    return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
 def FoldChangeFilter(X):

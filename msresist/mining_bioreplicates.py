@@ -9,15 +9,15 @@ import matplotlib.pyplot as plt
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
     names = []
-    x = list(map(lambda  v : names.append(v.split("OS")[0]), X.iloc[:,1]))
-    return names 
+    x = list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
+    return names
 
 
 def FormatSeq(X):
-    """ Found out the first letter of the seq gave problems while grouping by seq so I'm deleting it 
+    """ Found out the first letter of the seq gave problems while grouping by seq so I'm deleting it
     whenever is not a pY as well as the final -1/-2"""
     ABC_seqs = []
-    for seq in list(X.iloc[:,0]):
+    for seq in list(X.iloc[:, 0]):
         if seq[0] == "y" and "y" not in seq[1:]:
             ABC_seqs.append(seq.split("-")[0])
         else:
@@ -27,25 +27,25 @@ def FormatSeq(X):
 
 
 def MapOverlappingPeptides(ABC):
-    """ Find what peptides show up only 1, 2, or 3 times across all three replicates. 
+    """ Find what peptides show up only 1, 2, or 3 times across all three replicates.
     Note that it's easier to create two independent files with each group to use aggfunc later. """
-    dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc = "size").sort_values()
-    dups_counter = {i:list(dups).count(i) for i in list(dups)}
+    dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
+    dups_counter = {i: list(dups).count(i) for i in list(dups)}
     print("total number of recurrences:", dups_counter)
     dups = pd.DataFrame(dups)
     return dups
 
 
 def BuildDupsMatrix(DupPeptides, ABC):
-    """ Using the df of peptides (names and seqs) that show up in 2 replicates, 
-    build a matrix with all values across conditions for each peptide. Note 1: Nothing 
-    should go to the else statement. Note 2: there may be peptides labeled as '(blank)' 
+    """ Using the df of peptides (names and seqs) that show up in 2 replicates,
+    build a matrix with all values across conditions for each peptide. Note 1: Nothing
+    should go to the else statement. Note 2: there may be peptides labeled as '(blank)'
     which also show up in a different row correctly labeled. """
-    dupslist = []   #should be shape 492
-    for idx, dupseq in enumerate(DupPeptides.iloc[:,1]):
-        dup_name = DupPeptides.iloc[idx,0]
-        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop = False).loc[dupseq, dup_name]
-        names = pepts.iloc[:,2]
+    dupslist = []  # should be shape 492
+    for idx, dupseq in enumerate(DupPeptides.iloc[:, 1]):
+        dup_name = DupPeptides.iloc[idx, 0]
+        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop=False).loc[dupseq, dup_name]
+        names = pepts.iloc[:, 2]
         if dup_name == "(blank)":
             continue
         elif len(pepts) == 2 and len(set(names)) == 1:
@@ -54,17 +54,17 @@ def BuildDupsMatrix(DupPeptides, ABC):
         else:
             print("check this")
             print(pepts)
-    return pd.DataFrame(dupslist).reset_index(drop=True).iloc[:,1:]
+    return pd.DataFrame(dupslist).reset_index(drop=True).iloc[:, 1:]
 
 
 def BuildTripsMatrix(TripPeptides, ABC):
     """ Build matrix with all values across conditions for each peptide showing up in all 3 experients. """
-    tripslist = []   #should be shape 492
-    for idx, tripseq in enumerate(TripPeptides.iloc[:,1]):
-        trip_name = TripPeptides.iloc[idx,0]
-        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop = False).loc[tripseq, trip_name]
-        names = pepts.iloc[:,2]
-        seq = pepts.iloc[:,1]
+    tripslist = []  # should be shape 492
+    for idx, tripseq in enumerate(TripPeptides.iloc[:, 1]):
+        trip_name = TripPeptides.iloc[idx, 0]
+        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop=False).loc[tripseq, trip_name]
+        names = pepts.iloc[:, 2]
+        seq = pepts.iloc[:, 1]
         if trip_name == "(blank)":
             continue
         if len(pepts) >= 3 and len(set(names)) == 1:
@@ -72,16 +72,16 @@ def BuildTripsMatrix(TripPeptides, ABC):
                 tripslist.append(pepts.iloc[i, :])
         else:
             print("check this")
-    return pd.DataFrame(tripslist).reset_index(drop=True).iloc[:,1:]
-    
-    
+    return pd.DataFrame(tripslist).reset_index(drop=True).iloc[:, 1:]
+
+
 def DupsMeanAndRange(duplicates, t, header):
     """ Merge all duplicates by mean and range across conditions. Note this means the header
     is multilevel meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Reange). """
     func_dup = {}
     for i in t:
-        func_dup[i] = np.mean, np.ptp #np.corrcoef
-    ABC_dups_avg = pd.pivot_table(duplicates, values = t, index = ['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc = func_dup)
+        func_dup[i] = np.mean, np.ptp  # np.corrcoef
+    ABC_dups_avg = pd.pivot_table(duplicates, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
@@ -91,7 +91,7 @@ def TripsMeanAndStd(triplicates, t, header):
     func_tri = {}
     for i in t:
         func_tri[i] = np.mean, np.std
-    ABC_trips_avg = pd.pivot_table(triplicates, values = t, index = ['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc = func_tri)
+    ABC_trips_avg = pd.pivot_table(triplicates, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_tri)
     ABC_trips_avg = ABC_trips_avg.reset_index()[header]
     return ABC_trips_avg
 
@@ -101,22 +101,22 @@ def FilterByRange(ABC_dups_avg, header):
     ABC_dups_avg = ABC_dups_avg.set_index(['Master Protein Descriptions', 'peptide-phosphosite'])
     dups_final, protnames, seqs = [], [], []
     for i in range(ABC_dups_avg.shape[0]):
-        ptp = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1)=='ptp']
-        mean = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1)=='mean']
+        ptp = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1) == 'ptp']
+        mean = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1) == 'mean']
         seq = ABC_dups_avg.index[i][1]
         name = ABC_dups_avg.index[i][0]
         if all(v <= 0.6 for v in ptp):
             dups_final.append(mean)
             seqs.append(seq)
             protnames.append(name)
-    
-    #Concatenate lists into a pandas df
-    dups_final = pd.DataFrame(dups_final).reset_index().iloc[:,1:]
 
-    frames = [pd.DataFrame(seqs),pd.DataFrame(protnames), dups_final]
-    dups_final = pd.concat(frames, axis = 1)
+    # Concatenate lists into a pandas df
+    dups_final = pd.DataFrame(dups_final).reset_index().iloc[:, 1:]
+
+    frames = [pd.DataFrame(seqs), pd.DataFrame(protnames), dups_final]
+    dups_final = pd.concat(frames, axis=1)
     dups_final.columns = header
-    dups_final = dups_final.sort_values(by = "Master Protein Descriptions")
+    dups_final = dups_final.sort_values(by="Master Protein Descriptions")
     return dups_final
 
 
@@ -125,8 +125,8 @@ def FilterByStdev(ABC_trips_avg, header):
     ABC_trips_avg = ABC_trips_avg.set_index(['Master Protein Descriptions', 'peptide-phosphosite'])
     trips_final, protnames, seqs = [], [], []
     for i in range(ABC_trips_avg.shape[0]):
-        std = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1)=='std']
-        mean = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1)=='mean']
+        std = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1) == 'std']
+        mean = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1) == 'mean']
         seq = ABC_trips_avg.index[i][1]
         name = ABC_trips_avg.index[i][0]
         if all(v <= 0.3 for v in std):
@@ -134,13 +134,13 @@ def FilterByStdev(ABC_trips_avg, header):
             seqs.append(seq)
             protnames.append(name)
 
-    #Concatenate lists into a pandas df
-    trips_final = pd.DataFrame(trips_final).reset_index().iloc[:,1:]
+    # Concatenate lists into a pandas df
+    trips_final = pd.DataFrame(trips_final).reset_index().iloc[:, 1:]
 
-    frames = [pd.DataFrame(seqs),pd.DataFrame(protnames), trips_final]
-    trips_final = pd.concat(frames, axis = 1)
+    frames = [pd.DataFrame(seqs), pd.DataFrame(protnames), trips_final]
+    trips_final = pd.concat(frames, axis=1)
     trips_final.columns = header
-    trips_final = trips_final.sort_values(by = "Master Protein Descriptions")
+    trips_final = trips_final.sort_values(by="Master Protein Descriptions")
     return trips_final
 
 
@@ -151,7 +151,6 @@ def MergeDfbyMean(X, t):
         func[i] = np.mean
     ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
     return ABC_avg
-
 
 
 ###-------------------------------------- Plotting Raw Data --------------------------------------###
