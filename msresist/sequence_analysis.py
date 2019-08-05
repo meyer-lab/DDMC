@@ -158,7 +158,7 @@ def YTSsequences(X_seqs):
        Input: Phosphopeptide sequences.
        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
        Useful to check def GeneratingKinaseMotifs results. """
-    YTSsequences = {}
+    DictProtNameToPhospho = {}
     seq1 , seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
     for i, seq in enumerate(X_seqs):
         if "y" in seq and "t" not in seq and "s" not in seq:
