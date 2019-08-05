@@ -17,7 +17,7 @@ def GenerateFastaFile(PathToFile, PN, X_seqs):
         FileHandle.write(str(X_seqs[i]))
         FileHandle.write("\n")
     FileHandle.close()
-    
+
 
 def DictProtNameToSeq(X):
     """ Goal: Generate dictionary key: protein name | val: sequence of Uniprot's proteome or any
@@ -30,19 +30,20 @@ def DictProtNameToSeq(X):
         UP_name = rec2.description.split("HUMAN ")[1].split(" OS")[0]
         DictProtToSeq_UP[UP_name] = str(UP_seq)
     return DictProtToSeq_UP
-        
+
+
 def getKeysByValue(dictOfElements, valueToFind):
     """ Goal: Find the key of a given value within a dictionary.
     Input: Dicitonary and value
     Output: Key of interest"""
     listOfKeys = list()
     listOfItems = dictOfElements.items()
-    for item  in listOfItems:
+    for item in listOfItems:
         if valueToFind in item[1]:
             listOfKeys.append(item[0])
     return listOfKeys
 
-    
+
 def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
     """ Goal: Match protein accession names of MS and Uniprot's proteome.
     Input: Path to new file and MS fasta file
@@ -60,7 +61,7 @@ def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
             FileHandle.write("\n")
             FileHandle.write(MS_seq)
             FileHandle.write("\n")
-        except:
+        except BaseException:
             # counter += 1
             Fixed_name = getKeysByValue(DictProtToSeq_UP, MS_seqU)
             FileHandle.write(">" + Fixed_name[0])
@@ -71,7 +72,7 @@ def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
 
 
 def GeneratingKinaseMotifs(MS_seqs_matched, DictProtToSeq_UP):
-    """ Goal: Generate Phosphopeptide motifs. 
+    """ Goal: Generate Phosphopeptide motifs.
     Input: Fasta file and Uniprot's proteome dictionary key: Protein accession value: protein sequence
     Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file.
     Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
@@ -151,15 +152,15 @@ def GeneratingKinaseMotifs(MS_seqs_matched, DictProtToSeq_UP):
             pass
     print(counter)
     return MS_names, ExtSeqs
-    
-    
+
+
 def YTSsequences(X_seqs):
     """Goal: Generate dictionary to Check Motifs
        Input: Phosphopeptide sequences.
        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
        Useful to check def GeneratingKinaseMotifs results. """
     DictProtNameToPhospho = {}
-    seq1 , seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
+    seq1, seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
     for i, seq in enumerate(X_seqs):
         if "y" in seq and "t" not in seq and "s" not in seq:
             seq1.append(seq)
@@ -185,7 +186,7 @@ def YTSsequences(X_seqs):
     DictProtNameToPhospho["y/s: "] = seq5
     DictProtNameToPhospho["t/s: "] = seq6
 
-    return pd.DataFrame(dict([ (k, pd.Series(v)) for k,v in DictProtNameToPhospho.items() ]))
+    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in DictProtNameToPhospho.items()]))
 
 # Code from Adam Weiner, obtained March 2019
 
