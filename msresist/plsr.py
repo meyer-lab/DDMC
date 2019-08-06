@@ -1,7 +1,6 @@
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
-from numpy import sign, log10, abs
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
@@ -93,32 +92,6 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
     else:
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
         axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
-
-###------------ Phosphopeptide Filter ------------------###
-
-
-def MeanCenter(X, logT=False):
-    """ Mean centers each row of values. logT also optionally log2-transforms. """
-    if logT:
-        X.iloc[:, 2:] = np.log2(X.iloc[:, 2:].values)
-
-    X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
-    return X
-
-
-def VarianceFilter(X, varCut=0.1):
-    """ Filter rows for those containing more than cutoff variance.
-    Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.variance(X.iloc[:, 2:].values, axis=1) > varCut
-    return X.iloc[Xidx, :]
-
-
-def FoldChangeFilter(X):
-    """ Filter rows for those containing more than a two-fold change.
-    Note this should only be used with linear-scale data normalized to the control. """
-    Xidx = np.any(X.iloc[:, 2:].values <= 0.5, axis=1) | np.any(X.iloc[:, 2:].values >= 2.0, axis=1)
-    return X.iloc[Xidx, :]
-
 
 ###------------ Computing Cluster Averages ------------------###
 
