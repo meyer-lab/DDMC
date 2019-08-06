@@ -4,22 +4,13 @@ from msresist.plsr import ClusterAverages
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import explained_variance_score, r2_score
-from sklearn.utils import check_consistent_length
 from sklearn.model_selection import GridSearchCV
-from sklearn.utils.validation import check_is_fitted, check_array
 
 
 ###------------ Creating Own Estimators ------------------###
-'''
-Unresolved issues / questions:
-    - score error: non-broadcastable output operand with shape (9,1) doesn't match the broadcast shape (9,2)
-'''
-
 
 class kmeansPLSR(BaseEstimator):
-
+    """ Currently not working, pipelined model in comp_estimator file """
     def __init__(self, n_clusters, n_components, ProtNames, peptide_phosphosite):
         self.n_clusters = n_clusters
         self.n_components = n_components
