@@ -3,9 +3,7 @@ import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import cross_val_predict, GridSearchCV, ParameterGrid
-from sklearn.metrics import explained_variance_score, r2_score
-from sklearn.utils import check_consistent_length
+from sklearn.model_selection import GridSearchCV
 from .plsr import ClusterAverages
 from sklearn.pipeline import Pipeline
 
@@ -35,10 +33,10 @@ class MyOwnKMEANS(BaseEstimator):
 def ComHyperPar(X, Y, ProtNames, peptide_phosphosite):
     estimators = [('kmeans', MyOwnKMEANS(5, ProtNames, peptide_phosphosite)), ('plsr', PLSRegression(2))]
     pipe = Pipeline(estimators)
-    param_grid = []
 
+    param_grid = []
     for nn in range(2, 16):
-        param_grid.append(dict(n_clusters=[nn], n_components=np.arange(1, nn + 1)))
+        param_grid.append(dict(kmeans__n_clusters=[nn], plsr__n_components=list(np.arange(1, nn + 1))))
 
     grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring='neg_mean_squared_error')
     fit = grid.fit(X, Y)
