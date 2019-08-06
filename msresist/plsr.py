@@ -94,32 +94,6 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
         axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
 
-###------------ Phosphopeptide Filter ------------------###
-
-
-def MeanCenter(X, logT=False):
-    """ Mean centers each row of values. logT also optionally log2-transforms. """
-    if logT:
-        X.iloc[:, 2:] = np.log2(X.iloc[:, 2:].values)
-
-    X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
-    return X
-
-
-def VarianceFilter(X, varCut=0.1):
-    """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
-    Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  # This uses booleans to determine if a peptides passes the filter "True" or not "False".
-    return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
-
-
-def FoldChangeFilter(X):
-    """ Filter rows for those containing more than a two-fold change.
-    Note this should only be used with linear-scale data normalized to the control. """
-    Xidx = np.any(X.iloc[:, 2:].values <= 0.5, axis=1) | np.any(X.iloc[:, 2:].values >= 2.0, axis=1)
-    return X.iloc[Xidx, :]
-
-
 ###------------ Computing Cluster Averages ------------------###
 
 def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
