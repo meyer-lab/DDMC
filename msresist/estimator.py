@@ -4,11 +4,7 @@ from msresist.plsr import ClusterAverages
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import explained_variance_score, r2_score
-from sklearn.utils import check_consistent_length
 from sklearn.model_selection import GridSearchCV
-from sklearn.utils.validation import check_is_fitted, check_array
 
 
 ###------------ Creating Own Estimators ------------------###
