@@ -6,8 +6,9 @@ from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, logT=False):
+def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, log2T=False):
     ABC_mc = pd.concat([A_r, B_r, C_r])
+    ABC_mc.iloc[:, 2:] = np.log2(ABC_mc.iloc[:, 2:]) 
     ABC_mc = MeanCenter(ABC_mc, logT=False)
     
     if motifs:
@@ -22,19 +23,22 @@ def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, logT=
         ABC_seqs = FormatSeq(ABC_mc)
 
         directory = "./msresist/data/Sequence_analysis/"
-        _, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
+        names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_mc['peptide-phosphosite'] = motifs
+        ABC_mc['Master Protein Descriptions'] = names
     
-    ABC_mc = MergeDfbyMean(ABC_mc, treatments)
-    ABC_mc = ABC_mc.reset_index()[A_r.columns]
-    ABC_mc = FoldChangeToControl(ABC_mc, logT=True)
-
+    
+    ABC_merged = MergeDfbyMean(ABC_mc, treatments)
+    ABC_merged = ABC_merged.reset_index()[A_r.columns]
+    ABC_merged = LinearScale(ABC_merged)
+    ABC_mc = FoldChangeToControl(ABC_merged)
+    
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
         
-    if logT:
-        ABC_mc.iloc[:, 2:] = np.sign(ABC_mc.iloc[:,2:]).multiply(np.log2(abs(ABC_mc.iloc[:,2:])), axis = 0)   #Model not predictive with this transformation
-
+    if log2T:
+        ABC_mc = Log2T(ABC_mc)
+     
     return ABC_mc
 
 
@@ -46,9 +50,19 @@ def MergeDfbyMean(X, t):
     ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
     return ABC_avg
 
+def LinearScale(X):
+    """ Convert to linear scale from log2 scale. """
+    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:])
+    return X
 
-def FoldChangeToControl(X, logT=False):
-    """ Convert to fold-change to control """
+def Log2T(X):
+    """ Convert to log2 scale keeping original sing. """    
+    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0) 
+    return X
+    
+    
+def FoldChangeToControl(X):
+    """ Convert to fold-change to control. """
     X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
     return X
 
