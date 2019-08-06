@@ -3,9 +3,7 @@ import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import cross_val_predict, GridSearchCV, ParameterGrid
-from sklearn.metrics import explained_variance_score, r2_score
-from sklearn.utils import check_consistent_length
+from sklearn.model_selection import GridSearchCV
 from .plsr import ClusterAverages
 from sklearn.pipeline import Pipeline
 
