@@ -54,7 +54,7 @@ def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
         MS_seqU = str(rec1.seq.upper())
         MS_name = str(rec1.description.split(" OS")[0])
         try:
-            UP_seq = DictProtToSeq_UP[MS_name]
+            UP_seq = ProteomeDict[MS_name]
             FileHandle.write(">" + MS_name)
             FileHandle.write("\n")
             FileHandle.write(MS_seq)
