@@ -8,19 +8,18 @@ import re
 
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
-
-def GenerateFastaFile(PathToFile, PN, X_seqs):
+def GenerateFastaFile(PathToFaFile, MS_names, MS_seqs):
     """ Sequence processor. """
-    FileHandle = open(PathToFile, "w+")
-    for i in range(len(X_seqs)):
-        FileHandle.write('>' + str(PN[i]))
+    FileHandle = open(PathToFaFile, "w+")
+    for i in range(len(MS_seqs)):
+        FileHandle.write('>' + str(MS_names[i]))
         FileHandle.write("\n")
-        FileHandle.write(str(X_seqs[i]))
+        FileHandle.write(str(MS_seqs[i]))
         FileHandle.write("\n")
     FileHandle.close()
 
 
-def DictProtNameToSeq(X):
+def DictProteomeNameToSeq(X):
     """ Goal: Generate dictionary key: protein name | val: sequence of Uniprot's proteome or any
     large data set where looping is not efficient.
     Input: fasta file.
@@ -45,14 +44,12 @@ def getKeysByValue(dictOfElements, valueToFind):
     return listOfKeys
 
 
-def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
+def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
     """ Goal: Match protein accession names of MS and Uniprot's proteome.
     Input: Path to new file and MS fasta file
     Output: Fasta file with matching protein accessions. """
-#     FileHandle = open("./msresist/data/MS_seqs_matched.fa", "w+")
-    FileHandle = open(PathToNewFile, "w+")
-   # counter = 0
-    for rec1 in SeqIO.parse(MS_seqs, "fasta"):
+    FileHandle = open(PathToMatchedFaFile, "w+")
+    for rec1 in SeqIO.parse(FaFile, "fasta"):
         MS_seq = str(rec1.seq)
         MS_seqU = str(rec1.seq.upper())
         MS_name = str(rec1.description.split(" OS")[0])
@@ -63,8 +60,7 @@ def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
             FileHandle.write(MS_seq)
             FileHandle.write("\n")
         except BaseException:
-            # counter += 1
-            Fixed_name = getKeysByValue(DictProtToSeq_UP, MS_seqU)
+            Fixed_name = getKeysByValue(ProteomeDict, MS_seqU)
             FileHandle.write(">" + Fixed_name[0])
             FileHandle.write("\n")
             FileHandle.write(MS_seq)
@@ -72,21 +68,28 @@ def MatchProtNames(PathToNewFile, MS_seqs, DictProtToSeq_UP):
     FileHandle.close()
 
 
-def GeneratingKinaseMotifs(MS_seqs_matched, DictProtToSeq_UP):
+def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile, PathToProteome):
     """ Goal: Generate Phosphopeptide motifs.
-    Input: Fasta file and Uniprot's proteome dictionary key: Protein accession value: protein sequence
+    Input: Directory paths to fasta file, fasta file with matched names, and proteome
     Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file.
     Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
     counter = 0
-    ExtSeqs = []
-    MS_names = []
-    for rec1 in SeqIO.parse(MS_seqs_matched, "fasta"):
+    GenerateFastaFile(PathToFaFile, MS_names, MS_seqs)
+    FaFile = open(PathToFaFile, 'r')
+    proteome = open(PathToProteome, 'r')
+    ProteomeDict = DictProteomeNameToSeq(proteome)
+    MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict)
+    os.remove(PathToFaFile)
+    
+    MatchedFaFile = open(PathToMatchedFaFile, 'r')
+    MS_names, ExtSeqs = [] ,[]
+    for rec1 in SeqIO.parse(MatchedFaFile, "fasta"):
         MS_seq = str(rec1.seq)
         MS_seqU = str(rec1.seq.upper())
         MS_name = str(rec1.description)
         try:
-            UP_seq = DictProtToSeq_UP[MS_name]
-            if MS_seqU in UP_seq and MS_name == list(DictProtToSeq_UP.keys())[list(DictProtToSeq_UP.values()).index(str(UP_seq))]:
+            UP_seq = ProteomeDict[MS_name]
+            if MS_seqU in UP_seq and MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))]:
                 counter += 1
                 regexPattern = re.compile(MS_seqU)
                 MatchObs = regexPattern.finditer(UP_seq)
@@ -151,43 +154,46 @@ def GeneratingKinaseMotifs(MS_seqs_matched, DictProtToSeq_UP):
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
             pass
-    print(counter)
-    return MS_names, ExtSeqs
-
+    
+    os.remove(PathToMatchedFaFile)
+    proteome.close()
+    assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides")
+    return MS_names, ExtSeqs     
+    
 
 def YTSsequences(X_seqs):
     """Goal: Generate dictionary to Check Motifs
        Input: Phosphopeptide sequences.
        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
        Useful to check def GeneratingKinaseMotifs results. """
-    DictProtNameToPhospho = {}
+    YTSsequences = {}
     seq1, seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
     for i, seq in enumerate(X_seqs):
         if "y" in seq and "t" not in seq and "s" not in seq:
             seq1.append(seq)
         if "t" in seq and "y" not in seq and "s" not in seq:
             seq2.append(seq)
-            DictProtNameToPhospho["t: "] = seq2
+            YTSsequences["t: "] = seq2
         if "s" in seq and "y" not in seq and "t" not in seq:
             seq3.append(seq)
-            DictProtNameToPhospho["s: "] = seq3
+            YTSsequences["s: "] = seq3
         if "y" in seq and "t" in seq and "s" not in seq:
             seq4.append(seq)
-            DictProtNameToPhospho["y/t: "] = seq4
+            YTSsequences["y/t: "] = seq4
         if "y" in seq and "s" in seq and "t" not in seq:
             seq5.append(seq)
-            DictProtNameToPhospho["y/s: "] = seq5
+            YTSsequences["y/s: "] = seq5
         if "t" in seq and "s" in seq and "y" not in seq:
             seq6.append(seq)
 
-    DictProtNameToPhospho["y: "] = seq1
-    DictProtNameToPhospho["t: "] = seq2
-    DictProtNameToPhospho["s: "] = seq3
-    DictProtNameToPhospho["y/t: "] = seq4
-    DictProtNameToPhospho["y/s: "] = seq5
-    DictProtNameToPhospho["t/s: "] = seq6
+    YTSsequences["y: "] = seq1
+    YTSsequences["t: "] = seq2
+    YTSsequences["s: "] = seq3
+    YTSsequences["y/t: "] = seq4
+    YTSsequences["y/s: "] = seq5
+    YTSsequences["t/s: "] = seq6
 
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in DictProtNameToPhospho.items()]))
+    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSsequences.items()]))
 
 # Code from Adam Weiner, obtained March 2019
 
