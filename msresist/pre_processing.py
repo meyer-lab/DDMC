@@ -1,9 +1,78 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 
-###-------------------------------------- Merging Mass Spec Experiments - Biological Replicates --------------------------------------###
+###-------------------------- Pre-processing Raw Data --------------------------###
+
+def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, logT=False):
+    ABC_mc = pd.concat([A_r, B_r, C_r])
+    ABC_mc = MeanCenter(ABC_mc, logT=False)
+    
+    if motifs:
+        #Temporary: deleting peptides breaking the code
+        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sEQLkPLktYVDPHTYEDPNQAVLk-1']
+        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYVDPHTYEDPNQAVLk-1']
+        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYELLNcDk-1']
+        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sLYHDISGDTSGDYRk-1']
+        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sYDVPPPPMEPDHPFYSNISk-1']
+        
+        ABC_names = FormatName(ABC_mc)
+        ABC_seqs = FormatSeq(ABC_mc)
+
+        directory = "./msresist/data/Sequence_analysis/"
+        _, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
+        ABC_mc['peptide-phosphosite'] = motifs
+    
+    ABC_mc = MergeDfbyMean(ABC_mc, treatments)
+    ABC_mc = ABC_mc.reset_index()[A_r.columns]
+    ABC_mc = FoldChangeToControl(ABC_mc, logT=True)
+
+    if FCfilter:
+        ABC_mc = FoldChangeFilter(ABC_mc)
+        
+    if logT:
+        ABC_mc.iloc[:, 2:] = np.sign(ABC_mc.iloc[:,2:]).multiply(np.log2(abs(ABC_mc.iloc[:,2:])), axis = 0)   #Model not predictive with this transformation
+
+    return ABC_mc
+
+
+def MergeDfbyMean(X, t):
+    """ Compute mean across duplicates. """
+    func = {}
+    for i in t:
+        func[i] = np.mean
+    ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
+    return ABC_avg
+
+
+def FoldChangeToControl(X, logT=False):
+    """ Convert to fold-change to control """
+    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
+    return X
+
+def MeanCenter(X, logT=False):
+    """ Mean centers each row of values. logT also optionally log2-transforms. """
+    if logT:
+        X.iloc[:, 2:] = np.log2(X.iloc[:, 2:].values)
+
+    X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
+    return X
+
+
+def VarianceFilter(X, varCut=0.1):
+    """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
+    Note this should only be used with log-scaled, mean-centered data. """
+    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  # This uses booleans to determine if a peptides passes the filter "True" or not "False".
+    return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
+
+
+def FoldChangeFilter(X):
+    """ Filter rows for those containing more than a two-fold change.
+    Note this should only be used with linear-scale data normalized to the control. """
+    Xidx = np.any(X.iloc[:, 2:].values <= 0.5, axis=1) | np.any(X.iloc[:, 2:].values >= 2.0, axis=1)
+    return X.iloc[Xidx, :]
 
 
 def FormatName(X):
@@ -16,14 +85,13 @@ def FormatName(X):
 def FormatSeq(X):
     """ Found out the first letter of the seq gave problems while grouping by seq so I'm deleting it
     whenever is not a pY as well as the final -1/-2"""
-    ABC_seqs = []
+    seqs = []
     for seq in list(X.iloc[:, 0]):
-        if seq[0] == "y" and "y" not in seq[1:]:
-            ABC_seqs.append(seq.split("-")[0])
+        if seq[0] != "y":
+            seqs.append(seq[1:].split("-")[0])
         else:
-            ABC_seqs.append(seq[1:].split("-")[0])
-    X['peptide-phosphosite'] = ABC_seqs
-    return X
+            seqs.append(seq.split("-")[0])
+    return seqs
 
 
 def MapOverlappingPeptides(ABC):
@@ -142,15 +210,6 @@ def FilterByStdev(ABC_trips_avg, header):
     trips_final.columns = header
     trips_final = trips_final.sort_values(by="Master Protein Descriptions")
     return trips_final
-
-
-def MergeDfbyMean(X, t):
-    """ Compute mean across duplicates. """
-    func = {}
-    for i in t:
-        func[i] = np.mean
-    ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
-    return ABC_avg
 
 
 ###-------------------------------------- Plotting Raw Data --------------------------------------###
