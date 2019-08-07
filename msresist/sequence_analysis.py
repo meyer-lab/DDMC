@@ -93,7 +93,7 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                 MatchObs = regexPattern.finditer(UP_seq)
                 indices = []
                 for i in MatchObs:
-                    indices.append(i.start())  # VHLENATEYAtLR   #YNIANtV
+                    indices.append(i.start())  
                     indices.append(i.end())
                 if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
@@ -155,10 +155,15 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
     
     os.remove(PathToMatchedFaFile)
     proteome.close()
-    assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides")
+    assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
     return MS_names, ExtSeqs     
     
-
+    
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYVDPHTYEDPNQAVLk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYELLNcDk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sLYHDISGDTSGDYRk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sYDVPPPPMEPDHPFYSNISk-1']
+    
 def YTSsequences(X_seqs):
     """Goal: Generate dictionary to Check Motifs
        Input: Phosphopeptide sequences.
