@@ -6,18 +6,17 @@ from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, log2T=False):
-    ABC_mc = pd.concat([A_r, B_r, C_r])
-    ABC_mc.iloc[:, 2:] = np.log2(ABC_mc.iloc[:, 2:]) 
-    ABC_mc = MeanCenter(ABC_mc, logT=False)
+def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, Vfilter=False, log2T=False):
+    ABC = pd.concat([A_r, B_r, C_r])
+    ABC_log = Log2T(ABC)
+    ABC_mc = MeanCenter(ABC_log, logT=False)
     
     if motifs:
         #Temporary: deleting peptides breaking the code
-        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sEQLkPLktYVDPHTYEDPNQAVLk-1']
-        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYVDPHTYEDPNQAVLk-1']
-        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYELLNcDk-1']
-        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sLYHDISGDTSGDYRk-1']
-        ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sYDVPPPPMEPDHPFYSNISk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYVDPHTYEDPNQAVLk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYELLNcDk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sLYHDISGDTSGDYRk-1']
+#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sYDVPPPPMEPDHPFYSNISk-1']
         
         ABC_names = FormatName(ABC_mc)
         ABC_seqs = FormatSeq(ABC_mc)
@@ -35,6 +34,20 @@ def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, log2T
     
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
+        
+    if Vfilter:
+        ABC = FoldChangeToControl(ABC)
+        RangePeptides, StdPeptides = MapOverlappingPeptides(ABC)
+        
+        RangePeptides = BuildDupsMatrix(RangePeptides, ABC)
+        DupsTable = DupsMeanAndRange(RangePeptides, A_r.columns[2:], A_r.columns)
+        DupsTable = FilterByRange(DupsTable, header)
+        
+        StdPeptides = BuildTripsMatrix(StdPeptides, ABC)
+        TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns[2:], A_r.columns)
+        TripsTable = FilterByStdev(TripsTable, A_r.columns)
+        
+        ABC_mc = pd.concat([DupsTable, TripsTable])
         
     if log2T:
         ABC_mc = Log2T(ABC_mc)
@@ -78,7 +91,7 @@ def MeanCenter(X, logT=False):
 def VarianceFilter(X, varCut=0.1):
     """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  # This uses booleans to determine if a peptides passes the filter "True" or not "False".
+    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
@@ -101,11 +114,14 @@ def FormatSeq(X):
     whenever is not a pY as well as the final -1/-2"""
     seqs = []
     for seq in list(X.iloc[:, 0]):
-        if seq[0] != "y":
-            seqs.append(seq[1:].split("-")[0])
-        else:
+        if seq[0] == "y" or seq[0] == "t" or seq[0] == "s":
             seqs.append(seq.split("-")[0])
+        else:
+            seqs.append(seq[1:].split("-")[0])
     return seqs
+
+
+###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
 
 def MapOverlappingPeptides(ABC):
@@ -113,9 +129,14 @@ def MapOverlappingPeptides(ABC):
     Note that it's easier to create two independent files with each group to use aggfunc later. """
     dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
     dups_counter = {i: list(dups).count(i) for i in list(dups)}
-    print("total number of recurrences:", dups_counter)
-    dups = pd.DataFrame(dups)
-    return dups
+    dups = pd.DataFrame(dups).reset_index()
+    dups.columns = [ABC.columns[0], ABC.columns[1], "Recs"]
+    display(dups)
+    RangePeptides = dups[dups["Recs"] == 2]
+    StdPeptides = dups[dups["Recs"] >= 3]
+    display(RangePeptides.iloc[:5, :])
+    display(StdPeptides.iloc[:5, :])
+    return RangePeptides, StdPeptides
 
 
 def BuildDupsMatrix(DupPeptides, ABC):
