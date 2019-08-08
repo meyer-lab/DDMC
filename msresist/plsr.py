@@ -1,3 +1,5 @@
+"PLSR functions"
+
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
@@ -21,12 +23,6 @@ def zscore_columns(matrix):
 
 
 ###------------ Q2Y/R2Y ------------------###
-'''
-Description
-Arguments
-Returns
-'''
-
 
 def R2Y_across_components(X, Y, max_comps):
     R2Ys = []

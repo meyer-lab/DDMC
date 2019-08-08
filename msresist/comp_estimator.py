@@ -1,3 +1,5 @@
+"Builds pipeline k-means + PLSR"
+
 import numpy as np
 import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
