@@ -1,8 +1,8 @@
 "Sequence Analysis Functions"
 
 import os
-import pandas as pd
 import re
+import pandas as pd
 from Bio import SeqIO
 
 
@@ -80,9 +80,8 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
     ProteomeDict = DictProteomeNameToSeq(proteome)
     MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict)
     os.remove(PathToFaFile)
-    
     MatchedFaFile = open(PathToMatchedFaFile, 'r')
-    MS_names, ExtSeqs = [] ,[]
+    MS_names, ExtSeqs = [], []
     Allseqs, Testseqs = [], []
     for rec1 in SeqIO.parse(MatchedFaFile, "fasta"):
         MS_seq = str(rec1.seq)
@@ -97,7 +96,7 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                 MatchObs = regexPattern.finditer(UP_seq)
                 indices = []
                 for i in MatchObs:
-                    indices.append(i.start())  
+                    indices.append(i.start())
                     indices.append(i.end())
                 if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
@@ -158,7 +157,7 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                         ExtSeqs.append(ExtSeq)
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
-                        
+
                 if "y" in MS_seq and "s" in MS_seq and "t" in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
                     ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
@@ -177,23 +176,24 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                         ExtSeqs.append(ExtSeq)
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
-                        
+
                 if "y" not in MS_seq and "s" not in MS_seq and "t" not in MS_seq:
                     print(MS_name, MS_seq)
             else:
                 print("check", MS_name, "with seq", MS_seq)
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
-    
+
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
-    assert(len(li_dif) == 0), ("lengths not matching")
-    
+    if li_dif:
+        print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
+
     assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
     os.remove(PathToMatchedFaFile)
     proteome.close()
-    return MS_names, ExtSeqs     
-  
-    
+    return MS_names, ExtSeqs
+
+
 def YTSsequences(X_seqs):
     """Goal: Generate dictionary to Check Motifs
        Input: Phosphopeptide sequences.

@@ -1,4 +1,4 @@
-""" This scripts handles all the pre-processing required to merge and transform the raw mass spec biological replicates """
+""" This scripts handles all the pre-processing required to merge and transform the raw mass spec biological replicates. """
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
     ABC = pd.concat([A_r, B_r, C_r])      
     ABC_log = Log2T(ABC.copy())
     ABC_conc_mc = MeanCenter(ABC_log, logT=False)
-    
+
     ABC_names = FormatName(ABC_conc_mc)
     ABC_seqs = FormatSeq(ABC_conc_mc)  
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
@@ -29,36 +29,36 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_conc_mc['peptide-phosphosite'] = motifs
         ABC_conc_mc['Master Protein Descriptions'] = names
-    
+
     ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
     ABC_merged = LinearScale(ABC_merged)
     ABC_mc = FoldChangeToControl(ABC_merged)
-        
+
     if Vfilter:
         ABC_conc_mc = LinearScale(ABC_conc_mc)
         ABC_conc_mc_fc = FoldChangeToControl(ABC_conc_mc)
         NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc_fc)
 
         NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc_fc)
-        
+
         CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc_fc)
         DupsTable = CorrCoefFilter(CorrCoefPeptides)
         DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:])
         DupsTable = DupsTable.reset_index()[A_r.columns]
-        
+
         StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
         TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns)
         TripsTable = FilterByStdev(TripsTable, A_r.columns)
-        
+
         ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])
-        
+
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
-    
+
     if log2T:
         ABC_mc = Log2T(ABC_mc)
-        
+
     return ABC_mc
 
 
@@ -79,13 +79,13 @@ def LinearScale(X):
 
 def Log2T(X):
     """ Convert to log2 scale keeping original sign. """    
-    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0) 
+    X.iloc[:, 2:]= np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0) 
     return X
- 
-    
+
+
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
+    X.iloc[:, 2:]= X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
     return X
 
 
@@ -172,14 +172,14 @@ def BuildMatrix(peptides, ABC):
                 peptideslist.append(pepts.iloc[i, :])
         else:
             print("check this", pepts)
-    
+
     if corrcoefs:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
-        matrix = matrix.assign(CorrCoefs = corrcoefs)
-    
+        matrix = matrix.assign(CorrCoefs= corrcoefs)
+
     else:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
-        
+
     return matrix
 
 
@@ -198,7 +198,7 @@ def DupsMeanAndRange(duplicates, header):
     ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:], index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
-    
+
 
 def TripsMeanAndStd(triplicates, header):
     """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header 
@@ -262,6 +262,7 @@ def FilterByStdev(ABC_trips_avg, header):
 ###-------------------------------------- Plotting Raw Data --------------------------------------###
 
 def AvsBacrossCond(A, B, t):
+    "Plots recurrent peptides across 2 replicates to see how well they match. Y axis values, X axis peptides. "
     frames = [A, B]
     ConcDf = pd.concat(frames)
     dups = ConcDf[ConcDf.duplicated(['Master Protein Descriptions', 'peptide-phosphosite'], keep=False)].sort_values(by="Master Protein Descriptions")
@@ -313,6 +314,7 @@ def AvsBacrossCond(A, B, t):
 
 
 def AvsBvsCacrossCond(A, B, C, t):
+    "Plots recurrent peptides across all 3 replicates to see how well they match. Y axis values, X axis peptides. "
     frames = [A, B, C]
     ConcDf = pd.concat(frames)
     dups = ConcDf[ConcDf.duplicated(['Master Protein Descriptions', 'peptide-phosphosite'], keep=False)].sort_values(by="Master Protein Descriptions")
