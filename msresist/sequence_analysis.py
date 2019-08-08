@@ -197,34 +197,34 @@ def YTSsequences(X_seqs):
        Input: Phosphopeptide sequences.
        Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
        Useful to check def GeneratingKinaseMotifs results. """
-    YTSsequences = {}
+    YTSdict = {}
     seq1, seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
-    for i, seq in enumerate(X_seqs):
+    for seq in X_seqs:
         if "y" in seq and "t" not in seq and "s" not in seq:
             seq1.append(seq)
         if "t" in seq and "y" not in seq and "s" not in seq:
             seq2.append(seq)
-            YTSsequences["t: "] = seq2
+            YTSdict["t: "] = seq2
         if "s" in seq and "y" not in seq and "t" not in seq:
             seq3.append(seq)
-            YTSsequences["s: "] = seq3
+            YTSdict["s: "] = seq3
         if "y" in seq and "t" in seq and "s" not in seq:
             seq4.append(seq)
-            YTSsequences["y/t: "] = seq4
+            YTSdict["y/t: "] = seq4
         if "y" in seq and "s" in seq and "t" not in seq:
             seq5.append(seq)
-            YTSsequences["y/s: "] = seq5
+            YTSdict["y/s: "] = seq5
         if "t" in seq and "s" in seq and "y" not in seq:
             seq6.append(seq)
 
-    YTSsequences["y: "] = seq1
-    YTSsequences["t: "] = seq2
-    YTSsequences["s: "] = seq3
-    YTSsequences["y/t: "] = seq4
-    YTSsequences["y/s: "] = seq5
-    YTSsequences["t/s: "] = seq6
+    YTSdict["y: "] = seq1
+    YTSdict["t: "] = seq2
+    YTSdict["s: "] = seq3
+    YTSdict["y/t: "] = seq4
+    YTSdict["y/s: "] = seq5
+    YTSdict["t/s: "] = seq6
 
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSsequences.items()]))
+    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSdict.items()]))
 
 # Code from Adam Weiner, obtained March 2019
 
