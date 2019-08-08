@@ -12,9 +12,7 @@ from sklearn.model_selection import GridSearchCV
 
 
 ###------------ Scaling Matrices ------------------###
-'''
-Note that the sklearn PLSRegression function already handles scaling
-'''
+""" Note that the sklearn PLSRegression function already handles scaling. """
 
 
 def zscore_columns(matrix):
@@ -25,6 +23,7 @@ def zscore_columns(matrix):
 ###------------ Q2Y/R2Y ------------------###
 
 def R2Y_across_components(X, Y, max_comps):
+    "Calculate R2Y."
     R2Ys = []
     for b in range(1, max_comps):
         plsr = PLSRegression(n_components=b)
@@ -35,6 +34,7 @@ def R2Y_across_components(X, Y, max_comps):
 
 
 def Q2Y_across_components(X, Y, max_comps):
+    "Calculate Q2Y using cros_val_predct method."
     Q2Ys = []
     for b in range(1, max_comps):
         plsr_model = PLSRegression(n_components=b)
@@ -44,6 +44,7 @@ def Q2Y_across_components(X, Y, max_comps):
 
 
 def Q2Y_across_comp_manual(X_z, Y_z, max_comps, sublabel):
+    "Calculate Q2Y manually."
     PRESS = 0
     SS = 0
     Q2Ys = []
@@ -68,6 +69,7 @@ def Q2Y_across_comp_manual(X_z, Y_z, max_comps, sublabel):
 
 
 def PLSR(X, Y, nComponents):
+    "Run PLSR."
     plsr = PLSRegression(n_components=nComponents)
     X_scores, Y_scores = plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
@@ -77,6 +79,7 @@ def PLSR(X, Y, nComponents):
 
 
 def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
+    "Plot exprimentally-measured vs PLSR-predicted values"
     Y_predictions = np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size))
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
     print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
@@ -91,7 +94,8 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 
 ###------------ Computing Cluster Averages ------------------###
 
-def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  # XXX: Shouldn't nClusters, nObs be able to come from the other arguments?
+def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  
+    "calculate cluster averages and dictionary with cluster members and sequences"
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
     ClusterAvgs_arr = np.zeros((nClusters, nObs))  # 5:10
