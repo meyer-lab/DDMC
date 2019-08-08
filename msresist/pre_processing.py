@@ -7,36 +7,33 @@ from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r, B_r, C_r, motifs=False, FCfilter=False, Vfilter=False, log2T=False):
-    ABC = pd.concat([A_r, B_r, C_r])
-    ABC = Log2T(ABC)
-    ABC_mc = MeanCenter(ABC, logT=False)
+def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, log2T=False):
+    ABC = pd.concat([A_r, B_r, C_r])      
+    ABC_log = Log2T(ABC.copy())
+    ABC_mc = MeanCenter(ABC_log, logT=False) 
+    
     ABC_names = FormatName(ABC_mc)
     ABC_seqs = FormatSeq(ABC_mc)
+    ABC['peptide-phosphosite'] = ABC_seqs
+    ABC['Master Protein Descriptions'] = ABC_names    
     ABC_mc['peptide-phosphosite'] = ABC_seqs
     ABC_mc['Master Protein Descriptions'] = ABC_names   
-    
+
     if motifs:
         directory = "./msresist/data/Sequence_analysis/"
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_mc['peptide-phosphosite'] = motifs
         ABC_mc['Master Protein Descriptions'] = names
-    
+        ABC['peptide-phosphosite'] = motifs
+        ABC['Master Protein Descriptions'] = names
     
     ABC_merged = MergeDfbyMean(ABC_mc, A_r.columns[2:])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
     ABC_merged = LinearScale(ABC_merged)
     ABC_mc = FoldChangeToControl(ABC_merged)
-    
-    if FCfilter:
-        ABC_mc = FoldChangeFilter(ABC_mc)
-       
-        ABC = LinearScale(ABC)
-        ABC = FoldChangeToControl(ABC)
-        ABC = FoldChangeFilter(ABC)
         
     if Vfilter:
-        ABC = FoldChangeToControl(ABC)
+        ABC = FoldChangeToControl(ABC)        
         NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
         NonRecTable = BuildMatrix(NonRecPeptides, ABC)
@@ -48,10 +45,14 @@ def preprocessing(A_r, B_r, C_r, motifs=False, FCfilter=False, Vfilter=False, lo
         
         StdPeptides = BuildMatrix(StdPeptides, ABC)
         TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns)
-        TripsTable = FilterByStdev(TripsTable, A_r.columns)
+        TripsTable = FilterByStdev(TripsTable, A_r.columns)              
                 
         ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])
-        
+
+    if FCfilter:
+        ABC_mc = FoldChangeFilter(ABC_mc)  
+        print("after FCfilter:", ABC_mc.shape)
+    
     if log2T:
         ABC_mc = Log2T(ABC_mc)
      
@@ -67,12 +68,12 @@ def MergeDfbyMean(X, t):
     return ABC_avg
 
 def LinearScale(X):
-    """ Convert to linear scale from log2 scale. """
+    """ Convert to linear from log2-scale. """
     X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:])
     return X
 
 def Log2T(X):
-    """ Convert to log2 scale keeping original sing. """    
+    """ Convert to log2 scale keeping original sign. """    
     X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0) 
     return X
     
