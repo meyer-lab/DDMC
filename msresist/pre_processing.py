@@ -8,6 +8,11 @@ from msresist.sequence_analysis import GeneratingKinaseMotifs
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
 def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, log2T=False):
+    """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.  
+    1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
+    6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3. 
+    Note 1: 'motifs' redefines peptide sequences as XXXXXyXXXXX which affects merging.
+    Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis."""
     ABC = pd.concat([A_r, B_r, C_r])      
     ABC_log = Log2T(ABC.copy())
     ABC_conc_mc = MeanCenter(ABC_log, logT=False)
@@ -128,8 +133,9 @@ def FormatSeq(X):
 
 
 def MapOverlappingPeptides(ABC):
-    """ Find what peptides show up only 1, 2, or 3 times across all three replicates.
-    Note that it's easier to create two independent files with each group to use aggfunc later. """
+    """ Find recurrent peptides across biological replicates. Grouping those showing up 2 to later calculate
+    correlation, those showing up >= 3 to take the std. Those showing up 1 can be included or not in the final data set.
+    Final dfs are formed by 'Name', 'Peptide', '#Recurrences'. """
     dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
     dups_counter = {i: list(dups).count(i) for i in list(dups)}
     dups = pd.DataFrame(dups).reset_index()
@@ -141,6 +147,8 @@ def MapOverlappingPeptides(ABC):
 
 
 def BuildMatrix(peptides, ABC):
+    """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values. 
+    If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     peptideslist = []
     corrcoefs = []
     for idx, seq in enumerate(peptides.iloc[:, 1]):
@@ -174,15 +182,14 @@ def BuildMatrix(peptides, ABC):
 
 
 def CorrCoefFilter(X, corrCut=0.6):
-    """ Filter rows for those containing more then 0.6 correlation. 
-    Note this should only be used with linear-scale data normalized to the control. """
+    """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, 12].values >= corrCut
     return X.iloc[Xidx, :]  
 
 
 def DupsMeanAndRange(duplicates, header):
-    """ Merge all duplicates by mean and range across conditions. Note this means the header
-    is multilevel meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Reange). """
+    """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header 
+    meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Range). """
     func_dup = {}
     for i in header[2:]:
         func_dup[i] = np.mean, np.ptp  
@@ -192,7 +199,8 @@ def DupsMeanAndRange(duplicates, header):
     
 
 def TripsMeanAndStd(triplicates, header):
-    """ Merge all triplicates by mean and standard deviation across conditions. """
+    """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header 
+    meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std). """
     func_tri = {}
     for i in header[2:]:
         func_tri[i] = np.mean, np.std
