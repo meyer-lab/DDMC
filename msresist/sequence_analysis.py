@@ -1,3 +1,5 @@
+"Sequence Analysis Functions"
+
 import os
 import pandas as pd
 import re
