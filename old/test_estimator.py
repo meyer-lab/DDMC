@@ -1,7 +1,7 @@
 """
 Testing file for a combined KMeans/PLSR estimator.
 """
-import unittest
+# import unittest
 from sklearn.datasets import load_diabetes
 from ..estimator import kmeansPLSR
 import random
