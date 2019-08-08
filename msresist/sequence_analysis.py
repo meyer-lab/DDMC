@@ -182,7 +182,6 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                 print("check", MS_name, "with seq", MS_seq)
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
-            pass
     
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     assert(len(li_dif) == 0), ("lengths not matching")

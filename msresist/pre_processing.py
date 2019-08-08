@@ -137,7 +137,7 @@ def MapOverlappingPeptides(ABC):
     correlation, those showing up >= 3 to take the std. Those showing up 1 can be included or not in the final data set.
     Final dfs are formed by 'Name', 'Peptide', '#Recurrences'. """
     dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
-    dups_counter = {i: list(dups).count(i) for i in list(dups)}
+#     dups_counter = {i: list(dups).count(i) for i in list(dups)}
     dups = pd.DataFrame(dups).reset_index()
     dups.columns = [ABC.columns[1], ABC.columns[0], "Recs"]
     NonRecPeptides = dups[dups["Recs"] == 1]
