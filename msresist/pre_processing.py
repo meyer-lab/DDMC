@@ -1,3 +1,5 @@
+""" This scripts handles all the pre-processing required to merge and transform the raw mass spec biological replicates """
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -265,7 +267,7 @@ def AvsBacrossCond(A, B, t):
     dups = ConcDf[ConcDf.duplicated(['Master Protein Descriptions', 'peptide-phosphosite'], keep=False)].sort_values(by="Master Protein Descriptions")
     AB_nodups = dups.copy().iloc[:, 0].drop_duplicates()
 
-    assert(AB_nodups.shape[0] == 0.5 * (dups.shape[0]))  # Assert that NodupsAB / 2 = dupsAB
+#     assert(AB_nodups.shape[0] == 0.5 * (dups.shape[0]))  # Assert that NodupsAB / 2 = dupsAB
 
     A, B = [], []
     dups.set_index("peptide-phosphosite", inplace=True)
