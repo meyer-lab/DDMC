@@ -1,53 +1,56 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 import matplotlib.pyplot as plt
 from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r, B_r, C_r, treatments, motifs=False, FCfilter=False, Vfilter=False, log2T=False):
+def preprocessing(A_r, B_r, C_r, motifs=False, FCfilter=False, Vfilter=False, log2T=False):
     ABC = pd.concat([A_r, B_r, C_r])
-    ABC_log = Log2T(ABC)
-    ABC_mc = MeanCenter(ABC_log, logT=False)
+    ABC = Log2T(ABC)
+    ABC_mc = MeanCenter(ABC, logT=False)
+    ABC_names = FormatName(ABC_mc)
+    ABC_seqs = FormatSeq(ABC_mc)
+    ABC_mc['peptide-phosphosite'] = ABC_seqs
+    ABC_mc['Master Protein Descriptions'] = ABC_names   
     
     if motifs:
-        #Temporary: deleting peptides breaking the code
-#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYVDPHTYEDPNQAVLk-1']
-#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'tYELLNcDk-1']
-#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sLYHDISGDTSGDYRk-1']
-#         ABC_mc = ABC_mc[ABC_mc["peptide-phosphosite"] != 'sYDVPPPPMEPDHPFYSNISk-1']
-        
-        ABC_names = FormatName(ABC_mc)
-        ABC_seqs = FormatSeq(ABC_mc)
-
         directory = "./msresist/data/Sequence_analysis/"
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_mc['peptide-phosphosite'] = motifs
         ABC_mc['Master Protein Descriptions'] = names
     
     
-    ABC_merged = MergeDfbyMean(ABC_mc, treatments)
+    ABC_merged = MergeDfbyMean(ABC_mc, A_r.columns[2:])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
     ABC_merged = LinearScale(ABC_merged)
     ABC_mc = FoldChangeToControl(ABC_merged)
     
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
+       
+        ABC = LinearScale(ABC)
+        ABC = FoldChangeToControl(ABC)
+        ABC = FoldChangeFilter(ABC)
         
     if Vfilter:
         ABC = FoldChangeToControl(ABC)
-        RangePeptides, StdPeptides = MapOverlappingPeptides(ABC)
+        NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
+
+        NonRecTable = BuildMatrix(NonRecPeptides, ABC)
         
-        RangePeptides = BuildDupsMatrix(RangePeptides, ABC)
-        DupsTable = DupsMeanAndRange(RangePeptides, A_r.columns[2:], A_r.columns)
-        DupsTable = FilterByRange(DupsTable, header)
+        CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
+        DupsTable = CorrCoefFilter(CorrCoefPeptides)
+        DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:])
+        DupsTable = DupsTable.reset_index()[A_r.columns]
         
-        StdPeptides = BuildTripsMatrix(StdPeptides, ABC)
-        TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns[2:], A_r.columns)
+        StdPeptides = BuildMatrix(StdPeptides, ABC)
+        TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns)
         TripsTable = FilterByStdev(TripsTable, A_r.columns)
-        
-        ABC_mc = pd.concat([DupsTable, TripsTable])
+                
+        ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])
         
     if log2T:
         ABC_mc = Log2T(ABC_mc)
@@ -130,71 +133,70 @@ def MapOverlappingPeptides(ABC):
     dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
     dups_counter = {i: list(dups).count(i) for i in list(dups)}
     dups = pd.DataFrame(dups).reset_index()
-    dups.columns = [ABC.columns[0], ABC.columns[1], "Recs"]
-    display(dups)
+    dups.columns = [ABC.columns[1], ABC.columns[0], "Recs"]
+    NonRecPeptides = dups[dups["Recs"] == 1]
     RangePeptides = dups[dups["Recs"] == 2]
     StdPeptides = dups[dups["Recs"] >= 3]
-    display(RangePeptides.iloc[:5, :])
-    display(StdPeptides.iloc[:5, :])
-    return RangePeptides, StdPeptides
+    return NonRecPeptides, RangePeptides, StdPeptides
 
 
-def BuildDupsMatrix(DupPeptides, ABC):
-    """ Using the df of peptides (names and seqs) that show up in 2 replicates,
-    build a matrix with all values across conditions for each peptide. Note 1: Nothing
-    should go to the else statement. Note 2: there may be peptides labeled as '(blank)'
-    which also show up in a different row correctly labeled. """
-    dupslist = []  # should be shape 492
-    for idx, dupseq in enumerate(DupPeptides.iloc[:, 1]):
-        dup_name = DupPeptides.iloc[idx, 0]
-        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop=False).loc[dupseq, dup_name]
-        names = pepts.iloc[:, 2]
-        if dup_name == "(blank)":
+def BuildMatrix(peptides, ABC):
+    peptideslist = []
+    corrcoefs = []
+    for idx, seq in enumerate(peptides.iloc[:, 1]):
+        name = peptides.iloc[idx, 0]
+        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop=False).loc[seq, name]
+        pepts = pepts.iloc[:, 1:]
+        names = pepts.iloc[:, 1]
+        if name == "(blank)":
             continue
-        elif len(pepts) == 2 and len(set(names)) == 1:
+        elif len(pepts) == 1:
+            peptideslist.append(pepts.iloc[0, :])
+        elif len(pepts) == 2 and len(set(names)) == 1:            
+            corrcoef, _ = stats.pearsonr(pepts.iloc[0, 2:], pepts.iloc[1, 2:])
+            for i in range(len(pepts)):       
+                corrcoefs.append(corrcoef)
+                peptideslist.append(pepts.iloc[i, :])
+        elif len(pepts) >= 3 and len(set(names)) == 1:
             for i in range(len(pepts)):
-                dupslist.append(pepts.iloc[i, :])
+                peptideslist.append(pepts.iloc[i, :])
         else:
-            print("check this")
-            print(pepts)
-    return pd.DataFrame(dupslist).reset_index(drop=True).iloc[:, 1:]
+            print("check this", pepts)
+    
+    if corrcoefs:
+        matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
+        matrix = matrix.assign(CorrCoefs = corrcoefs)
+    
+    else:
+        matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
+        
+    return matrix
 
 
-def BuildTripsMatrix(TripPeptides, ABC):
-    """ Build matrix with all values across conditions for each peptide showing up in all 3 experients. """
-    tripslist = []  # should be shape 492
-    for idx, tripseq in enumerate(TripPeptides.iloc[:, 1]):
-        trip_name = TripPeptides.iloc[idx, 0]
-        pepts = ABC.reset_index().set_index(["peptide-phosphosite", "Master Protein Descriptions"], drop=False).loc[tripseq, trip_name]
-        names = pepts.iloc[:, 2]
-        seq = pepts.iloc[:, 1]
-        if trip_name == "(blank)":
-            continue
-        if len(pepts) >= 3 and len(set(names)) == 1:
-            for i in range(len(pepts)):
-                tripslist.append(pepts.iloc[i, :])
-        else:
-            print("check this")
-    return pd.DataFrame(tripslist).reset_index(drop=True).iloc[:, 1:]
+def CorrCoefFilter(X, corrCut=0.6):
+    """ Filter rows for those containing more then 0.6 correlation. 
+    Note this should only be used with linear-scale data normalized to the control. """
+    Xidx = X.iloc[:, 12].values >= corrCut
+    return X.iloc[Xidx, :]  
 
 
-def DupsMeanAndRange(duplicates, t, header):
+def DupsMeanAndRange(duplicates, header):
     """ Merge all duplicates by mean and range across conditions. Note this means the header
     is multilevel meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Reange). """
     func_dup = {}
-    for i in t:
-        func_dup[i] = np.mean, np.ptp  # np.corrcoef
-    ABC_dups_avg = pd.pivot_table(duplicates, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
+    for i in header[2:]:
+        func_dup[i] = np.mean, np.ptp  
+    ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:], index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
+    
 
-
-def TripsMeanAndStd(triplicates, t, header):
+def TripsMeanAndStd(triplicates, header):
     """ Merge all triplicates by mean and standard deviation across conditions. """
     func_tri = {}
-    for i in t:
+    for i in header[2:]:
         func_tri[i] = np.mean, np.std
-    ABC_trips_avg = pd.pivot_table(triplicates, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_tri)
+    ABC_trips_avg = pd.pivot_table(triplicates, values=header[2:], index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_tri)
     ABC_trips_avg = ABC_trips_avg.reset_index()[header]
     return ABC_trips_avg
 
