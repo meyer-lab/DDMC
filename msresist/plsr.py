@@ -12,11 +12,10 @@ from sklearn.model_selection import GridSearchCV
 
 
 ###------------ Scaling Matrices ------------------###
-""" Note that the sklearn PLSRegression function already handles scaling. """
-
 
 def zscore_columns(matrix):
-    """ Z-score each column of the matrix. """
+    """ Z-score each column of the matrix. Note that
+    sklearn PLSRegression already handles scaling. """
     return zscore(matrix, axis=0)
 
 
@@ -94,7 +93,7 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
 
 ###------------ Computing Cluster Averages ------------------###
 
-def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):  
+def ClusterAverages(X_, cluster_assignments, nClusters, nObs, ProtNames, peptide_phosphosite):
     "calculate cluster averages and dictionary with cluster members and sequences"
     X_FCl = np.insert(X_, 0, cluster_assignments, axis=0)  # 11:96   11 = 10cond + clust_assgms
     X_FCl = np.transpose(X_FCl)  # 96:11
