@@ -10,19 +10,19 @@ from msresist.sequence_analysis import GeneratingKinaseMotifs
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
 def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, log2T=False):
-    """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.  
+    """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
-    6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3. 
+    6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
     Note 1: 'motifs' redefines peptide sequences as XXXXXyXXXXX which affects merging.
     Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis."""
-    ABC = pd.concat([A_r, B_r, C_r])      
+    ABC = pd.concat([A_r, B_r, C_r])
     ABC_log = Log2T(ABC.copy())
     ABC_conc_mc = MeanCenter(ABC_log, logT=False)
 
     ABC_names = FormatName(ABC_conc_mc)
-    ABC_seqs = FormatSeq(ABC_conc_mc)  
+    ABC_seqs = FormatSeq(ABC_conc_mc)
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
-    ABC_conc_mc['Master Protein Descriptions'] = ABC_names   
+    ABC_conc_mc['Master Protein Descriptions'] = ABC_names
 
     if motifs:
         directory = "./msresist/data/Sequence_analysis/"
@@ -78,14 +78,14 @@ def LinearScale(X):
 
 
 def Log2T(X):
-    """ Convert to log2 scale keeping original sign. """    
-    X.iloc[:, 2:]= np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0) 
+    """ Convert to log2 scale keeping original sign. """
+    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 2:]= X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
+    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
     return X
 
 
@@ -101,7 +101,7 @@ def MeanCenter(X, logT=False):
 def VarianceFilter(X, varCut=0.1):
     """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut  
+    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
@@ -149,7 +149,7 @@ def MapOverlappingPeptides(ABC):
 
 
 def BuildMatrix(peptides, ABC):
-    """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values. 
+    """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     peptideslist = []
     corrcoefs = []
@@ -162,9 +162,9 @@ def BuildMatrix(peptides, ABC):
             continue
         elif len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
-        elif len(pepts) == 2 and len(set(names)) == 1:            
+        elif len(pepts) == 2 and len(set(names)) == 1:
             corrcoef, _ = stats.pearsonr(pepts.iloc[0, 2:], pepts.iloc[1, 2:])
-            for i in range(len(pepts)):       
+            for i in range(len(pepts)):
                 corrcoefs.append(corrcoef)
                 peptideslist.append(pepts.iloc[i, :])
         elif len(pepts) >= 3 and len(set(names)) == 1:
@@ -175,7 +175,7 @@ def BuildMatrix(peptides, ABC):
 
     if corrcoefs:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
-        matrix = matrix.assign(CorrCoefs= corrcoefs)
+        matrix = matrix.assign(CorrCoefs = corrcoefs)
 
     else:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
@@ -186,22 +186,22 @@ def BuildMatrix(peptides, ABC):
 def CorrCoefFilter(X, corrCut=0.6):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, 12].values >= corrCut
-    return X.iloc[Xidx, :]  
+    return X.iloc[Xidx, :]
 
 
 def DupsMeanAndRange(duplicates, header):
-    """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header 
+    """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Range). """
     func_dup = {}
     for i in header[2:]:
-        func_dup[i] = np.mean, np.ptp  
+        func_dup[i] = np.mean, np.ptp
     ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:], index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
 
 def TripsMeanAndStd(triplicates, header):
-    """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header 
+    """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std). """
     func_tri = {}
     for i in header[2:]:
