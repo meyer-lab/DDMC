@@ -20,11 +20,12 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
     ABC_conc_mc = MeanCenter(ABC_log, logT=False)
 
     ABC_names = FormatName(ABC_conc_mc)
-    ABC_seqs = FormatSeq(ABC_conc_mc)
-    ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
     ABC_conc_mc['Master Protein Descriptions'] = ABC_names
 
     if motifs:
+        ABC_seqs = FormatSeq(ABC_conc_mc)
+        ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
+        
         directory = "./msresist/data/Sequence_analysis/"
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_conc_mc['peptide-phosphosite'] = motifs
@@ -49,7 +50,8 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
 
         StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
         TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns)
-        TripsTable = FilterByStdev(TripsTable, A_r.columns)
+        TripsTable = FilterByStdev(TripsTable)
+        TripsTable.columns = A_r.columns
 
         ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])
 
@@ -120,14 +122,9 @@ def FormatName(X):
 
 
 def FormatSeq(X):
-    """ Found out the first letter of the seq gave problems while grouping by seq so I'm deleting it
-    whenever is not a pY as well as the final -1/-2"""
+    """ Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
-    for seq in list(X.iloc[:, 0]):
-        if seq[0] == "y" or seq[0] == "t" or seq[0] == "s":
-            seqs.append(seq.split("-")[0])
-        else:
-            seqs.append(seq[1:].split("-")[0])
+    x = list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
     return seqs
 
 
@@ -188,7 +185,6 @@ def CorrCoefFilter(X, corrCut=0.6):
     Xidx = X.iloc[:, 12].values >= corrCut
     return X.iloc[Xidx, :]
 
-
 def DupsMeanAndRange(duplicates, header):
     """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Range). """
@@ -198,7 +194,6 @@ def DupsMeanAndRange(duplicates, header):
     ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:], index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
-
 
 def TripsMeanAndStd(triplicates, header):
     """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header
@@ -210,54 +205,18 @@ def TripsMeanAndStd(triplicates, header):
     ABC_trips_avg = ABC_trips_avg.reset_index()[header]
     return ABC_trips_avg
 
+def FilterByRange(X, rangeCut=0.5):
+    """ Filter rows for those containing more than a range threshold. """
+    Rg = X.iloc[:, X.columns.get_level_values(1) == 'ptp']
+    Xidx = np.all(Rg.values <= rangeCut, axis=1)
+    return X.iloc[Xidx, :]
 
-def FilterByRange(ABC_dups_avg, header):
-    """ Iterates across the df and filters by range. """
-    ABC_dups_avg = ABC_dups_avg.set_index(['Master Protein Descriptions', 'peptide-phosphosite'])
-    dups_final, protnames, seqs = [], [], []
-    for i in range(ABC_dups_avg.shape[0]):
-        ptp = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1) == 'ptp']
-        mean = ABC_dups_avg.iloc[i, ABC_dups_avg.columns.get_level_values(1) == 'mean']
-        seq = ABC_dups_avg.index[i][1]
-        name = ABC_dups_avg.index[i][0]
-        if all(v <= 0.6 for v in ptp):
-            dups_final.append(mean)
-            seqs.append(seq)
-            protnames.append(name)
-
-    # Concatenate lists into a pandas df
-    dups_final = pd.DataFrame(dups_final).reset_index().iloc[:, 1:]
-
-    frames = [pd.DataFrame(seqs), pd.DataFrame(protnames), dups_final]
-    dups_final = pd.concat(frames, axis=1)
-    dups_final.columns = header
-    dups_final = dups_final.sort_values(by="Master Protein Descriptions")
-    return dups_final
-
-
-def FilterByStdev(ABC_trips_avg, header):
-    """ Iterates across the df and filters by standard deviation. """
-    ABC_trips_avg = ABC_trips_avg.set_index(['Master Protein Descriptions', 'peptide-phosphosite'])
-    trips_final, protnames, seqs = [], [], []
-    for i in range(ABC_trips_avg.shape[0]):
-        std = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1) == 'std']
-        mean = ABC_trips_avg.iloc[i, ABC_trips_avg.columns.get_level_values(1) == 'mean']
-        seq = ABC_trips_avg.index[i][1]
-        name = ABC_trips_avg.index[i][0]
-        if all(v <= 0.3 for v in std):
-            trips_final.append(mean)
-            seqs.append(seq)
-            protnames.append(name)
-
-    # Concatenate lists into a pandas df
-    trips_final = pd.DataFrame(trips_final).reset_index().iloc[:, 1:]
-
-    frames = [pd.DataFrame(seqs), pd.DataFrame(protnames), trips_final]
-    trips_final = pd.concat(frames, axis=1)
-    trips_final.columns = header
-    trips_final = trips_final.sort_values(by="Master Protein Descriptions")
-    return trips_final
-
+def FilterByStdev(X, stdCut=0.4):
+    """ Filter rows for those containing more than a standard deviation threshold. """
+    Stds = X.iloc[:, X.columns.get_level_values(1) == 'std']
+    Xidx = np.all(Stds.values <= stdCut, axis=1)
+    Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    return Means.iloc[Xidx, :]
 
 ###-------------------------------------- Plotting Raw Data --------------------------------------###
 
