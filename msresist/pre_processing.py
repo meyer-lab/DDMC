@@ -25,7 +25,7 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
     if motifs:
         ABC_seqs = FormatSeq(ABC_conc_mc)
         ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
-        
+
         directory = "./msresist/data/Sequence_analysis/"
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_conc_mc['peptide-phosphosite'] = motifs
