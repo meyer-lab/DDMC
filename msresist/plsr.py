@@ -3,6 +3,7 @@
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
+from numpy.polynomial.polynomial import polyfit
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
@@ -84,6 +85,7 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
     print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
     if ax == "none":
         plt.scatter(Y, np.squeeze(Y_predictions))
+        plt.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color = "r")
         plt.title("Correlation Measured vs Predicted")
         plt.xlabel("Measured Cell Viability")
         plt.ylabel("Predicted Cell Viability")
