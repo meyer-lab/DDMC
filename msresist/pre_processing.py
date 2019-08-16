@@ -77,13 +77,13 @@ def LinearScale(X):
 
 def Log2T(X):
     """ Convert to log2 scale keeping original sign. """
-    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis = 0)
+    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis=0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis = 0)
+    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis=0)
     return X
 
 
@@ -168,7 +168,7 @@ def BuildMatrix(peptides, ABC):
 
     if corrcoefs:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
-        matrix = matrix.assign(CorrCoefs = corrcoefs)
+        matrix = matrix.assign(CorrCoefs=corrcoefs)
 
     else:
         matrix = pd.DataFrame(peptideslist).reset_index(drop=True)
