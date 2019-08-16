@@ -20,6 +20,9 @@ pipeline {
             recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
           }
         }
+        stage('Build Notebooks') {
+          steps { sh 'jupyter nbconvert --execute --to notebook --inplace *.ipynb' }
+        }
       }
     }
   }
