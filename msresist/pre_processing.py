@@ -113,14 +113,14 @@ def FoldChangeFilter(X):
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
     names = []
-    x = list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
+    list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
     return names
 
 
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
-    x = list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
+    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
     return seqs
 
 
