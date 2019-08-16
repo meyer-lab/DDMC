@@ -5,6 +5,7 @@ import unittest
 import random
 import string
 import numpy as np
+import pandas as pd
 from sklearn.datasets import load_diabetes
 from sklearn.cluster import KMeans
 from ..clustering import ClusterAverages
