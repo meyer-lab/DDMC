@@ -7,7 +7,7 @@ import string
 import numpy as np
 from sklearn.datasets import load_diabetes
 from sklearn.cluster import KMeans
-from ..plsr import ClusterAverages
+from ..clustering import ClusterAverages
 
 class TestEstimator(unittest.TestCase):
     """ Testing class for a chained KMeans/PLSR estimator. """
