@@ -3,12 +3,10 @@
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_predict, LeaveOneOut
+from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.model_selection import GridSearchCV
 
 
 def zscore_columns(matrix):
@@ -62,3 +60,4 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
     else:
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
         axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
+        

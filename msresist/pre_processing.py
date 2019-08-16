@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-import matplotlib.pyplot as plt
 from msresist.sequence_analysis import GeneratingKinaseMotifs
 
 
@@ -30,7 +29,7 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_conc_mc['peptide-phosphosite'] = motifs
         ABC_conc_mc['Master Protein Descriptions'] = names
-    
+
     ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
     ABC_merged = LinearScale(ABC_merged)
