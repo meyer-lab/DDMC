@@ -15,7 +15,7 @@ class TestEstimator(unittest.TestCase):
     def test_fitting(self):
         """ Test that ClusterAverages is working by comparing to cluster centers. """
         X = load_diabetes(return_X_y=False)['data']
-        kmeans = KMeans(init="k-means++", n_clusters=n_clusters)
+        kmeans = KMeans(init="k-means++", n_clusters=4)
         cluster_assignments = kmeans.fit_predict(X.T)
         centers, DictClusterToMembers = ClusterAverages(X, cluster_assignments)
 
