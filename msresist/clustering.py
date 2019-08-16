@@ -1,10 +1,9 @@
 "Clustering functions"
 
-import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-    
+
 
 class MyOwnKMEANS(BaseEstimator):
     """ Runs k-means providing the centers and cluster members and sequences """
@@ -30,10 +29,10 @@ class MyOwnKMEANS(BaseEstimator):
 
 
 ###------------ Computing Cluster Averages / Identifying Cluster Members ------------------###
-    
+
 def ClusterAverages(X, labels):
     "calculate cluster averages and dictionary with cluster members and sequences"
-    X = X.T.assign(cluster = labels)
+    X = X.T.assign(cluster=labels)
     centers = []
     dict_clustermembers = {}
     for i in range(0, max(labels)+1):
