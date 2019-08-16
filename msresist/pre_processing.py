@@ -30,8 +30,8 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
         names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
         ABC_conc_mc['peptide-phosphosite'] = motifs
         ABC_conc_mc['Master Protein Descriptions'] = names
-
-    ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:])
+    
+    ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
     ABC_merged = LinearScale(ABC_merged)
     ABC_mc = FoldChangeToControl(ABC_merged)
@@ -45,7 +45,7 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
 
         CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc_fc)
         DupsTable = CorrCoefFilter(CorrCoefPeptides)
-        DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:])
+        DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
         DupsTable = DupsTable.reset_index()[A_r.columns]
 
         StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
@@ -53,7 +53,8 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
         TripsTable = FilterByStdev(TripsTable)
         TripsTable.columns = A_r.columns
 
-        ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])
+#         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
+        ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])    # Including non-overlapping peptides
 
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
@@ -64,13 +65,9 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
     return ABC_mc
 
 
-def MergeDfbyMean(X, t):
+def MergeDfbyMean(X, values, index):
     """ Compute mean across duplicates. """
-    func = {}
-    for i in t:
-        func[i] = np.mean
-    ABC_avg = pd.pivot_table(X, values=t, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc=func)
-    return ABC_avg
+    return pd.pivot_table(X, values=values, index=index, aggfunc=np.mean)
 
 
 def LinearScale(X):
@@ -180,10 +177,11 @@ def BuildMatrix(peptides, ABC):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.6):
+def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, 12].values >= corrCut
     return X.iloc[Xidx, :]
+
 
 def DupsMeanAndRange(duplicates, header):
     """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header
@@ -195,6 +193,7 @@ def DupsMeanAndRange(duplicates, header):
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
+
 def TripsMeanAndStd(triplicates, header):
     """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std). """
@@ -205,126 +204,17 @@ def TripsMeanAndStd(triplicates, header):
     ABC_trips_avg = ABC_trips_avg.reset_index()[header]
     return ABC_trips_avg
 
-def FilterByRange(X, rangeCut=0.5):
+
+def FilterByRange(X, rangeCut=0.4):
     """ Filter rows for those containing more than a range threshold. """
     Rg = X.iloc[:, X.columns.get_level_values(1) == 'ptp']
     Xidx = np.all(Rg.values <= rangeCut, axis=1)
     return X.iloc[Xidx, :]
 
-def FilterByStdev(X, stdCut=0.4):
+
+def FilterByStdev(X, stdCut=0.5):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == 'std']
     Xidx = np.all(Stds.values <= stdCut, axis=1)
     Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     return Means.iloc[Xidx, :]
-
-###-------------------------------------- Plotting Raw Data --------------------------------------###
-
-def AvsBacrossCond(A, B, t):
-    "Plots recurrent peptides across 2 replicates to see how well they match. Y axis values, X axis peptides. "
-    frames = [A, B]
-    ConcDf = pd.concat(frames)
-    dups = ConcDf[ConcDf.duplicated(['Master Protein Descriptions', 'peptide-phosphosite'], keep=False)].sort_values(by="Master Protein Descriptions")
-    AB_nodups = dups.copy().iloc[:, 0].drop_duplicates()
-
-#     assert(AB_nodups.shape[0] == 0.5 * (dups.shape[0]))  # Assert that NodupsAB / 2 = dupsAB
-
-    A, B = [], []
-    dups.set_index("peptide-phosphosite", inplace=True)
-    for i in AB_nodups:
-        pepts = dups.loc[i]
-        A.append(pepts.iloc[0, 0:12])
-        B.append(pepts.iloc[1, 0:12])
-
-    A = pd.DataFrame(A)
-    B = pd.DataFrame(B)
-    # B = pd.DataFrame(B).reset_index().set_index("Master Protein Descriptions"), if we wanted to plot by protein name
-
-    data = []
-    for i in range(1, 11):
-        tup = (A.iloc[:, i], B.iloc[:, i])
-        data.append(tup)
-
-    fig, axs = plt.subplots(10, sharex=True, sharey=True, figsize=(10, 20))
-
-    # label xticks with peptide sequences and manipulate space between ticks
-    N = A.shape[0]
-    plt.xticks(np.arange(N), ([str(i) for i in np.arange(N)]), rotation=90)
-    plt.gca().margins(x=0)
-    plt.gcf().canvas.draw()
-    tl = plt.gca().get_xticklabels()
-    maxsize = max([w.get_window_extent().width for w in tl])
-    m = 0.2  # inch margin
-    s = maxsize / plt.gcf().dpi * N + 2 * m
-    margin = m / plt.gcf().get_size_inches()[0]
-    plt.gcf().subplots_adjust(left=margin, right=1. - margin)
-    plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
-
-    groups = t
-    ax_i = np.arange(10)
-
-    for data, group, i in zip(data, groups, ax_i):
-        x, y = data
-        axs[i].plot(x, 'r.--', alpha=0.7, label=group, linewidth=0.5)  # linestyle = ''
-        axs[i].plot(y, 'bx--', alpha=0.7, linewidth=0.5)
-        axs[i].legend(loc=0)
-        axs[i].set_ylim([0, 2.5])
-    return fig
-
-
-def AvsBvsCacrossCond(A, B, C, t):
-    "Plots recurrent peptides across all 3 replicates to see how well they match. Y axis values, X axis peptides. "
-    frames = [A, B, C]
-    ConcDf = pd.concat(frames)
-    dups = ConcDf[ConcDf.duplicated(['Master Protein Descriptions', 'peptide-phosphosite'], keep=False)].sort_values(by="Master Protein Descriptions")
-    ABC_nodups = dups.copy().iloc[:, 0].drop_duplicates()
-
-#     assert(ABC_nodups.shape[0] == (dups.shape[0])/3)  #Assert that NodupsAB / 2 = dupsAB
-
-    A, B, C = [], [], []
-    dups.set_index("peptide-phosphosite", inplace=True)
-    for i in ABC_nodups:
-        pepts = dups.loc[i]
-        if pepts.shape[0] == 2:
-            continue
-        if pepts.shape[0] == 3:
-            A.append(pepts.iloc[0, 0:12])
-            B.append(pepts.iloc[1, 0:12])
-            C.append(pepts.iloc[2, 0:12])
-
-    A = pd.DataFrame(A)
-    B = pd.DataFrame(B)
-    C = pd.DataFrame(C)
-
-    data = []
-    for i in range(1, 11):
-        tup = (A.iloc[:, i], B.iloc[:, i], C.iloc[:, i])
-        data.append(tup)
-
-    fig, axs = plt.subplots(10, sharex=True, sharey=True, figsize=(10, 20))
-    plt.xticks(np.arange(A.shape[0]), ([str(i) for i in np.arange(A.shape[0])]), rotation=90)
-
-    # label xticks with peptide sequences and manipulate space between ticks
-    N = A.shape[0]
-    plt.xticks(np.arange(N), ([str(i) for i in np.arange(N)]), rotation=90)
-    plt.gca().margins(x=0)
-    plt.gcf().canvas.draw()
-    tl = plt.gca().get_xticklabels()
-    maxsize = max([w.get_window_extent().width for w in tl])
-    m = 0.2  # inch margin
-    s = maxsize / plt.gcf().dpi * N + 2 * m
-    margin = m / plt.gcf().get_size_inches()[0]
-    plt.gcf().subplots_adjust(left=margin, right=1. - margin)
-    plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
-
-    groups = t
-    ax_i = np.arange(10)
-
-    for data, group, i in zip(data, groups, ax_i):
-        x, y, z = data
-        axs[i].plot(x, 'r.--', alpha=0.7, label=group, linewidth=0.5)  # linestyle = ''
-        axs[i].plot(y, 'bx--', alpha=0.7, linewidth=0.5)
-        axs[i].plot(z, 'k^--', alpha=0.7, linewidth=0.5)
-        axs[i].legend(loc=2)
-        axs[i].set_ylim([0, 2.5])
-    return fig
