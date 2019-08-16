@@ -1,4 +1,4 @@
-"Sequence Analysis Functions"
+"""Sequence Analysis Functions. """
 
 import os
 import re
@@ -54,7 +54,6 @@ def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
         MS_seqU = str(rec1.seq.upper())
         MS_name = str(rec1.description.split(" OS")[0])
         try:
-            UP_seq = ProteomeDict[MS_name]
             FileHandle.write(">" + MS_name)
             FileHandle.write("\n")
             FileHandle.write(MS_seq)
@@ -227,46 +226,3 @@ def YTSsequences(X_seqs):
     YTSdict["t/s: "] = seq6
 
     return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSdict.items()]))
-
-# Code from Adam Weiner, obtained March 2019
-
-
-# def trim(seqFile):
-#     cwd = os.getcwd()
-#     homeDir = cwd[1:5]
-#     if (homeDir == 'home'):
-#         print('using path from server to load sequences')
-#         pathToFile = os.path.join("/home","zoekim","Desktop",str(seqFile)) #aretha server
-#         pathToFile = os.path.join("/home", "marcc", "resistance-MS", "msresist", "data", str(seqFile))  # /home/marcc/resistance-MS/msresist/data
-
-#     else:
-#         print('using path from mac machine to load sequences')
-#         pathToFile = os.path.join("/Users", "zoekim", "Desktop", str(seqFile))  # mac machine
-
-#     allSeqs = []
-#     allLabels = []
-#     for seq_record in SeqIO.parse(pathToFile, """fasta"""):
-#         allSeqs.append(seq_record.seq)
-#         allLabels.append(seq_record.id)
-
-#     seqMat = np.array(allSeqs)
-#     label = np.array(allLabels)
-
-#     sequence = seqMat[:, 0:317]
-
-#     # filtering out residues not included in PAM250 pymsa distance matrix (http://www.matrixscience.com/blog/non-standard-amino-acid-residues.html)
-#     for i in range(0, sequence.shape[0]):
-#         for j in range(0, sequence.shape[1]):
-#             if (sequence[i, j] == 'J'):
-#                 sequence[i, j] = random.choice(['I', 'L'])
-#     print(label)
-#     print(sequence)
-
-#     return (label, sequence)
-
-
-###------------ Substitution Matrix (PAM250) ------------------###
-# Code from Adam Weiner, obtained March 2019
-
-# Just load distance matrices/methods from pyMSA!
-# https://github.com/benhid/pyMSA
