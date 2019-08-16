@@ -1,4 +1,4 @@
-"PLSR functions"
+"""PLSR functions"""
 
 import scipy as sp
 from scipy.stats import zscore
