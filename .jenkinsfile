@@ -21,7 +21,7 @@ pipeline {
           }
         }
         stage('Build Notebooks') {
-          steps { sh 'jupyter nbconvert --execute --to notebook --inplace *.ipynb' }
+          steps { sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb' }
         }
       }
     }
