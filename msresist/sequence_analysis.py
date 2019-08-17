@@ -45,15 +45,18 @@ def getKeysByValue(dictOfElements, valueToFind):
 
 
 def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
-    """ Goal: Match protein accession names of MS and Uniprot's proteome.
+    """ Goal: Match protein names of MS and Uniprot's proteome.
     Input: Path to new file and MS fasta file
-    Output: Fasta file with matching protein accessions. """
+    Output: Fasta file with matching protein names.
+    Note that ProteomeDict[MS_name] is what the function needs to try to find
+    and jump to except if MS_name is not in ProteomDict. """
     FileHandle = open(PathToMatchedFaFile, "w+")
     for rec1 in SeqIO.parse(FaFile, "fasta"):
         MS_seq = str(rec1.seq)
         MS_seqU = str(rec1.seq.upper())
         MS_name = str(rec1.description.split(" OS")[0])
         try:
+            ProteomeDict[MS_name]
             FileHandle.write(">" + MS_name)
             FileHandle.write("\n")
             FileHandle.write(MS_seq)
@@ -175,9 +178,6 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                         ExtSeqs.append(ExtSeq)
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
-
-                if "y" not in MS_seq and "s" not in MS_seq and "t" not in MS_seq:
-                    print(MS_name, MS_seq)
             else:
                 print("check", MS_name, "with seq", MS_seq)
         except BaseException:
