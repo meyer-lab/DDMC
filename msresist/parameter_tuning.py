@@ -5,26 +5,38 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.cross_decomposition import PLSRegression
-from msresist.clustering import MyOwnKMEANS
+from msresist.clustering import MyOwnKMEANS, MyOwnGMM
 
 ###------------ Building k-means + PLSR pipeline and Tunning Hyperparameters ------------------###
 
-def ComHyperPar(X, Y):
-    """ Cross-validation: Simultaneous hyperparameter search for number of clusters and number of components """
-    estimators = [('kmeans', MyOwnKMEANS(5)), ('plsr', PLSRegression(2))]
-    pipe = Pipeline(estimators)
+def kmeansPLSR_tuning(X, Y):
+    """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR """
+    kmeansPLSR = Pipeline([('kmeans', MyOwnKMEANS(5)), ('plsr', PLSRegression(2))])
 
     param_grid = []
     for nn in range(2, 16):
         param_grid.append(dict(kmeans__n_clusters=[nn], plsr__n_components=list(np.arange(1, nn + 1))))
 
-    grid = GridSearchCV(pipe, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring='neg_mean_squared_error')
+    grid = GridSearchCV(kmeansPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring='neg_mean_squared_error')
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {'#Clusters': CVresults_max['param_kmeans__n_clusters'], '#Components': CVresults_max['param_plsr__n_components'], 'mean_test_scores': CVresults_max["mean_test_score"], 'mean_train_scores': CVresults_max["mean_train_score"]}
     return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 
+def gmmPLSR_tuning(X, Y):
+    """ Cross-validation: Simultaneous hyperparameter search for number of components for GMM and PLSR """
+    gmmPLSR = Pipeline([('gmm', MyOwnGMM(5)), ('plsr', PLSRegression(2))])
+
+    param_grid = []
+    for nn in range(2, 16):
+        param_grid.append(dict(gmm__n_components=[nn], plsr__n_components=list(np.arange(1, nn + 1))))
+
+    grid = GridSearchCV(gmmPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring='neg_mean_squared_error')
+    fit = grid.fit(X, Y)
+    CVresults_max = pd.DataFrame(data=fit.cv_results_)
+    std_scores = {'#ComponentsGMM': CVresults_max['param_gmm__n_components'], '#ComponentsPLSR': CVresults_max['param_plsr__n_components'], 'mean_test_scores': CVresults_max["mean_test_score"], 'mean_train_scores': CVresults_max["mean_train_score"]}
+    return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 ###------------ General GridSearch Structure ------------------###
 
