@@ -26,8 +26,7 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
 
     ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
-    ABC_merged = LinearScale(ABC_merged)
-    ABC_mc = FoldChangeToControl(ABC_merged)
+    ABC_mc = LinearFoldChange(ABC_merged)
 
     if Vfilter:
         ABC_mc = VFilter(ABC_conc_mc)
@@ -46,21 +45,15 @@ def MergeDfbyMean(X, values, index):
     return pd.pivot_table(X, values=values, index=index, aggfunc=np.mean)
 
 
-def LinearScale(X):
-    """ Convert to linear from log2-scale. """
-    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:])     #.multiply(stats.gmean(X.iloc[:, 2:], axis=1), axis=0)
+def LinearFoldChange(X):
+    """ Convert to linear fold-change from log2 mean-centered. """
+    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:]).div(np.power(2, X.iloc[:, 2]), axis=0)
     return X
 
 
 def Log2T(X):
     """ Convert to log2 scale keeping original sign. """
     X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis=0)
-    return X
-
-
-def FoldChangeToControl(X):
-    """ Convert to fold-change to control. """
-    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis=0)
     return X
 
 
@@ -91,8 +84,7 @@ def FoldChangeFilter(X):
 
 
 def VFilter(ABC_conc_mc):
-    ABC_conc_mc = LinearScale(ABC_conc_mc)
-    ABC_conc_mc_fc = FoldChangeToControl(ABC_conc_mc)
+    ABC_conc_mc_fc = LinearFoldChange(ABC_conc_mc)
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc_fc)
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc_fc)
