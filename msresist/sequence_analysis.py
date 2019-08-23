@@ -5,14 +5,14 @@ import re
 import pandas as pd
 from Bio import SeqIO
 
-
+path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
 def pYmotifs(ABC_conc_mc, ABC_names):
     ABC_seqs = FormatSeq(ABC_conc_mc)
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
 
-    directory = "./msresist/data/Sequence_analysis/"
+    directory = os.path.join(path, "./data/Sequence_analysis/")
     names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
     ABC_conc_mc['peptide-phosphosite'] = motifs
     ABC_conc_mc['Master Protein Descriptions'] = names
