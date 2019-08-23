@@ -2,7 +2,7 @@
 all: figure1.svg
 
 # Figure rules
-figure%.svg: genFigure.py
+figure%.svg: genFigure.py msresist/figures/figure%.py
 	./genFigure.py $*
 
 test:
