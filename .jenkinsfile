@@ -21,7 +21,11 @@ pipeline {
           }
         }
         stage('Build Notebooks') {
-          steps { sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb' }
+          steps {
+            sh 'make all'
+            archiveArtifacts artifacts: 'figure*.svg', onlyIfSuccessful: true
+            sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb'
+          }
         }
       }
     }
