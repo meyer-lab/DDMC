@@ -11,7 +11,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCfilter=False, log2T=False):
+def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCfilter=False, log2T=False, rawdata=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
@@ -30,6 +30,9 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
 
     ABC_names = FormatName(ABC_conc_mc)
     ABC_conc_mc['Master Protein Descriptions'] = ABC_names
+
+    if rawdata:
+        return ABC_conc_mc
 
     if motifs:
         ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)

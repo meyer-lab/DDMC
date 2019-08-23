@@ -4,7 +4,10 @@ This creates Figure 1.
 import os
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import scipy as sp
+import matplotlib.pyplot as plt
+from ..pre_processing import preprocessing
 from .common import subplotLabel, getSetup
 
 
@@ -14,7 +17,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((9, 7), (2, 3))
+    ax, f = getSetup((12, 10), (2, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
@@ -38,9 +41,11 @@ def makeFigure():
         Y_cv1.iloc[:, ii] /= Y_cv1.iloc[0, ii]
         Y_cv2.iloc[:, ii] /= Y_cv2.iloc[0, ii]
 
-    plotTimeCourse(ax[1:3], Y_cv1, Y_cv2)
+    plotTimeCourse(ax[0:2], Y_cv1, Y_cv2)
 
-    plotEndpoint(ax[4], Y_cv1, Y_cv2)
+    plotEndpoint(ax[2], Y_cv1, Y_cv2)
+
+    plotClustergram(ax[3:5])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -73,3 +78,16 @@ def plotEndpoint(ax, Y_cv1, Y_cv2):
     ax.bar(range_+0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color = "black")
     ax.bar(range_-0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color = "darkred")
     ax.set_ylabel("% Confluency")
+
+
+def plotClustergram(axs):
+    ABC_mc = preprocessing(motifs=True, FCfilter=True, log2T=True)
+
+    # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
+    g = sns.clustermap(ABC_mc.iloc[:, 2:], method = "single", robust=True)
+
+    p = g.dendrogram_row.reordered_ind
+    corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')
+    axs[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=axs[1])
+    axs[1].set_xticklabels(axs[1].get_xticklabels(), rotation=80, horizontalalignment='right')
+    axs[1].set_title("Correlation Heatmap");
