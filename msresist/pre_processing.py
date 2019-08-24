@@ -40,8 +40,6 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
     ABC_conc_mc = MergeDfbyMean(ABC_conc_mc.copy(), filesin[0].columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_conc_mc = ABC_conc_mc.reset_index()[filesin[0].columns]
 
-    ABC_conc_mc = MeanCenter(ABC_conc_mc)
-
     if Vfilter:
         ABC_conc_mc = VFilter(ABC_conc_mc)
 
