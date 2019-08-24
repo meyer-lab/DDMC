@@ -13,7 +13,7 @@ def pYmotifs(ABC_conc_mc, ABC_names):
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
 
     directory = os.path.join(path, "./data/Sequence_analysis/")
-    names, motifs = GeneratingKinaseMotifs("FaFile.fa", ABC_names, ABC_seqs, "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
+    names, motifs = GeneratingKinaseMotifs(ABC_names, ABC_seqs, "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
     ABC_conc_mc['peptide-phosphosite'] = motifs
     ABC_conc_mc['Master Protein Descriptions'] = names
     return ABC_conc_mc
@@ -31,17 +31,6 @@ def FormatSeq(X):
     seqs = []
     list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
     return seqs
-
-
-def GenerateFastaFile(PathToFaFile, MS_names, MS_seqs):
-    """ Sequence processor. """
-    FileHandle = open(PathToFaFile, "w+")
-    for i in range(len(MS_seqs)):
-        FileHandle.write('>' + str(MS_names[i]))
-        FileHandle.write("\n")
-        FileHandle.write(str(MS_seqs[i]))
-        FileHandle.write("\n")
-    FileHandle.close()
 
 
 def DictProteomeNameToSeq(X):
@@ -69,44 +58,36 @@ def getKeysByValue(dictOfElements, valueToFind):
     return listOfKeys
 
 
-def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
+def MatchProtNames(PathToMatchedFaFile, ProteomeDict, MS_names, MS_seqs):
     """ Goal: Match protein names of MS and Uniprot's proteome.
     Input: Path to new file and MS fasta file
     Output: Fasta file with matching protein names.
     Note that ProteomeDict[MS_name] is what the function needs to try to find
     and jump to except if MS_name is not in ProteomDict. """
     FileHandle = open(PathToMatchedFaFile, "w+")
-    for rec1 in SeqIO.parse(FaFile, "fasta"):
-        MS_seq = str(rec1.seq)
-        MS_seqU = str(rec1.seq.upper())
-        MS_name = str(rec1.description.split(" OS")[0])
-        try:
-            ProteomeDict[MS_name]
-            FileHandle.write(">" + MS_name)
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")
-        except BaseException:
-            Fixed_name = getKeysByValue(ProteomeDict, MS_seqU)
-            FileHandle.write(">" + Fixed_name[0])
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")
+    for i in range(len(MS_seqs)):
+        MS_seq = str(MS_seqs[i])
+        MS_seqU = str(MS_seqs[i]).upper()
+        MS_name = str(MS_names[i].split(" OS")[0])
+        if MS_name in ProteomeDict:
+            FileHandle.write(">" + ProteomeDict[MS_name])
+        else:
+            FileHandle.write(">" + getKeysByValue(ProteomeDict, MS_seqU)[0])
+        FileHandle.write("\n")
+        FileHandle.write(MS_seq)
+        FileHandle.write("\n")
     FileHandle.close()
 
 
-def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile, PathToProteome):
+def GeneratingKinaseMotifs(MS_names, MS_seqs, PathToMatchedFaFile, PathToProteome):
     """ Goal: Generate Phosphopeptide motifs.
     Input: Directory paths to fasta file, fasta file with matched names, and proteome
     Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file.
     Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
     counter = 0
-    GenerateFastaFile(PathToFaFile, MS_names, MS_seqs)
-    FaFile = open(PathToFaFile, 'r')
     proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
-    MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict)
-    os.remove(PathToFaFile)
+    MatchProtNames(PathToMatchedFaFile, ProteomeDict, MS_names, MS_seqs)
     MatchedFaFile = open(PathToMatchedFaFile, 'r')
     MS_names, ExtSeqs = [], []
     Allseqs, Testseqs = [], []
