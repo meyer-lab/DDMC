@@ -1,5 +1,5 @@
 
-all: figure1.svg, figure2.svg, figure3.svg, figure4.svg
+all: figure1.svg figure2.svg figure3.svg figure4.svg
 
 # Figure rules
 figure%.svg: genFigure.py msresist/figures/figure%.py
