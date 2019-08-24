@@ -59,4 +59,4 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
         plt.ylabel("Predicted Cell Viability")
     else:
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
-        axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
+        axs[ax].set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")

@@ -39,7 +39,7 @@ class MyOwnGMM(BaseEstimator):
 
     def fit(self, X, Y):
         """ fit data into GMM. """
-        self.gmm_ = GaussianMixture(n_components=self.n_components, covariance_type='full').fit(X.T)
+        self.gmm_ = GaussianMixture(n_components=self.n_components, covariance_type="full").fit(X.T)
         self.labels_ = self.gmm_.predict(X.T)
         return self
 
