@@ -216,38 +216,3 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
     os.remove(PathToMatchedFaFile)
     proteome.close()
     return MS_names, ExtSeqs
-
-
-def YTSsequences(X_seqs):
-    """Goal: Generate dictionary to Check Motifs
-       Input: Phosphopeptide sequences.
-       Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
-       Useful to check def GeneratingKinaseMotifs results. """
-    YTSdict = {}
-    seq1, seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
-    for seq in X_seqs:
-        if "y" in seq and "t" not in seq and "s" not in seq:
-            seq1.append(seq)
-        if "t" in seq and "y" not in seq and "s" not in seq:
-            seq2.append(seq)
-            YTSdict["t: "] = seq2
-        if "s" in seq and "y" not in seq and "t" not in seq:
-            seq3.append(seq)
-            YTSdict["s: "] = seq3
-        if "y" in seq and "t" in seq and "s" not in seq:
-            seq4.append(seq)
-            YTSdict["y/t: "] = seq4
-        if "y" in seq and "s" in seq and "t" not in seq:
-            seq5.append(seq)
-            YTSdict["y/s: "] = seq5
-        if "t" in seq and "s" in seq and "y" not in seq:
-            seq6.append(seq)
-
-    YTSdict["y: "] = seq1
-    YTSdict["t: "] = seq2
-    YTSdict["s: "] = seq3
-    YTSdict["y/t: "] = seq4
-    YTSdict["y/s: "] = seq5
-    YTSdict["t/s: "] = seq6
-
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSdict.items()]))
