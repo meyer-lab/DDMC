@@ -36,12 +36,12 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
 
     if motifs:
         ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)
+        
+    if Vfilter:
+        ABC_conc_mc = VFilter(ABC_conc_mc)
 
     ABC_conc_mc = MergeDfbyMean(ABC_conc_mc.copy(), filesin[0].columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_conc_mc = ABC_conc_mc.reset_index()[filesin[0].columns]
-
-    if Vfilter:
-        ABC_conc_mc = VFilter(ABC_conc_mc)
 
     if FCfilter:
         ABC_conc_mc = FoldChangeFilter(ABC_conc_mc)
