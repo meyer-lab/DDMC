@@ -123,13 +123,13 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 
-                UP_seq_copy = copy(UP_seq)
+                UP_seq_copy = list(UP_seq)
                 
                 for ii in range(len(UP_seq_copy)):
-                    if MS_seq[ii] in ("y", "t", "s"):
-                        UP_seq_copy = MS_seq[ii]
-                        
-                ExtSeqs.append(UP_seq_copy)
+                    if UP_seq_copy[ii] in ("y", "t", "s"):
+                        UP_seq_copy[ii] = MS_seq[ii]
+
+                ExtSeqs.append(''.join(UP_seq_copy))
             else:
                 print("check", MS_name, "with seq", MS_seq)
         except BaseException:
