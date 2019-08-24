@@ -9,6 +9,7 @@ from .clustering import MyOwnKMEANS, MyOwnGMM
 
 ###------------ Building k-means + PLSR pipeline and Tunning Hyperparameters ------------------###
 
+
 def kmeansPLSR_tuning(X, Y):
     """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR """
     kmeansPLSR = Pipeline([('kmeans', MyOwnKMEANS(5)), ('plsr', PLSRegression(2))])
@@ -39,6 +40,7 @@ def gmmPLSR_tuning(X, Y):
     return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 ###------------ General GridSearch Structure ------------------###
+
 
 def GridSearch_CV(model, X, Y, parameters, cv, scoring=None):
     """ Exhaustive search over specified parameter values for an estimator. """

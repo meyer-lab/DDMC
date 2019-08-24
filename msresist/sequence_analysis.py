@@ -8,6 +8,7 @@ from Bio import SeqIO
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
+
 def pYmotifs(ABC_conc_mc, ABC_names):
     ABC_seqs = FormatSeq(ABC_conc_mc)
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs

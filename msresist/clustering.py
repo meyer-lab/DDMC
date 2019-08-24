@@ -32,6 +32,7 @@ class MyOwnKMEANS(BaseEstimator):
 
 class MyOwnGMM(BaseEstimator):
     """ Runs GMM providing the centers and cluster members and sequences. """
+
     def __init__(self, n_components):
         """ Define variables """
         self.n_components = n_components
@@ -51,10 +52,10 @@ class MyOwnGMM(BaseEstimator):
         """ generate dictionary containing peptide names and sequences for each cluster. """
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
-    
+
     def probs(self, X):
         return self.gmm_.predict_proba(X.T)
-    
+
     def weights(self):
         return self.gmm_.weights_
 
@@ -64,9 +65,9 @@ def ClusterAverages(X, labels):
     X = X.T.assign(cluster=labels)
     centers = []
     dict_clustermembers = {}
-    for i in range(0, max(labels)+1):
+    for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
-        dict_clustermembers["Cluster_" + str(i+1)] = list(X[X["cluster"] == i].iloc[:, 1])
-        dict_clustermembers["seqs_Cluster_" + str(i+1)] = list(X[X["cluster"] == i].iloc[:, 0])
-        
+        dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
+        dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
+
     return pd.DataFrame(centers).T, pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))

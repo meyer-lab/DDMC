@@ -8,6 +8,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.cluster import KMeans
 from ..clustering import ClusterAverages
 
+
 class TestEstimator(unittest.TestCase):
     """ Testing class for a chained KMeans/PLSR estimator. """
 

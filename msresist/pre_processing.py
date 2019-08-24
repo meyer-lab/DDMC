@@ -36,7 +36,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
 
     if motifs:
         ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)
-        
+
     if Vfilter:
         ABC_conc_mc = VFilter(ABC_conc_mc)
 
@@ -118,6 +118,7 @@ def VFilter(ABC_conc_mc):
 #     ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
     ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])    # Including non-overlapping peptides
     return ABC_mc
+
 
 def MapOverlappingPeptides(ABC):
     """ Find recurrent peptides across biological replicates. Grouping those showing up 2 to later calculate
