@@ -13,7 +13,7 @@ def pYmotifs(ABC_conc_mc, ABC_names):
     ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
 
     directory = os.path.join(path, "./data/Sequence_analysis/")
-    names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
+    names, motifs = GeneratingKinaseMotifs("FaFile.fa", ABC_names, ABC_seqs, "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
     ABC_conc_mc['peptide-phosphosite'] = motifs
     ABC_conc_mc['Master Protein Descriptions'] = names
     return ABC_conc_mc
