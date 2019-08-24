@@ -119,90 +119,17 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
             if MS_seqU in UP_seq and MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))]:
                 counter += 1
                 Allseqs.append(MS_seq)
-                regexPattern = re.compile(MS_seqU)
-                MatchObs = regexPattern.finditer(UP_seq)
-                indices = []
-                for i in MatchObs:
-                    indices.append(i.start())
-                    indices.append(i.end())
-                if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeqs.append(UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
 
-                if "t" in MS_seq and "y" not in MS_seq and "s" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeqs.append(UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
-
-                if "s" in MS_seq and "y" not in MS_seq and "t" not in MS_seq:
-                    s_idx = MS_seq.index("s") + indices[0]
-                    ExtSeqs.append(UP_seq[s_idx - 5:s_idx] + "s" + UP_seq[s_idx + 1:s_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "t" in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "s" in MS_seq and "t" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "s" in MS_seq[y_idx - 5:y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "t" in MS_seq and "s" in MS_seq and "y" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeq = UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6]
-                    t_idx = MS_seq.index("t")
-                    if "s" in MS_seq[t_idx - 5:t_idx + 6]:
-                        s_idx = MS_seq[t_idx - 5:t_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "s" in MS_seq and "t" in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    elif "s" in MS_seq[y_idx - 5:y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
+                MS_names.append(MS_name)
+                Testseqs.append(MS_seq)
+                
+                UP_seq_copy = copy(UP_seq)
+                
+                for ii in range(len(UP_seq_copy)):
+                    if MS_seq[ii] in ("y", "t", "s"):
+                        UP_seq_copy = MS_seq[ii]
+                        
+                ExtSeqs.append(UP_seq_copy)
             else:
                 print("check", MS_name, "with seq", MS_seq)
         except BaseException:
