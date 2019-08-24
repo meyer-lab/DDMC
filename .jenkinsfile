@@ -6,23 +6,23 @@ pipeline {
   }
   stages {
     stage('Clean') { steps { sh 'git clean -ffdx' } }
-    stage('Build/Test') {
-      parallel {
-        stage('Test') {
-          steps {
-            sh 'make testcover'
-            cobertura coberturaReportFile: 'coverage.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-          }
-        }
-        stage('Lint') {
-          steps {
-            sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
-            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
-          }
-        }
-        stage('Build Notebooks') {
-          steps { sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb' }
-        }
+    stage('Test') {
+      steps {
+        sh 'make testcover'
+        cobertura coberturaReportFile: 'coverage.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+      }
+    }
+    stage('Lint') {
+      steps {
+        sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
+        recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
+      }
+    }
+    stage('Build Notebooks') {
+      steps {
+        sh 'make all'
+        archiveArtifacts artifacts: 'figure*.svg', onlyIfSuccessful: true
+        sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb'
       }
     }
   }
