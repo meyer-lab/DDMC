@@ -85,6 +85,7 @@ def GeneratingKinaseMotifs(MS_names, MS_seqs, PathToMatchedFaFile, PathToProteom
     Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file.
     Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
     counter = 0
+    motif_size = 5
     proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     MatchProtNames(PathToMatchedFaFile, ProteomeDict, MS_names, MS_seqs)
@@ -97,30 +98,62 @@ def GeneratingKinaseMotifs(MS_names, MS_seqs, PathToMatchedFaFile, PathToProteom
         MS_name = str(rec1.description)
         try:
             UP_seq = ProteomeDict[MS_name]
-            if MS_seqU in UP_seq and MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))]:
-                counter += 1
-                Allseqs.append(MS_seq)
+            assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq
+            assert MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))], \
+                "check " + MS_name + " with seq " + MS_seq
+
+            counter += 1
+            Allseqs.append(MS_seq)
+            regexPattern = re.compile(MS_seqU)
+            MatchObs = list(regexPattern.finditer(UP_seq))
+            # Assert there's only one match
+            # assert len(MatchObs) == 1, print(MatchObs)
+            # TODO: Note that we're only taking the first peptide match
+
+            # For all y, t, s phosphosites
+            phosphoIDX = list(re.compile("y|t|s").finditer(MS_seq))
+            assert len(phosphoIDX) != 0
+            for pIDX in phosphoIDX:
+                y_idx = pIDX.start() + MatchObs[0].start()
 
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
+                ExtSeqs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, pIDX, phosphoIDX))
                 
-                UP_seq_copy = list(UP_seq)
-                
-                for ii in range(len(UP_seq_copy)):
-                    if UP_seq_copy[ii] in ("y", "t", "s"):
-                        UP_seq_copy[ii] = MS_seq[ii]
-
-                ExtSeqs.append(''.join(UP_seq_copy))
-            else:
-                print("check", MS_name, "with seq", MS_seq)
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
+            raise
 
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     if li_dif:
         print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
 
-    assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
+    assert counter == len(MS_names), "missing peptides"
+    assert counter == len(ExtSeqs), "missing peptides"
+
     os.remove(PathToMatchedFaFile)
     proteome.close()
     return MS_names, ExtSeqs
+
+
+def makeMotif(UP_seq, MS_seq, motif_size, y_idx, pIDX, phosphoIDX):
+    """ Make a motif out of the matched sequences. """
+    UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
+    assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
+
+    # If we ran off the end of the sequence at the beginning, append a gap
+    if y_idx - motif_size < 0:
+        for ii in range(motif_size - y_idx):
+            UP_seq_copy.insert(0, "-")
+
+    # Now go through and copy over phosphorylation
+    for pppIDX in phosphoIDX:
+        position = pppIDX.start() - pIDX.start()
+        # If the phosphosite is within the motif
+        if abs(position) < motif_size:
+            editPos = position + motif_size
+            UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
+            assert UP_seq_copy[editPos] == MS_seq[pppIDX.start()], \
+                UP_seq_copy[editPos] + " " + MS_seq[pppIDX.start()]
+
+    return ''.join(UP_seq_copy)
