@@ -3,19 +3,20 @@ import sys
 import logging
 import time
 import matplotlib
-matplotlib.use('AGG')
 
-fdir = './'
+matplotlib.use("AGG")
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+fdir = "./"
 
-if __name__ == '__main__':
-    nameOut = 'figure' + sys.argv[1]
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
+
+if __name__ == "__main__":
+    nameOut = "figure" + sys.argv[1]
 
     start = time.time()
 
-    exec('from msresist.figures.' + nameOut + ' import makeFigure')
+    exec("from msresist.figures." + nameOut + " import makeFigure")
     ff = makeFigure()
-    ff.savefig(fdir + nameOut + '.svg', dpi=ff.dpi, bbox_inches='tight', pad_inches=0)
+    ff.savefig(fdir + nameOut + ".svg", dpi=ff.dpi, bbox_inches="tight", pad_inches=0)
 
-    logging.info('%s is done after %s seconds.', nameOut, time.time() - start)
+    logging.info("%s is done after %s seconds.", nameOut, time.time() - start)
