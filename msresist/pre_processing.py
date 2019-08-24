@@ -1,43 +1,55 @@
 """ This scripts handles all the pre-processing required to merge and transform the raw mass spec biological replicates. """
-
+import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from msresist.sequence_analysis import FormatName, pYmotifs
+from .sequence_analysis import FormatName, pYmotifs
+
+
+path = os.path.dirname(os.path.abspath(__file__))
 
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
-def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, log2T=False):
+def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCfilter=False, log2T=False, rawdata=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
     Note 1: 'motifs' redefines peptide sequences as XXXXXyXXXXX which affects merging.
     Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis."""
-    ABC = pd.concat([A_r, B_r, C_r])
-    ABC_log = Log2T(ABC.copy())
-    ABC_conc_mc = MeanCenter(ABC_log, logT=False)
+    filesin = list()
+
+    if A_r:
+        filesin.append(pd.read_csv(os.path.join(path, './data/Raw/20180817_JG_AM_TMT10plex_R1_psms_raw.csv'), header=0))
+    if B_r:
+        filesin.append(pd.read_csv(os.path.join(path, './data/Raw/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv'), header=0))
+    if C_r:
+        filesin.append(pd.read_csv(os.path.join(path, './data/Raw/CombinedBR3_TR1&2_raw.csv'), header=0))
+
+    ABC_conc_mc = MeanCenter(Log2T(pd.concat(filesin)))
 
     ABC_names = FormatName(ABC_conc_mc)
     ABC_conc_mc['Master Protein Descriptions'] = ABC_names
 
+    if rawdata:
+        return ABC_conc_mc
+
     if motifs:
         ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)
-
-    ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
-    ABC_merged = ABC_merged.reset_index()[A_r.columns]
-    ABC_mc = LinearFoldChange(ABC_merged)
-
+        
     if Vfilter:
-        ABC_mc = VFilter(ABC_conc_mc)
+        ABC_conc_mc = VFilter(ABC_conc_mc)
+
+    ABC_conc_mc = MergeDfbyMean(ABC_conc_mc.copy(), filesin[0].columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
+    ABC_conc_mc = ABC_conc_mc.reset_index()[filesin[0].columns]
 
     if FCfilter:
-        ABC_mc = FoldChangeFilter(ABC_mc)
+        ABC_conc_mc = FoldChangeFilter(ABC_conc_mc)
 
-    if log2T:
-        ABC_mc = Log2T(ABC_mc)
+    if not log2T:
+        ABC_conc_mc = LinearFoldChange(ABC_conc_mc)
 
-    return ABC_mc
+    return ABC_conc_mc
 
 
 def MergeDfbyMean(X, values, index):
@@ -59,15 +71,12 @@ def FoldChangeToControl(X):
 
 def Log2T(X):
     """ Convert to log2 scale keeping original sign. """
-    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis=0)
+    X.iloc[:, 2:] = np.log2(X.iloc[:, 2:])
     return X
 
 
-def MeanCenter(X, logT=False):
+def MeanCenter(X):
     """ Mean centers each row of values. logT also optionally log2-transforms. """
-    if logT:
-        X.iloc[:, 2:] = np.log2(X.iloc[:, 2:].values)
-
     X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
     return X
 
@@ -82,7 +91,8 @@ def VarianceFilter(X, varCut=0.1):
 def FoldChangeFilter(X):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
-    Xidx = np.any(X.iloc[:, 2:].values <= 0.5, axis=1) | np.any(X.iloc[:, 2:].values >= 2.0, axis=1)
+    XX = LinearFoldChange(X.copy())
+    Xidx = np.any(XX.iloc[:, 2:].values <= 0.5, axis=1) | np.any(XX.iloc[:, 2:].values >= 2.0, axis=1)
     return X.iloc[Xidx, :]
 
 
