@@ -3,7 +3,6 @@ Testing file for the chained methods.
 """
 import unittest
 import numpy as np
-import pandas as pd
 from ..pre_processing import preprocessing
 
 

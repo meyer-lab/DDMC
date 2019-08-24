@@ -1,6 +1,5 @@
 """ Clustering functions. """
 
-import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
@@ -14,7 +13,7 @@ class MyOwnKMEANS(BaseEstimator):
         """ Define variables. """
         self.n_clusters = n_clusters
 
-    def fit(self, X, Y):
+    def fit(self, X, _):
         """ fit data into k-means. """
         self.kmeans_ = KMeans(n_clusters=self.n_clusters).fit(X.T)
         return self
@@ -37,7 +36,7 @@ class MyOwnGMM(BaseEstimator):
         """ Define variables """
         self.n_components = n_components
 
-    def fit(self, X, Y):
+    def fit(self, X, _):
         """ fit data into GMM. """
         self.gmm_ = GaussianMixture(n_components=self.n_components, covariance_type="full").fit(X.T)
         self.labels_ = self.gmm_.predict(X.T)
