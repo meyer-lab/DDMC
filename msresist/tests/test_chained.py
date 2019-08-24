@@ -8,12 +8,13 @@ from sklearn.datasets import load_diabetes
 from sklearn.cluster import KMeans
 from ..clustering import ClusterAverages
 
+
 class TestEstimator(unittest.TestCase):
     """ Testing class for a chained KMeans/PLSR estimator. """
 
     def test_fitting(self):
         """ Test that ClusterAverages is working by comparing to cluster centers. """
-        X = pd.DataFrame(load_diabetes(return_X_y=False)['data'])
+        X = pd.DataFrame(load_diabetes(return_X_y=False)["data"])
         kmeans = KMeans(init="k-means++", n_clusters=4)
         cluster_assignments = kmeans.fit_predict(X.T)
         centers = ClusterAverages(X, cluster_assignments)

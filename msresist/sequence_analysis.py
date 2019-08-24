@@ -8,14 +8,15 @@ from Bio import SeqIO
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
+
 def pYmotifs(ABC_conc_mc, ABC_names):
     ABC_seqs = FormatSeq(ABC_conc_mc)
-    ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
+    ABC_conc_mc["peptide-phosphosite"] = ABC_seqs
 
     directory = os.path.join(path, "./data/Sequence_analysis/")
     names, motifs = GeneratingKinaseMotifs("FaFile.fa", ABC_names, ABC_seqs, "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
-    ABC_conc_mc['peptide-phosphosite'] = motifs
-    ABC_conc_mc['Master Protein Descriptions'] = names
+    ABC_conc_mc["peptide-phosphosite"] = motifs
+    ABC_conc_mc["Master Protein Descriptions"] = names
     return ABC_conc_mc
 
 
@@ -37,7 +38,7 @@ def GenerateFastaFile(PathToFaFile, MS_names, MS_seqs):
     """ Sequence processor. """
     FileHandle = open(PathToFaFile, "w+")
     for i in range(len(MS_seqs)):
-        FileHandle.write('>' + str(MS_names[i]))
+        FileHandle.write(">" + str(MS_names[i]))
         FileHandle.write("\n")
         FileHandle.write(str(MS_seqs[i]))
         FileHandle.write("\n")
@@ -102,12 +103,12 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
     Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
     counter = 0
     GenerateFastaFile(PathToFaFile, MS_names, MS_seqs)
-    FaFile = open(PathToFaFile, 'r')
-    proteome = open(PathToProteome, 'r')
+    FaFile = open(PathToFaFile, "r")
+    proteome = open(PathToProteome, "r")
     ProteomeDict = DictProteomeNameToSeq(proteome)
     MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict)
     os.remove(PathToFaFile)
-    MatchedFaFile = open(PathToMatchedFaFile, 'r')
+    MatchedFaFile = open(PathToMatchedFaFile, "r")
     MS_names, ExtSeqs = [], []
     Allseqs, Testseqs = [], []
     for rec1 in SeqIO.parse(MatchedFaFile, "fasta"):
@@ -127,29 +128,29 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
                     indices.append(i.end())
                 if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeqs.append(UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6])
+                    ExtSeqs.append(UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6])
                     MS_names.append(MS_name)
                     Testseqs.append(MS_seq)
 
                 if "t" in MS_seq and "y" not in MS_seq and "s" not in MS_seq:
                     t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeqs.append(UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6])
+                    ExtSeqs.append(UP_seq[t_idx - 5 : t_idx] + "t" + UP_seq[t_idx + 1 : t_idx + 6])
                     MS_names.append(MS_name)
                     Testseqs.append(MS_seq)
 
                 if "s" in MS_seq and "y" not in MS_seq and "t" not in MS_seq:
                     s_idx = MS_seq.index("s") + indices[0]
-                    ExtSeqs.append(UP_seq[s_idx - 5:s_idx] + "s" + UP_seq[s_idx + 1:s_idx + 6])
+                    ExtSeqs.append(UP_seq[s_idx - 5 : s_idx] + "s" + UP_seq[s_idx + 1 : s_idx + 6])
                     MS_names.append(MS_name)
                     Testseqs.append(MS_seq)
 
                 if "y" in MS_seq and "t" in MS_seq and "s" not in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
+                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
                     y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
+                    if "t" in MS_seq[y_idx - 5 : y_idx + 6]:
+                        t_idx = MS_seq[y_idx - 5 : y_idx + 6].index("t")
+                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1 :])
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
                     else:
@@ -159,11 +160,11 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
 
                 if "y" in MS_seq and "s" in MS_seq and "t" not in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
+                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
                     y_idx = MS_seq.index("y")
-                    if "s" in MS_seq[y_idx - 5:y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
+                    if "s" in MS_seq[y_idx - 5 : y_idx + 6]:
+                        s_idx = MS_seq[y_idx - 5 : y_idx + 6].index("s")
+                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
                     else:
@@ -173,11 +174,11 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
 
                 if "t" in MS_seq and "s" in MS_seq and "y" not in MS_seq:
                     t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeq = UP_seq[t_idx - 5:t_idx] + "t" + UP_seq[t_idx + 1:t_idx + 6]
+                    ExtSeq = UP_seq[t_idx - 5 : t_idx] + "t" + UP_seq[t_idx + 1 : t_idx + 6]
                     t_idx = MS_seq.index("t")
-                    if "s" in MS_seq[t_idx - 5:t_idx + 6]:
-                        s_idx = MS_seq[t_idx - 5:t_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
+                    if "s" in MS_seq[t_idx - 5 : t_idx + 6]:
+                        s_idx = MS_seq[t_idx - 5 : t_idx + 6].index("s")
+                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
                     else:
@@ -187,16 +188,16 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
 
                 if "y" in MS_seq and "s" in MS_seq and "t" in MS_seq:
                     y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5:y_idx] + "y" + UP_seq[y_idx + 1:y_idx + 6]
+                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
                     y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5:y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5:y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1:])
+                    if "t" in MS_seq[y_idx - 5 : y_idx + 6]:
+                        t_idx = MS_seq[y_idx - 5 : y_idx + 6].index("t")
+                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1 :])
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
-                    elif "s" in MS_seq[y_idx - 5:y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5:y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1:])
+                    elif "s" in MS_seq[y_idx - 5 : y_idx + 6]:
+                        s_idx = MS_seq[y_idx - 5 : y_idx + 6].index("s")
+                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
                         MS_names.append(MS_name)
                         Testseqs.append(MS_seq)
                     else:
@@ -212,7 +213,7 @@ def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile,
     if li_dif:
         print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
 
-    assert(counter == len(MS_names) and counter == len(ExtSeqs)), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
+    assert counter == len(MS_names) and counter == len(ExtSeqs), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
     os.remove(PathToMatchedFaFile)
     proteome.close()
     return MS_names, ExtSeqs

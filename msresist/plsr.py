@@ -39,14 +39,14 @@ def Q2Y_across_components(X, Y, max_comps):
 def PLSR(X, Y, nComponents):
     "Run PLSR."
     plsr = PLSRegression(n_components=nComponents)
-    X_scores, Y_scores = plsr.fit_transform(X, Y)
+    X_scores, _ = plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = plsr.x_loadings_[:, 0], plsr.x_loadings_[:, 1]
     PC1_yload, PC2_yload = plsr.y_loadings_[:, 0], plsr.y_loadings_[:, 1]
     return plsr, PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
 
 
-def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
+def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, _, ax, axs):
     "Plot exprimentally-measured vs PLSR-predicted values"
     Y_predictions = np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size))
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
@@ -59,5 +59,4 @@ def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, fig, ax, axs):
         plt.ylabel("Predicted Cell Viability")
     else:
         axs[ax].scatter(Y, np.squeeze(Y_predictions))
-        axs[ax].set(title="Correlation Measured vs Predicted", xlabel='Actual Y', ylabel='Predicted Y')
-        
+        axs[ax].set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
