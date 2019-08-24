@@ -88,6 +88,7 @@ def plotClustergram(axs):
 
     p = g.dendrogram_row.reordered_ind
     corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')
-    axs[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=axs[1])
-    axs[1].set_xticklabels(axs[1].get_xticklabels(), rotation=80, horizontalalignment='right')
-    axs[1].set_title("Correlation Heatmap");
+    # Correlation heatmap was really just for exploration. Not including here.
+    # axs[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=axs[1])
+    # axs[1].set_xticklabels(axs[1].get_xticklabels(), rotation=80, horizontalalignment='right')
+    # axs[1].set_title("Correlation Heatmap");
