@@ -8,6 +8,31 @@ from Bio import SeqIO
 
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
+def pYmotifs(ABC_conc_mc, ABC_names):
+    ABC_seqs = FormatSeq(ABC_conc_mc)
+    ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
+
+    directory = "./msresist/data/Sequence_analysis/"
+    names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
+    ABC_conc_mc['peptide-phosphosite'] = motifs
+    ABC_conc_mc['Master Protein Descriptions'] = names
+    return ABC_conc_mc
+
+
+def FormatName(X):
+    """ Keep only the general protein name, without any other accession information """
+    names = []
+    list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
+    return names
+
+
+def FormatSeq(X):
+    """ Deleting -1/-2 for mapping to uniprot's proteome"""
+    seqs = []
+    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
+    return seqs
+
+
 def GenerateFastaFile(PathToFaFile, MS_names, MS_seqs):
     """ Sequence processor. """
     FileHandle = open(PathToFaFile, "w+")

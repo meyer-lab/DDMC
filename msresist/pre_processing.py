@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-from msresist.sequence_analysis import GeneratingKinaseMotifs
+from msresist.sequence_analysis import FormatName, pYmotifs
 
 
 ###-------------------------- Pre-processing Raw Data --------------------------###
@@ -22,38 +22,14 @@ def preprocessing(A_r, B_r, C_r, motifs=False, Vfilter=False, FCfilter=False, lo
     ABC_conc_mc['Master Protein Descriptions'] = ABC_names
 
     if motifs:
-        ABC_seqs = FormatSeq(ABC_conc_mc)
-        ABC_conc_mc['peptide-phosphosite'] = ABC_seqs
-
-        directory = "./msresist/data/Sequence_analysis/"
-        names, motifs = GeneratingKinaseMotifs(directory + "FaFile.fa", ABC_names, ABC_seqs, directory + "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
-        ABC_conc_mc['peptide-phosphosite'] = motifs
-        ABC_conc_mc['Master Protein Descriptions'] = names
+        ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)
 
     ABC_merged = MergeDfbyMean(ABC_conc_mc.copy(), A_r.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
     ABC_merged = ABC_merged.reset_index()[A_r.columns]
-    ABC_merged = LinearScale(ABC_merged)
-    ABC_mc = FoldChangeToControl(ABC_merged)
+    ABC_mc = LinearFoldChange(ABC_merged)
 
     if Vfilter:
-        ABC_conc_mc = LinearScale(ABC_conc_mc)
-        ABC_conc_mc_fc = FoldChangeToControl(ABC_conc_mc)
-        NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc_fc)
-
-        NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc_fc)
-
-        CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc_fc)
-        DupsTable = CorrCoefFilter(CorrCoefPeptides)
-        DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
-        DupsTable = DupsTable.reset_index()[A_r.columns]
-
-        StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
-        TripsTable = TripsMeanAndStd(StdPeptides, A_r.columns)
-        TripsTable = FilterByStdev(TripsTable)
-        TripsTable.columns = A_r.columns
-
-#         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
-        ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])    # Including non-overlapping peptides
+        ABC_mc = VFilter(ABC_conc_mc)
 
     if FCfilter:
         ABC_mc = FoldChangeFilter(ABC_mc)
@@ -69,21 +45,21 @@ def MergeDfbyMean(X, values, index):
     return pd.pivot_table(X, values=values, index=index, aggfunc=np.mean)
 
 
-def LinearScale(X):
-    """ Convert to linear from log2-scale. """
-    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:])
-    return X
-
-
-def Log2T(X):
-    """ Convert to log2 scale keeping original sign. """
-    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis=0)
+def LinearFoldChange(X):
+    """ Convert to linear fold-change from log2 mean-centered. """
+    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:]).div(np.power(2, X.iloc[:, 2]), axis=0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
     X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis=0)
+    return X
+
+
+def Log2T(X):
+    """ Convert to log2 scale keeping original sign. """
+    X.iloc[:, 2:] = np.sign(X.iloc[:, 2:]).multiply(np.log2(abs(X.iloc[:, 2:])), axis=0)
     return X
 
 
@@ -110,22 +86,28 @@ def FoldChangeFilter(X):
     return X.iloc[Xidx, :]
 
 
-def FormatName(X):
-    """ Keep only the general protein name, without any other accession information """
-    names = []
-    list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
-    return names
-
-
-def FormatSeq(X):
-    """ Deleting -1/-2 for mapping to uniprot's proteome"""
-    seqs = []
-    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
-    return seqs
-
-
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
+
+def VFilter(ABC_conc_mc):
+    ABC_conc_mc_fc = LinearFoldChange(ABC_conc_mc)
+    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc_fc)
+
+    NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc_fc)
+
+    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc_fc)
+    DupsTable = CorrCoefFilter(CorrCoefPeptides)
+    DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:], ['Master Protein Descriptions', 'peptide-phosphosite'])
+    DupsTable = DupsTable.reset_index()[ABC_conc_mc.columns]
+
+    StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
+    TripsTable = TripsMeanAndStd(StdPeptides, ABC_conc_mc.columns)
+    TripsTable = FilterByStdev(TripsTable)
+    TripsTable.columns = ABC_conc_mc.columns
+
+#     ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
+    ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])    # Including non-overlapping peptides
+    return ABC_mc
 
 def MapOverlappingPeptides(ABC):
     """ Find recurrent peptides across biological replicates. Grouping those showing up 2 to later calculate
