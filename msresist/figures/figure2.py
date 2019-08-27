@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 from msresist.pre_processing import preprocessing, MergeDfbyMean
+import warnings
+warnings.simplefilter("ignore")
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -63,7 +65,7 @@ def makeFigure():
 
     plotGridSearch(ax[1], data ,Y_cv)
 
-    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv)
+    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv, treatments)
 
     plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl)
 
@@ -131,7 +133,7 @@ def plotActualvsPred(ax, kmeans_plsr, X, Y):
     ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
 
 
-def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl):
+def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
     X_scores, Y_scores = kmeans_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = kmeans_plsr.named_steps.plsr.x_loadings_[:, 0], kmeans_plsr.named_steps.plsr.x_loadings_[:, 1]
