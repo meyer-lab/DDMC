@@ -60,6 +60,8 @@ def makeFigure():
     ncl, ncomp = 4, 2
     estimators = [('kmeans', MyOwnKMEANS(ncl)), ('plsr', PLSRegression(ncomp))]
     kmeans_plsr = Pipeline(estimators)
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     plotR2YQ2Y(ax[0], ncl, data, Y_cv)
 
@@ -67,7 +69,9 @@ def makeFigure():
 
     plotMeasuredVsPredicted(ax[2], kmeans_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments)
+    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments, colors_)
+    
+    clusteraverages(ax[5], data, kmeans_plsr, colors_, treatments)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -127,13 +131,11 @@ def plotGridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
+def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     X_scores, Y_scores = kmeans_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = kmeans_plsr.named_steps.plsr.x_loadings_[:, 0], kmeans_plsr.named_steps.plsr.x_loadings_[:, 1]
     PC1_yload, PC2_yload = kmeans_plsr.named_steps.plsr.y_loadings_[:, 0], kmeans_plsr.named_steps.plsr.y_loadings_[:, 1]
-
-    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     #Scores
     ax[0].scatter(PC1_scores,PC2_scores)
@@ -163,10 +165,10 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
     ax[1].set_xlim([-1.1, 1.1])
     ax[1].set_ylim([-1.1, 1.1])
     
-def ClusterAverages():
-    centers = kmeans_plsr.named_steps.kmeans.transform(data).T
+def clusteraverages(ax, X, model_plsr, colors_, treatments):
+    centers = model_plsr.named_steps.kmeans.transform(X).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
-
     ax.legend()
+    
     ax.set_xticks(np.arange(centers.shape[1]), (treatments), rotation=70)
