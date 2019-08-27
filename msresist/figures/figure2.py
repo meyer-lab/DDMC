@@ -15,7 +15,7 @@ from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from msresist.parameter_tuning import kmeansPLSR_tuning
-from msresist.plsr import Q2Y_across_components, R2Y_across_components
+from msresist.plsr import Q2Y_across_components, R2Y_across_components, plotMeasuredVsPredicted
 from msresist.clustering import MyOwnKMEANS
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -31,7 +31,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (2, 3))
+    ax, f = getSetup((14, 10), (2, 3))
 
     # blank out first axis for cartoon
 #     ax[0].axis('off')
@@ -49,7 +49,7 @@ def makeFigure():
     Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
     #Phosphorylation data
-    ABC_mc = preprocessing(motifs=True, Vfilter=False, FCfilter=True, log2T=True)
+    ABC_mc = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
 
     header = ABC_mc.columns
     treatments = ABC_mc.columns[2:]
@@ -65,7 +65,7 @@ def makeFigure():
 
     plotGridSearch(ax[1], data ,Y_cv)
 
-    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv)
+    plotMeasuredVsPredicted(ax[2], kmeans_plsr, data, Y_cv)
 
     plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments)
 
@@ -123,13 +123,8 @@ def plotGridSearch(ax, X, Y):
 
     ax.set_xticks(ind)
     ax.set_xticklabels(flattened, fontsize=10)
-
-
-def plotActualvsPred(ax, kmeans_plsr, X, Y):
-    Y_predictions = np.squeeze(cross_val_predict(kmeans_plsr, X, Y, cv=Y.size))
-    ax.scatter(Y, np.squeeze(Y_predictions))
-    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
-    ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
+    ax.set_xlabel("Number of Components per Cluster")
+    ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
 def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
@@ -145,8 +140,8 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
     for j, txt in enumerate(treatments):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
     ax[0].set_title('PLSR Model Scores')
-    ax[0].set_xlabel('PC1')
-    ax[0].set_ylabel('PC2')
+    ax[0].set_xlabel('Principal Component 1')
+    ax[0].set_ylabel('Principal Component 2')
     ax[0].axhline(y=0, color='0.25', linestyle='--')
     ax[0].axvline(x=0, color='0.25', linestyle='--')
     ax[0].set_xlim([-6, 6])
@@ -161,9 +156,17 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments):
     ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
     ax[1].legend(loc=4)
     ax[1].set_title('PLSR Model Loadings (Averaged Clusters)')
-    ax[1].set_xlabel('PC1')
-    ax[1].set_ylabel('PC2')
+    ax[1].set_xlabel('Principal Component 1')
+    ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
     ax[1].set_xlim([-1.1, 1.1])
     ax[1].set_ylim([-1.1, 1.1])
+    
+def ClusterAverages():
+    centers = kmeans_plsr.named_steps.kmeans.transform(data).T
+    for i in range(centers.shape[0]):
+        ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
+
+    ax.legend()
+    ax.set_xticks(np.arange(centers.shape[1]), (treatments), rotation=70)
