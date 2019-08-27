@@ -31,7 +31,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((7, 9), (2, 3))
+    ax, f = getSetup((12, 10), (2, 3))
 
     # blank out first axis for cartoon
 #     ax[0].axis('off')
@@ -110,7 +110,6 @@ def plotGridSearch(ax, X, Y):
 
     ind = np.concatenate((x1,x2,x3,x4,x5))
 
-    fig, ax = plt.subplots(figsize=(10,8))
     ax.bar(x1, twoC, width, edgecolor = 'black', color = "g")
     ax.bar(x2, threeC, width, edgecolor = 'black', color = "g")
     ax.bar(x3, fourC, width, edgecolor = 'black', color = "g")

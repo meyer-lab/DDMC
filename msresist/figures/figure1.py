@@ -59,11 +59,11 @@ def plotTimeCourse(ax, Y_cv1, Y_cv2):
     ax[0].set_title("Experiment 3")
     ax[0].plot(Y_cv1.iloc[:, 0], Y_cv1.iloc[:, 1:])
     ax[0].legend(Y_cv1.columns[1:])
-    ax[0].set_ylabel("% Confluency")
+    ax[0].set_ylabel("Fold-change to t=0h")
     ax[0].set_xlabel("Time (hours)")
     ax[1].set_title("Experiment 4")
     ax[1].plot(Y_cv2.iloc[:, 0], Y_cv2.iloc[:, 1:])
-    ax[1].set_ylabel("% Confluency")
+    ax[1].set_ylabel("Fold-change to t=0h")
     ax[1].set_xlabel("Time (hours)");
 
 
