@@ -2,6 +2,7 @@
 This creates Figure 2.
 """
 
+import os
 import pandas as pd
 import numpy as np
 from .common import subplotLabel, getSetup
