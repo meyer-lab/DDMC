@@ -171,4 +171,6 @@ def clusteraverages(ax, X, model_plsr, colors_, treatments):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
     ax.legend()
     
-    ax.set_xticks(np.arange(centers.shape[1]), (treatments), rotation=70)
+    ax.set_xticks(np.arange(centers.shape[1]))
+    ax.set_xticklabels(treatments, rotation=70, rotation_mode="anchor")
+    ax.set_ylabel("normalized signal")
