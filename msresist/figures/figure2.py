@@ -23,6 +23,9 @@ import matplotlib.cm as cm
 from msresist.pre_processing import preprocessing, MergeDfbyMean
 
 
+path = os.path.dirname(os.path.abspath(__file__))
+
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
