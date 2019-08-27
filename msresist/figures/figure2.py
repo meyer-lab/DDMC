@@ -59,20 +59,20 @@ def makeFigure():
     estimators = [('kmeans', MyOwnKMEANS(ncl)), ('plsr', PLSRegression(ncomp))]
     kmeans_plsr = Pipeline(estimators)
 
-    plotR2YQ2Y(axs[0], ncl, data, Y_cv)
+    plotR2YQ2Y(ax[0], ncl, data, Y_cv)
 
-    plotGridSearch(axs[1], data ,Y_cv)
+    plotGridSearch(ax[1], data ,Y_cv)
 
-    plotActualvsPred(axs[2], kmeans_plsr, data, Y_cv)
+    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv)
 
-    plotScoresLoadings(axs[3:5], kmeans_plsr, data, Y_cv, ncl)
+    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl)
 
     # Add subplot labels
     subplotLabel(ax)
 
     return f
 
-def plotR2YQ2Y(axs, ncl, X, Y):
+def plotR2YQ2Y(ax, ncl, X, Y):
     kmeans = MyOwnKMEANS(ncl).fit(X, Y)
     centers = kmeans.transform(X)
 
@@ -82,14 +82,14 @@ def plotR2YQ2Y(axs, ncl, X, Y):
 
     range_ = np.linspace(1,maxComp,maxComp)
 
-    axs.bar(range_+0.15,Q2Y,width=0.3,align='center',label='Q2Y', color = "darkblue")
-    axs.bar(range_-0.15,R2Y,width=0.3,align='center',label='R2Y', color = "black")
-    axs.set_title("R2Y/Q2Y Cell Viability")
-    axs.set_xlabel("Number of Components")
-    axs.legend(loc=3)
+    ax.bar(range_+0.15,Q2Y,width=0.3,align='center',label='Q2Y', color = "darkblue")
+    ax.bar(range_-0.15,R2Y,width=0.3,align='center',label='R2Y', color = "black")
+    ax.set_title("R2Y/Q2Y Cell Viability")
+    ax.set_xlabel("Number of Components")
+    ax.legend(loc=3)
 
 
-def plotGridSearch(axs, X, Y):
+def plotGridSearch(ax, X, Y):
     CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
     twoC = np.abs(CVresults_min.iloc[:2, 2])
     threeC = np.abs(CVresults_min.iloc[2:5, 2])
@@ -109,11 +109,11 @@ def plotGridSearch(axs, X, Y):
     ind = np.concatenate((x1,x2,x3,x4,x5))
 
     fig, ax = plt.subplots(figsize=(10,8))
-    axs.bar(x1, twoC, width, edgecolor = 'black', color = "g")
-    axs.bar(x2, threeC, width, edgecolor = 'black', color = "g")
-    axs.bar(x3, fourC, width, edgecolor = 'black', color = "g")
-    axs.bar(x4, fiveC, width, edgecolor = "black", color = "g")
-    axs.bar(x5, sixC, width, edgecolor = "black", color = "g")
+    ax.bar(x1, twoC, width, edgecolor = 'black', color = "g")
+    ax.bar(x2, threeC, width, edgecolor = 'black', color = "g")
+    ax.bar(x3, fourC, width, edgecolor = 'black', color = "g")
+    ax.bar(x4, fiveC, width, edgecolor = "black", color = "g")
+    ax.bar(x5, sixC, width, edgecolor = "black", color = "g")
 
     comps =[]
     for ii in range(2, 7):
@@ -124,14 +124,14 @@ def plotGridSearch(axs, X, Y):
     ax.set_xticklabels(flattened, fontsize=10)
 
 
-def plotActualvsPred(axs, kmeans_plsr, X, Y):
+def plotActualvsPred(ax, kmeans_plsr, X, Y):
     Y_predictions = np.squeeze(cross_val_predict(kmeans_plsr, X, Y, cv=Y.size))
-    axs.scatter(Y, np.squeeze(Y_predictions))
-    axs.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
-    axs.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
+    ax.scatter(Y, np.squeeze(Y_predictions))
+    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
+    ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
 
 
-def plotScoresLoadings(axs, kmeans_plsr, X, Y, ncl):
+def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl):
     X_scores, Y_scores = kmeans_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = kmeans_plsr.named_steps.plsr.x_loadings_[:, 0], kmeans_plsr.named_steps.plsr.x_loadings_[:, 1]
@@ -140,29 +140,29 @@ def plotScoresLoadings(axs, kmeans_plsr, X, Y, ncl):
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     #Scores
-    axs[0].scatter(PC1_scores,PC2_scores)
+    ax[0].scatter(PC1_scores,PC2_scores)
     for j, txt in enumerate(treatments):
-        axs[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
-    axs[0].set_title('PLSR Model Scores')
-    axs[0].set_xlabel('PC1')
-    axs[0].set_ylabel('PC2')
-    axs[0].axhline(y=0, color='0.25', linestyle='--')
-    axs[0].axvline(x=0, color='0.25', linestyle='--')
-    axs[0].set_xlim([-6, 6])
-    axs[0].set_ylim([-2, 2])
+        ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
+    ax[0].set_title('PLSR Model Scores')
+    ax[0].set_xlabel('PC1')
+    ax[0].set_ylabel('PC2')
+    ax[0].axhline(y=0, color='0.25', linestyle='--')
+    ax[0].axvline(x=0, color='0.25', linestyle='--')
+    ax[0].set_xlim([-6, 6])
+    ax[0].set_ylim([-2, 2])
 
     #Loadings
     numbered=[]
     list(map(lambda v: numbered.append(str(v+1)), range(ncl)))
     for i, txt in enumerate(numbered):
-        axs[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-    axs[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
-    axs[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
-    axs[1].legend(loc=4)
-    axs[1].set_title('PLSR Model Loadings (Averaged Clusters)')
-    axs[1].set_xlabel('PC1')
-    axs[1].set_ylabel('PC2')
-    axs[1].axhline(y=0, color='0.25', linestyle='--')
-    axs[1].axvline(x=0, color='0.25', linestyle='--')
-    axs[1].set_xlim([-1.1, 1.1])
-    axs[1].set_ylim([-1.1, 1.1])
+        ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
+    ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
+    ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
+    ax[1].legend(loc=4)
+    ax[1].set_title('PLSR Model Loadings (Averaged Clusters)')
+    ax[1].set_xlabel('PC1')
+    ax[1].set_ylabel('PC2')
+    ax[1].axhline(y=0, color='0.25', linestyle='--')
+    ax[1].axvline(x=0, color='0.25', linestyle='--')
+    ax[1].set_xlim([-1.1, 1.1])
+    ax[1].set_ylim([-1.1, 1.1])
