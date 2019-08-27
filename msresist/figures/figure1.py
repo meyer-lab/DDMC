@@ -90,7 +90,6 @@ def plotRTKs(axs):
     MET = ABC[ABC["peptide-phosphosite"].str.contains("MYDkEyYSVHNk")].iloc[:, 2:].mean()
     AXL = ABC[ABC["peptide-phosphosite"].str.contains("YNGDyYR")].iloc[:, 2:].mean()
 
-    fig, axs = plt.subplots(1, 4, figsize=(20, 5))
     axs[0].set_title("EGFR: pY1172", fontsize=13)
     axs[0].plot(EGFR)
     axs[0].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
@@ -103,7 +102,6 @@ def plotRTKs(axs):
     axs[3].set_title("AXL: pY702", fontsize=13)
     axs[3].plot(AXL)
     axs[3].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
-    fig.suptitle('Bypass RTKs Kinase Domains', fontsize=15)
 
 
 def plotVarReplicates(axs):
@@ -132,8 +130,6 @@ def plotVarReplicates(axs):
     axs[1].hist(Std_mean, bins=n_bins)
     axs[1].set_xlabel("Mean of Standard Deviations (n=128)", fontsize=12)
     axs[1].set_ylabel("Number of peptides", fontsize=12)
-    fig.suptitle('Variability across Overlapping Peptides', fontsize=14)
-
 
 
 # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure    
