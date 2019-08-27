@@ -65,9 +65,9 @@ def makeFigure():
 
     plotGridSearch(ax[1], data ,Y_cv)
 
-    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv, treatments)
+    plotActualvsPred(ax[2], kmeans_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl)
+    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments)
 
     # Add subplot labels
     subplotLabel(ax)
