@@ -77,8 +77,8 @@ def plotR2YQ2Y(ax, ncl, X, Y):
     centers = kmeans.transform(X)
 
     maxComp = ncl
-    Q2Y = Q2Y_across_components(centers, Y_cv, maxComp+1)
-    R2Y = R2Y_across_components(centers, Y_cv, maxComp+1)
+    Q2Y = Q2Y_across_components(centers, Y, maxComp+1)
+    R2Y = R2Y_across_components(centers, Y, maxComp+1)
 
     range_ = np.linspace(1,maxComp,maxComp)
 
