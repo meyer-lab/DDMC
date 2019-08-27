@@ -56,6 +56,6 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.set_xlabel("Measured Cell Viability")
     ax.set_ylabel("Predicted Cell Viability")
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
-    textstr = "$R$ = " + str(np.round(coeff, 4))
+    textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props);
