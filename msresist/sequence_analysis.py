@@ -9,6 +9,7 @@ from Bio import SeqIO
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
+
 def pYmotifs(ABC_conc_mc, ABC_names):
     directory = os.path.join(path, "./data/Sequence_analysis/")
     names, motifs = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC_conc_mc), directory + "proteome_uniprot.fa")
@@ -110,7 +111,6 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx))
-
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
             raise

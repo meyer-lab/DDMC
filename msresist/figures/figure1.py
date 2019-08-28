@@ -28,10 +28,10 @@ def makeFigure():
 
     # Assert that there's no significant influence of the initial seeding density
     Y_cvE3_0 = Y_cv1[Y_cv1["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:]/Y_cvE3_0
-    
+    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:] / Y_cvE3_0
+
     Y_cvE4_0 = Y_cv2[Y_cv2["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE4= Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]/Y_cvE4_0
+    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:] / Y_cvE4_0
 
     assert sp.stats.pearsonr(Y_cvE3_0, Y_fcE3)[1] > 0.05
     assert sp.stats.pearsonr(Y_cvE4_0, Y_fcE4)[1] > 0.05
@@ -63,20 +63,20 @@ def plotTimeCourse(axs, Y_cv1, Y_cv2):
     axs[1].set_title("Experiment 4")
     axs[1].plot(Y_cv2.iloc[:, 0], Y_cv2.iloc[:, 1:])
     axs[1].set_ylabel("% Confluency")
-    axs[1].set_xlabel("Time (hours)");
+    axs[1].set_xlabel("Time (hours)")
 
 
 def plotEndpoint(ax, Y_cv1, Y_cv2):
     range_ = np.linspace(1, 10, 10)
 
     Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:]
-    Y_fcE4= Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]
+    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]
 
     ax.set_title("CV t=72 / t=0")
-    ax.set_xticks(np.arange(1,11,1))
+    ax.set_xticks(np.arange(1, 11, 1))
     ax.set_xticklabels(Y_cv1.columns[1:])
-    ax.bar(range_+0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color = "black")
-    ax.bar(range_-0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color = "darkred")
+    ax.bar(range_ + 0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color="black")
+    ax.bar(range_ - 0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color="darkred")
     ax.set_ylabel("% Confluency")
 
 
@@ -84,7 +84,7 @@ def plotClustergram(axs):
     ABC_mc = preprocessing(motifs=True, FCfilter=True, log2T=True)
 
     # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
-    g = sns.clustermap(ABC_mc.iloc[:, 2:], method = "single", robust=True)
+    g = sns.clustermap(ABC_mc.iloc[:, 2:], method="single", robust=True)
 
     p = g.dendrogram_row.reordered_ind
     corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')

@@ -3,8 +3,8 @@ Testing file for the chained methods.
 """
 import unittest
 import numpy as np
-import pandas as pd
 from ..pre_processing import preprocessing
+
 
 class TestImport(unittest.TestCase):
     """ Testing class data import functions. """
@@ -21,7 +21,7 @@ class TestImport(unittest.TestCase):
 
         ABC_mc3 = preprocessing(motifs=False, FCfilter=True, log2T=False)
         self.assertTrue(np.all(np.min(ABC_mc3.iloc[:, 2:])) > 0.0)
-        
+
         # If we don't have log2-transformed values, none should be negative
         ABC_mc4 = preprocessing(Vfilter=True, motifs=True, FCfilter=True, log2T=False)
         self.assertTrue(np.all(np.min(ABC_mc4.iloc[:, 2:])) > 0.0)
