@@ -9,7 +9,6 @@ from Bio import SeqIO
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
-
 def pYmotifs(ABC_conc_mc, ABC_names):
     directory = os.path.join(path, "./data/Sequence_analysis/")
     names, motifs = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC_conc_mc), directory + "proteome_uniprot.fa")
@@ -71,10 +70,10 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
-    
+
     MS_names, motifs = [], []
     Allseqs, Testseqs = [], []
-    
+
     for i, MS_seq in enumerate(seqs):
         MS_seqU = MS_seq.upper()
         MS_name = protnames[i]
@@ -93,13 +92,16 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
                 center_idx = pY_idx[0].start()
                 y_idx = center_idx + MatchObs[0].start()
                 DoS_idx = None
-                if "t" in MS_seq or "s" in MS_seq:
+                if len(pY_idx) > 1:
+                    DoS_idx = pY_idx[1:]
+                    assert len(DoS_idx) != 0
+                elif "t" in MS_seq or "s" in MS_seq:
                     DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
-                    assert len(pTS_idx) != 0
+                    assert len(DoS_idx) != 0
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
-                
+
             if "y" not in MS_seq:
                 pTS_idx = list(re.compile("t|s").finditer(MS_seq))
                 assert len(pTS_idx) != 0
@@ -110,7 +112,8 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
                     DoS_idx = pTS_idx[1:]
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
-                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx))
+                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
+
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
             raise
@@ -129,7 +132,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     return MS_names, motifs
 
 
-def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx=None):
+def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
     """ Make a motif out of the matched sequences. """
     UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
