@@ -24,7 +24,7 @@ def FormatName(X):
     return names
 
 
-def FormatSeq(X, pd=False):
+def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
     list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
@@ -123,7 +123,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     assert len(names) == len(MS_names), "mapping incosistent number of peptides" \
         + str(len(names)) + " " + str(len(MS_names))
     assert len(seqs) == len(motifs), "mapping incosistent number of peptides" \
-        + str(counter) + " " + str(len(motifs))
+        + str(len(seqs)) + " " + str(len(motifs))
 
     proteome.close()
     return MS_names, motifs
