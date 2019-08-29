@@ -46,17 +46,16 @@ def PLSR(X, Y, nComponents):
     return plsr, PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
 
 
-def MeasuredVsPredicted_LOOCVplot(X, Y, plsr_model, _, ax, axs):
+def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     "Plot exprimentally-measured vs PLSR-predicted values"
     Y_predictions = np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size))
+    ax.scatter(Y, np.squeeze(Y_predictions))
+    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
+    ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
+    ax.set_title("Correlation Measured vs Predicted")
+    ax.set_xlabel("Measured Cell Viability")
+    ax.set_ylabel("Predicted Cell Viability")
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
-    print("Pearson's R: ", coeff, "\n", "p-value: ", pval)
-    if ax == "none":
-        plt.scatter(Y, np.squeeze(Y_predictions))
-        plt.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
-        plt.title("Correlation Measured vs Predicted")
-        plt.xlabel("Measured Cell Viability")
-        plt.ylabel("Predicted Cell Viability")
-    else:
-        axs[ax].scatter(Y, np.squeeze(Y_predictions))
-        axs[ax].set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
+    textstr = "$r$ = " + str(np.round(coeff, 4))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props);
