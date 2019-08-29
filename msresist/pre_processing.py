@@ -105,22 +105,21 @@ def FoldChangeFilter(X):
 
 
 def VFilter(ABC, merging_indices):
-    ABC_fc = LinearFoldChange(ABC)
-    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_fc)
+    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
-    NonRecTable = BuildMatrix(NonRecPeptides, ABC_fc)
+    NonRecTable = BuildMatrix(NonRecPeptides, ABC)
 
-    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_fc)
+    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
     DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:12], merging_indices)
     DupsTable = DupsTable.reset_index()[ABC.columns]
 
-    StdPeptides = BuildMatrix(StdPeptides, ABC_fc)
-    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns[:12])
+    StdPeptides = BuildMatrix(StdPeptides, ABC)
+    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
     TripsTable = FilterByStdev(TripsTable)
     TripsTable.columns = ABC.columns
 
-    #     ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
+#         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
     ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])  # Including non-overlapping peptides
     return ABC_mc
 
@@ -176,7 +175,8 @@ def BuildMatrix(peptides, ABC):
 
 def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
-    Xidx = X.iloc[:, 13].values >= corrCut
+    XX = LinearFoldChange(X.copy())
+    Xidx = XX.iloc[:, -1].values >= corrCut
     return X.iloc[Xidx, :]
 
 
@@ -197,9 +197,9 @@ def TripsMeanAndStd(triplicates, merging_indices, header):
     func_tri = {}
     for i in header[2:12]:
         func_tri[i] = np.mean, np.std
-    ABC_trips_avg = pd.pivot_table(triplicates, values=header[2:12], index=merging_indices, aggfunc=func_tri)
-    ABC_trips_avg = ABC_trips_avg.reset_index()[header]
-    return ABC_trips_avg
+    X = pd.pivot_table(triplicates, values=header[2:12], index=merging_indices, aggfunc=func_tri)
+    X = X.reset_index()[header]
+    return X
 
 
 def FilterByRange(X, rangeCut=0.4):
@@ -211,7 +211,10 @@ def FilterByRange(X, rangeCut=0.4):
 
 def FilterByStdev(X, stdCut=0.5):
     """ Filter rows for those containing more than a standard deviation threshold. """
-    Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
+    XX = LinearFoldChange(X.copy())
+    Stds = XX.iloc[:, XX.columns.get_level_values(1) == "std"]
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-    Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"], X.iloc[:, 12]], axis=1)
+    Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    if X.columns[-1][0] == "position":
+        Means = pd.concat([Means, X.iloc[:, 12]], axis=1)
     return Means.iloc[Xidx, :]
