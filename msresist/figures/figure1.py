@@ -45,8 +45,6 @@ def makeFigure():
 
     plotEndpoint(ax[2], Y_cv1, Y_cv2)
 
-    plotClustergram(ax[3:5])
-
     # Add subplot labels
     subplotLabel(ax)
 
