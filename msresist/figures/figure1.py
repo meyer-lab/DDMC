@@ -80,14 +80,14 @@ def plotEndpoint(ax, Y_cv1, Y_cv2):
     ax.set_ylabel("% Confluency")
 
 
-def plotClustergram(axs):
-    ABC_mc = preprocessing(motifs=True, FCfilter=True, log2T=True)
+# def plotClustergram(axs):
+#     ABC_mc = preprocessing(motifs=True, FCfilter=True, log2T=True)
 
-    # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
-    g = sns.clustermap(ABC_mc.iloc[:, 2:], method="single", robust=True)
+#     # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
+#     g = sns.clustermap(ABC_mc.iloc[:, 2:12], method="single", robust=True)
 
-    p = g.dendrogram_row.reordered_ind
-    corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')
+#     p = g.dendrogram_row.reordered_ind
+#     corr = ABC_mc.iloc[p, 2:12].T.corr(method='pearson')
     # Correlation heatmap was really just for exploration. Not including here.
     # axs[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=axs[1])
     # axs[1].set_xticklabels(axs[1].get_xticklabels(), rotation=80, horizontalalignment='right')
