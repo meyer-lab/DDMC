@@ -101,17 +101,16 @@ def FoldChangeFilter(X):
 
 
 def VFilter(ABC_conc_mc):
-    ABC_conc_mc_fc = LinearFoldChange(ABC_conc_mc)
-    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc_fc)
+    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc)
 
-    NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc_fc)
+    NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc)
 
-    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc_fc)
+    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
     DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:], ["Master Protein Descriptions", "peptide-phosphosite"])
     DupsTable = DupsTable.reset_index()[ABC_conc_mc.columns]
 
-    StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc_fc)
+    StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc)
     TripsTable = TripsMeanAndStd(StdPeptides, ABC_conc_mc.columns)
     TripsTable = FilterByStdev(TripsTable)
     TripsTable.columns = ABC_conc_mc.columns
@@ -172,7 +171,8 @@ def BuildMatrix(peptides, ABC):
 
 def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
-    Xidx = X.iloc[:, 12].values >= corrCut
+    XX = LinearFoldChange(X.copy())
+    Xidx = XX.iloc[:, 12].values >= corrCut
     return X.iloc[Xidx, :]
 
 
@@ -207,7 +207,8 @@ def FilterByRange(X, rangeCut=0.4):
 
 def FilterByStdev(X, stdCut=0.5):
     """ Filter rows for those containing more than a standard deviation threshold. """
-    Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
+    XX = LinearFoldChange(X.copy())
+    Stds = XX.iloc[:, XX.columns.get_level_values(1) == "std"]
     Xidx = np.all(Stds.values <= stdCut, axis=1)
     Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     return Means.iloc[Xidx, :]
