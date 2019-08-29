@@ -57,13 +57,12 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     matchedNames = []
     for i, MS_seq in enumerate(MS_seqs):
         MS_seqU = MS_seq.upper()
-        MS_name = MS_names[i].split(" OS")[0]
-        if MS_name in ProteomeDict:
+        MS_name = MS_names[i].strip()
+        if MS_name in ProteomeDict and MS_seqU in ProteomeDict[MS_name]:
             matchedNames.append(MS_name)
         else:
             matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
     return matchedNames
-
 
 def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
