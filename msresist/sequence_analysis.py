@@ -9,12 +9,13 @@ from Bio import SeqIO
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
-def pYmotifs(ABC_conc_mc, ABC_names):
+def pYmotifs(ABC, ABC_names):
     directory = os.path.join(path, "./data/Sequence_analysis/")
-    names, motifs = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC_conc_mc), directory + "proteome_uniprot.fa")
-    ABC_conc_mc['peptide-phosphosite'] = motifs
-    ABC_conc_mc['Master Protein Descriptions'] = names
-    return ABC_conc_mc
+    names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC), directory + "proteome_uniprot.fa")
+    ABC['Master Protein Descriptions'] = names
+    ABC['peptide-phosphosite'] = motifs
+    ABC.insert(12, 'position', pXpos)
+    return ABC
 
 
 def FormatName(X):
@@ -70,8 +71,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
-
-    MS_names, motifs = [], []
+    MS_names, motifs, uni_pos = [], [], []
     Allseqs, Testseqs = [], []
 
     for i, MS_seq in enumerate(seqs):
@@ -85,7 +85,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
             Allseqs.append(MS_seq)
             regexPattern = re.compile(MS_seqU)
             MatchObs = list(regexPattern.finditer(UP_seq))
-            # TODO: Note that we're only taking the first peptide match, assert len(MatchObs) == 1, print(MatchObs)
+#             assert len(MatchObs) == 1, str(MatchObs) yIEVFk appears twice in HNRPF_HUMAN, only case
             if "y" in MS_seq:
                 pY_idx = list(re.compile("y").finditer(MS_seq))
                 assert len(pY_idx) != 0
@@ -98,6 +98,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
                 elif "t" in MS_seq or "s" in MS_seq:
                     DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
                     assert len(DoS_idx) != 0
+                uni_pos.append("Y" + str(y_idx+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
@@ -110,6 +111,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
                 DoS_idx = None
                 if len(pTS_idx) > 1:
                     DoS_idx = pTS_idx[1:]
+                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
@@ -123,13 +125,15 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
     if li_dif:
         print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
 
-    assert len(names) == len(MS_names), "mapping incosistent number of peptides" \
+    assert len(names) == len(MS_names), "mapping incosistent number of names" \
         + str(len(names)) + " " + str(len(MS_names))
     assert len(seqs) == len(motifs), "mapping incosistent number of peptides" \
         + str(len(seqs)) + " " + str(len(motifs))
+    assert len(uni_pos) == len(seqs), "inconsistent nubmer of pX positions" \
+        + str(len(seqs)) + " " + str(len(uni_pos))
 
     proteome.close()
-    return MS_names, motifs
+    return MS_names, motifs, uni_pos
 
 
 def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
@@ -148,7 +152,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
-    # Now go through and copy over phosphorylation
+#     Now go through and copy over phosphorylation
     if DoS_idx:
         for ppIDX in DoS_idx:
             position = ppIDX.start() - center_idx
