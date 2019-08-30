@@ -110,12 +110,14 @@ def VFilter(ABC, merging_indices):
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
+
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
     DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:12], merging_indices)
     DupsTable = DupsTable.reset_index()[ABC.columns]
 
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
+
     TripsTable = FilterByStdev(TripsTable)
     TripsTable.columns = ABC.columns
 
@@ -177,6 +179,7 @@ def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
     XX = LinearFoldChange(X.copy())
     Xidx = XX.iloc[:, -1].values >= corrCut
+
     return X.iloc[Xidx, :]
 
 
