@@ -2,22 +2,20 @@
 
 import os
 import re
+import numpy as np
 import pandas as pd
 from Bio import SeqIO
 
 path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
-
-def pYmotifs(ABC_conc_mc, ABC_names):
-    ABC_seqs = FormatSeq(ABC_conc_mc)
-    ABC_conc_mc["peptide-phosphosite"] = ABC_seqs
-
+def pYmotifs(ABC, ABC_names):
     directory = os.path.join(path, "./data/Sequence_analysis/")
-    names, motifs = GeneratingKinaseMotifs("FaFile.fa", ABC_names, ABC_seqs, "MatchedFaFile.fa", directory + "proteome_uniprot.fa")
-    ABC_conc_mc["peptide-phosphosite"] = motifs
-    ABC_conc_mc["Master Protein Descriptions"] = names
-    return ABC_conc_mc
+    names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC), directory + "proteome_uniprot.fa")
+    ABC['Master Protein Descriptions'] = names
+    ABC['peptide-phosphosite'] = motifs
+    ABC.insert(12, 'position', pXpos)
+    return ABC
 
 
 def FormatName(X):
@@ -34,22 +32,8 @@ def FormatSeq(X):
     return seqs
 
 
-def GenerateFastaFile(PathToFaFile, MS_names, MS_seqs):
-    """ Sequence processor. """
-    FileHandle = open(PathToFaFile, "w+")
-    for i in range(len(MS_seqs)):
-        FileHandle.write(">" + str(MS_names[i]))
-        FileHandle.write("\n")
-        FileHandle.write(str(MS_seqs[i]))
-        FileHandle.write("\n")
-    FileHandle.close()
-
-
 def DictProteomeNameToSeq(X):
-    """ Goal: Generate dictionary key: protein name | val: sequence of Uniprot's proteome or any
-    large data set where looping is not efficient.
-    Input: fasta file.
-    Output: Dictionary. """
+    """ To generate proteom's dictionary """
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
         UP_seq = str(rec2.seq)
@@ -59,9 +43,7 @@ def DictProteomeNameToSeq(X):
 
 
 def getKeysByValue(dictOfElements, valueToFind):
-    """ Goal: Find the key of a given value within a dictionary.
-    Input: Dicitonary and value
-    Output: Key of interest"""
+    """ Find the key of a given value within a dictionary. """
     listOfKeys = list()
     listOfItems = dictOfElements.items()
     for item in listOfItems:
@@ -70,185 +52,114 @@ def getKeysByValue(dictOfElements, valueToFind):
     return listOfKeys
 
 
-def MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict):
-    """ Goal: Match protein names of MS and Uniprot's proteome.
-    Input: Path to new file and MS fasta file
-    Output: Fasta file with matching protein names.
-    Note that ProteomeDict[MS_name] is what the function needs to try to find
-    and jump to except if MS_name is not in ProteomDict. """
-    FileHandle = open(PathToMatchedFaFile, "w+")
-    for rec1 in SeqIO.parse(FaFile, "fasta"):
-        MS_seq = str(rec1.seq)
-        MS_seqU = str(rec1.seq.upper())
-        MS_name = str(rec1.description.split(" OS")[0])
-        try:
-            ProteomeDict[MS_name]
-            FileHandle.write(">" + MS_name)
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")
-        except BaseException:
-            Fixed_name = getKeysByValue(ProteomeDict, MS_seqU)
-            FileHandle.write(">" + Fixed_name[0])
-            FileHandle.write("\n")
-            FileHandle.write(MS_seq)
-            FileHandle.write("\n")
-    FileHandle.close()
+def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
+    """ Match protein names of MS and Uniprot's proteome. """
+    matchedNames = []
+    for i, MS_seq in enumerate(MS_seqs):
+        MS_seqU = MS_seq.upper()
+        MS_name = MS_names[i].strip()
+        if MS_name in ProteomeDict and MS_seqU in ProteomeDict[MS_name]:
+            matchedNames.append(MS_name)
+        else:
+            matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
+    return matchedNames
 
-
-def GeneratingKinaseMotifs(PathToFaFile, MS_names, MS_seqs, PathToMatchedFaFile, PathToProteome):
-    """ Goal: Generate Phosphopeptide motifs.
-    Input: Directory paths to fasta file, fasta file with matched names, and proteome
-    Output: Protein names list and kinase motif list. Run with def GenerateFastaFile to obtain the final file.
-    Kinase motif -5 +5 wrt the phosphorylation site. It accounts for doubly phosphorylated peptides (lowercase y, t, s). """
-    counter = 0
-    GenerateFastaFile(PathToFaFile, MS_names, MS_seqs)
-    FaFile = open(PathToFaFile, "r")
-    proteome = open(PathToProteome, "r")
+def GeneratingKinaseMotifs(names, seqs, PathToProteome):
+    """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
+    motif_size = 5
+    proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
-    MatchProtNames(FaFile, PathToMatchedFaFile, ProteomeDict)
-    os.remove(PathToFaFile)
-    MatchedFaFile = open(PathToMatchedFaFile, "r")
-    MS_names, ExtSeqs = [], []
+    protnames = MatchProtNames(ProteomeDict, names, seqs)
+    MS_names, motifs, uni_pos = [], [], []
     Allseqs, Testseqs = [], []
-    for rec1 in SeqIO.parse(MatchedFaFile, "fasta"):
-        MS_seq = str(rec1.seq)
-        MS_seqU = str(rec1.seq.upper())
-        MS_name = str(rec1.description)
+
+    for i, MS_seq in enumerate(seqs):
+        MS_seqU = MS_seq.upper()
+        MS_name = protnames[i]
         try:
             UP_seq = ProteomeDict[MS_name]
-            if MS_seqU in UP_seq and MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))]:
-                counter += 1
-                Allseqs.append(MS_seq)
-                regexPattern = re.compile(MS_seqU)
-                MatchObs = regexPattern.finditer(UP_seq)
-                indices = []
-                for i in MatchObs:
-                    indices.append(i.start())
-                    indices.append(i.end())
-                if "y" in MS_seq and "t" not in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeqs.append(UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
+            assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq
+            assert MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))], \
+                "check " + MS_name + " with seq " + MS_seq
+            Allseqs.append(MS_seq)
+            regexPattern = re.compile(MS_seqU)
+            MatchObs = list(regexPattern.finditer(UP_seq))
+#             assert len(MatchObs) == 1, str(MatchObs) yIEVFk appears twice in HNRPF_HUMAN, only case
+            if "y" in MS_seq:
+                pY_idx = list(re.compile("y").finditer(MS_seq))
+                assert len(pY_idx) != 0
+                center_idx = pY_idx[0].start()
+                y_idx = center_idx + MatchObs[0].start()
+                DoS_idx = None
+                if len(pY_idx) > 1:
+                    DoS_idx = pY_idx[1:]
+                    assert len(DoS_idx) != 0
+                elif "t" in MS_seq or "s" in MS_seq:
+                    DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
+                    assert len(DoS_idx) != 0
+                uni_pos.append("Y" + str(y_idx+1) + "-p")
+                MS_names.append(MS_name)
+                Testseqs.append(MS_seq)
+                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
 
-                if "t" in MS_seq and "y" not in MS_seq and "s" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeqs.append(UP_seq[t_idx - 5 : t_idx] + "t" + UP_seq[t_idx + 1 : t_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
+            if "y" not in MS_seq:
+                pTS_idx = list(re.compile("t|s").finditer(MS_seq))
+                assert len(pTS_idx) != 0
+                center_idx = pTS_idx[0].start()
+                ts_idx = center_idx + MatchObs[0].start()
+                DoS_idx = None
+                if len(pTS_idx) > 1:
+                    DoS_idx = pTS_idx[1:]
+                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx+1) + "-p")
+                MS_names.append(MS_name)
+                Testseqs.append(MS_seq)
+                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
 
-                if "s" in MS_seq and "y" not in MS_seq and "t" not in MS_seq:
-                    s_idx = MS_seq.index("s") + indices[0]
-                    ExtSeqs.append(UP_seq[s_idx - 5 : s_idx] + "s" + UP_seq[s_idx + 1 : s_idx + 6])
-                    MS_names.append(MS_name)
-                    Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "t" in MS_seq and "s" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5 : y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5 : y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1 :])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "s" in MS_seq and "t" not in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "s" in MS_seq[y_idx - 5 : y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5 : y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "t" in MS_seq and "s" in MS_seq and "y" not in MS_seq:
-                    t_idx = MS_seq.index("t") + indices[0]
-                    ExtSeq = UP_seq[t_idx - 5 : t_idx] + "t" + UP_seq[t_idx + 1 : t_idx + 6]
-                    t_idx = MS_seq.index("t")
-                    if "s" in MS_seq[t_idx - 5 : t_idx + 6]:
-                        s_idx = MS_seq[t_idx - 5 : t_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-
-                if "y" in MS_seq and "s" in MS_seq and "t" in MS_seq:
-                    y_idx = MS_seq.index("y") + indices[0]
-                    ExtSeq = UP_seq[y_idx - 5 : y_idx] + "y" + UP_seq[y_idx + 1 : y_idx + 6]
-                    y_idx = MS_seq.index("y")
-                    if "t" in MS_seq[y_idx - 5 : y_idx + 6]:
-                        t_idx = MS_seq[y_idx - 5 : y_idx + 6].index("t")
-                        ExtSeqs.append(ExtSeq[:t_idx] + "t" + ExtSeq[t_idx + 1 :])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    elif "s" in MS_seq[y_idx - 5 : y_idx + 6]:
-                        s_idx = MS_seq[y_idx - 5 : y_idx + 6].index("s")
-                        ExtSeqs.append(ExtSeq[:s_idx] + "s" + ExtSeq[s_idx + 1 :])
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-                    else:
-                        ExtSeqs.append(ExtSeq)
-                        MS_names.append(MS_name)
-                        Testseqs.append(MS_seq)
-            else:
-                print("check", MS_name, "with seq", MS_seq)
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
+            raise
+
 
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     if li_dif:
         print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
 
-    assert counter == len(MS_names) and counter == len(ExtSeqs), ("missing peptides", len(MS_names), len(ExtSeqs), counter)
-    os.remove(PathToMatchedFaFile)
+    assert len(names) == len(MS_names), "mapping incosistent number of names" \
+        + str(len(names)) + " " + str(len(MS_names))
+    assert len(seqs) == len(motifs), "mapping incosistent number of peptides" \
+        + str(len(seqs)) + " " + str(len(motifs))
+    assert len(uni_pos) == len(seqs), "inconsistent nubmer of pX positions" \
+        + str(len(seqs)) + " " + str(len(uni_pos))
+
     proteome.close()
-    return MS_names, ExtSeqs
+    return MS_names, motifs, uni_pos
 
 
-def YTSsequences(X_seqs):
-    """Goal: Generate dictionary to Check Motifs
-       Input: Phosphopeptide sequences.
-       Output: Dictionary to see all sequences categorized by singly or doubly phosphorylated.
-       Useful to check def GeneratingKinaseMotifs results. """
-    YTSdict = {}
-    seq1, seq2, seq3, seq4, seq5, seq6, = [], [], [], [], [], []
-    for seq in X_seqs:
-        if "y" in seq and "t" not in seq and "s" not in seq:
-            seq1.append(seq)
-        if "t" in seq and "y" not in seq and "s" not in seq:
-            seq2.append(seq)
-            YTSdict["t: "] = seq2
-        if "s" in seq and "y" not in seq and "t" not in seq:
-            seq3.append(seq)
-            YTSdict["s: "] = seq3
-        if "y" in seq and "t" in seq and "s" not in seq:
-            seq4.append(seq)
-            YTSdict["y/t: "] = seq4
-        if "y" in seq and "s" in seq and "t" not in seq:
-            seq5.append(seq)
-            YTSdict["y/s: "] = seq5
-        if "t" in seq and "s" in seq and "y" not in seq:
-            seq6.append(seq)
+def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
+    """ Make a motif out of the matched sequences. """
+    UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
+    assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
-    YTSdict["y: "] = seq1
-    YTSdict["t: "] = seq2
-    YTSdict["s: "] = seq3
-    YTSdict["y/t: "] = seq4
-    YTSdict["y/s: "] = seq5
-    YTSdict["t/s: "] = seq6
+    # If we ran off the end of the sequence at the beginning or at the end, append a gap
+    if y_idx - motif_size < 0:
+        for ii in range(motif_size - y_idx):
+            UP_seq_copy.insert(0, "-")
 
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in YTSdict.items()]))
+    elif y_idx + motif_size > len(UP_seq):
+        for jj in range(y_idx + motif_size - len(UP_seq) + 1):
+            UP_seq_copy.extend("-")
+
+    UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
+
+#     Now go through and copy over phosphorylation
+    if DoS_idx:
+        for ppIDX in DoS_idx:
+            position = ppIDX.start() - center_idx
+            # If the phosphosite is within the motif
+            if abs(position) < motif_size:
+                editPos = position + motif_size
+                UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
+                assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], \
+                    UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
+
+    return ''.join(UP_seq_copy)
