@@ -52,9 +52,9 @@ def makeFigure():
     ABC_mc = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
 
     header = ABC_mc.columns
-    treatments = ABC_mc.columns[2:]
+    treatments = ABC_mc.columns[2:12]
 
-    data = ABC_mc.iloc[:,2:].T
+    data = ABC_mc.iloc[:,2:12].T
 
     #Set up model pipeline
     ncl, ncomp = 4, 2

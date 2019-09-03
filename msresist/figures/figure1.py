@@ -44,6 +44,7 @@ def makeFigure():
 
     plotEndpoint(ax[2], Y_cv1, Y_cv2)
 
+
     plotRTKs(ax[3:7])
 
     plotVarReplicates(ax[7:10])
@@ -81,14 +82,15 @@ def plotEndpoint(ax, Y_cv1, Y_cv2):
     ax.set_ylabel("% Confluency")
 
 
+
 def plotRTKs(ax):
     ABC = preprocessing(motifs=False, FCfilter=False, log2T=False)
     header = ABC.columns
 
     EGFR = ABC[ABC["peptide-phosphosite"].str.contains("SHQISLDNPDyQQDFFP")].mean()
-    IGFR = ABC[ABC["peptide-phosphosite"].str.contains("IYETDYyR")].iloc[:, 2:].mean()
-    MET = ABC[ABC["peptide-phosphosite"].str.contains("MYDkEyYSVHNk")].iloc[:, 2:].mean()
-    AXL = ABC[ABC["peptide-phosphosite"].str.contains("YNGDyYR")].iloc[:, 2:].mean()
+    IGFR = ABC[ABC["peptide-phosphosite"].str.contains("IYETDYyR")].iloc[:, 2:12].mean()
+    MET = ABC[ABC["peptide-phosphosite"].str.contains("MYDkEyYSVHNk")].iloc[:, 2:12].mean()
+    AXL = ABC[ABC["peptide-phosphosite"].str.contains("YNGDyYR")].iloc[:, 2:12].mean()
 
     ax[0].set_title("EGFR: pY1172", fontsize=13)
     ax[0].plot(EGFR)
@@ -117,7 +119,7 @@ def plotVarReplicates(ax):
 
     #Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, ABC.columns)
+    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:2]), ABC.columns)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
     # Xidx = np.all(Stds.values <= 0.4, axis=1)
     # Stds = Stds.iloc[Xidx, :]
