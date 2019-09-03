@@ -27,30 +27,34 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
     if C_r:
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/CombinedBR3_TR1&2_raw.csv"), header=0))
 
-    ABC_conc_mc = MeanCenter(Log2T(pd.concat(filesin)))
+    ABC = MeanCenter(Log2T(pd.concat(filesin)))
+    cols = ABC.columns
+    merging_indices = list(cols[:2])
 
-    ABC_names = FormatName(ABC_conc_mc)
-    ABC_conc_mc["Master Protein Descriptions"] = ABC_names
+    ABC_names = FormatName(ABC)
+    ABC["Master Protein Descriptions"] = ABC_names
 
     if rawdata:
-        return ABC_conc_mc
+        return ABC
 
     if motifs:
-        ABC_conc_mc = pYmotifs(ABC_conc_mc, ABC_names)
+        ABC = pYmotifs(ABC, ABC_names)
+        cols = ABC.columns
+        merging_indices = list(cols[:2]) + [cols[-1]]
 
     if Vfilter:
-        ABC_conc_mc = VFilter(ABC_conc_mc)
+        ABC = VFilter(ABC, merging_indices)
 
-    ABC_conc_mc = MergeDfbyMean(ABC_conc_mc.copy(), filesin[0].columns[2:], ["Master Protein Descriptions", "peptide-phosphosite"])
-    ABC_conc_mc = ABC_conc_mc.reset_index()[filesin[0].columns]
+    ABC = MergeDfbyMean(ABC.copy(), cols[2:12], merging_indices)
+    ABC = ABC.reset_index()[cols]
 
     if FCfilter:
-        ABC_conc_mc = FoldChangeFilter(ABC_conc_mc)
+        ABC = FoldChangeFilter(ABC)
 
     if not log2T:
-        ABC_conc_mc = LinearFoldChange(ABC_conc_mc)
+        ABC = LinearFoldChange(ABC)
 
-    return ABC_conc_mc
+    return ABC
 
 
 def MergeDfbyMean(X, values, index):
@@ -60,32 +64,32 @@ def MergeDfbyMean(X, values, index):
 
 def LinearFoldChange(X):
     """ Convert to linear fold-change from log2 mean-centered. """
-    X.iloc[:, 2:] = np.power(2, X.iloc[:, 2:]).div(np.power(2, X.iloc[:, 2]), axis=0)
+    X.iloc[:, 2:12] = np.power(2, X.iloc[:, 2:12]).div(np.power(2, X.iloc[:, 2]), axis=0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 2:] = X.iloc[:, 2:].div(X.iloc[:, 2], axis=0)
+    X.iloc[:, 2:12] = X.iloc[:, 2:12].div(X.iloc[:, 2], axis=0)
     return X
 
 
 def Log2T(X):
     """ Convert to log2 scale keeping original sign. """
-    X.iloc[:, 2:] = np.log2(X.iloc[:, 2:])
+    X.iloc[:, 2:12] = np.log2(X.iloc[:, 2:12])
     return X
 
 
 def MeanCenter(X):
     """ Mean centers each row of values. logT also optionally log2-transforms. """
-    X.iloc[:, 2:] = X.iloc[:, 2:].sub(X.iloc[:, 2:].mean(axis=1), axis=0)
+    X.iloc[:, 2:12] = X.iloc[:, 2:12].sub(X.iloc[:, 2:12].mean(axis=1), axis=0)
     return X
 
 
 def VarianceFilter(X, varCut=0.1):
     """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
-    Xidx = np.var(X.iloc[:, 2:].values, axis=1) > varCut
+    Xidx = np.var(X.iloc[:, 2:12].values, axis=1) > varCut
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
@@ -93,29 +97,31 @@ def FoldChangeFilter(X):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy())
-    Xidx = np.any(XX.iloc[:, 2:].values <= 0.5, axis=1) | np.any(XX.iloc[:, 2:].values >= 2.0, axis=1)
+    Xidx = np.any(XX.iloc[:, 2:12].values <= 0.5, axis=1) | np.any(XX.iloc[:, 2:12].values >= 2.0, axis=1)
     return X.iloc[Xidx, :]
 
 
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
 
-def VFilter(ABC_conc_mc):
-    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC_conc_mc)
+def VFilter(ABC, merging_indices):
+    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
-    NonRecTable = BuildMatrix(NonRecPeptides, ABC_conc_mc)
+    NonRecTable = BuildMatrix(NonRecPeptides, ABC)
 
-    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC_conc_mc)
+    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
+
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:], ["Master Protein Descriptions", "peptide-phosphosite"])
-    DupsTable = DupsTable.reset_index()[ABC_conc_mc.columns]
+    DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:12], merging_indices)
+    DupsTable = DupsTable.reset_index()[ABC.columns]
 
-    StdPeptides = BuildMatrix(StdPeptides, ABC_conc_mc)
-    TripsTable = TripsMeanAndStd(StdPeptides, ABC_conc_mc.columns)
+    StdPeptides = BuildMatrix(StdPeptides, ABC)
+    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
+
     TripsTable = FilterByStdev(TripsTable)
-    TripsTable.columns = ABC_conc_mc.columns
+    TripsTable.columns = ABC.columns
 
-    #     ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
+#         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
     ABC_mc = pd.concat([NonRecTable, DupsTable, TripsTable])  # Including non-overlapping peptides
     return ABC_mc
 
@@ -149,7 +155,7 @@ def BuildMatrix(peptides, ABC):
         elif len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
-            corrcoef, _ = stats.pearsonr(pepts.iloc[0, 2:], pepts.iloc[1, 2:])
+            corrcoef, _ = stats.pearsonr(pepts.iloc[0, 2:12], pepts.iloc[1, 2:12])
             for i in range(len(pepts)):
                 corrcoefs.append(corrcoef)
                 peptideslist.append(pepts.iloc[i, :])
@@ -172,7 +178,8 @@ def BuildMatrix(peptides, ABC):
 def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
     XX = LinearFoldChange(X.copy())
-    Xidx = XX.iloc[:, 12].values >= corrCut
+    Xidx = XX.iloc[:, -1].values >= corrCut
+
     return X.iloc[Xidx, :]
 
 
@@ -180,22 +187,22 @@ def DupsMeanAndRange(duplicates, header):
     """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Range). """
     func_dup = {}
-    for i in header[2:]:
+    for i in header[2:12]:
         func_dup[i] = np.mean, np.ptp
-    ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:], index=["Master Protein Descriptions", "peptide-phosphosite"], aggfunc=func_dup)
+    ABC_dups_avg = pd.pivot_table(duplicates, values=header[2:12], index=["Master Protein Descriptions", "peptide-phosphosite"], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
 
-def TripsMeanAndStd(triplicates, header):
+def TripsMeanAndStd(triplicates, merging_indices, header):
     """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std). """
     func_tri = {}
-    for i in header[2:]:
+    for i in header[2:12]:
         func_tri[i] = np.mean, np.std
-    ABC_trips_avg = pd.pivot_table(triplicates, values=header[2:], index=["Master Protein Descriptions", "peptide-phosphosite"], aggfunc=func_tri)
-    ABC_trips_avg = ABC_trips_avg.reset_index()[header]
-    return ABC_trips_avg
+    X = pd.pivot_table(triplicates, values=header[2:12], index=merging_indices, aggfunc=func_tri)
+    X = X.reset_index()[header]
+    return X
 
 
 def FilterByRange(X, rangeCut=0.4):
@@ -211,4 +218,6 @@ def FilterByStdev(X, stdCut=0.5):
     Stds = XX.iloc[:, XX.columns.get_level_values(1) == "std"]
     Xidx = np.all(Stds.values <= stdCut, axis=1)
     Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    if X.columns[-1][0] == "position":
+        Means = pd.concat([Means, X.iloc[:, 12]], axis=1)
     return Means.iloc[Xidx, :]
