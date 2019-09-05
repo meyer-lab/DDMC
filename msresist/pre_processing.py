@@ -175,7 +175,7 @@ def BuildMatrix(peptides, ABC):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.5):
+def CorrCoefFilter(X, corrCut=0.6):
     """ Filter rows for those containing more than a correlation threshold. """
     XX = LinearFoldChange(X.copy())
     Xidx = XX.iloc[:, -1].values >= corrCut
@@ -212,7 +212,7 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.5):
+def FilterByStdev(X, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     XX = LinearFoldChange(X.copy())
     Stds = XX.iloc[:, XX.columns.get_level_values(1) == "std"]
