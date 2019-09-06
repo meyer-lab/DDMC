@@ -146,15 +146,15 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[0].set_ylabel('Principal Component 2')
     ax[0].axhline(y=0, color='0.25', linestyle='--')
     ax[0].axvline(x=0, color='0.25', linestyle='--')
-    axs[0].set_xlim([(-1*max(PC1_scores))-0.5, max(PC1_scores)+0.5])
-    axs[0].set_ylim([(-1*max(PC2_scores))-0.5, max(PC2_scores)+0.5])
+    ax[0].set_xlim([(-1*max(PC1_scores))-0.5, max(PC1_scores)+0.5])
+    ax[0].set_ylim([(-1*max(PC2_scores))-0.5, max(PC2_scores)+0.5])
 
     #Loadings
     numbered=[]
     list(map(lambda v: numbered.append(str(v+1)), range(ncl)))
     for i, txt in enumerate(numbered):
         ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-    axs[1].annotate("Cell Viability", (PC1_yload+0.01, PC2_yload+0.05))
+    ax[1].annotate("Cell Viability", (PC1_yload+0.01, PC2_yload+0.05))
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
     ax[1].legend(loc=4)
@@ -163,8 +163,8 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
-    axs[1].set_xlim([(-1*max(PC1_xload))-0.5, max(PC1_xload)+0.5])
-    axs[1].set_ylim([(-1*max(PC2_xload))-0.5, max(PC2_xload)+0.5])
+    ax[1].set_xlim([(-1*max(PC1_xload))-0.5, max(PC1_xload)+0.5])
+    ax[1].set_ylim([(-1*max(PC2_xload))-0.5, max(PC2_xload)+0.5])
     
 def clusteraverages(ax, X, model_plsr, colors_, treatments):
     centers = model_plsr.named_steps.kmeans.transform(X).T
