@@ -31,7 +31,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 8), (2, 3))
+    ax, f = getSetup((14, 10), (2, 3))
 
     # blank out first axis for cartoon
 #     ax[0].axis('off')
@@ -154,7 +154,7 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     list(map(lambda v: numbered.append(str(v+1)), range(ncl)))
     for i, txt in enumerate(numbered):
         ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-    ax[1].annotate("Cell Viability", (PC1_yload+0.01, PC2_yload+0.05))
+    ax[1].annotate("Cell Viability", (PC1_yload+0.05, PC2_yload-0.05))
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
     ax[1].legend(loc=4)
