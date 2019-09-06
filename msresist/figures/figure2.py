@@ -157,7 +157,6 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].annotate("Cell Viability", (PC1_yload+0.05, PC2_yload-0.05))
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
-    ax[1].legend(loc=4)
     ax[1].set_title('PLSR Model Loadings (Averaged Clusters)')
     ax[1].set_xlabel('Principal Component 1')
     ax[1].set_ylabel('Principal Component 2')
