@@ -57,7 +57,7 @@ def makeFigure():
     data = ABC_mc.iloc[:,2:12].T
 
     #Set up model pipeline
-    ncl, ncomp = 3, 2
+    ncl, ncomp = 4, 2
     estimators = [('kmeans', MyOwnKMEANS(ncl)), ('plsr', PLSRegression(ncomp))]
     kmeans_plsr = Pipeline(estimators)
     
