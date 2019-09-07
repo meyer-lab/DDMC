@@ -2,6 +2,7 @@
 
 import os
 import re
+import random
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
@@ -217,7 +218,7 @@ def BinomialMatrix(n, k, p):
     binomp.insert(0, "Residue", list(k.iloc[:,0]))
     return binomp
 
-def ExtractMotif(binomp, pvalCut=10**(-4), occurCut=7):
+def ExtractMotif(binomp, counts, pvalCut=10**(-4), occurCut=7):
     """Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
     motif = list("X"*11)
@@ -228,7 +229,7 @@ def ExtractMotif(binomp, pvalCut=10**(-4), occurCut=7):
         DoS = binomp.iloc[:, i].min()
         j = binomp[binomp.iloc[:, i] == DoS].index[0]
         aa = AA[j]
-        if DoS < pvalCut and k.iloc[j, i] >= occurCut:
+        if DoS < pvalCut and counts.iloc[j, i] >= occurCut:
             motif[i] = aa
         else:
             motif[i] = "x"
