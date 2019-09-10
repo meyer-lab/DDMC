@@ -2,11 +2,19 @@
 
 import os
 import re
+import random
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
+from Bio import motifs
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
+from scipy.stats import binom
+
 
 path = os.path.dirname(os.path.abspath(__file__))
+
+
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
 def pYmotifs(ABC, ABC_names):
@@ -19,21 +27,21 @@ def pYmotifs(ABC, ABC_names):
 
 
 def FormatName(X):
-    """ Keep only the general protein name, without any other accession information """
+    """Keep only the general protein name, without any other accession information """
     names = []
     list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
     return names
 
 
 def FormatSeq(X):
-    """ Deleting -1/-2 for mapping to uniprot's proteome"""
+    """Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
     list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
     return seqs
 
 
 def DictProteomeNameToSeq(X):
-    """ To generate proteom's dictionary """
+    """To generate proteom's dictionary """
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
         UP_seq = str(rec2.seq)
@@ -43,7 +51,7 @@ def DictProteomeNameToSeq(X):
 
 
 def getKeysByValue(dictOfElements, valueToFind):
-    """ Find the key of a given value within a dictionary. """
+    """Find the key of a given value within a dictionary. """
     listOfKeys = list()
     listOfItems = dictOfElements.items()
     for item in listOfItems:
@@ -53,7 +61,7 @@ def getKeysByValue(dictOfElements, valueToFind):
 
 
 def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
-    """ Match protein names of MS and Uniprot's proteome. """
+    """Match protein names of MS and Uniprot's proteome. """
     matchedNames = []
     for i, MS_seq in enumerate(MS_seqs):
         MS_seqU = MS_seq.upper()
@@ -65,7 +73,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     return matchedNames
 
 def GeneratingKinaseMotifs(names, seqs, PathToProteome):
-    """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
+    """Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
     motif_size = 5
     proteome = open(PathToProteome, 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
@@ -136,7 +144,7 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
 
 
 def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
-    """ Make a motif out of the matched sequences. """
+    """Make a motif out of the matched sequences. """
     UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
@@ -145,7 +153,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
         for ii in range(motif_size - y_idx):
             UP_seq_copy.insert(0, "-")
 
-    elif y_idx + motif_size > len(UP_seq):
+    elif y_idx + motif_size + 1 > len(UP_seq):
         for jj in range(y_idx + motif_size - len(UP_seq) + 1):
             UP_seq_copy.extend("-")
 
@@ -163,3 +171,69 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
                     UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
 
     return ''.join(UP_seq_copy)
+
+
+
+###------------ Motif Discovery based on Schwartz & Gygi, Nature Biotech 2005 and Cheng et al Bioinfo. 2018 ------------------###
+
+# def IterativeMotifDiscery():
+    
+
+
+def PWM_BackgroundSeqs(Allseqs):
+    """Build Background data set and position-weight matrix. 
+    Shuffle while fixing central residue or the entire sequence? """
+    bg_seqs = []
+    for seq in Allseqs:
+#     shuffAA = seq[:5] + seq[6:]
+#     shuffled = ''.join(random.sample(shuffAA, 5)) + seq[5] + ''.join(random.sample(shuffAA, 5))
+        shuffled = ''.join(random.sample(seq,11))
+        bg_seqs.append(Seq(shuffled.upper(), IUPAC.protein))
+    bg_m = motifs.create(bg_seqs)
+    bg_pwm = pd.DataFrame(bg_m.counts.normalize(pseudocounts=1)).T
+    return bg_pwm
+
+def CountsAndPWM_ForegroundSeqs(Allseqs):
+    """Build Phosphorylation data set and position-weight matrix. """
+    seqs = []
+    for seq in Allseqs:
+        seqs.append(Seq(seq.upper(), IUPAC.protein))
+    m = motifs.create(seqs)
+    counts = pd.DataFrame(m.counts).T.reset_index(drop=False)
+    pwm = pd.DataFrame(m.counts.normalize(pseudocounts=1)).T
+    return counts, pwm
+
+def BinomialMatrix(n, k, p):
+    """n equals the number of sequences, k equals the count of residue x
+    at position j, and p equals the fractional percentage of residue x at pos
+    j in the current background"""
+    binomp = []
+    for i, r in k.iterrows():
+        CurrentResidue = []
+        for j,v in enumerate(r[1:]):
+            CurrentResidue.append(binom.sf(k=v, n=n, p=p.iloc[i, j], loc=0))
+        binomp.append(CurrentResidue)
+
+    binomp = pd.DataFrame(binomp)
+    binomp.insert(0, "Residue", list(k.iloc[:,0]))
+    return binomp
+
+def ExtractMotif(binomp, counts, pvalCut=10**(-4), occurCut=7):
+    """Identify the most significant residue/position pairs acroos the binomial
+    probability matrix meeting a probability and a occurence threshold."""
+    motif = list("X"*11)
+    positions = list(binomp.columns[1:])
+    AA = list(binomp.iloc[:, 0])
+    binomp = binomp.iloc[:, 1:]
+    for i in range(len(positions)):
+        DoS = binomp.iloc[:, i].min()
+        j = binomp[binomp.iloc[:, i] == DoS].index[0]
+        aa = AA[j]
+        if DoS < pvalCut and counts.iloc[j, i] >= occurCut:
+            motif[i] = aa
+        else:
+            motif[i] = "x"
+
+    return ''.join(motif)
+
+
