@@ -41,7 +41,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
         ABC = pYmotifs(ABC, ABC_names)
         cols = ABC.columns
         merging_indices = list(cols[:2]) + [cols[-1]]
-    
+
     if Vfilter:
         ABC = VFilter(ABC, merging_indices)
 
@@ -108,14 +108,16 @@ def VFilter(ABC, merging_indices):
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
-    
+
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
+
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(DupsTable, DupsTable.columns[2:12], merging_indices)
+    DupsTable = MergeDfbyMean(CorrCoefPeptides, DupsTable.columns[2:12], merging_indices)
     DupsTable = DupsTable.reset_index()[ABC.columns]
-    
+
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
+
     TripsTable = FilterByStdev(TripsTable)
     TripsTable.columns = ABC.columns
 
@@ -153,8 +155,7 @@ def BuildMatrix(peptides, ABC):
         elif len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
-            fc = LinearFoldChange(pepts.iloc[:, 2:12].copy())
-            corrcoef, _ = stats.pearsonr(fc.iloc[0, 2:12], fc.iloc[1, 2:12])
+            corrcoef, _ = stats.pearsonr(pepts.iloc[0, 2:12], pepts.iloc[1, 2:12])
             for i in range(len(pepts)):
                 corrcoefs.append(corrcoef)
                 peptideslist.append(pepts.iloc[i, :])
@@ -174,9 +175,11 @@ def BuildMatrix(peptides, ABC):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.6):
+def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
-    Xidx = X.iloc[:, -1].values >= corrCut
+    XX = LinearFoldChange(X.copy())
+    Xidx = XX.iloc[:, -1].values >= corrCut
+
     return X.iloc[Xidx, :]
 
 
@@ -194,11 +197,10 @@ def DupsMeanAndRange(duplicates, header):
 def TripsMeanAndStd(triplicates, merging_indices, header):
     """ Merge all triplicates by mean and standard deviation across conditions. Note this builds a multilevel header
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std). """
-    X = LinearFoldChange(triplicates.copy())
     func_tri = {}
     for i in header[2:12]:
         func_tri[i] = np.mean, np.std
-    X = pd.pivot_table(X, values=header[2:12], index=merging_indices, aggfunc=func_tri)
+    X = pd.pivot_table(triplicates, values=header[2:12], index=merging_indices, aggfunc=func_tri)
     X = X.reset_index()[header]
     return X
 
@@ -210,11 +212,12 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.4):
+def FilterByStdev(X, stdCut=0.5):
     """ Filter rows for those containing more than a standard deviation threshold. """
-    Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
+    XX = LinearFoldChange(X.copy())
+    Stds = XX.iloc[:, XX.columns.get_level_values(1) == "std"]
     Xidx = np.all(Stds.values <= stdCut, axis=1)
     Means = pd.concat([X.iloc[:, 0], X.iloc[:, 1], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     if X.columns[-1][0] == "position":
-        Means = pd.concat([Means, X.iloc[:, -1]], axis=1)
+        Means = pd.concat([Means, X.iloc[:, 12]], axis=1)
     return Means.iloc[Xidx, :]
