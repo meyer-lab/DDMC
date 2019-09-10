@@ -48,13 +48,16 @@ def PLSR(X, Y, nComponents):
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     "Plot exprimentally-measured vs PLSR-predicted values"
-    Y_predictions = np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size))
-    ax.scatter(Y, np.squeeze(Y_predictions))
-    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, np.squeeze(Y_predictions), 1))(np.unique(Y)), color="r")
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
+    Y = list(Y)
+    ax.scatter(Y, Y_predictions)
+    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
     ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
     ax.set_title("Correlation Measured vs Predicted")
     ax.set_xlabel("Measured Cell Viability")
     ax.set_ylabel("Predicted Cell Viability")
+    ax.set_xlim([1, 18])
+    ax.set_ylim([1, 18])
     coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
     textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')

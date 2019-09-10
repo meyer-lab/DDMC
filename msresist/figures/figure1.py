@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
 from .common import subplotLabel, getSetup
 
 
@@ -42,12 +42,11 @@ def makeFigure():
 
     plotTimeCourse(ax[0:2], Y_cv1, Y_cv2)
 
-    plotEndpoint(ax[2], Y_cv1, Y_cv2)
-
+    plotAveragedEndpoint(ax[2], Y_cv1, Y_cv2)
 
     plotRTKs(ax[3:7])
 
-    plotVarReplicates(ax[7:10])
+    plotVarReplicates(ax[7:9])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -68,19 +67,32 @@ def plotTimeCourse(ax, Y_cv1, Y_cv2):
     ax[1].set_xlabel("Time (hours)");
 
 
-def plotEndpoint(ax, Y_cv1, Y_cv2):
+def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
     range_ = np.linspace(1, 10, 10)
 
     Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:]
     Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]
 
-    ax.set_title("CV t=72 / t=0")
+    ax.set_title("Cell Viability")
     ax.set_xticks(np.arange(1,11,1))
     ax.set_xticklabels(Y_cv1.columns[1:])
     ax.bar(range_+0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color = "black")
     ax.bar(range_-0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color = "darkred")
-    ax.set_ylabel("% Confluency")
+    ax.set_ylabel("Fold-change 72h vs 0h")
 
+
+def plotAveragedEndpoint(ax, Y_cv1, Y_cv2):
+    range_ = np.linspace(1, 10, 10)
+
+    Y_cv = MergeDfbyMean(pd.concat([Y_cv1, Y_cv2], axis=0), Y_cv1.columns, "Elapsed")
+    Y_cv = Y_cv.reset_index()[Y_cv1.columns]
+    Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
+
+    ax.set_title("Cell Viability")
+    ax.set_xticks(np.arange(1,11,1))
+    ax.set_xticklabels(Y_cv1.columns[1:])
+    ax.bar(range_, Y_cv, width=0.5, align='center', label='Exp3', color = "black")
+    ax.set_ylabel("Fold-change 72h vs 0h")
 
 
 def plotRTKs(ax):
