@@ -5,10 +5,10 @@ import re
 import random
 import numpy as np
 import pandas as pd
-from Bio import SeqIO
-from Bio import motifs
+from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
+from sklearn.cluster import KMeans
 from scipy.stats import binom
 
 
@@ -18,8 +18,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
 def pYmotifs(ABC, ABC_names):
-    directory = os.path.join(path, "./data/Sequence_analysis/")
-    names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC), directory + "proteome_uniprot.fa")
+    names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
     ABC['Master Protein Descriptions'] = names
     ABC['peptide-phosphosite'] = motifs
     ABC.insert(12, 'position', pXpos)
@@ -72,10 +71,10 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
             matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
     return matchedNames
 
-def GeneratingKinaseMotifs(names, seqs, PathToProteome):
+def GeneratingKinaseMotifs(names, seqs):
     """Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
     motif_size = 5
-    proteome = open(PathToProteome, 'r')
+    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, motifs, uni_pos = [], [], []
@@ -92,7 +91,6 @@ def GeneratingKinaseMotifs(names, seqs, PathToProteome):
             Allseqs.append(MS_seq)
             regexPattern = re.compile(MS_seqU)
             MatchObs = list(regexPattern.finditer(UP_seq))
-#             assert len(MatchObs) == 1, str(MatchObs) yIEVFk appears twice in HNRPF_HUMAN, only case
             if "y" in MS_seq:
                 pY_idx = list(re.compile("y").finditer(MS_seq))
                 assert len(pY_idx) != 0
@@ -174,66 +172,137 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
 
 
-###------------ Motif Discovery based on Schwartz & Gygi, Nature Biotech 2005 and Cheng et al Bioinfo. 2018 ------------------###
+###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
 
-# def IterativeMotifDiscery():
+""" Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
+    might be able to find more reliable sources. """
+
+AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":0.037, "G":0.074, "H":0.029, "I":0.038, "L":0.076, \
+              "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
+
+
+#TODO: Run, troubleshoot, and jot down discussion points for AXL mtg
+def EM_SeqClustering(ABC, ncl, pYTS, n_iter=100):
+    #initialize with k-means clusters
+    kmeans = KMeans(ncl).fit(ABC.iloc[:, 2:12])
+    X = ABC.assign(cluster=kmeans.labels_)
+    Cl_seqs, store_Cl_seqs = [], []
+    for i in range(ncl):
+        Cl_seqs.append(ForegroundSeqs(list(X[X["cluster"] == i].iloc[:, 0]), pYTS))
+    store_Cl_seqs.append(Cl_seqs)
     
+    #background sequences
+    bg_seqs = BackgroundSeqs(pYTS)
+    bg_pwm = position_weight_matrix(bg_seqs)
+    
+    #EM algorithm
+    Allseqs = [val for sublist in Cl_seqs for val in sublist]
+    for i in range(n_iter):
+        scores = []
+        for j in range(ABC.shape[0]):
+            motif = Allseqs[j]
+            for z in range(ncl):
+                freq_matrix = counts(Cl_seqs[z])
+                BPM = BinomialMatrix(len(Cl_seq), freq_matrix, bg_pwm)
+                scores.append(MeanBinomProbs(BPMs[z], motif))
+            clusters = [[] for i in range(ncl)]
+            _, idx = max((val, idx) for (idx, val) in enumerate(scores))
+            clusters[idx].append(motif)
+        Cl_seqs = []
+        for cl in clusters:
+            Cl_seqs.append(ForegroundSeqs(cl), pYTS)
+
+        if Cl_seqs == store_Cl_seqs[-1]:
+            print("convergence has been reached at iteration %i" % (i))
+            return Cl_Seqs
+        
+    return Cl_Seqs
 
 
-def PWM_BackgroundSeqs(Allseqs):
-    """Build Background data set and position-weight matrix. 
-    Shuffle while fixing central residue or the entire sequence? """
+def BackgroundSeqs(pYTS):
+    """Build Background data set for either "Y", "S", or "T". """
     bg_seqs = []
-    for seq in Allseqs:
-#     shuffAA = seq[:5] + seq[6:]
-#     shuffled = ''.join(random.sample(shuffAA, 5)) + seq[5] + ''.join(random.sample(shuffAA, 5))
-        shuffled = ''.join(random.sample(seq,11))
-        bg_seqs.append(Seq(shuffled.upper(), IUPAC.protein))
-    bg_m = motifs.create(bg_seqs)
-    bg_pwm = pd.DataFrame(bg_m.counts.normalize(pseudocounts=1)).T
-    return bg_pwm
+    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
+    for prot in SeqIO.parse(proteome, "fasta"):
+        seq = str(prot.seq)
+        if pYTS not in seq:
+            continue
+        regexPattern = re.compile(pYTS)
+        Y_IDXs = list(regexPattern.finditer(seq))
+        for idx in Y_IDXs:
+            center_idx = idx.start()
+            assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
+            motif = seq[center_idx-5:center_idx+6]
+            if len(motif) != 11 or "X" in motif or "U" in motif:
+                continue
+            assert len(seq[center_idx-5:center_idx+6]) == 11, "Wrong sequence length: %s" % motif
+            bg_seqs.append(Seq(motif, IUPAC.protein))
 
-def CountsAndPWM_ForegroundSeqs(Allseqs):
-    """Build Phosphorylation data set and position-weight matrix. """
+    proteome.close()
+    return bg_seqs
+
+
+def ForegroundSeqs(Allseqs, pYTS):
+    """Build Background data set for either "Y", "S", or "T". """
     seqs = []
-    for seq in Allseqs:
-        seqs.append(Seq(seq.upper(), IUPAC.protein))
+    for motif in Allseqs:
+        motif = motif.upper()
+        if motif[5] != pYTS:
+            continue
+        seqs.append(Seq(motif, IUPAC.protein))
+    return seqs
+
+
+def position_weight_matrix(seqs):
+    """Build PWM of a given set of sequences. """
     m = motifs.create(seqs)
-    counts = pd.DataFrame(m.counts).T.reset_index(drop=False)
-    pwm = pd.DataFrame(m.counts.normalize(pseudocounts=1)).T
-    return counts, pwm
+    return pd.DataFrame(m.counts.normalize(pseudocounts=AAfreq)).T
+
+
+def counts(seqs):
+    """Build counts matrix of a given set of sequences. """
+    m = motifs.create(seqs)
+    return pd.DataFrame(m.counts).T.reset_index(drop=False)
+
 
 def BinomialMatrix(n, k, p):
-    """n equals the number of sequences, k equals the count of residue x
-    at position j, and p equals the fractional percentage of residue x at pos
-    j in the current background"""
-    binomp = []
+    """Build binomial probability matrix. Note n is the number of sequences, 
+    k is the counts matrix of the MS data set, p is the pwm of the background"""
+    BMP = []
     for i, r in k.iterrows():
         CurrentResidue = []
         for j,v in enumerate(r[1:]):
             CurrentResidue.append(binom.sf(k=v, n=n, p=p.iloc[i, j], loc=0))
-        binomp.append(CurrentResidue)
+        BMP.append(CurrentResidue)
 
-    binomp = pd.DataFrame(binomp)
-    binomp.insert(0, "Residue", list(k.iloc[:,0]))
-    return binomp
+    BMP = pd.DataFrame(BMP)
+    BMP.insert(0, "Residue", list(k.iloc[:,0]))
+    return BMP
 
-def ExtractMotif(binomp, counts, pvalCut=10**(-4), occurCut=7):
+
+def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
     """Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
     motif = list("X"*11)
-    positions = list(binomp.columns[1:])
-    AA = list(binomp.iloc[:, 0])
-    binomp = binomp.iloc[:, 1:]
+    positions = list(BMP.columns[1:])
+    AA = list(BMP.iloc[:, 0])
+    BMP = BMP.iloc[:, 1:]
     for i in range(len(positions)):
-        DoS = binomp.iloc[:, i].min()
-        j = binomp[binomp.iloc[:, i] == DoS].index[0]
+        DoS = BMP.iloc[:, i].min()
+        j = BMP[BMP.iloc[:, i] == DoS].index[0]
         aa = AA[j]
-        if DoS < pvalCut and counts.iloc[j, i] >= occurCut:
+        if DoS < pvalCut or DoS == 0.0 and counts.iloc[j, i] >= occurCut:
             motif[i] = aa
         else:
             motif[i] = "x"
 
     return ''.join(motif)
 
+
+def MeanBinomProbs(BPM, motif):
+    probs = []
+    for i, aa in enumerate(motif):
+        Xidx = BPM["Residue"] == aa
+        probs.append(BPM[Xidx][i])
+    return np.mean(probs)
 
