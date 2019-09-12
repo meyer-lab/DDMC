@@ -10,7 +10,6 @@ from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from sklearn.cluster import KMeans
 from scipy.stats import binom
-from functools import reduce
 
 
 path = os.path.dirname(os.path.abspath(__file__))
