@@ -10,6 +10,7 @@ from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from sklearn.cluster import KMeans
 from scipy.stats import binom
+from functools import reduce
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +19,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
 def pYmotifs(ABC, ABC_names):
+    " Generate pY motifs for pre-processing. "
     names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
     ABC['Master Protein Descriptions'] = names
     ABC['peptide-phosphosite'] = motifs
@@ -26,21 +28,21 @@ def pYmotifs(ABC, ABC_names):
 
 
 def FormatName(X):
-    """Keep only the general protein name, without any other accession information """
+    """ Keep only the general protein name, without any other accession information """
     names = []
     list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
     return names
 
 
 def FormatSeq(X):
-    """Deleting -1/-2 for mapping to uniprot's proteome"""
+    """ Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
     list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
     return seqs
 
 
 def DictProteomeNameToSeq(X):
-    """To generate proteom's dictionary """
+    """ To generate proteom's dictionary """
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
         UP_seq = str(rec2.seq)
@@ -50,7 +52,7 @@ def DictProteomeNameToSeq(X):
 
 
 def getKeysByValue(dictOfElements, valueToFind):
-    """Find the key of a given value within a dictionary. """
+    """ Find the key of a given value within a dictionary. """
     listOfKeys = list()
     listOfItems = dictOfElements.items()
     for item in listOfItems:
@@ -60,7 +62,7 @@ def getKeysByValue(dictOfElements, valueToFind):
 
 
 def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
-    """Match protein names of MS and Uniprot's proteome. """
+    """ Match protein names of MS and Uniprot's proteome. """
     matchedNames = []
     for i, MS_seq in enumerate(MS_seqs):
         MS_seqU = MS_seq.upper()
@@ -72,7 +74,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     return matchedNames
 
 def GeneratingKinaseMotifs(names, seqs):
-    """Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
+    """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
     motif_size = 5
     proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
@@ -142,7 +144,7 @@ def GeneratingKinaseMotifs(names, seqs):
 
 
 def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
-    """Make a motif out of the matched sequences. """
+    """ Make a motif out of the matched sequences. """
     UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
@@ -181,46 +183,47 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
               "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
 
 
-#TODO: Run, troubleshoot, and jot down discussion points for AXL mtg
-def EM_SeqClustering(ABC, ncl, pYTS, n_iter=100):
+def EM_SeqClustering(ABC, ncl, pYTS, max_n_iter=100):
+    """ Cluster sequences by similarity. """
     #initialize with k-means clusters
     kmeans = KMeans(ncl).fit(ABC.iloc[:, 2:12])
     X = ABC.assign(cluster=kmeans.labels_)
-    Cl_seqs, store_Cl_seqs = [], []
+    Cl_seqs = []
     for i in range(ncl):
         Cl_seqs.append(ForegroundSeqs(list(X[X["cluster"] == i].iloc[:, 0]), pYTS))
-    store_Cl_seqs.append(Cl_seqs)
     
     #background sequences
     bg_seqs = BackgroundSeqs(pYTS)
     bg_pwm = position_weight_matrix(bg_seqs)
-    
+
     #EM algorithm
+    store_Cl_seqs = []
     Allseqs = [val for sublist in Cl_seqs for val in sublist]
-    for i in range(n_iter):
-        scores = []
-        for j in range(ABC.shape[0]):
-            motif = Allseqs[j]
+    for i in range(max_n_iter):
+        store_Cl_seqs.append(Cl_seqs)
+        clusters = [[] for i in range(ncl)]
+        for j, motif in enumerate(Allseqs):
+            scores = []
             for z in range(ncl):
                 freq_matrix = counts(Cl_seqs[z])
-                BPM = BinomialMatrix(len(Cl_seq), freq_matrix, bg_pwm)
-                scores.append(MeanBinomProbs(BPMs[z], motif))
-            clusters = [[] for i in range(ncl)]
-            _, idx = max((val, idx) for (idx, val) in enumerate(scores))
+                BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+                scores.append(MeanBinomProbs(BPM, motif))
+            _, idx = min((val, idx) for (idx, val) in enumerate(scores))
+            assert idx <= 3, ("idx out of bounds, scores list: %s" (scores))
             clusters[idx].append(motif)
-        Cl_seqs = []
-        for cl in clusters:
-            Cl_seqs.append(ForegroundSeqs(cl), pYTS)
-
+        
+        assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
+        Cl_seqs = clusters
+        
         if Cl_seqs == store_Cl_seqs[-1]:
             print("convergence has been reached at iteration %i" % (i))
-            return Cl_Seqs
-        
-    return Cl_Seqs
+            return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+
+    return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
 
 
 def BackgroundSeqs(pYTS):
-    """Build Background data set for either "Y", "S", or "T". """
+    """ Build Background data set for either "Y", "S", or "T". """
     bg_seqs = []
     proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
     for prot in SeqIO.parse(proteome, "fasta"):
@@ -243,30 +246,30 @@ def BackgroundSeqs(pYTS):
 
 
 def ForegroundSeqs(Allseqs, pYTS):
-    """Build Background data set for either "Y", "S", or "T". """
+    """ Build Background data set for either "Y", "S", or "T". """
     seqs = []
     for motif in Allseqs:
         motif = motif.upper()
-        if motif[5] != pYTS:
+        if motif[5] != pYTS or "-" in motif:
             continue
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
 
 
 def position_weight_matrix(seqs):
-    """Build PWM of a given set of sequences. """
+    """ Build PWM of a given set of sequences. """
     m = motifs.create(seqs)
     return pd.DataFrame(m.counts.normalize(pseudocounts=AAfreq)).T
 
 
 def counts(seqs):
-    """Build counts matrix of a given set of sequences. """
+    """ Build counts matrix of a given set of sequences. """
     m = motifs.create(seqs)
     return pd.DataFrame(m.counts).T.reset_index(drop=False)
 
 
 def BinomialMatrix(n, k, p):
-    """Build binomial probability matrix. Note n is the number of sequences, 
+    """ Build binomial probability matrix. Note n is the number of sequences, 
     k is the counts matrix of the MS data set, p is the pwm of the background"""
     BMP = []
     for i, r in k.iterrows():
@@ -281,7 +284,7 @@ def BinomialMatrix(n, k, p):
 
 
 def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
-    """Identify the most significant residue/position pairs acroos the binomial
+    """ Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
     motif = list("X"*11)
     positions = list(BMP.columns[1:])
@@ -303,6 +306,5 @@ def MeanBinomProbs(BPM, motif):
     probs = []
     for i, aa in enumerate(motif):
         Xidx = BPM["Residue"] == aa
-        probs.append(BPM[Xidx][i])
+        probs.append(float(BPM[Xidx][i]))
     return np.mean(probs)
-
