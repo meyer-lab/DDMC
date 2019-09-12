@@ -209,7 +209,7 @@ def EM_SeqClustering(ABC, ncl, pYTS, max_n_iter=100):
                 BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
                 scores.append(MeanBinomProbs(BPM, motif))
             _, idx = min((val, idx) for (idx, val) in enumerate(scores))
-            assert idx <= 3, ("idx out of bounds, scores list: %s" (idx))
+            assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
             clusters[idx].append(motif)
         
         assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
