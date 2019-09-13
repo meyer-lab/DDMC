@@ -10,6 +10,7 @@ from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from sklearn.cluster import KMeans
 from scipy.stats import binom
+from sklearn.mixture import GaussianMixture
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -182,11 +183,19 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
               "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
 
 
-def EM_SeqClustering(ABC, ncl, pYTS, max_n_iter=100):
-    """ Cluster sequences by similarity. """
-    #initialize with k-means clusters
-    kmeans = KMeans(ncl).fit(ABC.iloc[:, 2:12])
-    X = ABC.assign(cluster=kmeans.labels_)
+def EM_CombinedClustering(ABC, ncl, pYTS, GMMweight=1.5, max_n_iter=100):
+    """ Cluster peptides by both sequence similarity and data behavior following an expectation-maximization
+    algorithm. 'GMMweight'specifies which method's expectation step should have a larger effect on the peptide assignment."""
+    #initialize with gmm clusters
+    ABC = preprocess_seqs(ABC, pYTS)
+    gmm = GaussianMixture(n_components=ncl, covariance_type="full").fit(ABC.iloc[:, 2:12])
+    X = ABC.assign(GMM_cluster=gmm.predict(ABC.iloc[:, 2:12]))
+    gmm_pvals = pd.DataFrame(np.log(1 - gmm.predict_proba(ABC.iloc[:, 2:12])))
+    display(X.sort_values(by="GMM_cluster"))
+    
+    cl = X.iloc[:, -1]
+    print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
+    
     Cl_seqs = []
     for i in range(ncl):
         Cl_seqs.append(ForegroundSeqs(list(X[X["cluster"] == i].iloc[:, 0]), pYTS))
@@ -197,8 +206,9 @@ def EM_SeqClustering(ABC, ncl, pYTS, max_n_iter=100):
 
     #EM algorithm
     store_Cl_seqs = []
-    Allseqs = [val for sublist in Cl_seqs for val in sublist]
+    Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
     for i in range(max_n_iter):
+        print(i)
         store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
         for j, motif in enumerate(Allseqs):
@@ -206,19 +216,28 @@ def EM_SeqClustering(ABC, ncl, pYTS, max_n_iter=100):
             for z in range(ncl):
                 freq_matrix = counts(Cl_seqs[z])
                 BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
-                scores.append(MeanBinomProbs(BPM, motif))
+                seq_score = MeanBinomProbs(BPM, motif)
+                gmm_score = gmm_pvals.iloc[j, z] * GMMweight
+                scores.append(seq_score + gmm_score)
             _, idx = min((val, idx) for (idx, val) in enumerate(scores))
             assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
             clusters[idx].append(motif)
-        
         assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
         Cl_seqs = clusters
-        
+
         if Cl_seqs == store_Cl_seqs[-1]:
             print("convergence has been reached at iteration %i" % (i))
             return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
 
     return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+
+
+def preprocess_seqs(X, pYTS):
+    X = X[~X.iloc[:, 0].str.contains("-")]
+    Xidx = []
+    for i in range(X.shape[0]):
+        Xidx.append(X.iloc[i, 0][5] == pYTS.lower())
+    return X.iloc[Xidx, :]
 
 
 def BackgroundSeqs(pYTS):
@@ -249,8 +268,8 @@ def ForegroundSeqs(Allseqs, pYTS):
     seqs = []
     for motif in Allseqs:
         motif = motif.upper()
-        if motif[5] != pYTS or "-" in motif:
-            continue
+        assert motif[5] == pYTS, "wrong central amino acid"
+        assert "-" not in pYTS, "gap in motif"
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
 
@@ -274,11 +293,12 @@ def BinomialMatrix(n, k, p):
     for i, r in k.iterrows():
         CurrentResidue = []
         for j,v in enumerate(r[1:]):
-            CurrentResidue.append(binom.sf(k=v, n=n, p=p.iloc[i, j], loc=0))
+            CurrentResidue.append(binom.logsf(k=v, n=n, p=p.iloc[i, j], loc=0))
         BMP.append(CurrentResidue)
-
+    
     BMP = pd.DataFrame(BMP)
     BMP.insert(0, "Residue", list(k.iloc[:,0]))
+    BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
 
 
@@ -304,6 +324,8 @@ def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
 def MeanBinomProbs(BPM, motif):
     probs = []
     for i, aa in enumerate(motif):
+        if i == 5:
+            continue
         Xidx = BPM["Residue"] == aa
         probs.append(float(BPM[Xidx][i]))
     return np.mean(probs)
