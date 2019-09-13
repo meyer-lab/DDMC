@@ -191,14 +191,14 @@ def EM_CombinedClustering(ABC, ncl, pYTS, GMMweight=1.5, max_n_iter=100):
     gmm = GaussianMixture(n_components=ncl, covariance_type="full").fit(ABC.iloc[:, 2:12])
     X = ABC.assign(GMM_cluster=gmm.predict(ABC.iloc[:, 2:12]))
     gmm_pvals = pd.DataFrame(np.log(1 - gmm.predict_proba(ABC.iloc[:, 2:12])))
-    
+
     cl = X.iloc[:, -1]
     print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
-    
+
     Cl_seqs = []
     for i in range(ncl):
-        Cl_seqs.append(ForegroundSeqs(list(X[X["cluster"] == i].iloc[:, 0]), pYTS))
-    
+        Cl_seqs.append(ForegroundSeqs(list(X[X["GMM_cluster"] == i].iloc[:, 0]), pYTS))
+
     #background sequences
     bg_seqs = BackgroundSeqs(pYTS)
     bg_pwm = position_weight_matrix(bg_seqs)
