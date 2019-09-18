@@ -41,7 +41,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
         ABC = pYmotifs(ABC, ABC_names)
         cols = ABC.columns
         merging_indices = list(cols[:2]) + [cols[-1]]
-    
+
     if Vfilter:
         ABC = VFilter(ABC, merging_indices)
 
@@ -105,15 +105,16 @@ def FoldChangeFilter(X):
 
 
 def VFilter(ABC, merging_indices):
+    """ Filter based on variability across recurrent peptides in MS biological replicates """
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
-    
+
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
     DupsTable = MergeDfbyMean(DupsTable, DupsTable.columns[2:12], merging_indices)
     DupsTable = DupsTable.reset_index()[ABC.columns]
-    
+
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
     TripsTable = FilterByStdev(TripsTable)

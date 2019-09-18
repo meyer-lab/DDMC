@@ -2,13 +2,11 @@
 
 import os
 import re
-import random
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
-from sklearn.cluster import KMeans
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
@@ -21,9 +19,9 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 def pYmotifs(ABC, ABC_names):
     " Generate pY motifs for pre-processing. "
-    names, motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
+    names, mapped_motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
     ABC['Master Protein Descriptions'] = names
-    ABC['peptide-phosphosite'] = motifs
+    ABC['peptide-phosphosite'] = mapped_motifs
     ABC.insert(12, 'position', pXpos)
     return ABC
 
@@ -80,7 +78,7 @@ def GeneratingKinaseMotifs(names, seqs):
     proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
-    MS_names, motifs, uni_pos = [], [], []
+    MS_names, mapped_motifs, uni_pos = [], [], []
     Allseqs, Testseqs = [], []
 
     for i, MS_seq in enumerate(seqs):
@@ -109,7 +107,7 @@ def GeneratingKinaseMotifs(names, seqs):
                 uni_pos.append("Y" + str(y_idx+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
-                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
+                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
 
             if "y" not in MS_seq:
                 pTS_idx = list(re.compile("t|s").finditer(MS_seq))
@@ -122,7 +120,7 @@ def GeneratingKinaseMotifs(names, seqs):
                 uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
-                motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
+                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
 
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
@@ -135,13 +133,13 @@ def GeneratingKinaseMotifs(names, seqs):
 
     assert len(names) == len(MS_names), "mapping incosistent number of names" \
         + str(len(names)) + " " + str(len(MS_names))
-    assert len(seqs) == len(motifs), "mapping incosistent number of peptides" \
-        + str(len(seqs)) + " " + str(len(motifs))
+    assert len(seqs) == len(mapped_motifs), "mapping incosistent number of peptides" \
+        + str(len(seqs)) + " " + str(len(mapped_motifs))
     assert len(uni_pos) == len(seqs), "inconsistent nubmer of pX positions" \
         + str(len(seqs)) + " " + str(len(uni_pos))
 
     proteome.close()
-    return MS_names, motifs, uni_pos
+    return MS_names, mapped_motifs, uni_pos
 
 
 def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
@@ -151,11 +149,11 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
     # If we ran off the end of the sequence at the beginning or at the end, append a gap
     if y_idx - motif_size < 0:
-        for ii in range(motif_size - y_idx):
+        for _ in range(motif_size - y_idx):
             UP_seq_copy.insert(0, "-")
 
     elif y_idx + motif_size + 1 > len(UP_seq):
-        for jj in range(y_idx + motif_size - len(UP_seq) + 1):
+        for _ in range(y_idx + motif_size - len(UP_seq) + 1):
             UP_seq_copy.extend("-")
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
@@ -178,7 +176,8 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
 
 """ Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
-    might be able to find more reliable sources. """
+might be able to find more reliable sources. """
+
 
 AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":0.037, "G":0.074, "H":0.029, "I":0.038, "L":0.076, \
               "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
@@ -186,9 +185,9 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
 
 class MassSpecClustering():
     """ Cluster peptides by both sequence similarity and data behavior following an 
-    expectation-maximization algorithm. 'GMMweight'specifies which method's expectation step 
+    expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
-    
+
     def __init__(self, ncl, GMMweight, pYTS="Y", covariance_type="tied", max_n_iter=100):
         self.ncl = ncl
         self.pYTS = pYTS
@@ -210,6 +209,7 @@ class MassSpecClustering():
         return labels
 
     def score(self, ABC, Y=None):
+        """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
         _, _, scores, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
         return np.mean(scores)
@@ -242,11 +242,10 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
     store_Cl_seqs, labels, store_scores = [], [], []
     n_iter = 0
     Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
-    for i in range(max_n_iter):
+    for _ in range(max_n_iter):
         n_iter += 1
         store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
-
         for j, motif in enumerate(Allseqs):
             scores = []
             for z in range(ncl):
@@ -280,6 +279,7 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
 
 
 def gmm_init_clusters(X, pYTS, ncl):
+    """ Use GMM clusters to initialize EMclustering algorithm. """
 #     cl = X.iloc[:, -1]
 #     print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
     Cl_seqs = []
@@ -290,12 +290,15 @@ def gmm_init_clusters(X, pYTS, ncl):
 
 
 def gmm_pvalue(X, ncl, covariance_type):
+    """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 2:12])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 2:12]))
     return Xcl, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
 
 
 def preprocess_seqs(X, pYTS):
+    """ Filter out any sequences with different than the specified central p-residue
+    and/or any containing gaps."""
     X = X[~X.iloc[:, 0].str.contains("-")]
     Xidx = []
     for i in range(X.shape[0]):
@@ -350,22 +353,22 @@ def counts(seqs):
 
 
 def BinomialMatrix(n, k, p):
-    """ Build binomial probability matrix. Note n is the number of sequences, 
-    k is the counts matrix of the MS data set, p is the pwm of the background"""
+    """ Build binomial probability matrix. Note n is the number of sequences,
+    k is the counts matrix of the MS data set, p is the pwm of the background. """
     BMP = []
     for i, r in k.iterrows():
         CurrentResidue = []
-        for j,v in enumerate(r[1:]):
+        for j, v in enumerate(r[1:]):
             CurrentResidue.append(binom.logsf(k=v, n=n, p=p.iloc[i, j], loc=0))
         BMP.append(CurrentResidue)
 
     BMP = pd.DataFrame(BMP)
-    BMP.insert(0, "Residue", list(k.iloc[:,0]))
+    BMP.insert(0, "Residue", list(k.iloc[:, 0]))
     BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
 
 
-def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
+def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     """ Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
     motif = list("X"*11)
@@ -376,7 +379,7 @@ def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
         DoS = BMP.iloc[:, i].min()
         j = BMP[BMP.iloc[:, i] == DoS].index[0]
         aa = AA[j]
-        if DoS < pvalCut or DoS == 0.0 and counts.iloc[j, i] >= occurCut:
+        if DoS < pvalCut or DoS == 0.0 and freqs.iloc[j, i] >= occurCut:
             motif[i] = aa
         else:
             motif[i] = "x"
@@ -385,6 +388,7 @@ def ExtractMotif(BMP, counts, pvalCut=10**(-4), occurCut=7):
 
 
 def MeanBinomProbs(BPM, motif):
+    """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = []
     for i, aa in enumerate(motif):
         if i == 5:

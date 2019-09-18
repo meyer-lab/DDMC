@@ -53,9 +53,11 @@ class MyOwnGMM(BaseEstimator):
         return clustermembers
 
     def probs(self, X):
+        """ probabilities of cluster assignment. """
         return self.gmm_.predict_proba(X.T)
 
     def weights(self):
+        """ weights of each cluster. """
         return self.gmm_.weights_
 
 

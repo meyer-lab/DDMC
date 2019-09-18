@@ -3,7 +3,6 @@
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
@@ -58,7 +57,7 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.set_ylabel("Predicted Cell Viability")
     ax.set_xlim([1, 18])
     ax.set_ylim([1, 18])
-    coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
+    coeff, _ = sp.stats.pearsonr(list(Y_predictions), list(Y))
     textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props);
+    ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
