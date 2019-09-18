@@ -218,3 +218,12 @@ def FilterByStdev(X, stdCut=0.4):
     if X.columns[-1][0] == "position":
         Means = pd.concat([Means, X.iloc[:, -1]], axis=1)
     return Means.iloc[Xidx, :]
+
+
+def peptidefinder(X, name=False, peptide=False):
+    """ Search for a specific peptide either by name or sequence. """
+    if name:
+        found = X[X["Master Protein Descriptions"].str.contains(loc)]
+    if peptide:
+        found = X[X["peptide-phosphosite"].str.contains(loc)]
+    return found

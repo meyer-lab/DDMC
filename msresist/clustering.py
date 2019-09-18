@@ -3,7 +3,7 @@
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
-from sklearn.base import BaseEstimator
+from sklearn.mixture.base import BaseEstimator
 
 
 class MyOwnKMEANS(BaseEstimator):

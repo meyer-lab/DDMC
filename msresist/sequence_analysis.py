@@ -11,6 +11,7 @@ from Bio.Alphabet import IUPAC
 from sklearn.cluster import KMeans
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
+from sklearn.utils.validation import check_is_fitted
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -183,52 +184,115 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
               "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
 
 
-def EM_CombinedClustering(ABC, ncl, pYTS, GMMweight=1.5, max_n_iter=100):
-    """ Cluster peptides by both sequence similarity and data behavior following an expectation-maximization
-    algorithm. 'GMMweight'specifies which method's expectation step should have a larger effect on the peptide assignment."""
-    #initialize with gmm clusters
-    ABC = preprocess_seqs(ABC, pYTS)
-    gmm = GaussianMixture(n_components=ncl, covariance_type="full").fit(ABC.iloc[:, 2:12])
-    X = ABC.assign(GMM_cluster=gmm.predict(ABC.iloc[:, 2:12]))
-    gmm_pvals = pd.DataFrame(np.log(1 - gmm.predict_proba(ABC.iloc[:, 2:12])))
+class MassSpecClustering():
+    """ Cluster peptides by both sequence similarity and data behavior following an 
+    expectation-maximization algorithm. 'GMMweight'specifies which method's expectation step 
+    should have a larger effect on the peptide assignment. """
+    
+    def __init__(self, ncl, GMMweight, pYTS="Y", covariance_type="tied", max_n_iter=100):
+        self.ncl = ncl
+        self.pYTS = pYTS
+        self.GMMweight = GMMweight
+        self.covariance_type = covariance_type
+        self.max_n_iter = max_n_iter
 
-    cl = X.iloc[:, -1]
-    print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
 
-    Cl_seqs = []
-    for i in range(ncl):
-        Cl_seqs.append(ForegroundSeqs(list(X[X["GMM_cluster"] == i].iloc[:, 0]), pYTS))
+    def fit(self, ABC, Y=None):
+        """ Compute EM clustering. """
+        self.Cl_seqs_, self.labels_, self.score_, self.n_iter_ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, \
+        self.covariance_type, self.max_n_iter)
+        return self
 
-    #background sequences
+    def predict(self, ABC, Y=None):
+        """ Predict the cluster each sequence in ABC belongs to."""
+        check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
+        _, labels, _, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
+        return labels
+
+    def score(self, ABC, Y=None):
+        check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
+        _, _, scores, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
+        return np.mean(scores)
+
+
+    def get_params(self, deep=True):
+        """ Returns a dict of the estimator parameters with their values. """
+        return {"ncl": self.ncl, "pYTS": self.pYTS, "GMMweight": self.GMMweight, "covariance_type": self.covariance_type, \
+        "max_n_iter": self.max_n_iter}
+
+
+    def set_params(self, **parameters):
+        """ Necessary to make this estimator scikit learn-compatible."""
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+
+def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
+    """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
+    #Initialize with gmm clusters and generate gmm pval matrix
+    X, gmm_pvals = gmm_pvalue(ABC, ncl, covariance_type)
+    Cl_seqs = gmm_init_clusters(X, pYTS, ncl)
+
+    #Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
     bg_pwm = position_weight_matrix(bg_seqs)
 
     #EM algorithm
-    store_Cl_seqs = []
+    store_Cl_seqs, labels, store_scores = [], [], []
+    n_iter = 0
     Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
     for i in range(max_n_iter):
-        print(i)
+        n_iter += 1
         store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
+
         for j, motif in enumerate(Allseqs):
             scores = []
             for z in range(ncl):
+                #Test set during CV
+                if not Cl_seqs[z]:
+                    continue
                 freq_matrix = counts(Cl_seqs[z])
                 BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
                 seq_score = MeanBinomProbs(BPM, motif)
                 gmm_score = gmm_pvals.iloc[j, z] * GMMweight
                 scores.append(seq_score + gmm_score)
-            _, idx = min((val, idx) for (idx, val) in enumerate(scores))
+            score, idx = min((score, idx) for (idx, score) in enumerate(scores))
             assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
             clusters[idx].append(motif)
-        assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
+            labels.append(idx)
+            store_scores.append(score)
+
+        #Avoid this assertion in test set during CV
+        if ABC.shape[0] > 2:
+            assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
         Cl_seqs = clusters
 
+        #Convergence when same cluster assignments as in previous iteration
         if Cl_seqs == store_Cl_seqs[-1]:
-            print("convergence has been reached at iteration %i" % (i))
-            return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+#             print("convergence has been reached at iteration %i" % (i))
+            Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+            return Cl_seqs, labels[-1], store_scores[-1], n_iter
 
-    return [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+    Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
+    return Cl_seqs, labels[-1], store_scores[-1], n_iter
+
+
+def gmm_init_clusters(X, pYTS, ncl):
+#     cl = X.iloc[:, -1]
+#     print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
+    Cl_seqs = []
+    for i in range(ncl):
+        Cl_seqs.append(ForegroundSeqs(list(X[X["GMM_cluster"] == i].iloc[:, 0]), pYTS))
+
+    return Cl_seqs
+
+
+def gmm_pvalue(X, ncl, covariance_type):
+    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 2:12])
+    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 2:12]))
+    return Xcl, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
 
 
 def preprocess_seqs(X, pYTS):
@@ -294,7 +358,7 @@ def BinomialMatrix(n, k, p):
         for j,v in enumerate(r[1:]):
             CurrentResidue.append(binom.logsf(k=v, n=n, p=p.iloc[i, j], loc=0))
         BMP.append(CurrentResidue)
-    
+
     BMP = pd.DataFrame(BMP)
     BMP.insert(0, "Residue", list(k.iloc[:,0]))
     BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf

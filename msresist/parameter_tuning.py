@@ -53,7 +53,7 @@ def gmmPLSR_tuning(X, Y):
 ###------------ General GridSearch Structure ------------------###
 
 
-def GridSearch_CV(model, X, Y, parameters, cv, scoring=None):
+def GridSearch_CV(model, parameters, cv, X, Y=None, scoring=None):
     """ Exhaustive search over specified parameter values for an estimator. """
     grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring)
     fit = grid.fit(X, Y)
