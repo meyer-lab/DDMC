@@ -220,7 +220,7 @@ def FilterByStdev(X, stdCut=0.4):
     return Means.iloc[Xidx, :]
 
 
-def peptidefinder(X, name=False, peptide=False):
+def peptidefinder(X, loc, name=False, peptide=False):
     """ Search for a specific peptide either by name or sequence. """
     if name:
         found = X[X["Master Protein Descriptions"].str.contains(loc)]
