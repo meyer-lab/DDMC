@@ -198,6 +198,7 @@ class MassSpecClustering():
 
     def fit(self, ABC, Y=None):
         """ Compute EM clustering. """
+        print("clusters=", self.ncl, "GMMweight=", self.GMMweight)
         self.Cl_seqs_, self.labels_, self.score_, self.n_iter_ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, \
         self.covariance_type, self.max_n_iter)
         return self
@@ -212,6 +213,7 @@ class MassSpecClustering():
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
         _, _, scores, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
+        print("score=", np.mean(scores))
         return np.mean(scores)
 
 
@@ -227,12 +229,12 @@ class MassSpecClustering():
             setattr(self, parameter, value)
         return self
 
+import math
 
 def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     #Initialize with gmm clusters and generate gmm pval matrix
-    X, gmm_pvals = gmm_pvalue(ABC, ncl, covariance_type)
-    Cl_seqs = gmm_init_clusters(X, pYTS, ncl)
+    Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
     #Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
@@ -249,10 +251,7 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
         for j, motif in enumerate(Allseqs):
             scores = []
             for z in range(ncl):
-                #Test set during CV
-                if not Cl_seqs[z]:
-                    continue
-                freq_matrix = counts(Cl_seqs[z])
+                freq_matrix = frequencies(Cl_seqs[z])
                 BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
                 seq_score = MeanBinomProbs(BPM, motif)
                 gmm_score = gmm_pvals.iloc[j, z] * GMMweight
@@ -263,14 +262,12 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
             labels.append(idx)
             store_scores.append(score)
 
-        #Avoid this assertion in test set during CV
-        if ABC.shape[0] > 2:
-            assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
+        assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
         Cl_seqs = clusters
 
         #Convergence when same cluster assignments as in previous iteration
         if Cl_seqs == store_Cl_seqs[-1]:
-#             print("convergence has been reached at iteration %i" % (i))
+            print("convergence has been reached at iteration %i" % (n_iter))
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
             return Cl_seqs, labels[-1], store_scores[-1], n_iter
 
@@ -278,22 +275,12 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
     return Cl_seqs, labels[-1], store_scores[-1], n_iter
 
 
-def gmm_init_clusters(X, pYTS, ncl):
-    """ Use GMM clusters to initialize EMclustering algorithm. """
-#     cl = X.iloc[:, -1]
-#     print("GMM cluster sizes: %s" % {i: list(cl).count(i) for i in list(cl)})
-    Cl_seqs = []
-    for i in range(ncl):
-        Cl_seqs.append(ForegroundSeqs(list(X[X["GMM_cluster"] == i].iloc[:, 0]), pYTS))
-
-    return Cl_seqs
-
-
-def gmm_pvalue(X, ncl, covariance_type):
+def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 2:12])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 2:12]))
-    return Xcl, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
+    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 0]), pYTS) for i in range(ncl)]
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
 
 
 def preprocess_seqs(X, pYTS):
@@ -346,7 +333,7 @@ def position_weight_matrix(seqs):
     return pd.DataFrame(m.counts.normalize(pseudocounts=AAfreq)).T
 
 
-def counts(seqs):
+def frequencies(seqs):
     """ Build counts matrix of a given set of sequences. """
     m = motifs.create(seqs)
     return pd.DataFrame(m.counts).T.reset_index(drop=False)
@@ -355,14 +342,7 @@ def counts(seqs):
 def BinomialMatrix(n, k, p):
     """ Build binomial probability matrix. Note n is the number of sequences,
     k is the counts matrix of the MS data set, p is the pwm of the background. """
-    BMP = []
-    for i, r in k.iterrows():
-        CurrentResidue = []
-        for j, v in enumerate(r[1:]):
-            CurrentResidue.append(binom.logsf(k=v, n=n, p=p.iloc[i, j], loc=0))
-        BMP.append(CurrentResidue)
-
-    BMP = pd.DataFrame(BMP)
+    BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:,:], loc=0))
     BMP.insert(0, "Residue", list(k.iloc[:, 0]))
     BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
@@ -389,10 +369,10 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
 
 def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
+    BPM = BPM.set_index("Residue")
     probs = []
     for i, aa in enumerate(motif):
         if i == 5:
             continue
-        Xidx = BPM["Residue"] == aa
-        probs.append(float(BPM[Xidx][i]))
+        probs.append(float(BPM.loc[aa][i]))
     return np.mean(probs)
