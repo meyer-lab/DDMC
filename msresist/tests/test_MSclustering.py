@@ -13,8 +13,7 @@ class TestClustering(unittest.TestCase):
         ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
         ABC = preprocess_seqs(ABC, "Y")
         Cl_seqs, _, _, _ = EMclustering(ABC, 4, 1, "Y", "tied", 20)
-        X, _ = gmm_pvalue(ABC, 4, "tied")
-        gmm_cl = gmm_init_clusters(X, "Y", 4)
+        gmm_cl, _ = gmm_initialCl_and_pvalues(ABC, 4, "tied", "Y")
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
         #assert that EM clusters are different than GMM clusters
