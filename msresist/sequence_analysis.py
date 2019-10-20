@@ -247,10 +247,6 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
     return Cl_seqs, labels, store_scores, ICs, n_iter
 
 
-
-    
-
-
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
     eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
