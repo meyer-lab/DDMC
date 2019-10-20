@@ -11,6 +11,10 @@ $(fdir)/figure%pdf: $(fdir)/figure%svg
 test:
 	pytest
 
+testprofile:
+	python3 -m cProfile -o profile /usr/local/bin/pytest
+	gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+
 testcover:
 	pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
