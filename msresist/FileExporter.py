@@ -1,8 +1,9 @@
-from IPython.display import HTML
 import base64
+from IPython.display import HTML
 
 
 def create_download_link(df, filename, title="Download CSV file"):
+    "Download a csv file from a pandas dataframe."
     csv = df.to_csv()
     b64 = base64.b64encode(csv.encode())
     payload = b64.decode()

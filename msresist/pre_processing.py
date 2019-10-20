@@ -41,7 +41,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
         ABC = pYmotifs(ABC, ABC_names)
         cols = ABC.columns
         merging_indices = list(cols[:2]) + [cols[-1]]
-    
+
     if Vfilter:
         ABC = VFilter(ABC, merging_indices)
 
@@ -105,15 +105,16 @@ def FoldChangeFilter(X):
 
 
 def VFilter(ABC, merging_indices):
+    """ Filter based on variability across recurrent peptides in MS biological replicates """
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
-    
+
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
     DupsTable = MergeDfbyMean(DupsTable, DupsTable.columns[2:12], merging_indices)
     DupsTable = DupsTable.reset_index()[ABC.columns]
-    
+
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices, ABC.columns)
     TripsTable = FilterByStdev(TripsTable)
@@ -218,3 +219,12 @@ def FilterByStdev(X, stdCut=0.4):
     if X.columns[-1][0] == "position":
         Means = pd.concat([Means, X.iloc[:, -1]], axis=1)
     return Means.iloc[Xidx, :]
+
+
+def peptidefinder(X, loc, name=False, peptide=False):
+    """ Search for a specific peptide either by name or sequence. """
+    if name:
+        found = X[X["Master Protein Descriptions"].str.contains(loc)]
+    if peptide:
+        found = X[X["peptide-phosphosite"].str.contains(loc)]
+    return found
