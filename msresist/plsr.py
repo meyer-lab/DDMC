@@ -1,12 +1,15 @@
-"""PLSR functions"""
+"""PLSR analysis functions (plotting functions are located in msresist/figures/figure2)"""
 
 import scipy as sp
 from scipy.stats import zscore
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+
+###------------ PLSR model functions ------------------###
 
 
 def zscore_columns(matrix):
@@ -16,7 +19,7 @@ def zscore_columns(matrix):
 
 
 def R2Y_across_components(X, Y, max_comps):
-    "Calculate R2Y."
+    """ Calculate R2Y. """
     R2Ys = []
     for b in range(1, max_comps):
         plsr = PLSRegression(n_components=b)
@@ -27,7 +30,7 @@ def R2Y_across_components(X, Y, max_comps):
 
 
 def Q2Y_across_components(X, Y, max_comps):
-    "Calculate Q2Y using cros_val_predct method."
+    """ Calculate Q2Y using cros_val_predct method. """
     Q2Ys = []
     for b in range(1, max_comps):
         plsr_model = PLSRegression(n_components=b)
@@ -37,28 +40,10 @@ def Q2Y_across_components(X, Y, max_comps):
 
 
 def PLSR(X, Y, nComponents):
-    "Run PLSR."
+    """ Run PLSR. """
     plsr = PLSRegression(n_components=nComponents)
     X_scores, _ = plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = plsr.x_loadings_[:, 0], plsr.x_loadings_[:, 1]
     PC1_yload, PC2_yload = plsr.y_loadings_[:, 0], plsr.y_loadings_[:, 1]
     return plsr, PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
-
-
-def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
-    "Plot exprimentally-measured vs PLSR-predicted values"
-    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
-    Y = list(Y)
-    ax.scatter(Y, Y_predictions)
-    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
-    ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
-    ax.set_title("Correlation Measured vs Predicted")
-    ax.set_xlabel("Measured Cell Viability")
-    ax.set_ylabel("Predicted Cell Viability")
-    ax.set_xlim([1, 18])
-    ax.set_ylim([1, 18])
-    coeff, pval = sp.stats.pearsonr(list(Y_predictions), list(Y))
-    textstr = "$r$ = " + str(np.round(coeff, 4))
-    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props);
