@@ -7,10 +7,9 @@ import pandas as pd
 from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
+from Bio.SubsMat import MatrixInfo
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
-from sklearn.utils.validation import check_is_fitted
-
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -183,57 +182,11 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
               "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
 
 
-class MassSpecClustering():
-    """ Cluster peptides by both sequence similarity and data behavior following an 
-    expectation-maximization algorithm. GMMweight specifies which method's expectation step
-    should have a larger effect on the peptide assignment. """
-
-    def __init__(self, ncl, GMMweight, pYTS="Y", covariance_type="tied", max_n_iter=100):
-        self.ncl = ncl
-        self.pYTS = pYTS
-        self.GMMweight = GMMweight
-        self.covariance_type = covariance_type
-        self.max_n_iter = max_n_iter
-
-
-    def fit(self, ABC, Y=None):
-        """ Compute EM clustering. """
-        print("clusters=", self.ncl, "GMMweight=", self.GMMweight)
-        self.Cl_seqs_, self.labels_, self.score_, self.n_iter_ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, \
-        self.covariance_type, self.max_n_iter)
-        return self
-
-    def predict(self, ABC, Y=None):
-        """ Predict the cluster each sequence in ABC belongs to."""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
-        _, labels, _, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
-        return labels
-
-    def score(self, ABC, Y=None):
-        """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "score_", "n_iter_"])
-        _, _, scores, _ = EMclustering(ABC, self.ncl, self.GMMweight, self.pYTS, self.covariance_type, self.max_n_iter)
-        print("score=", np.mean(scores))
-        return np.mean(scores)
-
-
-    def get_params(self, deep=True):
-        """ Returns a dict of the estimator parameters with their values. """
-        return {"ncl": self.ncl, "pYTS": self.pYTS, "GMMweight": self.GMMweight, "covariance_type": self.covariance_type, \
-        "max_n_iter": self.max_n_iter}
-
-
-    def set_params(self, **parameters):
-        """ Necessary to make this estimator scikit learn-compatible."""
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
-        return self
-
-import math
-
-def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
+def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
+    ABC = pd.concat([seqs, names, data.T], axis=1)
     #Initialize with gmm clusters and generate gmm pval matrix
+
     Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
     #Background sequences
@@ -241,39 +194,79 @@ def EMclustering(ABC, ncl, GMMweight, pYTS, covariance_type, max_n_iter):
     bg_pwm = position_weight_matrix(bg_seqs)
 
     #EM algorithm
-    store_Cl_seqs, labels, store_scores = [], [], []
+    store_Cl_seqs = []
     n_iter = 0
     Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
     for _ in range(max_n_iter):
+        labels, store_scores = [], []
         n_iter += 1
         store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
         for j, motif in enumerate(Allseqs):
             scores = []
-            for z in range(ncl):
-                freq_matrix = frequencies(Cl_seqs[z])
-                BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
-                seq_score = MeanBinomProbs(BPM, motif)
-                gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                scores.append(seq_score + gmm_score)
-            score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+            #Binomial Probability Matrix distance (p-values) between foreground and background sequences
+            if distance_method == "Binomial":
+                for z in range(ncl):
+                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
+                    freq_matrix = frequencies(Cl_seqs[z])
+                    BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+                    BPM_score = MeanBinomProbs(BPM, motif)
+                    scores.append(BPM_score + gmm_score)
+                score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+            #Average distance between each sequence and any cluster based on PAM250 substitution matrix
+            if distance_method == "PAM250":
+                for z in range(ncl):
+                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
+                    PAM250_score = np.mean(PAM250_scores)
+                    scores.append(PAM250_score + gmm_score)
+                score, idx = max((score, idx) for (idx, score) in enumerate(scores))
             assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
             clusters[idx].append(motif)
             labels.append(idx)
             store_scores.append(score)
 
-        assert len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) == 0, "one of the clusters is empty"
+        if len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) != 0:
+            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+            Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            Allseqs = [val for sublist in Cl_seqs for val in sublist]
+            continue
+
         Cl_seqs = clusters
 
         #Convergence when same cluster assignments as in previous iteration
         if Cl_seqs == store_Cl_seqs[-1]:
-            print("convergence has been reached at iteration %i" % (n_iter))
+#             print("convergence has been reached at iteration %i" % (n_iter))
+            ICs = [InformationContent(seqs) for seqs in Cl_seqs]
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-            return Cl_seqs, labels[-1], store_scores[-1], n_iter
+            return Cl_seqs, labels, store_scores, ICs, n_iter
 
+    print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
+    ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-    return Cl_seqs, labels[-1], store_scores[-1], n_iter
+    return Cl_seqs, labels, store_scores, ICs, n_iter
 
+
+
+    
+
+
+def match_AAs(pair, matrix):
+    """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
+    eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
+    if pair not in matrix:
+        return matrix[(tuple(reversed(pair)))]
+    else:
+        return matrix[pair]
+
+
+def pairwise_score(seq1, seq2, matrix):
+    " Compute distance between two kinase motifs. Note this does not account for gaps."
+    score = 0
+    for i in range(len(seq1)):
+        pair = (seq1[i], seq2[i])
+        score += match_AAs(pair, matrix)
+    return score
 
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
@@ -331,6 +324,16 @@ def position_weight_matrix(seqs):
     """ Build PWM of a given set of sequences. """
     m = motifs.create(seqs)
     return pd.DataFrame(m.counts.normalize(pseudocounts=AAfreq)).T
+
+
+def InformationContent(seqs):
+    """ The mean of the PSSM is particularly important becuase its value is equal to the
+    Kullback-Leibler divergence or relative entropy, and is a measure for the information content
+    of the motif compared to the background."""
+    m = motifs.create(seqs)
+    pssm = m.counts.normalize(pseudocounts=AAfreq).log_odds(AAfreq)
+    IC = pssm.mean(AAfreq)
+    return IC
 
 
 def frequencies(seqs):

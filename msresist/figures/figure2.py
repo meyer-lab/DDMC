@@ -5,6 +5,7 @@ This creates Figure 2.
 import os
 import pandas as pd
 import numpy as np
+import scipy as sp
 from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict
 import numpy as np
@@ -15,7 +16,7 @@ from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from msresist.parameter_tuning import kmeansPLSR_tuning
-from msresist.plsr import Q2Y_across_components, R2Y_across_components, plotMeasuredVsPredicted
+from msresist.plsr import Q2Y_across_components, R2Y_across_components
 from msresist.clustering import MyOwnKMEANS
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -65,7 +66,7 @@ def makeFigure():
 
     plotR2YQ2Y(ax[0], ncl, data, Y_cv)
 
-    plotGridSearch(ax[1], data ,Y_cv)
+    plotKmeansPLSR_GridSearch(ax[1], data ,Y_cv)
 
     plotMeasuredVsPredicted(ax[2], kmeans_plsr, data, Y_cv)
 
@@ -78,10 +79,7 @@ def makeFigure():
 
     return f
 
-def plotR2YQ2Y(ax, ncl, X, Y):
-    kmeans = MyOwnKMEANS(ncl).fit(X, Y)
-    centers = kmeans.transform(X)
-
+def plotR2YQ2Y(ax, ncl, centers, Y):
     maxComp = ncl
     Q2Y = Q2Y_across_components(centers, Y, maxComp+1)
     R2Y = R2Y_across_components(centers, Y, maxComp+1)
@@ -95,7 +93,7 @@ def plotR2YQ2Y(ax, ncl, X, Y):
     ax.legend(loc=3)
 
 
-def plotGridSearch(ax, X, Y):
+def plotKmeansPLSR_GridSearch(ax, X, Y):
     CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
     twoC = np.abs(CVresults_min.iloc[:2, 2])
     threeC = np.abs(CVresults_min.iloc[2:5, 2])
@@ -131,6 +129,24 @@ def plotGridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
+def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
+    """ Plot exprimentally-measured vs PLSR-predicted values. """
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
+    Y = list(Y)
+    ax.scatter(Y, Y_predictions)
+    ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
+    ax.set(title="Correlation Measured vs Predicted", xlabel="Actual Y", ylabel="Predicted Y")
+    ax.set_title("Correlation Measured vs Predicted")
+    ax.set_xlabel("Measured Cell Viability")
+    ax.set_ylabel("Predicted Cell Viability")
+    ax.set_xlim([1, 18])
+    ax.set_ylim([1, 18])
+    coeff, _ = sp.stats.pearsonr(list(Y_predictions), list(Y))
+    textstr = "$r$ = " + str(np.round(coeff, 4))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
+
+
 def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     X_scores, Y_scores = kmeans_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
@@ -164,7 +180,8 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].axvline(x=0, color='0.25', linestyle='--')
     ax[1].set_xlim([(-1*max(PC1_xload))-0.5, max(PC1_xload)+0.5])
     ax[1].set_ylim([(-1*max(PC2_xload))-0.5, max(PC2_xload)+0.5])
-    
+
+
 def clusteraverages(ax, X, model_plsr, colors_, treatments):
     centers = model_plsr.named_steps.kmeans.transform(X).T
     for i in range(centers.shape[0]):
