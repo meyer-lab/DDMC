@@ -2,8 +2,9 @@
 Testing file for the clustering methods by data and sequence.
 """
 import unittest
-from ..sequence_analysis import EMclustering, preprocess_seqs, gmm_initialCl_and_pvalues
+from ..sequence_analysis import EM_clustering, preprocess_seqs, gmm_initialCl_and_pvalues
 from ..pre_processing import preprocessing
+
 
 class TestClustering(unittest.TestCase):
     """ Testing class for a clustering estimator. """
