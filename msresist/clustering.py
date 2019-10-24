@@ -131,8 +131,10 @@ def ClusterAverages(X, labels):
     dict_clustermembers = {}
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
-        dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
-        dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
-        dict_clustermembers["pos_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, -2])
-
+        if X.shape[1] > 11:
+            dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
+            dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
+            dict_clustermembers["ProtAcc_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
+            dict_clustermembers["pos_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, -2])
+        
     return pd.DataFrame(centers).T, pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
