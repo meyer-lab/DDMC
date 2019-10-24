@@ -13,7 +13,7 @@ class TestClustering(unittest.TestCase):
         """ Test that EMclustering is working by comparing with GMM clusters. """
         ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
         ABC = preprocess_seqs(ABC, "Y")
-        data = ABC.iloc[:, 2:12].T
+        data = ABC.iloc[:, 3:13].T
         seqs = ABC.iloc[:, 0]
         names = ABC.iloc[:, 1]
         ncl = 4
