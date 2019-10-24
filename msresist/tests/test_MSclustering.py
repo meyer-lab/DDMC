@@ -24,7 +24,7 @@ class TestClustering(unittest.TestCase):
         max_n_iter = 20
         
         Cl_seqs, _, _, _, _ = EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter)
-        gmm_cl, _ = gmm_initialCl_and_pvalues(ABC, 4, "diag", "Y")
+        gmm_cl, _, _ = gmm_initialCl_and_pvalues(ABC, 4, "diag", "Y")
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
         #assert that EM clusters are different than GMM clusters
