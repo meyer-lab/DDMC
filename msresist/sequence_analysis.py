@@ -21,7 +21,7 @@ def pYmotifs(ABC, ABC_names):
     names, mapped_motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
     ABC['Master Protein Descriptions'] = names
     ABC['peptide-phosphosite'] = mapped_motifs
-    ABC.insert(12, 'position', pXpos)
+    ABC.insert(13, 'position', pXpos)
     return ABC
 
 
@@ -187,7 +187,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
     ABC = pd.concat([seqs, names, data.T], axis=1)
     #Initialize with gmm clusters and generate gmm pval matrix
 
-    Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
     #Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
@@ -213,11 +213,11 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
                 score, idx = min((score, idx) for (idx, score) in enumerate(scores))
-            #Average distance between each sequence and any cluster based on PAM250 substitution matrix
+            #Average distance between each sequence and any cluster based on PAM250 substitution matrix. 
             if distance_method == "PAM250":
                 for z in range(ncl):
-                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
+                    gmm_score = gmm_proba.iloc[j, z] * GMMweight
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250)*10 for seq in Cl_seqs[z]]
                     PAM250_score = np.mean(PAM250_scores)
                     scores.append(PAM250_score + gmm_score)
                 score, idx = max((score, idx) for (idx, score) in enumerate(scores))
@@ -228,7 +228,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
 
         if len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
             Allseqs = [val for sublist in Cl_seqs for val in sublist]
             continue
 
@@ -266,10 +266,10 @@ def pairwise_score(seq1, seq2, matrix):
 
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
-    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 2:12])
-    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 2:12]))
+    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 3:13])
+    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 3:13]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 0]), pYTS) for i in range(ncl)]
-    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 3:13]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 3:13])*100)
 
 
 def preprocess_seqs(X, pYTS):
