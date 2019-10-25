@@ -53,9 +53,9 @@ def makeFigure():
     ABC_mc = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
 
     header = ABC_mc.columns
-    treatments = ABC_mc.columns[2:12]
+    treatments = ABC_mc.columns[3:13]
 
-    data = ABC_mc.iloc[:,2:12].T
+    data = ABC_mc.iloc[:,3:13].T
 
     #Set up model pipeline
     ncl, ncomp = 4, 2
@@ -178,8 +178,8 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
-    ax[1].set_xlim([(-1*max(PC1_xload))-0.5, max(PC1_xload)+0.5])
-    ax[1].set_ylim([(-1*max(PC2_xload))-0.5, max(PC2_xload)+0.5])
+    ax[1].set_xlim([(-1*max(list(PC1_xload)+list(PC1_yload)))-spacer, max(list(PC1_xload)+list(PC1_yload))+spacer])
+    ax[1].set_ylim([(-1*max(list(PC2_xload)+list(PC2_yload)))-spacer, max(list(PC2_xload)+list(PC2_yload))+spacer])
 
 
 def clusteraverages(ax, X, model_plsr, colors_, treatments):
