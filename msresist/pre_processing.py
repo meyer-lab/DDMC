@@ -64,7 +64,7 @@ def MergeDfbyMean(X, values, index):
 
 def LinearFoldChange(X):
     """ Convert to linear fold-change from log2 mean-centered. """
-    X.iloc[:, 3:13] = np.power(2, X.iloc[:, 3:13]).div(np.power(2, X.iloc[:, 3]), axis=0)
+    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 3]), axis=0)
     return X
 
 
