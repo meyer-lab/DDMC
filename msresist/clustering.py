@@ -69,9 +69,8 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, seqs, names, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=20):
-        self.seqs = seqs
-        self.names = names
+    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=20):
+        self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
         self.pYTS = pYTS
@@ -81,8 +80,8 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.seqs, \
-        self.names, self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
+        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.info, \
+        self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return self
 
     def transform(self, X):
@@ -100,20 +99,20 @@ class MassSpecClustering(BaseEstimator):
     def predict(self, X, Y=None):
         """ Predict the cluster each sequence in ABC belongs to."""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, self.GMMweight, \
+        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.info, self.GMMweight, \
         self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return labels
 
     def score(self, X, Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, \
+        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.info, \
         self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return np.mean(scores)
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
-        return {"seqs": self.seqs, "names": self.names, "ncl": self.ncl, \
+        return {"info": self.info, "ncl": self.ncl, \
         "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method, \
         "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
 
@@ -132,9 +131,11 @@ def ClusterAverages(X, labels):
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
         if X.shape[1] > 11:
-            dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
-            dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
-            dict_clustermembers["ProtAcc_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
-            dict_clustermembers["pos_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, -2])
+            dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
+            dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
+            dict_clustermembers["UniprotAcc_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
+            dict_clustermembers["pos_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 3])
+            dict_clustermembers["r2/Std_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 4])
+            dict_clustermembers["BioReps_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 5])
         
     return pd.DataFrame(centers).T, pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
