@@ -72,7 +72,7 @@ def makeFigure():
 
     plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments, colors_)
     
-    clusteraverages(ax[5], data, kmeans_plsr, colors_, treatments)
+    plotclusteraverages(ax[5], data, kmeans_plsr, colors_, treatments)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -183,7 +183,7 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].set_ylim([(-1*max(list(PC2_xload)+list(PC2_yload)))-spacer, max(list(PC2_xload)+list(PC2_yload))+spacer])
 
 
-def clusteraverages(ax, X, model_plsr, colors_, treatments):
+def plotclusteraverages(ax, X, model_plsr, colors_, treatments):
     centers = model_plsr.named_steps.kmeans.transform(X).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
