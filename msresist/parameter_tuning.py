@@ -32,8 +32,8 @@ def kmeansPLSR_tuning(X, Y):
     return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 
-def MSclusPLSR_tuning(X, seqs, names, Y):
-    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(seqs=seqs, names=names, ncl=5)), ("plsr", PLSRegression(n_components=2))])
+def MSclusPLSR_tuning(X, info, Y):
+    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, ncl=2)), ("plsr", PLSRegression(n_components=2))])
 
     param_grid = []
     for nn in range(2, 11):
