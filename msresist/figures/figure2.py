@@ -55,6 +55,7 @@ def makeFigure():
     treatments = ABC.columns[6:]
 
     data = ABC.iloc[:, 6:].T
+    info = ABC.iloc[:, :6]
 
     #Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
