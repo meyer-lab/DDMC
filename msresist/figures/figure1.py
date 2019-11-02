@@ -6,8 +6,10 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean, MapOverlappingPeptides
 from .common import subplotLabel, getSetup
+from .sequence_analysis import FormatName, pYmotifs
+
 
 
 path = os.path.dirname(os.path.abspath(__file__))
