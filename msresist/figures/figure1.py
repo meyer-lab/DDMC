@@ -131,7 +131,7 @@ def plotVarReplicates(ax):
 
     #Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:4]), ABC.columns)
+    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:4]))
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
     # Xidx = np.all(Stds.values <= 0.4, axis=1)
     # Stds = Stds.iloc[Xidx, :]
