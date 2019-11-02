@@ -120,7 +120,9 @@ def plotRTKs(ax):
 
 def plotVarReplicates(ax):
     ABC = preprocessing(rawdata=True)
-    dups = pd.pivot_table(ABC, index=['Protein', 'Sequence'], aggfunc="size").sort_values()
+    ABC_names = FormatName(ABC)
+    ABC["Protein"] = ABC_names
+    ABC = pYmotifs(ABC, ABC_names)
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     #Correlation of Duplicates, optionally filtering first
@@ -131,19 +133,25 @@ def plotVarReplicates(ax):
 
     #Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:4]))
+    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
     # Xidx = np.all(Stds.values <= 0.4, axis=1)
     # Stds = Stds.iloc[Xidx, :]
-    Std_mean = Stds.iloc[:, 1:].mean(axis=1)
 
     n_bins = 10
-    ax[0].hist(DupsTable_drop.iloc[:, 12], bins=n_bins)
+    ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins)
     ax[0].set_ylabel("Number of peptides", fontsize=12)
-    ax[0].set_xlabel("Pearson Correlation Coefficients", fontsize=12)
-    ax[1].hist(Std_mean, bins=n_bins)
+    ax[0].set_xlabel("Pearson Correlation Coefficients N= " + str(DupsTable_drop.shape[0]), fontsize=12)
+    textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+
+    ax[1].hist(Stds.mean(axis=1), bins=n_bins)
     ax[1].set_xlabel("Mean of Standard Deviations", fontsize=12)
     ax[1].set_ylabel("Number of peptides", fontsize=12)
+    textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
 # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure    

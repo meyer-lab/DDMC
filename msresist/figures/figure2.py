@@ -14,7 +14,7 @@ import math
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
-from msresist.parameter_tuning import MSclusPLSR_tuning
+from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
 from msresist.clustering import MassSpecClustering
 import matplotlib.pyplot as plt
@@ -91,13 +91,13 @@ def plotR2YQ2Y(ax, ncl, centers, Y):
     ax.legend(loc=3)
 
 
-def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
-    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y)
-    twoC = np.abs(CVresults_min.iloc[:2, 2])
-    threeC = np.abs(CVresults_min.iloc[2:5, 2])
-    fourC = np.abs(CVresults_min.iloc[5:9, 2])
-    fiveC = np.abs(CVresults_min.iloc[9:14, 2])
-    sixC = np.abs(CVresults_min.iloc[14:20, 2])
+def plotKmeansPLSR_GridSearch(ax, X, Y):
+    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
+    twoC = np.abs(CVresults_min.iloc[:2, 3])
+    threeC = np.abs(CVresults_min.iloc[2:5, 3])
+    fourC = np.abs(CVresults_min.iloc[5:9, 3])
+    fiveC = np.abs(CVresults_min.iloc[9:14, 3])
+    sixC = np.abs(CVresults_min.iloc[14:20, 3])
 
     width = 1
     groupgap = 1
@@ -107,8 +107,6 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     x3 = np.arange(len(fourC))+groupgap*2+len(twoC)+len(threeC)
     x4 = np.arange(len(fiveC))+groupgap*3+len(twoC)+len(threeC)+len(fourC)
     x5 = np.arange(len(sixC))+groupgap*4+len(twoC)+len(threeC)+len(fourC)+len(fiveC)
-
-    ind = np.concatenate((x1,x2,x3,x4,x5))
 
     ax.bar(x1, twoC, width, edgecolor = 'black', color = "g")
     ax.bar(x2, threeC, width, edgecolor = 'black', color = "g")
@@ -121,11 +119,23 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
         comps.append(list(np.arange(1, ii+1)))
     flattened = [nr for cluster in comps for nr in cluster]
 
-    ax.set_xticks(ind)
+    ax.set_xticks(np.concatenate((x1,x2,x3,x4,x5)))
     ax.set_xticklabels(flattened, fontsize=10)
     ax.set_xlabel("Number of Components per Cluster")
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
+
+def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
+    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, Y)
+    ncl_GMMweight_ncomp = CVresults_min.sort_values(by="Ranking").iloc[:21, :]
+    
+    width=1
+    ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor = 'black', color = 'g')
+    ax.set_xticks(ncl_GMMweight_ncomp.shape[0])        
+#     ax.set_xticklabels(flattened, fontsize=10)
+    ax.set_xlabel("Number of Components per Cluster")
+    ax.set_ylabel("Mean-Squared Error (MSE)")
+    
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
