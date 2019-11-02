@@ -37,7 +37,7 @@ def MSclusPLSR_tuning(X, info, Y):
 
     param_grid = []
     for nn in range(2, 11):
-        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0.5, 2.5, 5, 7.5, 10]))
+        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0, 2.5, 5, 7.5, 10]))
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error")
     fit = grid.fit(X, Y)
