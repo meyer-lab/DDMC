@@ -12,12 +12,11 @@ import numpy as np
 import pandas as pd
 import math
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
-from msresist.parameter_tuning import kmeansPLSR_tuning
+from msresist.parameter_tuning import MSclusPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
-from msresist.clustering import MyOwnKMEANS
+from msresist.clustering import MassSpecClustering
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
@@ -50,29 +49,28 @@ def makeFigure():
     Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
     #Phosphorylation data
-    ABC_mc = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
+    ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
 
-    header = ABC_mc.columns
-    treatments = ABC_mc.columns[3:13]
+    header = ABC.columns
+    treatments = ABC.columns[6:]
 
-    data = ABC_mc.iloc[:,3:13].T
+    data = ABC.iloc[:, 6:].T
 
     #Set up model pipeline
-    ncl, ncomp = 4, 2
-    estimators = [('kmeans', MyOwnKMEANS(ncl)), ('plsr', PLSRegression(ncomp))]
-    kmeans_plsr = Pipeline(estimators)
+    ncl, GMMweight, ncomp = 2, 2.5, 2
+    mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight)), ('plsr', PLSRegression(ncomp))])
     
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     plotR2YQ2Y(ax[0], ncl, data, Y_cv)
 
-    plotKmeansPLSR_GridSearch(ax[1], data ,Y_cv)
+    plotMixedClusteringPLSR_GridSearch(ax[1], data ,Y_cv)
 
-    plotMeasuredVsPredicted(ax[2], kmeans_plsr, data, Y_cv)
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], kmeans_plsr, data, Y_cv, ncl, treatments, colors_)
+    plotScoresLoadings(ax[3:5], mixedCl_plsr, data, Y_cv, ncl, treatments, colors_)
     
-    plotclusteraverages(ax[5], data, kmeans_plsr, colors_, treatments)
+    plotclusteraverages(ax[5], ABC, mixedCl_plsr, colors_)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -93,8 +91,8 @@ def plotR2YQ2Y(ax, ncl, centers, Y):
     ax.legend(loc=3)
 
 
-def plotKmeansPLSR_GridSearch(ax, X, Y):
-    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
+def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
+    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y)
     twoC = np.abs(CVresults_min.iloc[:2, 2])
     threeC = np.abs(CVresults_min.iloc[2:5, 2])
     fourC = np.abs(CVresults_min.iloc[5:9, 2])
@@ -147,11 +145,11 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
-    X_scores, Y_scores = kmeans_plsr.fit_transform(X, Y)
+def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments, colors_):
+    X_scores, Y_scores = mixedCl_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-    PC1_xload, PC2_xload = kmeans_plsr.named_steps.plsr.x_loadings_[:, 0], kmeans_plsr.named_steps.plsr.x_loadings_[:, 1]
-    PC1_yload, PC2_yload = kmeans_plsr.named_steps.plsr.y_loadings_[:, 0], kmeans_plsr.named_steps.plsr.y_loadings_[:, 1]
+    PC1_xload, PC2_xload = mixedCl_plsr.named_steps.plsr.x_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.x_loadings_[:, 1]
+    PC1_yload, PC2_yload = mixedCl_plsr.named_steps.plsr.y_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.y_loadings_[:, 1]
 
     #Scores
     ax[0].scatter(PC1_scores,PC2_scores)
@@ -183,12 +181,12 @@ def plotScoresLoadings(ax, kmeans_plsr, X, Y, ncl, treatments, colors_):
     ax[1].set_ylim([(-1*max(list(PC2_xload)+list(PC2_yload)))-spacer, max(list(PC2_xload)+list(PC2_yload))+spacer])
 
 
-def plotclusteraverages(ax, X, model_plsr, colors_, treatments):
-    centers = model_plsr.named_steps.kmeans.transform(X).T
+def plotclusteraverages(ax, X, model_plsr, colors_):
+    centers = model_plsr.named_steps.mixedCl.transform(ABC.iloc[:, 6:].T).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
     ax.legend()
     
     ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(treatments, rotation=70, rotation_mode="anchor")
+    ax.set_xticklabels(ABC.columns[6:], rotation=70, rotation_mode="anchor")
     ax.set_ylabel("normalized signal")

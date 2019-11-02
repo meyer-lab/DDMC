@@ -96,42 +96,42 @@ def plotAveragedEndpoint(ax, Y_cv1, Y_cv2):
 
 
 def plotRTKs(ax):
-    ABC = preprocessing(motifs=False, FCfilter=False, log2T=False)
+    ABC = preprocessing()
     header = ABC.columns
 
-    EGFR = ABC[ABC["peptide-phosphosite"].str.contains("SHQISLDNPDyQQDFFP")].mean()
-    IGFR = ABC[ABC["peptide-phosphosite"].str.contains("IYETDYyR")].iloc[:, 3:13].mean()
-    MET = ABC[ABC["peptide-phosphosite"].str.contains("MYDkEyYSVHNk")].iloc[:, 3:13].mean()
-    AXL = ABC[ABC["peptide-phosphosite"].str.contains("YNGDyYR")].iloc[:, 3:13].mean()
+    EGFR = ABC[ABC["Sequence"].str.contains("SHQISLDNPDyQQDFFP")].mean()
+    IGFR = ABC[ABC["Sequence"].str.contains("IYETDYyR")].iloc[:, 3:13].mean()
+    MET = ABC[ABC["Sequence"].str.contains("MYDkEyYSVHNk")].iloc[:, 3:13].mean()
+    AXL = ABC[ABC["Sequence"].str.contains("YNGDyYR")].iloc[:, 3:13].mean()
 
     ax[0].set_title("EGFR: pY1172", fontsize=13)
     ax[0].plot(EGFR)
-    ax[0].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
+    ax[0].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
     ax[1].set_title("IGFR: pY1190", fontsize=13)
     ax[1].plot(IGFR)
-    ax[1].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
+    ax[1].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
     ax[2].set_title("MET: pY1234", fontsize=13)
     ax[2].plot(MET)
-    ax[2].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
+    ax[2].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
     ax[3].set_title("AXL: pY702", fontsize=13)
     ax[3].plot(AXL)
-    ax[3].set_xticklabels(header[2:], rotation=80, horizontalalignment='right')
+    ax[3].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
 
 
 def plotVarReplicates(ax):
     ABC = preprocessing(rawdata=True)
-    dups = pd.pivot_table(ABC, index=['Master Protein Descriptions', 'peptide-phosphosite'], aggfunc="size").sort_values()
+    dups = pd.pivot_table(ABC, index=['Protein', 'Sequence'], aggfunc="size").sort_values()
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     #Correlation of Duplicates, optionally filtering first
     DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
     # DupsTable = CorrCoefFilter(DupsTable)
-    DupsTable_drop = DupsTable.drop_duplicates(["peptide-phosphosite", "Master Protein Descriptions"])
+    DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert(DupsTable.shape[0]/2 == DupsTable_drop.shape[0])
 
     #Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]), ABC.columns)
+    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:4]), ABC.columns)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
     # Xidx = np.all(Stds.values <= 0.4, axis=1)
     # Stds = Stds.iloc[Xidx, :]
@@ -140,9 +140,9 @@ def plotVarReplicates(ax):
     n_bins = 10
     ax[0].hist(DupsTable_drop.iloc[:, 12], bins=n_bins)
     ax[0].set_ylabel("Number of peptides", fontsize=12)
-    ax[0].set_xlabel("Pearson Correlation Coefficients (n=246)", fontsize=12)
+    ax[0].set_xlabel("Pearson Correlation Coefficients", fontsize=12)
     ax[1].hist(Std_mean, bins=n_bins)
-    ax[1].set_xlabel("Mean of Standard Deviations (n=128)", fontsize=12)
+    ax[1].set_xlabel("Mean of Standard Deviations", fontsize=12)
     ax[1].set_ylabel("Number of peptides", fontsize=12)
 
 
