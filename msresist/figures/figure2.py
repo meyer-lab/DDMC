@@ -135,7 +135,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     
     labels = []
     for ii in range(ncl_GMMweight_ncomp.shape[0]):
-        labels.append("Cl:" + str(ncl_GMMweight_ncomp.iloc[ii, 1]) + " " + "W:" str(ncl_GMMweight_ncomp.iloc[ii, 2]))
+        labels.append("Cl:" + str(ncl_GMMweight_ncomp.iloc[ii, 1]) + " " + "W: " + str(ncl_GMMweight_ncomp.iloc[ii, 2]))
 
     width = 1
     ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor = 'black', color = 'g')
