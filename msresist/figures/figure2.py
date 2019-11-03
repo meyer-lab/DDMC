@@ -200,11 +200,11 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments, colors_):
 
 
 def plotclusteraverages(ax, X, model_plsr, colors_):
-    centers = model_plsr.named_steps.mixedCl.transform(ABC.iloc[:, 6:].T).T
+    centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 6:].T).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
     ax.legend()
     
     ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(ABC.columns[6:], rotation=70, rotation_mode="anchor")
+    ax.set_xticklabels(X.columns[6:], rotation=70, rotation_mode="anchor")
     ax.set_ylabel("normalized signal")
