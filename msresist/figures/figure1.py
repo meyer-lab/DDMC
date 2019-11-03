@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+import seaborn as sns; sns.set(color_codes=True)
 from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean, MapOverlappingPeptides
 from ..sequence_analysis import FormatName, pYmotifs
 from .common import subplotLabel, getSetup
@@ -28,10 +29,10 @@ def makeFigure():
 
     # Assert that there's no significant influence of the initial seeding density
     Y_cvE3_0 = Y_cv1[Y_cv1["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:]/Y_cvE3_0
-    
+    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:] / Y_cvE3_0
+
     Y_cvE4_0 = Y_cv2[Y_cv2["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]/Y_cvE4_0
+    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:] / Y_cvE4_0
 
     assert sp.stats.pearsonr(Y_cvE3_0, Y_fcE3)[1] > 0.05
     assert sp.stats.pearsonr(Y_cvE4_0, Y_fcE4)[1] > 0.05
@@ -74,11 +75,30 @@ def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
     Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:]
     Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:]
 
-    ax.set_title("Cell Viability")
+    ax.set_title("Cell Viability - 72h")
     ax.set_xticks(np.arange(1,11,1))
     ax.set_xticklabels(Y_cv1.columns[1:])
     ax.bar(range_+0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color = "black")
     ax.bar(range_-0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color = "darkred")
+    ax.legend()
+    ax.set_ylabel("% Confluency")
+
+
+def plotReplicatesFoldChangeEndpoint(ax, Y_cv1, Y_cv2):
+    range_ = np.linspace(1, 10, 10)
+
+    Y_cvE3_0 = Y_cv1[Y_cv1["Elapsed"] == 0].iloc[0, 1:]
+    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:] / Y_cvE3_0
+
+    Y_cvE4_0 = Y_cv2[Y_cv2["Elapsed"] == 0].iloc[0, 1:]
+    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:] / Y_cvE4_0
+
+    ax.set_title("Cell Viability - 72h")
+    ax.set_xticks(np.arange(1,11,1))
+    ax.set_xticklabels(Y_cv1.columns[1:])
+    ax.bar(range_+0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color = "black")
+    ax.bar(range_-0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color = "darkgreen")
+    ax.legend()
     ax.set_ylabel("Fold-change 72h vs 0h")
 
 
@@ -89,11 +109,11 @@ def plotAveragedEndpoint(ax, Y_cv1, Y_cv2):
     Y_cv = Y_cv.reset_index()[Y_cv1.columns]
     Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
-    ax.set_title("Cell Viability")
+    ax.set_title("Cell Viability - 72h")
     ax.set_xticks(np.arange(1,11,1))
     ax.set_xticklabels(Y_cv1.columns[1:])
-    ax.bar(range_, Y_cv, width=0.5, align='center', label='Exp3', color = "black")
-    ax.set_ylabel("Fold-change 72h vs 0h")
+    ax.bar(range_, Y_cv, width=0.5, align='center', color = "black")
+    ax.set_ylabel("% Confluency")
 
 
 def plotRTKs(ax):
@@ -148,22 +168,22 @@ def plotVarReplicates(ax):
     ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
     ax[1].hist(Stds.mean(axis=1), bins=n_bins)
-    ax[1].set_xlabel("Mean of Standard Deviations", fontsize=12)
     ax[1].set_ylabel("Number of peptides", fontsize=12)
+    ax[1].set_xlabel("Mean of Standard Deviations N= " + str(Stds.shape[0]), fontsize=12)
     textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
 # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure    
-# def plotClustergram(ax):
-#     ABC_mc = preprocessing(motifs=True, FCfilter=True, log2T=True)
-
-#     g = sns.clustermap(ABC_mc.iloc[:, 2:], method = "single", robust=True)
+def plotClustergram():
+    ABC = preprocessing(motifs=True, FCfilter=True, log2T=True)
+    g = sns.clustermap(ABC.iloc[:, 6:], method = "single", robust=True)
+    
 
 #     p = g.dendrogram_row.reordered_ind
 #     corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')
-    # Correlation heatmap was really just for exploration. Not including here.
-    # ax[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=ax[1])
-    # ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=80, horizontalalignment='right')
-    # ax[1].set_title("Correlation Heatmap");
+#     Correlation heatmap was really just for exploration. Not including here.
+#     ax[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=ax[1])
+#     ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=80, horizontalalignment='right')
+#     ax[1].set_title("Correlation Heatmap");
