@@ -65,7 +65,7 @@ def makeFigure():
 
     plotR2YQ2Y(ax[0], ncl, data, Y_cv)
 
-    plotMixedClusteringPLSR_GridSearch(ax[1], data ,Y_cv)
+    plotMixedClusteringPLSR_GridSearch(ax[1], data, info, Y_cv)
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
 
