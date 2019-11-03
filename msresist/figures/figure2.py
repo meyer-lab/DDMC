@@ -127,9 +127,9 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
 
 
 def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
-    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, Y)
+    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y)
     ncl_GMMweight_ncomp = CVresults_min.sort_values(by="Ranking").iloc[:21, :]
-    
+
     width=1
     ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor = 'black', color = 'g')
     ax.set_xticks(ncl_GMMweight_ncomp.shape[0])        
