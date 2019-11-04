@@ -173,8 +173,8 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
 
-""" Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
-might be able to find more reliable sources. """
+""" Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts might be able to 
+find more reliable sources. """
 
 
 AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":0.037, "G":0.074, "H":0.029, "I":0.038, "L":0.076, \
@@ -212,7 +212,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
                 score, idx = min((score, idx) for (idx, score) in enumerate(scores))
-            #Average distance between each sequence and any cluster based on PAM250 substitution matrix. 
+            #Average distance between each sequence and any cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_proba.iloc[j, z] * GMMweight
@@ -225,7 +225,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             labels.append(idx)
             store_scores.append(score)
 
-        if len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) != 0:
+        if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
             Allseqs = [val for sublist in Cl_seqs for val in sublist]
@@ -339,7 +339,7 @@ def frequencies(seqs):
 def BinomialMatrix(n, k, p):
     """ Build binomial probability matrix. Note n is the number of sequences,
     k is the counts matrix of the MS data set, p is the pwm of the background. """
-    BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:,:], loc=0))
+    BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:, :], loc=0))
     BMP.insert(0, "Residue", list(k.iloc[:, 0]))
     BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
