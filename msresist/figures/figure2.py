@@ -136,10 +136,10 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     for ii in range(ncl_GMMweight_ncomp.shape[0]):
         labels.append(str(ncl_GMMweight_ncomp.iloc[ii, 1]) + "|" + str(ncl_GMMweight_ncomp.iloc[ii, 2]))
 
-    width = 0.35
+    width = 0.20
     ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor = 'black', color = 'g')
     ax.set_xticks(np.arange(ncl_GMMweight_ncomp.shape[0]))       
-    ax.set_xticklabels(labels, fontsize=8)
+    ax.set_xticklabels(labels, fontsize=4)
     ax.set_xlabel("Number of Clusters | GMM Weight")
     ax.set_ylabel("Mean-Squared Error (MSE)")
     ax.set_title("Top20 Hyperparameter Combinations (N Components=2)")
