@@ -55,7 +55,6 @@ def makeFigure():
     
 
     header = ABC.columns
-    treatments = ABC.columns[6:]
 
     data = ABC.iloc[:, 6:].T
     info = ABC.iloc[:, :6]
@@ -72,7 +71,7 @@ def makeFigure():
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], mixedCl_plsr, data, Y_cv, ncl, treatments, colors_)
+    plotScoresLoadings(ax[3:5], mixedCl_plsr, data, Y_cv, ncl, colors_)
     
     plotclusteraverages(ax[5], ABC, mixedCl_plsr, colors_)
 
@@ -82,15 +81,15 @@ def makeFigure():
     return f
 
 def plotR2YQ2Y(ax, ncl, centers, Y):
-    maxComp = ncl
-    Q2Y = Q2Y_across_components(centers, Y, maxComp+1)
-    R2Y = R2Y_across_components(centers, Y, maxComp+1)
+    Q2Y = Q2Y_across_components(centers, Y, ncl+1)
+    R2Y = R2Y_across_components(centers, Y, ncl+1)
 
-    range_ = np.linspace(1,maxComp,maxComp)
+    range_ = np.arange(1, ncl+1)
 
-    ax.bar(range_+0.15,Q2Y,width=0.3,align='center',label='Q2Y', color = "darkblue")
-    ax.bar(range_-0.15,R2Y,width=0.3,align='center',label='R2Y', color = "black")
+    ax.bar(range_+0.15, Q2Y, width=0.3, align='center', label='Q2Y', color = "darkblue")
+    ax.bar(range_-0.15, R2Y, width=0.3, align='center', label='R2Y', color = "black")
     ax.set_title("R2Y/Q2Y Cell Viability")
+    ax.set_xticks(range_)
     ax.set_xlabel("Number of Components")
     ax.legend(loc=3)
 
@@ -135,14 +134,15 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     
     labels = []
     for ii in range(ncl_GMMweight_ncomp.shape[0]):
-        labels.append("Cl:" + str(ncl_GMMweight_ncomp.iloc[ii, 1]) + " " + "W: " + str(ncl_GMMweight_ncomp.iloc[ii, 2]))
+        labels.append(str(ncl_GMMweight_ncomp.iloc[ii, 1]) + "|" + str(ncl_GMMweight_ncomp.iloc[ii, 2]))
 
-    width = 1
+    width = 0.35
     ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor = 'black', color = 'g')
     ax.set_xticks(np.arange(ncl_GMMweight_ncomp.shape[0]))       
-    ax.set_xticklabels(labels, fontsize=10)
-    ax.set_xlabel("Number of Components per Cluster")
+    ax.set_xticklabels(labels, fontsize=8)
+    ax.set_xlabel("Number of Clusters | GMM Weight")
     ax.set_ylabel("Mean-Squared Error (MSE)")
+    ax.set_title("Top20 Hyperparameter Combinations (N Components=2)")
     
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
@@ -163,7 +163,7 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments, colors_):
+def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_):
     X_scores, Y_scores = mixedCl_plsr.fit_transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = mixedCl_plsr.named_steps.plsr.x_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.x_loadings_[:, 1]
@@ -171,7 +171,7 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments, colors_):
 
     #Scores
     ax[0].scatter(PC1_scores,PC2_scores)
-    for j, txt in enumerate(treatments):
+    for j, txt in enumerate(list(X.index)):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
     ax[0].set_title('PLSR Model Scores')
     ax[0].set_xlabel('Principal Component 1')
@@ -199,8 +199,11 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments, colors_):
     ax[1].set_ylim([(-1*max(list(PC2_xload)+list(PC2_yload)))-spacer, max(list(PC2_xload)+list(PC2_yload))+spacer])
 
 
-def plotclusteraverages(ax, X, model_plsr, colors_):
-    centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 6:].T).T
+def plotclusteraverages(ax, X, model_plsr, colors_, mixed=True):
+    if mixed:
+        centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 6:].T).T
+    if not mixed:
+        centers = model_plsr.named_steps.kmeans.transform(X.iloc[:, 6:].T).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
     ax.legend()
