@@ -1,13 +1,9 @@
 """PLSR analysis functions (plotting functions are located in msresist/figures/figure2)"""
 
-import scipy as sp
 from scipy.stats import zscore
-import numpy as np
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
-import matplotlib.colors as colors
-import matplotlib.cm as cm
 
 ###------------ PLSR model functions ------------------###
 

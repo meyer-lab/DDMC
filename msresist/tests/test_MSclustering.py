@@ -21,7 +21,7 @@ class TestClustering(unittest.TestCase):
         distance_method = "PAM250"
         covariance_type = "diag"
         max_n_iter = 20
-        
+
         Cl_seqs, _, _, _, _ = EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter)
 
         gmm_cl, _, _ = gmm_initialCl_and_pvalues(ABC, 4, "diag", "Y")

@@ -1,4 +1,5 @@
 """ This scripts handles all the pre-processing required to merge and transform the raw mass spec biological replicates. """
+
 import os
 import numpy as np
 import pandas as pd
@@ -149,7 +150,7 @@ def BuildMatrix(peptides, ABC):
         names = pepts.iloc[:, 0]
         if name == "(blank)":
             continue
-        elif len(pepts) == 1:
+        if len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
             fc = LinearFoldChange(pepts.iloc[:, 3:13].copy())

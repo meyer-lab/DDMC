@@ -5,14 +5,14 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.cross_decomposition import PLSRegression
-from .clustering import MyOwnKMEANS, MyOwnGMM, MassSpecClustering
+from .clustering import MyOwnKMEANS, MassSpecClustering
 
 
 ###------------ Building clustering method + PLSR pipeline and Tunning Hyperparameters ------------------###
 
 
 def kmeansPLSR_tuning(X, Y):
-    """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR """
+    """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR. """
     kmeansPLSR = Pipeline([("kmeans", MyOwnKMEANS(5)), ("plsr", PLSRegression(2))])
 
     param_grid = []
@@ -33,6 +33,7 @@ def kmeansPLSR_tuning(X, Y):
 
 
 def MSclusPLSR_tuning(X, info, Y):
+    """ Cross-validation: Simultaneous hyperparameter search. """
     MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, ncl=2)), ("plsr", PLSRegression(n_components=2))])
 
     param_grid = []
