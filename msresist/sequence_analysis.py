@@ -211,6 +211,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             CurrentCl_seqs = DeleteQuerySeqInRefClusters(ABC.index[j], Cl_seqs, init_clusters_idx)
             assert len([seq for clust in CurrentCl_seqs for seq in clust]) == len(Allseqs) - 1, "Ref Clusters wrong size."
             scores = []
+
             #Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
                 for z in range(ncl):
@@ -220,6 +221,8 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
                 score, label = min((score, label) for (label, score) in enumerate(scores))
+                store_scores.append(score)
+
             #Average distance between each sequence and any cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
                 for z in range(ncl):
@@ -229,12 +232,12 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     scores.append(PAM250_score + gmm_score)
                 score, label = max((score, label) for (label, score) in enumerate(scores))
                 store_scores.append(score)
+
             assert label <= ncl - 1, ("label out of bounds, scores list: %s" % scores)
             motifs.append(motif)
             labels.append(label)
             clusters[label].append(motif)
             cluster_idc[label].append(ABC.index[j])
-
 
         for i in range(len(motifs)):
             New_DictMotifToCluster[motifs[i]].append(labels[i])
@@ -245,12 +248,15 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                 Cl_seqs, init_clusters_idx, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
                 Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
                 continue
-
+        
+        #Update Clusters with re-assignments
         DictMotifToCluster = New_DictMotifToCluster
         Cl_seqs = clusters
-        init_clusters_idx = cluster_idc 
+        init_clusters_idx = cluster_idc
 
+        assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % (Cl_seqs))
 
+        #Check for convergence
         if DictMotifToCluster == store_Dicts[-1]:
             if GMMweight == 0 and distance_method == "PAM250":
                 assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \

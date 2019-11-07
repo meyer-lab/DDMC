@@ -131,7 +131,7 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
 def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y)
     ncl_GMMweight_ncomp = CVresults_min.sort_values(by="Ranking").iloc[:21, :]
-    
+
     labels = []
     for ii in range(ncl_GMMweight_ncomp.shape[0]):
         labels.append(str(ncl_GMMweight_ncomp.iloc[ii, 1]) + "|" + str(ncl_GMMweight_ncomp.iloc[ii, 2]))
