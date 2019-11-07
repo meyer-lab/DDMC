@@ -2,8 +2,10 @@
 
 import os
 import re
+import copy
 import numpy as np
 import pandas as pd
+from collections import defaultdict
 from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -91,34 +93,34 @@ def GeneratingKinaseMotifs(names, seqs):
             regexPattern = re.compile(MS_seqU)
             MatchObs = list(regexPattern.finditer(UP_seq))
             if "y" in MS_seq:
-                pY_idx = list(re.compile("y").finditer(MS_seq))
-                assert len(pY_idx) != 0
-                center_idx = pY_idx[0].start()
-                y_idx = center_idx + MatchObs[0].start()
-                DoS_idx = None
-                if len(pY_idx) > 1:
-                    DoS_idx = pY_idx[1:]
-                    assert len(DoS_idx) != 0
+                pY_label = list(re.compile("y").finditer(MS_seq))
+                assert len(pY_label) != 0
+                center_label = pY_label[0].start()
+                y_label = center_label + MatchObs[0].start()
+                DoS_label = None
+                if len(pY_label) > 1:
+                    DoS_label = pY_label[1:]
+                    assert len(DoS_label) != 0
                 elif "t" in MS_seq or "s" in MS_seq:
-                    DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
-                    assert len(DoS_idx) != 0
-                uni_pos.append("Y" + str(y_idx+1) + "-p")
+                    DoS_label = list(re.compile("y|t|s").finditer(MS_seq))
+                    assert len(DoS_label) != 0
+                uni_pos.append("Y" + str(y_label+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
-                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
+                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_label, center_label, DoS_label))
 
             if "y" not in MS_seq:
-                pTS_idx = list(re.compile("t|s").finditer(MS_seq))
-                assert len(pTS_idx) != 0
-                center_idx = pTS_idx[0].start()
-                ts_idx = center_idx + MatchObs[0].start()
-                DoS_idx = None
-                if len(pTS_idx) > 1:
-                    DoS_idx = pTS_idx[1:]
-                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx+1) + "-p")
+                pTS_label = list(re.compile("t|s").finditer(MS_seq))
+                assert len(pTS_label) != 0
+                center_label = pTS_label[0].start()
+                ts_label = center_label + MatchObs[0].start()
+                DoS_label = None
+                if len(pTS_label) > 1:
+                    DoS_label = pTS_label[1:]
+                uni_pos.append(str(MS_seqU[center_label]) + str(ts_label+1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
-                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
+                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_label, center_label, DoS_label=None))
 
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
@@ -140,32 +142,32 @@ def GeneratingKinaseMotifs(names, seqs):
     return MS_names, mapped_motifs, uni_pos
 
 
-def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
+def makeMotif(UP_seq, MS_seq, motif_size, y_label, center_label, DoS_label):
     """ Make a motif out of the matched sequences. """
-    UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
+    UP_seq_copy = list(UP_seq[max(0, y_label - motif_size):y_label + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
     # If we ran off the end of the sequence at the beginning or at the end, append a gap
-    if y_idx - motif_size < 0:
-        for _ in range(motif_size - y_idx):
+    if y_label - motif_size < 0:
+        for _ in range(motif_size - y_label):
             UP_seq_copy.insert(0, "-")
 
-    elif y_idx + motif_size + 1 > len(UP_seq):
-        for _ in range(y_idx + motif_size - len(UP_seq) + 1):
+    elif y_label + motif_size + 1 > len(UP_seq):
+        for _ in range(y_label + motif_size - len(UP_seq) + 1):
             UP_seq_copy.extend("-")
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
 #     Now go through and copy over phosphorylation
-    if DoS_idx:
-        for ppIDX in DoS_idx:
-            position = ppIDX.start() - center_idx
+    if DoS_label:
+        for pplabel in DoS_label:
+            position = pplabel.start() - center_label
             # If the phosphosite is within the motif
             if abs(position) < motif_size:
                 editPos = position + motif_size
                 UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
-                assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], \
-                    UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
+                assert UP_seq_copy[editPos] == MS_seq[pplabel.start()], \
+                    UP_seq_copy[editPos] + " " + MS_seq[pplabel.start()]
 
     return ''.join(UP_seq_copy)
 
@@ -183,66 +185,95 @@ AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":
 
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    ABC = pd.concat([info, data.T], axis=1)
     #Initialize with gmm clusters and generate gmm pval matrix
-
-    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    ABC = pd.concat([info, data.T], axis=1)
+    Cl_seqs, init_clusters_idx, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
 
     #Background sequences
-    bg_seqs = BackgroundSeqs(pYTS)
-    bg_pwm = position_weight_matrix(bg_seqs)
+    if distance_method == "Binomial":
+        bg_seqs = BackgroundSeqs(pYTS)
+        bg_pwm = position_weight_matrix(bg_seqs)
 
     #EM algorithm
-    store_Cl_seqs = []
     n_iter = 0
-    Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
+    DictMotifToCluster = defaultdict(list)
+    store_Dicts = []
     for _ in range(max_n_iter):
-        labels, store_scores = [], []
+        store_scores, motifs, labels = [], [], []
         n_iter += 1
-        store_Cl_seqs.append(Cl_seqs)
+        store_Dicts.append(DictMotifToCluster)
+        New_DictMotifToCluster = defaultdict(list)
+        DictIdxToLabel = {}
         clusters = [[] for i in range(ncl)]
-        for j, motif in enumerate(Allseqs):
+        cluster_idc = [[] for i in range(ncl)]
+        for j, motif in enumerate(Allseqs):  #TODO: After every iteration Cl_seqs gets updated and therefore the indices are no longer valid. 
+            CurrentCl_seqs = DeleteQuerySeqInRefClusters(ABC.index[j], Cl_seqs, init_clusters_idx)
+            assert len([seq for clust in CurrentCl_seqs for seq in clust]) == len(Allseqs) - 1, "Ref Clusters wrong size."
             scores = []
             #Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    freq_matrix = frequencies(Cl_seqs[z])
-                    BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+                    freq_matrix = frequencies(CurrentCl_seqs[z])
+                    BPM = BinomialMatrix(len(CurrentCl_seqs[z]), freq_matrix, bg_pwm)
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
-                score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+                score, label = min((score, label) for (label, score) in enumerate(scores))
             #Average distance between each sequence and any cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_proba.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250)*10 for seq in Cl_seqs[z]]
-                    PAM250_score = np.mean(PAM250_scores)
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in CurrentCl_seqs[z]]
+                    PAM250_score = np.mean(PAM250_scores)*10
                     scores.append(PAM250_score + gmm_score)
-                score, idx = max((score, idx) for (idx, score) in enumerate(scores))
-            assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
-            clusters[idx].append(motif)
-            labels.append(idx)
-            store_scores.append(score)
+                score, label = max((score, label) for (label, score) in enumerate(scores))
+                store_scores.append(score)
+            assert label <= ncl - 1, ("label out of bounds, scores list: %s" % scores)
+            motifs.append(motif)
+            labels.append(label)
+            clusters[label].append(motif)
+            cluster_idc[label].append(ABC.index[j])
 
-        if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
-            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-            Allseqs = [val for sublist in Cl_seqs for val in sublist]
-            continue
+
+        for i in range(len(motifs)):
+            New_DictMotifToCluster[motifs[i]].append(labels[i])
+
+        for i in range(ncl):
+            if i not in [val for sublist in list(New_DictMotifToCluster.values()) for val in sublist]:
+                print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+                Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+                Allseqs = [val for sublist in Cl_seqs for val in sublist]
+                continue
+
+        DictMotifToCluster = New_DictMotifToCluster
         Cl_seqs = clusters
+        init_clusters_idx = cluster_idc 
 
-        #Convergence when same cluster assignments as in previous iteration
-        if Cl_seqs == store_Cl_seqs[-1]:
-#             print("convergence has been reached at iteration %i" % (n_iter))
+
+        if DictMotifToCluster == store_Dicts[-1]:
+            if GMMweight == 0 and distance_method == "PAM250":
+                assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \
+                "Same motif has different labels with GMMweight=0"
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-            return Cl_seqs, labels, store_scores, ICs, n_iter
+            return Cl_seqs, labels, scores, ICs, n_iter
 
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-    return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
+    return Cl_seqs, labels, scores, ICs, n_iter
+
+
+def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
+    X = copy.deepcopy(clusters)
+    clusters_idx = copy.deepcopy(init_clusters_idx)
+
+    for sublist in clusters_idx:
+        if j in sublist:
+            pop_idx = [clusters_idx.index(sublist), sublist.index(j)]
+            X[pop_idx[0]].pop(pop_idx[1])
+    return X
 
 
 def match_AAs(pair, matrix):
@@ -258,6 +289,8 @@ def pairwise_score(seq1, seq2, matrix):
     " Compute distance between two kinase motifs. Note this does not account for gaps."
     score = 0
     for i in range(len(seq1)):
+        if i == 5:
+            continue
         pair = (seq1[i], seq2[i])
         score += match_AAs(pair, matrix)
     return score
@@ -266,18 +299,24 @@ def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
-    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
-    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])*100)
+
+    init_clusters, init_clusters_idx = [], []
+    for i in range(ncl):
+        init_clusters_idx.append(list(Xcl[Xcl["GMM_cluster"] == i].index))
+        init_clusters.append(ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS))
+
+    return init_clusters, init_clusters_idx, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), \
+    pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])*100)
 
 
 def preprocess_seqs(X, pYTS):
     """ Filter out any sequences with different than the specified central p-residue
     and/or any containing gaps."""
     X = X[~X.iloc[:, 1].str.contains("-")]
-    Xidx = []
+    Xlabel = []
     for i in range(X.shape[0]):
-        Xidx.append(X.iloc[i, 1][5] == pYTS.lower())
-    return X.iloc[Xidx, :]
+        Xlabel.append(X.iloc[i, 1][5] == pYTS.lower())
+    return X.iloc[Xlabel, :]
 
 
 def BackgroundSeqs(pYTS):
@@ -289,14 +328,14 @@ def BackgroundSeqs(pYTS):
         if pYTS not in seq:
             continue
         regexPattern = re.compile(pYTS)
-        Y_IDXs = list(regexPattern.finditer(seq))
-        for idx in Y_IDXs:
-            center_idx = idx.start()
-            assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_idx-6:center_idx+6]
+        Y_labels = list(regexPattern.finditer(seq))
+        for label in Y_labels:
+            center_label = label.start()
+            assert seq[center_label] == str(pYTS), "Center residue not %s" % (pYTS)
+            motif = seq[center_label-6:center_label+6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_idx-6:center_idx+6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_label-6:center_label+6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
