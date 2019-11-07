@@ -242,8 +242,8 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         for i in range(ncl):
             if i not in [val for sublist in list(New_DictMotifToCluster.values()) for val in sublist]:
                 print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-                Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-                Allseqs = [val for sublist in Cl_seqs for val in sublist]
+                Cl_seqs, init_clusters_idx, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+                Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
                 continue
 
         DictMotifToCluster = New_DictMotifToCluster
