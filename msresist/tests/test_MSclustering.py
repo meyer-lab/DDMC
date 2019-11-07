@@ -16,7 +16,7 @@ class TestClustering(unittest.TestCase):
         data = ABC.iloc[:, 6:].T
         info = ABC.iloc[:, :6]
         ncl = 2
-        GMMweight = 2.5
+        GMMweight = 0.75
         pYTS = "Y"
         distance_method = "PAM250"
         covariance_type = "diag"
