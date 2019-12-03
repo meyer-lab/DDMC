@@ -18,7 +18,7 @@ class TestClustering(unittest.TestCase):
         ncl = 2
         GMMweight = 0.75
         pYTS = "Y"
-        distance_method = "PAM250"
+        distance_method = "Binomial"
         covariance_type = "diag"
         max_n_iter = 20
 
