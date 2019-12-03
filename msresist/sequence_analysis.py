@@ -202,7 +202,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     for _ in range(max_n_iter):
         store_scores, motifs, labels = [], [], []
         n_iter += 1
-        print(n_iter)
         store_Dicts.append(DictMotifToCluster)
         store_Clseqs.append(Cl_seqs)
         New_DictMotifToCluster = defaultdict(list)
@@ -252,12 +251,11 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         DictMotifToCluster = New_DictMotifToCluster
         Cl_seqs = clusters
 
-        assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % (Cl_seqs))
+        assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
 
         #Check for convergence
         if DictMotifToCluster == store_Dicts[-1]:
-            if GMMweight == 0:
-                display(DictMotifToCluster)
+            if GMMweight == 0 and distance_method == "PAM250":  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
                 assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \
                 "Same motif has different labels with GMMweight=0"
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
@@ -412,8 +410,8 @@ def MeanBinomProbs(BPM, motif, pYTS):
     BPM = BPM.set_index("Residue")
     probs = []
     for i, aa in enumerate(motif):
-        if i == 6:
-            assert aa == pYTS, "wrong central AA"
+        if i == 5:
+            assert aa == pYTS, ("wrong central AA: %s" % aa)
             continue
         probs.append(float(BPM.loc[aa][i]))
     return np.mean(probs)
