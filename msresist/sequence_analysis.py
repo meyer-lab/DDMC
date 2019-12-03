@@ -187,7 +187,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     #Initialize with gmm clusters and generate gmm pval matrix
     ABC = pd.concat([info, data.T], axis=1)
-    Cl_seqs, init_clusters_idx, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
 
     #Background sequences
@@ -198,36 +198,35 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     #EM algorithm
     n_iter = 0
     DictMotifToCluster = defaultdict(list)
-    store_Dicts = []
+    store_Dicts, store_Clseqs = [], []
     for _ in range(max_n_iter):
         store_scores, motifs, labels = [], [], []
         n_iter += 1
+        print(n_iter)
         store_Dicts.append(DictMotifToCluster)
+        store_Clseqs.append(Cl_seqs)
         New_DictMotifToCluster = defaultdict(list)
         DictIdxToLabel = {}
         clusters = [[] for i in range(ncl)]
-        cluster_idc = [[] for i in range(ncl)]
-        for j, motif in enumerate(Allseqs):  #TODO: After every iteration Cl_seqs gets updated and therefore the indices are no longer valid. 
-            CurrentCl_seqs = DeleteQuerySeqInRefClusters(ABC.index[j], Cl_seqs, init_clusters_idx)
-            assert len([seq for clust in CurrentCl_seqs for seq in clust]) == len(Allseqs) - 1, "Ref Clusters wrong size."
+        for j, motif in enumerate(Allseqs):
             scores = []
 
             #Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    freq_matrix = frequencies(CurrentCl_seqs[z])
-                    BPM = BinomialMatrix(len(CurrentCl_seqs[z]), freq_matrix, bg_pwm)
-                    BPM_score = MeanBinomProbs(BPM, motif)
+                    freq_matrix = frequencies(Cl_seqs[z])
+                    BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+                    BPM_score = MeanBinomProbs(BPM, motif, pYTS)
                     scores.append(BPM_score + gmm_score)
                 score, label = min((score, label) for (label, score) in enumerate(scores))
                 store_scores.append(score)
 
-            #Average distance between each sequence and any cluster based on PAM250 substitution matrix.
+            #Average distance between each sequence and every cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_proba.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in CurrentCl_seqs[z]]
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
                     PAM250_score = np.mean(PAM250_scores)*10
                     scores.append(PAM250_score + gmm_score)
                 score, label = max((score, label) for (label, score) in enumerate(scores))
@@ -237,28 +236,28 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             motifs.append(motif)
             labels.append(label)
             clusters[label].append(motif)
-            cluster_idc[label].append(ABC.index[j])
 
         for i in range(len(motifs)):
             New_DictMotifToCluster[motifs[i]].append(labels[i])
 
-        for i in range(ncl):
-            if i not in [val for sublist in list(New_DictMotifToCluster.values()) for val in sublist]:
-                print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-                Cl_seqs, init_clusters_idx, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-                Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
-                continue
-        
+        #Check for empty clusters and re-initialize algorithm in that case
+        if False in [len(sublist)>0 for sublist in clusters]:
+            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+            Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            assert Cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
+            assert False not in [len(sublist)>0 for sublist in Cl_seqs]
+            continue
+
         #Update Clusters with re-assignments
         DictMotifToCluster = New_DictMotifToCluster
         Cl_seqs = clusters
-        init_clusters_idx = cluster_idc
 
         assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % (Cl_seqs))
 
         #Check for convergence
         if DictMotifToCluster == store_Dicts[-1]:
-            if GMMweight == 0 and distance_method == "PAM250":
+            if GMMweight == 0:
+                display(DictMotifToCluster)
                 assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \
                 "Same motif has different labels with GMMweight=0"
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
@@ -301,17 +300,16 @@ def pairwise_score(seq1, seq2, matrix):
         score += match_AAs(pair, matrix)
     return score
 
+
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
 
-    init_clusters, init_clusters_idx = [], []
-    for i in range(ncl):
-        init_clusters_idx.append(list(Xcl[Xcl["GMM_cluster"] == i].index))
-        init_clusters.append(ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS))
+    init_clusters = []
+    [init_clusters.append(ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS)) for i in range(ncl)]
 
-    return init_clusters, init_clusters_idx, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), \
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), \
     pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])*100)
 
 
@@ -338,10 +336,10 @@ def BackgroundSeqs(pYTS):
         for label in Y_labels:
             center_label = label.start()
             assert seq[center_label] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_label-6:center_label+6]
+            motif = seq[center_label-5:center_label+6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_label-6:center_label+6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_label-5:center_label+6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
@@ -409,12 +407,13 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     return ''.join(motif)
 
 
-def MeanBinomProbs(BPM, motif):
+def MeanBinomProbs(BPM, motif, pYTS):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     BPM = BPM.set_index("Residue")
     probs = []
     for i, aa in enumerate(motif):
         if i == 6:
+            assert aa == pYTS, "wrong central AA"
             continue
         probs.append(float(BPM.loc[aa][i]))
     return np.mean(probs)
