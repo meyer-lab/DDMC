@@ -69,7 +69,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=20):
+    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=100000):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
