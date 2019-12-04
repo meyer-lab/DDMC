@@ -71,6 +71,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
             matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
     return matchedNames
 
+
 def GeneratingKinaseMotifs(names, seqs):
     """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
     motif_size = 5
@@ -103,7 +104,7 @@ def GeneratingKinaseMotifs(names, seqs):
                 elif "t" in MS_seq or "s" in MS_seq:
                     DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
                     assert len(DoS_idx) != 0
-                uni_pos.append("Y" + str(y_idx+1) + "-p")
+                uni_pos.append("Y" + str(y_idx + 1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
@@ -116,7 +117,7 @@ def GeneratingKinaseMotifs(names, seqs):
                 DoS_idx = None
                 if len(pTS_idx) > 1:
                     DoS_idx = pTS_idx[1:]
-                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx+1) + "-p")
+                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx=None))
@@ -124,7 +125,6 @@ def GeneratingKinaseMotifs(names, seqs):
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
             raise
-
 
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     if li_dif:
@@ -171,32 +171,30 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
     return ''.join(UP_seq_copy)
 
 
-
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
-
 """ Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
 might be able to find more reliable sources. """
 
 
-AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":0.037, "G":0.074, "H":0.029, "I":0.038, "L":0.076, \
-              "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
+AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
+          "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
 def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([seqs, names, data.T], axis=1)
-    #Initialize with gmm clusters and generate gmm pval matrix
+    # Initialize with gmm clusters and generate gmm pval matrix
 
     Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
-    #Background sequences
+    # Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
     bg_pwm = position_weight_matrix(bg_seqs)
 
-    #EM algorithm
+    # EM algorithm
     store_Cl_seqs = []
     n_iter = 0
-    Allseqs = [val for sublist in Cl_seqs for val in sublist] #flatten nested clusters list
+    Allseqs = [val for sublist in Cl_seqs for val in sublist]  # flatten nested clusters list
     for _ in range(max_n_iter):
         labels, store_scores = [], []
         n_iter += 1
@@ -204,7 +202,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
         clusters = [[] for i in range(ncl)]
         for j, motif in enumerate(Allseqs):
             scores = []
-            #Binomial Probability Matrix distance (p-values) between foreground and background sequences
+            # Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
@@ -213,7 +211,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
                 score, idx = min((score, idx) for (idx, score) in enumerate(scores))
-            #Average distance between each sequence and any cluster based on PAM250 substitution matrix
+            # Average distance between each sequence and any cluster based on PAM250 substitution matrix
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
@@ -226,7 +224,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
             labels.append(idx)
             store_scores.append(score)
 
-        if len(["Empty Cluster" for cluster in clusters if len(cluster)==0]) != 0:
+        if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
             Allseqs = [val for sublist in Cl_seqs for val in sublist]
@@ -234,9 +232,9 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
 
         Cl_seqs = clusters
 
-        #Convergence when same cluster assignments as in previous iteration
+        # Convergence when same cluster assignments as in previous iteration
         if Cl_seqs == store_Cl_seqs[-1]:
-#             print("convergence has been reached at iteration %i" % (n_iter))
+            #             print("convergence has been reached at iteration %i" % (n_iter))
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
             return Cl_seqs, labels, store_scores, ICs, n_iter
@@ -263,6 +261,7 @@ def pairwise_score(seq1, seq2, matrix):
         pair = (seq1[i], seq2[i])
         score += match_AAs(pair, matrix)
     return score
+
 
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
@@ -295,10 +294,10 @@ def BackgroundSeqs(pYTS):
         for idx in Y_IDXs:
             center_idx = idx.start()
             assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_idx-5:center_idx+6]
+            motif = seq[center_idx - 5:center_idx + 6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_idx-5:center_idx+6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_idx - 5:center_idx + 6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
@@ -341,16 +340,16 @@ def frequencies(seqs):
 def BinomialMatrix(n, k, p):
     """ Build binomial probability matrix. Note n is the number of sequences,
     k is the counts matrix of the MS data set, p is the pwm of the background. """
-    BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:,:], loc=0))
+    BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:, :], loc=0))
     BMP.insert(0, "Residue", list(k.iloc[:, 0]))
-    BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
+    BMP.iloc[-1, 6] = np.log(float(10**(-10)))  # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
 
 
 def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     """ Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
-    motif = list("X"*11)
+    motif = list("X" * 11)
     positions = list(BMP.columns[1:])
     AA = list(BMP.iloc[:, 0])
     BMP = BMP.iloc[:, 1:]

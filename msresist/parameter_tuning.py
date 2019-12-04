@@ -37,8 +37,8 @@ def MSclusPLSR_tuning(X, seqs, names, Y):
 
     param_grid = []
     for nn in range(2, 8):
-        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0.5, 2.5, 5], \
-        plsr__n_components=list(np.arange(1, nn + 1))))
+        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0.5, 2.5, 5],
+                               plsr__n_components=list(np.arange(1, nn + 1))))
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error")
     fit = grid.fit(X, Y)
