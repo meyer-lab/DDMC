@@ -203,11 +203,12 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         store_Dicts.append(DictMotifToCluster)
         store_Clseqs.append(Cl_seqs)
         DictMotifToCluster = defaultdict(list)
+        DictScore = defaultdict(list)
         clusters = [[] for i in range(ncl)]
         for j, motif in enumerate(Allseqs):
             scores = []
 
-            #Binomial Probability Matrix distance (p-values) between foreground and background sequences
+            # Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
@@ -217,11 +218,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     scores.append(BPM_score + gmm_score)
                 label = np.argmin(scores)
 
-            if motif == "EPNVSYICSRY":
-                print(scores)
-                print(label)
-
-            #Average distance between each sequence and every cluster based on PAM250 substitution matrix.
+            # Average distance between each sequence and every cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_proba.iloc[j, z] * GMMweight
@@ -234,8 +231,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             labels.append(label)
             clusters[label].append(motif)
             DictMotifToCluster[motif].append(label)
-
-        print("--------")
+            DictScore[motif].append(scores[label])
 
         # Check for empty clusters and re-initialize algorithm in that case
         if False in [len(sublist)>0 for sublist in clusters]:
@@ -250,10 +246,16 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
 
         assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
 
-        if n_iter > 0 and GMMweight == 0:  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
-            print(DictMotifToCluster)
-            assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \
-                "Same motif has different labels with GMMweight=0"
+        if GMMweight == 0:  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
+            valChecks = [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())]
+
+            for key, val in DictMotifToCluster.items():
+                if len(set(val)) > 1:
+                    print(key)
+                    print(val)
+                    print(DictScore[key])
+
+            assert False not in valChecks, "Same motif has different labels with GMMweight=0"
 
         # Check for convergence
         if DictMotifToCluster == store_Dicts[-1]:
