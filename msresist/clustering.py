@@ -81,8 +81,8 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.seqs, \
-        self.names, self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
+        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.seqs,
+                                                                                          self.names, self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return self
 
     def transform(self, X):
@@ -97,25 +97,25 @@ class MassSpecClustering(BaseEstimator):
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
-    def predict(self, X, Y=None):
+    def predict(self, X, _Y=None):
         """ Predict the cluster each sequence in ABC belongs to."""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, self.GMMweight, \
-        self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
+        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, self.GMMweight,
+                                           self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return labels
 
-    def score(self, X, Y=None):
+    def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, \
-        self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
+        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names,
+                                           self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return np.mean(scores)
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
-        return {"seqs": self.seqs, "names": self.names, "ncl": self.ncl, \
-        "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method, \
-        "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
+        return {"seqs": self.seqs, "names": self.names, "ncl": self.ncl,
+                "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method,
+                "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
