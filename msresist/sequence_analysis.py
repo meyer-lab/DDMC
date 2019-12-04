@@ -180,7 +180,6 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-
 def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs):
     """ Do the sequence assignment. """
     scores = []
@@ -220,7 +219,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         gmmp = gmm_proba
 
     e = ThreadPoolExecutor()
-
 
     # Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
