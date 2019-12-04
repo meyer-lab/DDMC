@@ -212,12 +212,21 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
 
             #Binomial Probability Matrix distance (p-values) between foreground and background sequences
             if distance_method == "Binomial":
+                if motif == "SRDPHYDDFRS":
+                    print(motif)
                 for z in range(ncl):
                     gmm_score = gmm_pvals.iloc[j, z] * GMMweight
                     freq_matrix = frequencies(Cl_seqs[z])
                     BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
                     BPM_score = MeanBinomProbs(BPM, motif, pYTS)
+                    display(bg_pwm)
+                    display(freq_matrix)
+                    display(BPM)
+                    if motif == "SRDPHYDDFRS":
+                        print("score:", BPM_score)
                     scores.append(BPM_score + gmm_score)
+                if motif == "SRDPHYDDFRS":
+                    print(scores)
                 score, label = min((score, label) for (label, score) in enumerate(scores))
                 store_scores.append(score)
 
@@ -235,6 +244,8 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             motifs.append(motif)
             labels.append(label)
             clusters[label].append(motif)
+
+        raise SystemExit
 
         for i in range(len(motifs)):
             New_DictMotifToCluster[motifs[i]].append(labels[i])
