@@ -196,16 +196,13 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         bg_pwm = position_weight_matrix(bg_seqs)
 
     #EM algorithm
-    n_iter = 0
     DictMotifToCluster = defaultdict(list)
     store_Dicts, store_Clseqs = [], []
-    for _ in range(max_n_iter):
+    for n_iter in range(max_n_iter):
         store_scores, motifs, labels = [], [], []
-        n_iter += 1
         store_Dicts.append(DictMotifToCluster)
         store_Clseqs.append(Cl_seqs)
-        New_DictMotifToCluster = defaultdict(list)
-        DictIdxToLabel = {}
+        DictMotifToCluster = defaultdict(list)
         clusters = [[] for i in range(ncl)]
         for j, motif in enumerate(Allseqs):
             scores = []
@@ -218,8 +215,11 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
                     BPM_score = MeanBinomProbs(BPM, motif, pYTS)
                     scores.append(BPM_score + gmm_score)
-                score, label = min((score, label) for (label, score) in enumerate(scores))
-                store_scores.append(score)
+                label = np.argmin(scores)
+
+            if motif == "EPNVSYICSRY":
+                print(scores)
+                print(label)
 
             #Average distance between each sequence and every cluster based on PAM250 substitution matrix.
             if distance_method == "PAM250":
@@ -228,16 +228,14 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                     PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
                     PAM250_score = np.mean(PAM250_scores)*10
                     scores.append(PAM250_score + gmm_score)
-                score, label = max((score, label) for (label, score) in enumerate(scores))
-                store_scores.append(score)
+                label = np.argmax(scores)
 
+            store_scores.append(scores[label])
             assert label <= ncl - 1, ("label out of bounds, scores list: %s" % scores)
             motifs.append(motif)
             labels.append(label)
             clusters[label].append(motif)
-
-        for i in range(len(motifs)):
-            New_DictMotifToCluster[motifs[i]].append(labels[i])
+            DictMotifToCluster[motif].append(label)
 
         #Check for empty clusters and re-initialize algorithm in that case
         if False in [len(sublist)>0 for sublist in clusters]:
@@ -248,7 +246,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             continue
 
         #Update Clusters with re-assignments
-        DictMotifToCluster = New_DictMotifToCluster
         Cl_seqs = clusters
 
         assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
