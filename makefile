@@ -23,4 +23,4 @@ testcover:
 	jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf --inplace *.ipynb
 
 clean:
-	rm *.svg *.pdf
+	rm -f *.svg *.pdf
