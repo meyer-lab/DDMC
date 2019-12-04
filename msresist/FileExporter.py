@@ -1,3 +1,5 @@
+""" Downloads generated csv files. """
+
 import base64
 from IPython.display import HTML
 
