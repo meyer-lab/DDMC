@@ -3,12 +3,11 @@ This creates Figure 1.
 """
 from .common import subplotLabel, getSetup
 from ..sequence_analysis import FormatName, pYmotifs
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean, MapOverlappingPeptides
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
 import os
 import pandas as pd
 import numpy as np
 import scipy as sp
-import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(color_codes=True)
 
