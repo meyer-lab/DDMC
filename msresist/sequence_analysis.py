@@ -182,7 +182,7 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
-    #Initialize with gmm clusters and generate gmm pval matrix
+    # Initialize with gmm clusters and generate gmm pval matrix
 
     Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
@@ -215,7 +215,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             if distance_method == "PAM250":
                 for z in range(ncl):
                     gmm_score = gmm_proba.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250)*10 for seq in Cl_seqs[z]]
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
                     PAM250_score = np.mean(PAM250_scores)
                     scores.append(PAM250_score + gmm_score)
                 score, idx = max((score, idx) for (idx, score) in enumerate(scores))
@@ -267,7 +267,7 @@ def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
-    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])*100)
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:]) * 100)
 
 
 def preprocess_seqs(X, pYTS):
@@ -293,10 +293,10 @@ def BackgroundSeqs(pYTS):
         for idx in Y_IDXs:
             center_idx = idx.start()
             assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_idx-6:center_idx+6]
+            motif = seq[center_idx - 6:center_idx + 6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_idx-6:center_idx+6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_idx - 6:center_idx + 6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
