@@ -5,14 +5,14 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.cross_decomposition import PLSRegression
-from .clustering import MyOwnKMEANS, MyOwnGMM, MassSpecClustering
+from .clustering import MyOwnKMEANS, MassSpecClustering
 
 
 ###------------ Building clustering method + PLSR pipeline and Tunning Hyperparameters ------------------###
 
 
 def kmeansPLSR_tuning(X, Y):
-    """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR """
+    """ Cross-validation: Simultaneous hyperparameter search for number of clusters for k-means and number of components for PLSR. """
     kmeansPLSR = Pipeline([("kmeans", MyOwnKMEANS(5)), ("plsr", PLSRegression(2))])
 
     param_grid = []
@@ -32,13 +32,13 @@ def kmeansPLSR_tuning(X, Y):
     return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 
-def MSclusPLSR_tuning(X, seqs, names, Y):
-    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(seqs=seqs, names=names, ncl=5)), ("plsr", PLSRegression(n_components=2))])
+def MSclusPLSR_tuning(X, info, Y):
+    """ Cross-validation: Simultaneous hyperparameter search. """
+    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, ncl=2)), ("plsr", PLSRegression(n_components=2))])
 
     param_grid = []
-    for nn in range(2, 8):
-        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0.5, 2.5, 5],
-                               plsr__n_components=list(np.arange(1, nn + 1))))
+    for nn in range(2, 11):
+        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0, 2.5, 5, 7.5, 10]))
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error")
     fit = grid.fit(X, Y)
@@ -47,7 +47,6 @@ def MSclusPLSR_tuning(X, seqs, names, Y):
         "Ranking": CVresults_max["rank_test_score"],
         "#Clusters": CVresults_max["param_MSclustering__ncl"],
         "GMMweights": CVresults_max["param_MSclustering__GMMweight"],
-        "#ComponentsPLSR": CVresults_max["param_plsr__n_components"],
         "mean_test_scores": CVresults_max["mean_test_score"],
         "mean_train_scores": CVresults_max["mean_train_score"],
     }
