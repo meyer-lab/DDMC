@@ -2,7 +2,7 @@
 
 import os
 import re
-import copy
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pandas as pd
 from collections import defaultdict
@@ -72,6 +72,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
             matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
     return matchedNames
 
+
 def GeneratingKinaseMotifs(names, seqs):
     """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
     motif_size = 5
@@ -102,22 +103,22 @@ def GeneratingKinaseMotifs(names, seqs):
                     DoS_label = pY_label[1:]
                     assert len(DoS_label) != 0
                 elif "t" in MS_seq or "s" in MS_seq:
-                    DoS_label = list(re.compile("y|t|s").finditer(MS_seq))
-                    assert len(DoS_label) != 0
-                uni_pos.append("Y" + str(y_label+1) + "-p")
+                    DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
+                    assert len(DoS_idx) != 0
+                uni_pos.append("Y" + str(y_idx + 1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_label, center_label, DoS_label))
 
             if "y" not in MS_seq:
-                pTS_label = list(re.compile("t|s").finditer(MS_seq))
-                assert len(pTS_label) != 0
-                center_label = pTS_label[0].start()
-                ts_label = center_label + MatchObs[0].start()
-                DoS_label = None
-                if len(pTS_label) > 1:
-                    DoS_label = pTS_label[1:]
-                uni_pos.append(str(MS_seqU[center_label]) + str(ts_label+1) + "-p")
+                pTS_idx = list(re.compile("t|s").finditer(MS_seq))
+                assert len(pTS_idx) != 0
+                center_idx = pTS_idx[0].start()
+                ts_idx = center_idx + MatchObs[0].start()
+                DoS_idx = None
+                if len(pTS_idx) > 1:
+                    DoS_idx = pTS_idx[1:]
+                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p")
                 MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_label, center_label, DoS_label=None))
@@ -125,7 +126,6 @@ def GeneratingKinaseMotifs(names, seqs):
         except BaseException:
             print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
             raise
-
 
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     if li_dif:
@@ -172,93 +172,87 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_label, center_label, DoS_label):
     return ''.join(UP_seq_copy)
 
 
-
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
+# Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
+# might be able to find more reliable sources.
 
-""" Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts might be able to 
-find more reliable sources. """
+AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
+          "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs):
+    """ Do the sequence assignment. """
+    scores = []
+    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
+    if distance_method == "Binomial":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            freq_matrix = frequencies(Cl_seqs[z])
+            BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+            BPM_score = MeanBinomProbs(BPM, motif)
+            scores.append(BPM_score + gmm_score)
+        score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
-AAfreq = {"A":0.074, "R":0.042, "N":0.044, "D":0.059, "C":0.033, "Q":0.058, "E":0.037, "G":0.074, "H":0.029, "I":0.038, "L":0.076, \
-              "K":0.072, "M":0.018, "F":0.04, "P":0.05, "S":0.081, "T":0.062, "W":0.013, "Y":0.033, "V":0.068}
+    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
+    if distance_method == "PAM250":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
+            PAM250_score = np.mean(PAM250_scores)
+            scores.append(PAM250_score + gmm_score)
+        score, idx = max((score, idx) for (idx, score) in enumerate(scores))
+    assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
+
+    return score, idx
 
 
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    #Initialize with gmm clusters and generate gmm pval matrix
     ABC = pd.concat([info, data.T], axis=1)
-    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
 
-    #Background sequences
+    # Initialize with gmm clusters and generate gmm pval matrix
+    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+
     if distance_method == "Binomial":
-        bg_seqs = BackgroundSeqs(pYTS)
-        bg_pwm = position_weight_matrix(bg_seqs)
+        gmmp = gmm_pvals
+    elif distance_method == "PAM250":
+        gmmp = gmm_proba
 
-    #EM algorithm
-    DictMotifToCluster = defaultdict(list)
-    store_Dicts, store_Clseqs = [], []
-    for n_iter in range(max_n_iter):
-        labels = []
-        store_Dicts.append(DictMotifToCluster)
-        store_Clseqs.append(Cl_seqs)
-        DictMotifToCluster = defaultdict(list)
-        DictScore = defaultdict(list)
+    e = ThreadPoolExecutor()
+
+    # Background sequences
+    bg_seqs = BackgroundSeqs(pYTS)
+    bg_pwm = position_weight_matrix(bg_seqs)
+
+    # EM algorithm
+    store_Cl_seqs = []
+    n_iter = 0
+    for _ in range(max_n_iter):
+        labels, store_scores = [], []
+        n_iter += 1
+        store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
+
+        futuress = []
         for j, motif in enumerate(Allseqs):
-            scores = []
+            futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs))
 
-            # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-            if distance_method == "Binomial":
-                for z in range(ncl):
-                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    freq_matrix = frequencies(Cl_seqs[z])
-                    BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
-                    BPM_score = MeanBinomProbs(BPM, motif, pYTS)
-                    scores.append(BPM_score + gmm_score)
-                label = np.argmin(scores)
+        for j, motif in enumerate(Allseqs):
+            score, idx = futuress[j].result()
+            labels.append(idx)
+            store_scores.append(score)
+            clusters[idx].append(motif)
 
-            # Average distance between each sequence and every cluster based on PAM250 substitution matrix.
-            if distance_method == "PAM250":
-                for z in range(ncl):
-                    gmm_score = gmm_proba.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
-                    PAM250_score = np.mean(PAM250_scores)*10
-                    scores.append(PAM250_score + gmm_score)
-                label = np.argmax(scores)
-
-            assert label <= ncl - 1, ("label out of bounds, scores list: %s" % scores)
-            labels.append(label)
-            clusters[label].append(motif)
-            DictMotifToCluster[motif].append(label)
-            DictScore[motif].append(scores[label])
-
-        # Check for empty clusters and re-initialize algorithm in that case
-        if False in [len(sublist)>0 for sublist in clusters]:
+        if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-            assert Cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
-            assert False not in [len(sublist)>0 for sublist in Cl_seqs]
+            Allseqs = [val for sublist in Cl_seqs for val in sublist]
             continue
-
-        # Update Clusters with re-assignments
         Cl_seqs = clusters
 
-        assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
-
-        if GMMweight == 0:  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
-            valChecks = [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())]
-
-            for key, val in DictMotifToCluster.items():
-                if len(set(val)) > 1:
-                    print(key)
-                    print(val)
-                    print(DictScore[key])
-
-            assert False not in valChecks, "Same motif has different labels with GMMweight=0"
-
-        # Check for convergence
-        if DictMotifToCluster == store_Dicts[-1]:
+        # Convergence when same cluster assignments as in previous iteration
+        if Cl_seqs == store_Cl_seqs[-1]:
+            #             print("convergence has been reached at iteration %i" % (n_iter))
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
             return Cl_seqs, labels, scores, ICs, n_iter
@@ -266,19 +260,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-    return Cl_seqs, labels, scores, ICs, n_iter
-
-
-def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
-    X = copy.deepcopy(clusters)
-    clusters_idx = copy.deepcopy(init_clusters_idx)
-
-    for sublist in clusters_idx:
-        if j in sublist:
-            pop_idx = [clusters_idx.index(sublist), sublist.index(j)]
-            X[pop_idx[0]].pop(pop_idx[1])
-    return X
-
+    return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
 
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
@@ -304,22 +286,18 @@ def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
-
-    init_clusters = []
-    [init_clusters.append(ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS)) for i in range(ncl)]
-
-    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), \
-    pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])*100)
+    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:]) * 100)
 
 
 def preprocess_seqs(X, pYTS):
     """ Filter out any sequences with different than the specified central p-residue
     and/or any containing gaps."""
     X = X[~X.iloc[:, 1].str.contains("-")]
-    Xlabel = []
+    Xidx = []
     for i in range(X.shape[0]):
-        Xlabel.append(X.iloc[i, 1][5] == pYTS.lower())
-    return X.iloc[Xlabel, :]
+        Xidx.append(X.iloc[i, 1][5] == pYTS.lower())
+    return X.iloc[Xidx, :]
 
 
 def BackgroundSeqs(pYTS):
@@ -331,14 +309,14 @@ def BackgroundSeqs(pYTS):
         if pYTS not in seq:
             continue
         regexPattern = re.compile(pYTS)
-        Y_labels = list(regexPattern.finditer(seq))
-        for label in Y_labels:
-            center_label = label.start()
-            assert seq[center_label] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_label-5:center_label+6]
+        Y_IDXs = list(regexPattern.finditer(seq))
+        for idx in Y_IDXs:
+            center_idx = idx.start()
+            assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
+            motif = seq[center_idx - 5:center_idx + 6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_label-5:center_label+6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_idx - 5:center_idx + 6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
@@ -383,14 +361,14 @@ def BinomialMatrix(n, k, p):
     k is the counts matrix of the MS data set, p is the pwm of the background. """
     BMP = pd.DataFrame(binom.logsf(k=k.iloc[:, 1:], n=n, p=p.iloc[:, :], loc=0))
     BMP.insert(0, "Residue", list(k.iloc[:, 0]))
-    BMP.iloc[-1, 6] = np.log(float(10**(-10))) #make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
+    BMP.iloc[-1, 6] = np.log(float(10**(-10)))  # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     return BMP
 
 
 def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     """ Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
-    motif = list("X"*11)
+    motif = list("X" * 11)
     positions = list(BMP.columns[1:])
     AA = list(BMP.iloc[:, 0])
     BMP = BMP.iloc[:, 1:]
