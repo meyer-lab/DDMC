@@ -255,7 +255,8 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
 
         #Check for convergence
         if DictMotifToCluster == store_Dicts[-1]:
-            if GMMweight == 0 and distance_method == "PAM250":  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
+            if GMMweight == 0:  #TODO figure out why using Binomial, copies of 3-4 peptides are assigned to different clusters.
+                display(DictMotifToCluster)
                 assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())], \
                 "Same motif has different labels with GMMweight=0"
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
