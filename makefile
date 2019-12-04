@@ -20,7 +20,7 @@ testcover:
 	pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
 %.pdf: %.ipynb
-	jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf --inplace *.ipynb
+	jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
 	rm -f *.svg *.pdf
