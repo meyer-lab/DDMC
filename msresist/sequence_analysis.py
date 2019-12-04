@@ -19,23 +19,22 @@ path = os.path.dirname(os.path.abspath(__file__))
 def pYmotifs(ABC, ABC_names):
     " Generate pY motifs for pre-processing. "
     names, mapped_motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
-    ABC['Master Protein Descriptions'] = names
-    ABC['peptide-phosphosite'] = mapped_motifs
-    ABC.insert(12, 'position', pXpos)
-    return ABC
+    ABC['Protein'] = names
+    ABC['Sequence'] = mapped_motifs
+    return ABC.assign(Position=pXpos)
 
 
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
     names = []
-    list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 1]))
+    list(map(lambda v: names.append(v.split("OS")[0]), X.iloc[:, 0]))
     return names
 
 
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
     seqs = []
-    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 0]))
+    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 1]))
     return seqs
 
 
@@ -172,20 +171,20 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
 
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
-""" Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
-might be able to find more reliable sources. """
+# Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
+# might be able to find more reliable sources.
 
 
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
+def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    ABC = pd.concat([seqs, names, data.T], axis=1)
+    ABC = pd.concat([info, data.T], axis=1)
     # Initialize with gmm clusters and generate gmm pval matrix
 
-    Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
     # Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
@@ -211,11 +210,12 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
                     BPM_score = MeanBinomProbs(BPM, motif)
                     scores.append(BPM_score + gmm_score)
                 score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+
             # Average distance between each sequence and any cluster based on PAM250 substitution matrix
             if distance_method == "PAM250":
                 for z in range(ncl):
-                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in Cl_seqs[z]]
+                    gmm_score = gmm_proba.iloc[j, z] * GMMweight
+                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
                     PAM250_score = np.mean(PAM250_scores)
                     scores.append(PAM250_score + gmm_score)
                 score, idx = max((score, idx) for (idx, score) in enumerate(scores))
@@ -226,10 +226,9 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
 
         if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            Cl_seqs, gmm_pvals = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
             Allseqs = [val for sublist in Cl_seqs for val in sublist]
             continue
-
         Cl_seqs = clusters
 
         # Convergence when same cluster assignments as in previous iteration
@@ -242,7 +241,7 @@ def EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, cova
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-    return Cl_seqs, labels, store_scores, ICs, n_iter
+    return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
 
 
 def match_AAs(pair, matrix):
@@ -265,19 +264,19 @@ def pairwise_score(seq1, seq2, matrix):
 
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
-    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 2:12])
-    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 2:12]))
-    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 0]), pYTS) for i in range(ncl)]
-    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 2:12])))
+    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
+    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
+    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
+    return init_clusters, pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))), pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:]) * 100)
 
 
 def preprocess_seqs(X, pYTS):
     """ Filter out any sequences with different than the specified central p-residue
     and/or any containing gaps."""
-    X = X[~X.iloc[:, 0].str.contains("-")]
+    X = X[~X.iloc[:, 1].str.contains("-")]
     Xidx = []
     for i in range(X.shape[0]):
-        Xidx.append(X.iloc[i, 0][5] == pYTS.lower())
+        Xidx.append(X.iloc[i, 1][5] == pYTS.lower())
     return X.iloc[Xidx, :]
 
 
@@ -294,10 +293,10 @@ def BackgroundSeqs(pYTS):
         for idx in Y_IDXs:
             center_idx = idx.start()
             assert seq[center_idx] == str(pYTS), "Center residue not %s" % (pYTS)
-            motif = seq[center_idx - 5:center_idx + 6]
+            motif = seq[center_idx - 6:center_idx + 6]
             if len(motif) != 11 or "X" in motif or "U" in motif:
                 continue
-            assert len(seq[center_idx - 5:center_idx + 6]) == 11, "Wrong sequence length: %s" % motif
+            assert len(seq[center_idx - 6:center_idx + 6]) == 11, "Wrong sequence length: %s" % motif
             bg_seqs.append(Seq(motif, IUPAC.protein))
 
     proteome.close()
@@ -370,7 +369,7 @@ def MeanBinomProbs(BPM, motif):
     BPM = BPM.set_index("Residue")
     probs = []
     for i, aa in enumerate(motif):
-        if i == 5:
+        if i == 6:
             continue
         probs.append(float(BPM.loc[aa][i]))
     return np.mean(probs)
