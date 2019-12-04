@@ -97,14 +97,14 @@ class MassSpecClustering(BaseEstimator):
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
-    def predict(self, X, Y=None):
+    def predict(self, X, _Y=None):
         """ Predict the cluster each sequence in ABC belongs to."""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
         _, labels, _, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names, self.GMMweight,
                                            self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
         return labels
 
-    def score(self, X, Y=None):
+    def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
         _, _, scores, _, _ = EM_clustering(X, self.ncl, self.seqs, self.names,
