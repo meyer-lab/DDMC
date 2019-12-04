@@ -5,7 +5,7 @@ pipeline {
     parallelsAlwaysFailFast()
   }
   stages {
-    stage('Clean') { steps { sh 'git clean -ffdx' } }
+    stage('Clean') { steps { sh 'git clean -ffdx && make clean' } }
     stage('Test') {
       steps {
         sh 'make testcover'
@@ -15,14 +15,13 @@ pipeline {
     stage('Lint') {
       steps {
         sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
-        recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
+        recordIssues qualityGates: [[threshold: 5, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
       }
     }
     stage('Build Notebooks') {
       steps {
         sh 'make all'
-        archiveArtifacts artifacts: 'figure*.svg', onlyIfSuccessful: true
-        sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb'
+        archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
       }
     }
   }

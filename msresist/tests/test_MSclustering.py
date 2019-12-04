@@ -27,5 +27,5 @@ class TestClustering(unittest.TestCase):
         gmm_cl, _, _ = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
-        #assert that EM clusters are different than GMM clusters
+        # assert that EM clusters are different than GMM clusters
         self.assertNotEqual(Cl_seqs, gmm_cl)
