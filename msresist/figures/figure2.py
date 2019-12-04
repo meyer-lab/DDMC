@@ -8,17 +8,12 @@ import numpy as np
 import scipy as sp
 from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict
-import numpy as np
-import pandas as pd
-import math
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
 from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
 from msresist.clustering import MassSpecClustering
 from msresist.sequence_analysis import preprocess_seqs
-import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 from msresist.pre_processing import preprocessing, MergeDfbyMean
@@ -52,8 +47,6 @@ def makeFigure():
     # Phosphorylation data
     ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
     ABC = preprocess_seqs(ABC, "Y")
-
-    header = ABC.columns
 
     data = ABC.iloc[:, 6:].T
     info = ABC.iloc[:, :6]
