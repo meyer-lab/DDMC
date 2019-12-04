@@ -5,7 +5,7 @@ pipeline {
     parallelsAlwaysFailFast()
   }
   stages {
-    stage('Clean') { steps { sh 'git clean -ffdx' } }
+    stage('Clean') { steps { sh 'git clean -ffdx && make clean' } }
     stage('Test') {
       steps {
         sh 'make testcover'
@@ -21,8 +21,7 @@ pipeline {
     stage('Build Notebooks') {
       steps {
         sh 'make all'
-        archiveArtifacts artifacts: 'figure*.svg', onlyIfSuccessful: true
-        sh 'jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to notebook --inplace *.ipynb'
+        archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
       }
     }
   }

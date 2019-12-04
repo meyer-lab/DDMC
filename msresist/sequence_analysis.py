@@ -2,6 +2,7 @@
 
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -179,12 +180,45 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs):
+    """ Do the sequence assignment. """
+    scores = []
+    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
+    if distance_method == "Binomial":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            freq_matrix = frequencies(Cl_seqs[z])
+            BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+            BPM_score = MeanBinomProbs(BPM, motif)
+            scores.append(BPM_score + gmm_score)
+        score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+
+    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
+    if distance_method == "PAM250":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
+            PAM250_score = np.mean(PAM250_scores)
+            scores.append(PAM250_score + gmm_score)
+        score, idx = max((score, idx) for (idx, score) in enumerate(scores))
+    assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
+
+    return score, idx
+
+
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     # Initialize with gmm clusters and generate gmm pval matrix
 
     Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+
+    if distance_method == "Binomial":
+        gmmp = gmm_pvals
+    elif distance_method == "PAM250":
+        gmmp = gmm_proba
+
+    e = ThreadPoolExecutor()
 
     # Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
@@ -199,30 +233,16 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         n_iter += 1
         store_Cl_seqs.append(Cl_seqs)
         clusters = [[] for i in range(ncl)]
-        for j, motif in enumerate(Allseqs):
-            scores = []
-            # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-            if distance_method == "Binomial":
-                for z in range(ncl):
-                    gmm_score = gmm_pvals.iloc[j, z] * GMMweight
-                    freq_matrix = frequencies(Cl_seqs[z])
-                    BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
-                    BPM_score = MeanBinomProbs(BPM, motif)
-                    scores.append(BPM_score + gmm_score)
-                score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
-            # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-            if distance_method == "PAM250":
-                for z in range(ncl):
-                    gmm_score = gmm_proba.iloc[j, z] * GMMweight
-                    PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
-                    PAM250_score = np.mean(PAM250_scores)
-                    scores.append(PAM250_score + gmm_score)
-                score, idx = max((score, idx) for (idx, score) in enumerate(scores))
-            assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
-            clusters[idx].append(motif)
+        futuress = []
+        for j, motif in enumerate(Allseqs):
+            futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs))
+
+        for j, motif in enumerate(Allseqs):
+            score, idx = futuress[j].result()
             labels.append(idx)
             store_scores.append(score)
+            clusters[idx].append(motif)
 
         if len(["Empty Cluster" for cluster in clusters if len(cluster) == 0]) != 0:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))

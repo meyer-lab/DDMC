@@ -19,7 +19,7 @@ def kmeansPLSR_tuning(X, Y):
     for nn in range(2, 16):
         param_grid.append(dict(kmeans__n_clusters=[nn], plsr__n_components=list(np.arange(1, nn + 1))))
 
-    grid = GridSearchCV(kmeansPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error")
+    grid = GridSearchCV(kmeansPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {
@@ -40,7 +40,7 @@ def MSclusPLSR_tuning(X, info, Y):
     for nn in range(2, 11):
         param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0, 2.5, 5, 7.5, 10]))
 
-    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error")
+    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {
@@ -58,7 +58,7 @@ def MSclusPLSR_tuning(X, info, Y):
 
 def GridSearch_CV(model, parameters, cv, X, Y=None, scoring=None):
     """ Exhaustive search over specified parameter values for an estimator. """
-    grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring)
+    grid = GridSearchCV(model, param_grid=parameters, cv=cv, scoring=scoring, n_jobs=-1)
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     return CVresults_max
