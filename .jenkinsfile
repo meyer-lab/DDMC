@@ -20,7 +20,7 @@ pipeline {
     }
     stage('Build Notebooks') {
       steps {
-        sh 'make all -j 8'
+        sh 'make all'
         archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
       }
     }
