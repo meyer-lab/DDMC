@@ -22,10 +22,10 @@ class TestClustering(unittest.TestCase):
         distance_method = "PAM250"
         covariance_type = "diag"
         max_n_iter = 20
-        
+
         Cl_seqs, _, _, _, _ = EM_clustering(data, seqs, names, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter)
         gmm_cl, _ = gmm_initialCl_and_pvalues(ABC, 4, "diag", "Y")
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
-        #assert that EM clusters are different than GMM clusters
+        # assert that EM clusters are different than GMM clusters
         self.assertNotEqual(Cl_seqs, gmm_cl)
