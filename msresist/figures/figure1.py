@@ -66,7 +66,7 @@ def plotTimeCourse(ax, Y_cv1, Y_cv2):
     ax[1].set_title("Experiment 4")
     ax[1].plot(Y_cv2.iloc[:, 0], Y_cv2.iloc[:, 1:])
     ax[1].set_ylabel("Fold-change to t=0h")
-    ax[1].set_xlabel("Time (hours)");
+    ax[1].set_xlabel("Time (hours)")
 
 
 def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
@@ -146,13 +146,13 @@ def plotVarReplicates(ax):
     ABC = pYmotifs(ABC, ABC_names)
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
-    #Correlation of Duplicates, optionally filtering first
+    # Correlation of Duplicates, optionally filtering first
     DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
     # DupsTable = CorrCoefFilter(DupsTable)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert(DupsTable.shape[0]/2 == DupsTable_drop.shape[0])
 
-    #Stdev of Triplicates, optionally filtering first
+    # Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
@@ -179,7 +179,7 @@ def plotVarReplicates(ax):
 def plotClustergram():
     ABC = preprocessing(motifs=True, FCfilter=True, log2T=True)
     g = sns.clustermap(ABC.iloc[:, 6:], method = "single", robust=True)
-    
+
 
 #     p = g.dendrogram_row.reordered_ind
 #     corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')

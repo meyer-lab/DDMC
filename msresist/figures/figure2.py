@@ -37,7 +37,7 @@ def makeFigure():
     # blank out first axis for cartoon
 #     ax[0].axis('off')
 
-    #Cell Viability
+    # Cell Viability
     Y_cv1 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw3.csv')).iloc[:30, :11]
     Y_cv2 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw4.csv')).iloc[:29, :11]
 
@@ -52,7 +52,6 @@ def makeFigure():
     #Phosphorylation data
     ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
     ABC = preprocess_seqs(ABC, "Y")
-    
 
     header = ABC.columns
 
@@ -62,7 +61,7 @@ def makeFigure():
     #Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight)), ('plsr', PLSRegression(ncomp))])
-    
+
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     plotR2YQ2Y(ax[0], ncl, data, Y_cv)
@@ -79,6 +78,7 @@ def makeFigure():
     subplotLabel(ax)
 
     return f
+
 
 def plotR2YQ2Y(ax, ncl, centers, Y):
     Q2Y = Q2Y_across_components(centers, Y, ncl+1)
@@ -106,10 +106,10 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     groupgap = 1
 
     x1 = np.arange(len(twoC))
-    x2 = np.arange(len(threeC))+groupgap+len(twoC)
-    x3 = np.arange(len(fourC))+groupgap*2+len(twoC)+len(threeC)
-    x4 = np.arange(len(fiveC))+groupgap*3+len(twoC)+len(threeC)+len(fourC)
-    x5 = np.arange(len(sixC))+groupgap*4+len(twoC)+len(threeC)+len(fourC)+len(fiveC)
+    x2 = np.arange(len(threeC)) + groupgap + len(twoC)
+    x3 = np.arange(len(fourC)) + groupgap * 2 + len(twoC) + len(threeC)
+    x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
+    x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
 
     ax.bar(x1, twoC, width, edgecolor = 'black', color = "g")
     ax.bar(x2, threeC, width, edgecolor = 'black', color = "g")
@@ -117,9 +117,9 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.bar(x4, fiveC, width, edgecolor = "black", color = "g")
     ax.bar(x5, sixC, width, edgecolor = "black", color = "g")
 
-    comps =[]
+    comps = []
     for ii in range(2, 7):
-        comps.append(list(np.arange(1, ii+1)))
+        comps.append(list(np.arange(1, ii + 1)))
     flattened = [nr for cluster in comps for nr in cluster]
 
     ax.set_xticks(np.concatenate((x1,x2,x3,x4,x5)))
@@ -178,16 +178,17 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_):
     ax[0].set_ylabel('Principal Component 2')
     ax[0].axhline(y=0, color='0.25', linestyle='--')
     ax[0].axvline(x=0, color='0.25', linestyle='--')
+
     spacer = 0.5
     ax[0].set_xlim([(-1*max(PC1_scores))-spacer, max(PC1_scores)+spacer])
     ax[0].set_ylim([(-1*max(PC2_scores))-spacer, max(PC2_scores)+spacer])
 
-    #Loadings
-    numbered=[]
-    list(map(lambda v: numbered.append(str(v+1)), range(ncl)))
+    # Loadings
+    numbered = []
+    list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
     for i, txt in enumerate(numbered):
         ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-    ax[1].annotate("Cell Viability", (PC1_yload+0.05, PC2_yload-0.05))
+    ax[1].annotate("Cell Viability", (PC1_yload + 0.05, PC2_yload - 0.05))
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].scatter(PC1_yload, PC2_yload, color='#000000', marker='D', label='Cell Viability')
     ax[1].set_title('PLSR Model Loadings (Averaged Clusters)')
@@ -205,9 +206,9 @@ def plotclusteraverages(ax, X, model_plsr, colors_, mixed=True):
     if not mixed:
         centers = model_plsr.named_steps.kmeans.transform(X.iloc[:, 6:].T).T
     for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i,:], label = "cluster "+str(i+1), color = colors_[i])
+        ax.plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i])
     ax.legend()
-    
+
     ax.set_xticks(np.arange(centers.shape[1]))
     ax.set_xticklabels(X.columns[6:], rotation=70, rotation_mode="anchor")
     ax.set_ylabel("normalized signal")
