@@ -179,6 +179,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_label, center_label, DoS_label):
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
+
 def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs):
     """ Do the sequence assignment. """
     scores = []
@@ -261,6 +262,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
     return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
+
 
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.

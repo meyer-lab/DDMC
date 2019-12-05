@@ -55,6 +55,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
 
     return ABC[merging_indices + list(filesin[0].columns[3:13])]
 
+
 def MergeDfbyMean(X, values, indices):
     """ Compute mean across duplicates. """
     return pd.pivot_table(X, values=values, index=indices, aggfunc=np.mean)
