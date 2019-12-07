@@ -1,5 +1,6 @@
+NOTEBOOKS ?= $(wildcard *.ipynb)
 
-all: figure1.svg figure2.svg figure3.svg figure4.svg
+all: figure1.svg figure2.svg figure3.svg figure4.svg $(NOTEBOOKS:%.ipynb=%.pdf)
 
 # Figure rules
 figure%.svg: genFigure.py msresist/figures/figure%.py
@@ -18,5 +19,8 @@ testprofile:
 testcover:
 	pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
+%.pdf: %.ipynb
+	jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
+
 clean:
-	rm figure*.svg
+	rm -f *.svg *.pdf

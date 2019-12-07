@@ -45,7 +45,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
         ABC = VFilter(ABC, merging_indices)
         merging_indices += ["r2_Std", "BioReps"]
 
-    ABC = MergeDfbyMean(ABC.copy(), ABC.iloc[3:13], merging_indices).reset_index()[merging_indices[:3]+list(filesin[0].columns[3:13])+merging_indices[3:]]
+    ABC = MergeDfbyMean(ABC.copy(), ABC.iloc[3:13], merging_indices).reset_index()[merging_indices[:3] + list(filesin[0].columns[3:13]) + merging_indices[3:]]
 
     if FCfilter:
         ABC = FoldChangeFilter(ABC)
@@ -53,8 +53,7 @@ def preprocessing(A_r=True, B_r=True, C_r=True, motifs=False, Vfilter=False, FCf
     if not log2T:
         ABC = LinearFoldChange(ABC)
 
-    return ABC[merging_indices+list(filesin[0].columns[3:13])]
-
+    return ABC[merging_indices + list(filesin[0].columns[3:13])]
 
 def MergeDfbyMean(X, values, indices):
     """ Compute mean across duplicates. """
@@ -108,16 +107,16 @@ def VFilter(ABC, merging_indices):
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
-    NonRecTable = NonRecTable.assign(BioReps=list("1"*NonRecTable.shape[0]))
-    NonRecTable = NonRecTable.assign(r2_Std=list(["NA"]*NonRecTable.shape[0]))
+    NonRecTable = NonRecTable.assign(BioReps=list("1" * NonRecTable.shape[0]))
+    NonRecTable = NonRecTable.assign(r2_Std=list(["NA"] * NonRecTable.shape[0]))
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(DupsTable, DupsTable.iloc[3:13], list(merging_indices)+["r2_Std"])
-    DupsTable = DupsTable.assign(BioReps=list("2"*DupsTable.shape[0])).reset_index()
+    DupsTable = MergeDfbyMean(DupsTable, DupsTable.iloc[3:13], list(merging_indices) + ["r2_Std"])
+    DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(merging_indices)+["BioReps"])
+    TripsTable = TripsMeanAndStd(StdPeptides, list(merging_indices) + ["BioReps"])
     TripsTable = FilterByStdev(TripsTable)
 
 #         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
