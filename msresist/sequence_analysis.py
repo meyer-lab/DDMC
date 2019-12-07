@@ -182,12 +182,12 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
 
 
 def e_step(X, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, pYTS):
-    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM and 
+    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM and
     averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact
     that here we start with all sequences. Include ThreadPoolExecutor."""
     return "hello"
 #     if distance_method == "Binomial":
-#         for j, motif in enumerate(X):            
+#         for j, motif in enumerate(X):
 
 
 def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
