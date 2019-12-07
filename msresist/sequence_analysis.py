@@ -231,7 +231,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
-        print(n_iter)
         labels, futuress = [], []
         clusters = [[] for i in range(ncl)]
 
@@ -263,7 +262,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
 
         if DictMotifToCluster == store_Dicts[-1]:
-            print("convergence has been reached at iteration %s" % n_iter)
             if GMMweight == 0:
                 assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())]
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
@@ -311,8 +309,8 @@ def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
-    gmmpval = pd.DataFrame(np.log(1 - gmm.predict_proba(X.iloc[:, 6:]))).replace({-float('Inf'): float(10**(-40))})
-    gmmprob = pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:]) * 100)
+    gmmpval = pd.DataFrame(np.log(1 - pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])).replace({float(1) : float(0.9999999999999)})))
+    gmmprob = pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])) * 100
     return init_clusters, gmmpval, gmmprob
 
 
