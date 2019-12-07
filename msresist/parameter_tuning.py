@@ -40,7 +40,7 @@ def MSclusPLSR_tuning(X, info, Y):
     for nn in range(2, 11):
         param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0, 2.5, 5, 7.5, 10]))
 
-    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1) #Set to -1 after fixing clustering's class predict and score
+    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)  # Set to -1 after fixing clustering's class predict and score
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {

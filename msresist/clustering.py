@@ -80,7 +80,7 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.cl_seqs, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_ , self.bg_pwm_= EM_clustering(X, self.info, 
+        self.cl_seqs, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_, self.bg_pwm_ = EM_clustering(X, self.info,
                                                                                                                    self.ncl, self.GMMweight, self.pYTS, self.distance_method,
                                                                                                                    self.covariance_type, self.max_n_iter)
         return self
@@ -112,13 +112,11 @@ class MassSpecClustering(BaseEstimator):
         _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.pYTS)
         return np.mean(scores)
 
-
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
                 "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method,
                 "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
-
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
