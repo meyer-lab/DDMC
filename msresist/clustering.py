@@ -80,45 +80,45 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.info,
-                                                                                          self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
-
+        self.cl_seqs, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_ , self.bg_pwm_= EM_clustering(X, self.info, 
+                                                                                                                   self.ncl, self.GMMweight, self.pYTS, self.distance_method,
+                                                                                                                   self.covariance_type, self.max_n_iter)
         return self
 
     def transform(self, X):
         """ calculate cluster averages. """
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs", "labels_", "scores_", "IC_", "n_iter_"])
         centers, _ = ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs", "labels_", "scores_", "IC_", "n_iter_"])
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
     def predict(self, X, _Y=None):
         """ Predict the cluster each sequence in ABC belongs to."""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-
-        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.info, self.GMMweight,
-                                           self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
-
+        check_is_fitted(self, ["cl_seqs", "labels_", "scores_", "IC_", "n_iter_"])
+        display(X)
+        raise SystemExit
+        labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.pYTS)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
-        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.info,
-                                           self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
+        check_is_fitted(self, ["cl_seqs", "labels_", "scores_", "IC_", "n_iter_"])
 
+        _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.pYTS)
         return np.mean(scores)
+
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
                 "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method,
                 "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
+
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
