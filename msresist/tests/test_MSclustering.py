@@ -22,7 +22,7 @@ class TestClustering(unittest.TestCase):
         covariance_type = "diag"
         max_n_iter = 20
 
-        Cl_seqs, _, _, _, _ = EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter)
+        Cl_seqs, _, _, _, _, _, _ = EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter)
 
         gmm_cl, _, _ = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
