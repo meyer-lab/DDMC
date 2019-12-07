@@ -54,10 +54,11 @@ def makeFigure():
     # Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight)), ('plsr', PLSRegression(ncomp))])
+    centers = MSC.transform(data)
 
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
-    plotR2YQ2Y(ax[0], ncl, data, Y_cv)
+    plotR2YQ2Y(ax[0], ncl, centers, Y_cv)
 
     plotMixedClusteringPLSR_GridSearch(ax[1], data, info, Y_cv)
 
@@ -140,7 +141,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size, n_jobs=-1)))
     Y = list(Y)
     ax.scatter(Y, Y_predictions)
     ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")

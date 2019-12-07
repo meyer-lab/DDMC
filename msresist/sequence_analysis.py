@@ -181,7 +181,16 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs, pYTS):
+def e_step(X, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, pYTS):
+    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM and 
+    averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact
+    that here we start with all sequences. Include ThreadPoolExecutor."""
+    return "hello"
+#     if distance_method == "Binomial":
+#         for j, motif in enumerate(X):            
+
+
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
     """ Do the sequence assignment. """
     scores = []
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
@@ -189,8 +198,8 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, "gmm_scre is either NaN or -Inf"
-            freq_matrix = frequencies(Cl_seqs[z])
-            BPM = BinomialMatrix(len(Cl_seqs[z]), freq_matrix, bg_pwm)
+            freq_matrix = frequencies(cl_seqs[z])
+            BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
             BPM_score = MeanBinomProbs(BPM, motif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
@@ -199,7 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs,
     if distance_method == "PAM250":
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
-            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in Cl_seqs[z]]
+            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in cl_seqs[z]]
             PAM250_score = np.mean(PAM250_scores)
             scores.append(PAM250_score + gmm_score)
         score, idx = max((score, idx) for (idx, score) in enumerate(scores))
@@ -215,7 +224,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
 
     # Initialize with gmm clusters and generate gmm pval matrix
-    Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+    cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
 
     if distance_method == "Binomial":
         gmmp = gmm_pvals
@@ -236,12 +245,12 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
         clusters = [[] for i in range(ncl)]
 
         store_Dicts.append(DictMotifToCluster)
-        store_Clseqs.append(Cl_seqs)
+        store_Clseqs.append(cl_seqs)
         DictMotifToCluster = defaultdict(list)
         DictScore = defaultdict(list)
 
         for j, motif in enumerate(Allseqs):
-            futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs, pYTS))
+            futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS))
 
         for j, motif in enumerate(Allseqs):
             scores, score, idx = futuress[j].result()
@@ -252,27 +261,27 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
 
         if False in [len(sublist) > 0 for sublist in clusters]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-            assert Cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
-            assert False not in [len(sublist) > 0 for sublist in Cl_seqs]
+            cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
+            assert False not in [len(sublist) > 0 for sublist in cl_seqs]
             continue
 
         # Update Clusters with re-assignments
-        Cl_seqs = clusters
+        cl_seqs = clusters
 
-        assert isinstance(Cl_seqs[0][0], Seq), ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
+        assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
         if DictMotifToCluster == store_Dicts[-1]:
             if GMMweight == 0:
                 assert False not in [len(set(sublist)) == 1 for sublist in list(DictMotifToCluster.values())]
-            ICs = [InformationContent(seqs) for seqs in Cl_seqs]
-            Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-            return Cl_seqs, np.array(labels), scores, ICs, n_iter
+            ICs = [InformationContent(seqs) for seqs in cl_seqs]
+            cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
+            return cl_seqs, np.array(labels), scores, ICs, n_iter, gmmp, bg_pwm
 
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
-    ICs = [InformationContent(seqs) for seqs in Cl_seqs]
-    Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
-    return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
+    ICs = [InformationContent(seqs) for seqs in cl_seqs]
+    cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
+    return cl_seqs, np.array(labels), store_scores, ICs, n_iter, gmmp, bg_pwm
 
     def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
         X = copy.deepcopy(clusters)
