@@ -180,6 +180,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
+
 def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, Cl_seqs, pYTS):
     """ Do the sequence assignment. """
     scores = []
@@ -250,22 +251,22 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             DictMotifToCluster[motif].append(idx)
             DictScore[motif].append(scores[idx])
 
-        if False in [len(sublist)>0 for sublist in clusters]:
+        if False in [len(sublist) > 0 for sublist in clusters]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             Cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
             assert Cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
-            assert False not in [len(sublist)>0 for sublist in Cl_seqs]
+            assert False not in [len(sublist) > 0 for sublist in Cl_seqs]
             continue
 
-        #Update Clusters with re-assignments
+        # Update Clusters with re-assignments
         Cl_seqs = clusters
 
-        assert type(Cl_seqs[0][0]) == Seq, ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
+        assert isinstance(Cl_seqs[0][0], Seq), ("Cl_seqs not Bio.Seq.Seq, check: %s" % Cl_seqs)
 
         if DictMotifToCluster == store_Dicts[-1]:
             print("convergence has been reached at iteration %s" % n_iter)
             if GMMweight == 0:
-                assert False not in [len(set(sublist))==1 for sublist in list(DictMotifToCluster.values())]
+                assert False not in [len(set(sublist)) == 1 for sublist in list(DictMotifToCluster.values())]
             ICs = [InformationContent(seqs) for seqs in Cl_seqs]
             Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
             return Cl_seqs, np.array(labels), scores, ICs, n_iter
@@ -274,7 +275,6 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     ICs = [InformationContent(seqs) for seqs in Cl_seqs]
     Cl_seqs = [[str(seq) for seq in cluster] for cluster in Cl_seqs]
     return Cl_seqs, np.array(labels), store_scores, ICs, n_iter
-
 
     def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
         X = copy.deepcopy(clusters)
@@ -285,6 +285,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
                 pop_idx = [clusters_idx.index(sublist), sublist.index(j)]
                 X[pop_idx[0]].pop(pop_idx[1])
         return X
+
 
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
