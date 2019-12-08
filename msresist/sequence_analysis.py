@@ -210,7 +210,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
 
 def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
-    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM or 
+    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM or
     averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact that here we start with either all sequences or only a test set. Include ThreadPoolExecutor."""
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
     cl_seqs = [ForegroundSeqs(cluster, pYTS) for cluster in cl_seqs]
@@ -219,11 +219,11 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
     e = ThreadPoolExecutor()
     for j, motif in enumerate(Allseqs):
         futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS))
-    
+
     for j, motif in enumerate(Allseqs):
-            score, idx = futuress[j].result()
-            labels.append(idx)
-            scores.append(score)
+        score, idx = futuress[j].result()
+        labels.append(idx)
+        scores.append(score)
     return np.array(labels), np.array(scores)
 
 
