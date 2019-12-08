@@ -181,15 +181,6 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def e_step(X, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, pYTS):
-    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM and
-    averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact
-    that here we start with all sequences. Include ThreadPoolExecutor."""
-    return "hello"
-#     if distance_method == "Binomial":
-#         for j, motif in enumerate(X):
-
-
 def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
     """ Do the sequence assignment. """
     scores = []
@@ -197,7 +188,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
     if distance_method == "Binomial":
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
-            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, "gmm_scre is either NaN or -Inf"
+            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_scre is either NaN or -Inf, motif= %s" % motif)
             freq_matrix = frequencies(cl_seqs[z])
             BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
             BPM_score = MeanBinomProbs(BPM, motif, pYTS)
@@ -215,7 +206,25 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
     assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
 
-    return scores, score, idx
+    return score, idx
+
+
+def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
+    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM or 
+    averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact that here we start with either all sequences or only a test set. Include ThreadPoolExecutor."""
+    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
+    cl_seqs = [ForegroundSeqs(cluster, pYTS) for cluster in cl_seqs]
+    labels, scores, futuress = [], [], []
+
+    e = ThreadPoolExecutor()
+    for j, motif in enumerate(Allseqs):
+        futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS))
+    
+    for j, motif in enumerate(Allseqs):
+            score, idx = futuress[j].result()
+            labels.append(idx)
+            scores.append(score)
+    return np.array(labels), np.array(scores)
 
 
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
@@ -241,7 +250,7 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
-        labels, futuress = [], []
+        labels, scores, futuress = [], [], []
         clusters = [[] for i in range(ncl)]
 
         store_Dicts.append(DictMotifToCluster)
@@ -253,11 +262,12 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
             futuress.append(e.submit(assignSeqs, ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS))
 
         for j, motif in enumerate(Allseqs):
-            scores, score, idx = futuress[j].result()
+            score, idx = futuress[j].result()
             labels.append(idx)
+            scores.append(score)
             clusters[idx].append(motif)
             DictMotifToCluster[motif].append(idx)
-            DictScore[motif].append(scores[idx])
+            DictScore[motif].append(score)
 
         if False in [len(sublist) > 0 for sublist in clusters]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
