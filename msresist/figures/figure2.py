@@ -54,7 +54,7 @@ def makeFigure():
     # Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight)), ('plsr', PLSRegression(ncomp))])
-    centers = MSC.transform(data)
+    centers = mixedCl_plsr.transform(data)
 
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
