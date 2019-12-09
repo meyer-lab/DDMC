@@ -69,7 +69,7 @@ def LinearFoldChange(X):
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 2], axis=0)
+    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 3], axis=0)
     return X
 
 

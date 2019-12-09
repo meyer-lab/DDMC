@@ -30,7 +30,7 @@ def Q2Y_across_components(X, Y, max_comps):
     Q2Ys = []
     for b in range(1, max_comps):
         plsr_model = PLSRegression(n_components=b)
-        y_pred = cross_val_predict(plsr_model, X, Y, cv=Y.size)
+        y_pred = cross_val_predict(plsr_model, X, Y, cv=Y.size, n_jobs=-1)
         Q2Ys.append(explained_variance_score(Y, y_pred))
     return Q2Ys
 
