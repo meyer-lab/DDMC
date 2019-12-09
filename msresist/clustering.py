@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 from sklearn.mixture.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from msresist.sequence_analysis import EM_clustering
+from msresist.sequence_analysis import EM_clustering, e_step
 
 
 class MyOwnKMEANS(BaseEstimator):
@@ -69,7 +69,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=20):
+    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=100000):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
@@ -80,39 +80,38 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.Cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.info,
-                                                                                          self.ncl, self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
-
+        self.cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_, self.bg_pwm_ = EM_clustering(X, self.info,
+                                                                                                                    self.ncl, self.GMMweight, self.pYTS, self.distance_method,
+                                                                                                                    self.covariance_type, self.max_n_iter)
         return self
 
     def transform(self, X):
         """ calculate cluster averages. """
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+
         centers, _ = ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
     def predict(self, X, _Y=None):
-        """ Predict the cluster each sequence in ABC belongs to."""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        """ Predict the cluster each sequence in ABC belongs to. If this estimator is gridsearched alone it
+        won't work since all sequences are passed. """
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
 
-        _, labels, _, _, _ = EM_clustering(X, self.ncl, self.info, self.GMMweight,
-                                           self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
-
+        labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["Cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
 
-        _, _, scores, _, _ = EM_clustering(X, self.ncl, self.info,
-                                           self.GMMweight, self.pYTS, self.distance_method, self.covariance_type, self.max_n_iter)
-
+        _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
         return np.mean(scores)
 
     def get_params(self, deep=True):
