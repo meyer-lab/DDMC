@@ -50,11 +50,13 @@ def makeFigure():
 
     data = ABC.iloc[:, 6:].T
     info = ABC.iloc[:, :6]
+    treatments = ABC.columns[6:]
 
     # Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method="Binomial")), ('plsr', PLSRegression(ncomp))])
-    centers = mixedCl_plsr.fit(data, Y_cv).transform(data)
+    fit = mixedCl_plsr.fit(data, Y_cv)
+    centers = mixedCl_plsr.named_steps.mixedCl.transform(data)
 
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
@@ -64,7 +66,7 @@ def makeFigure():
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], mixedCl_plsr, data, Y_cv, ncl, colors_)
+    plotScoresLoadings(ax[3:5], fit, centers, Y_cv, ncl, colors_, treatments)
 
     plotclusteraverages(ax[5], ABC, mixedCl_plsr, colors_)
 
@@ -133,7 +135,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
     width = 0.20
     ax.bar(np.arange(ncl_GMMweight_ncomp.shape[0]), np.abs(ncl_GMMweight_ncomp.iloc[:, 3]), width, edgecolor='black', color='g')
     ax.set_xticks(np.arange(ncl_GMMweight_ncomp.shape[0]))
-    ax.set_xticklabels(labels, fontsize=4)
+    ax.set_xticklabels(labels, fontsize=7)
     ax.set_xlabel("Number of Clusters | GMM Weight")
     ax.set_ylabel("Mean-Squared Error (MSE)")
     ax.set_title("Top20 Hyperparameter Combinations (N Components=2)")
@@ -157,15 +159,15 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_):
-    X_scores, Y_scores = mixedCl_plsr.fit_transform(X, Y)
+def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_, treatments):
+    X_scores, _ = mixedCl_plsr.named_steps.plsr.transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = mixedCl_plsr.named_steps.plsr.x_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.x_loadings_[:, 1]
     PC1_yload, PC2_yload = mixedCl_plsr.named_steps.plsr.y_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.y_loadings_[:, 1]
 
     # Scores
     ax[0].scatter(PC1_scores, PC2_scores)
-    for j, txt in enumerate(list(X.index)):
+    for j, txt in enumerate(treatments):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
     ax[0].set_title('PLSR Model Scores')
     ax[0].set_xlabel('Principal Component 1')
@@ -190,6 +192,8 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_):
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
+
+    spacer = 5
     ax[1].set_xlim([(-1 * max(list(PC1_xload) + list(PC1_yload))) - spacer, max(list(PC1_xload) + list(PC1_yload)) + spacer])
     ax[1].set_ylim([(-1 * max(list(PC2_xload) + list(PC2_yload))) - spacer, max(list(PC2_xload) + list(PC2_yload)) + spacer])
 
