@@ -53,8 +53,8 @@ def makeFigure():
 
     # Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
-    mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight)), ('plsr', PLSRegression(ncomp))])
-    centers = mixedCl_plsr.transform(data)
+    mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method="Binomial")), ('plsr', PLSRegression(ncomp))])
+    centers = mixedCl_plsr.fit(data, Y_cv).transform(data)
 
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
