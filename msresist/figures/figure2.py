@@ -45,7 +45,7 @@ def makeFigure():
     Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
     # Phosphorylation data
-    ABC = preprocessing(motifs=True, Vfilter=True, FCfilter=True, log2T=True)
+    ABC = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True)
     ABC = preprocess_seqs(ABC, "Y")
 
     data = ABC.iloc[:, 6:].T
