@@ -48,7 +48,8 @@ def makeFigure():
 
     plotRTKs(ax[3:7])
 
-    plotVarReplicates(ax[7:9])
+    X = preprocessing(AXLwt=True, rawdata=True)
+    plotVarReplicates(ax[7:9], X)
 
     # Add subplot labels
     subplotLabel(ax)
