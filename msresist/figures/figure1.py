@@ -47,7 +47,8 @@ def makeFigure():
     plotAveragedEndpoint(ax[2], Y_cv1, Y_cv2)
 
     plotRTKs(ax[3:7])
-
+    
+    
     plotVarReplicates(ax[7:9])
 
     # Add subplot labels
@@ -117,7 +118,7 @@ def plotAveragedEndpoint(ax, Y_cv1, Y_cv2):
 
 
 def plotRTKs(ax):
-    ABC = preprocessing()
+    ABC = preprocessing(AXLwt=True)
     header = ABC.columns
 
     EGFR = ABC[ABC["Sequence"].str.contains("SHQISLDNPDyQQDFFP")].mean()
@@ -139,11 +140,8 @@ def plotRTKs(ax):
     ax[3].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
 
 
-def plotVarReplicates(ax):
-    ABC = preprocessing(rawdata=True)
-    ABC_names = FormatName(ABC)
-    ABC["Protein"] = ABC_names
-    ABC = pYmotifs(ABC, ABC_names)
+def plotVarReplicates(ax, ABC):
+    ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     # Correlation of Duplicates, optionally filtering first
@@ -176,9 +174,9 @@ def plotVarReplicates(ax):
 
 
 # TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
-def plotClustergram():
-    ABC = preprocessing(motifs=True, FCfilter=True, log2T=True)
+def plotClustergram(ABC, title):
     g = sns.clustermap(ABC.iloc[:, 6:], method="single", robust=True)
+    g.fig.suptitle(title, fontsize=17)
 
 
 #     p = g.dendrogram_row.reordered_ind
