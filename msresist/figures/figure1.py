@@ -47,8 +47,7 @@ def makeFigure():
     plotAveragedEndpoint(ax[2], Y_cv1, Y_cv2)
 
     plotRTKs(ax[3:7])
-    
-    
+
     plotVarReplicates(ax[7:9])
 
     # Add subplot labels
