@@ -13,7 +13,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
 
-def preprocessing(AXLwt=False, Axlmutants_Erl=False, Axlmutants_Erl_F154=False, C_r=False, motifs=False, Vfilter=False, FCfilter=False, log2T=False, rawdata=False):
+def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=False, motifs=False, Vfilter=False, FCfilter=False, log2T=False, rawdata=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
@@ -25,9 +25,9 @@ def preprocessing(AXLwt=False, Axlmutants_Erl=False, Axlmutants_Erl_F154=False, 
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/20180817_JG_AM_TMT10plex_R1_psms_raw.csv"), header=0))
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv"), header=0))
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/CombinedBR3_TR1&2_raw.csv"), header=0))
-    if Axlmutants_Erl:
+    if Axlmuts_Erl:
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_unstim_BR1_raw.csv"), header=0))
-    if Axlmutants_Erl_F154:
+    if Axlmuts_ErlF154:
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_ActivatingAb_BR1_raw.csv"), header=0))
 
     ABC = MeanCenter(Log2T(pd.concat(filesin)))
