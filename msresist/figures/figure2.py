@@ -48,9 +48,9 @@ def makeFigure():
     ABC = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True)
     ABC = preprocess_seqs(ABC, "Y")
 
-    data = ABC.iloc[:, 6:].T
-    info = ABC.iloc[:, :6]
-    treatments = ABC.columns[6:]
+    data = ABC.iloc[:, 7:].T
+    info = ABC.iloc[:, :7]
+    treatments = ABC.columns[7:]
 
     # Set up model pipeline
     ncl, GMMweight, ncomp = 2, 2.5, 2
@@ -65,9 +65,9 @@ def makeFigure():
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, Y_cv, ncl, colors_, treatments)
+    plotScoresLoadings(ax[3:5], fit, centers, Y_cv, ncl, treatments)
 
-    plotclusteraverages(ax[5], ABC, mixedCl_plsr, colors_)
+    plotclusteraverages(ax[5], ABC, mixedCl_plsr, ncl)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -202,9 +202,9 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
 def plotclusteraverages(ax, X, model_plsr, ncl, mixed=True):
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
     if mixed:
-        centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 6:].T).T
+        centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 7:].T).T
     if not mixed:
-        centers = model_plsr.named_steps.kmeans.transform(X.iloc[:, 6:].T).T
+        centers = model_plsr.named_steps.kmeans.transform(X.iloc[:, 7:].T).T
     for i in range(centers.shape[0]):
         ax.plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i])
     ax.legend()

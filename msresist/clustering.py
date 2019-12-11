@@ -135,11 +135,12 @@ def ClusterAverages(X, labels):
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
         if X.shape[1] > 11:
-            dict_clustermembers["Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
-            dict_clustermembers["seqs_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
-            dict_clustermembers["UniprotAcc_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
-            dict_clustermembers["pos_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 3])
-            dict_clustermembers["r2/Std_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 4])
-            dict_clustermembers["BioReps_Cluster_" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 5])
+            dict_clustermembers["Prot_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
+            dict_clustermembers["abbv_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 4])
+            dict_clustermembers["seqs_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
+            dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
+            dict_clustermembers["Pos_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 3])
+            dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 5])
+            dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 6])
 
     return pd.DataFrame(centers).T, pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
