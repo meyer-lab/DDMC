@@ -32,17 +32,17 @@ def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=Fal
 
     ABC = MeanCenter(Log2T(pd.concat(filesin)))
 
-    merging_indices = list(ABC.columns[:3])
-
-    ABC_names = FormatName(ABC)
-    ABC["Protein"] = ABC_names
+    longnames, shortnames = FormatName(ABC)
+    ABC["Protein"] = longnames
+    ABC = ABC.assign(Abbv=shortnames)
+    merging_indices = list(ABC.columns[:3]) + [ABC.columns[-1]]
 
     if rawdata:
         return ABC
 
     if motifs:
-        ABC = pYmotifs(ABC, ABC_names)
-        merging_indices = list(ABC.columns[:3]) + [ABC.columns[-1]]
+        ABC = pYmotifs(ABC, longnames)
+        merging_indices = list(ABC.columns[:3]) + list(ABC.columns[-2:])
 
     if Vfilter:
         ABC = VFilter(ABC, merging_indices)
@@ -66,13 +66,13 @@ def MergeDfbyMean(X, values, indices):
 
 def LinearFoldChange(X):
     """ Convert to linear fold-change from log2 mean-centered. """
-    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 3]), axis=0)
+    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 4]), axis=0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 3], axis=0)
+    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 4], axis=0)
     return X
 
 

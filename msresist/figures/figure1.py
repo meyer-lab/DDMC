@@ -179,7 +179,7 @@ def plotVarReplicates(ax, ABC):
 
 
 def plotClustergram(ABC, title):
-    g = sns.clustermap(ABC.iloc[:, 6:], method="single", robust=True)
+    g = sns.clustermap(ABC.iloc[:, 7:], method="single", robust=True)
     g.fig.suptitle(title, fontsize=17)
 
 
@@ -232,7 +232,7 @@ def plotpca_ScoresLoadings(ax, data):
 
     # Loadings
     for i, txt in enumerate(list(data.columns)):
-        ax[1].annotate(txt.split(";")[1].strip(), (PC1_loadings[i], PC2_loadings[i]))
+        ax[1].annotate(txt, (PC1_loadings[i], PC2_loadings[i]))
     ax[1].scatter(PC1_loadings, PC2_loadings, c=np.arange(PC1_loadings.size), cmap=colors.ListedColormap(colors_))
     ax[1].set_title('PCA Loadings')
     ax[1].set_xlabel('Principal Component 1')
@@ -252,7 +252,7 @@ def plotpca_ScoresLoadings_plotly(data, title):
     scores.columns = ["PC1", "PC2"]
 
     loadings = pd.concat([pd.DataFrame(fit.components_[0]), pd.DataFrame(fit.components_[1])], axis=1)
-    loadings.index = [i.split(";")[1].strip() for i in data.columns]
+    loadings.index = data.columns
     loadings.columns = ["PC1", "PC2"]
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))

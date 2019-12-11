@@ -29,9 +29,10 @@ def pYmotifs(ABC, ABC_names):
 
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
-    names = []
-    list(map(lambda v: names.append(v.split("OS")[0] + " ; " + v.split("GN=")[1].split(" PE")[0]), X.iloc[:, 0]))
-    return names
+    longnames, shortnames = [], []
+    list(map(lambda v: longnames.append(v.split("OS")[0].strip()), X.iloc[:, 0]))
+    list(map(lambda v: shortnames.append(v.split("GN=")[1].split(" PE")[0].strip()), X.iloc[:, 0]))
+    return longnames, shortnames
 
 
 def FormatSeq(X):
@@ -66,7 +67,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     matchedNames = []
     for i, MS_seq in enumerate(MS_seqs):
         MS_seqU = MS_seq.upper()
-        MS_name = MS_names[i].split(";")[0].strip()
+        MS_name = MS_names[i].strip()
         if MS_name in ProteomeDict and MS_seqU in ProteomeDict[MS_name]:
             matchedNames.append(MS_name)
         else:
@@ -107,7 +108,7 @@ def GeneratingKinaseMotifs(names, seqs):
                     DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
                     assert len(DoS_idx) != 0
                 uni_pos.append("Y" + str(y_idx + 1) + "-p")
-                MS_names.append(names[i])
+                MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
 
@@ -120,7 +121,7 @@ def GeneratingKinaseMotifs(names, seqs):
                 if len(pTS_idx) > 1:
                     DoS_idx = pTS_idx[1:]
                 uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p")
-                MS_names.append(names[i])
+                MS_names.append(MS_name)
                 Testseqs.append(MS_seq)
                 mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx))
 
