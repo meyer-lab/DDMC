@@ -4,11 +4,16 @@ This creates Figure 1.
 from .common import subplotLabel, getSetup
 from ..sequence_analysis import FormatName, pYmotifs
 from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
+from sklearn.decomposition import PCA
 import os
 import pandas as pd
 import numpy as np
 import scipy as sp
 import seaborn as sns
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 sns.set(color_codes=True)
 
 
@@ -173,7 +178,6 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-# TODO: Clustermap doesn't show up at the moment, because it wants a whole figure
 def plotClustergram(ABC, title):
     g = sns.clustermap(ABC.iloc[:, 6:], method="single", robust=True)
     g.fig.suptitle(title, fontsize=17)
@@ -185,3 +189,118 @@ def plotClustergram(ABC, title):
 #     ax[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=ax[1])
 #     ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=80, horizontalalignment='right')
 #     ax[1].set_title("Correlation Heatmap");
+
+
+def plotpca_explained(ax, data, ncomp):
+    explained = PCA(n_components=ncomp).fit(data).explained_variance_ratio_
+    acc_expl = []
+
+    for i, exp in enumerate(explained):
+        if i > 0:
+            exp+=acc_expl[i-1]
+            acc_expl.append(exp)
+        else:
+            acc_expl.append(exp)
+
+    ax.bar(range(ncomp), acc_expl)
+    ax.set_ylabel("% Variance Explained")
+    ax.set_xlabel("Components")
+    ax.set_xticks(range(ncomp))
+    ax.set_xticklabels([i+1 for i in range(ncomp)])
+
+
+def plotpca_ScoresLoadings(ax, data):
+    fit = PCA(n_components=2).fit(data)
+    PC1_scores, PC2_scores = fit.transform(data)[:, 0], fit.transform(data)[:, 1]
+    PC1_loadings, PC2_loadings = fit.components_[0], fit.components_[1]
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, PC1_scores.size))
+
+    # Scores
+    ax[0].scatter(PC1_scores, PC2_scores)
+    for j, txt in enumerate(list(data.index)):
+        ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
+    ax[0].set_title('PCA Scores')
+    ax[0].set_xlabel('Principal Component 1')
+    ax[0].set_ylabel('Principal Component 2')
+    ax[0].axhline(y=0, color='0.25', linestyle='--')
+    ax[0].axvline(x=0, color='0.25', linestyle='--')
+
+    spacer = 0.5
+    ax[0].set_xlim([(-1 * max(PC1_scores)) - spacer, max(PC1_scores) + spacer])
+    ax[0].set_ylim([(-1 * max(PC2_scores)) - spacer, max(PC2_scores) + spacer])
+
+    # Loadings
+    for i, txt in enumerate(list(data.columns)):
+        ax[1].annotate(txt.split(";")[1].strip(), (PC1_loadings[i], PC2_loadings[i]))
+    ax[1].scatter(PC1_loadings, PC2_loadings, c=np.arange(PC1_loadings.size), cmap=colors.ListedColormap(colors_))
+    ax[1].set_title('PCA Loadings')
+    ax[1].set_xlabel('Principal Component 1')
+    ax[1].set_ylabel('Principal Component 2')
+    ax[1].axhline(y=0, color='0.25', linestyle='--')
+    ax[1].axvline(x=0, color='0.25', linestyle='--')
+    spacer = 0.04
+    ax[1].set_xlim([(-1 * max(PC1_loadings) - spacer), (max(PC1_loadings) + spacer)])
+    ax[1].set_ylim([(-1 * max(PC2_loadings) - spacer), (max(PC2_loadings) + spacer)]);
+
+
+def plotpca_ScoresLoadings_plotly(data, title):
+    fit = PCA(n_components=2).fit(data)
+
+    scores = pd.concat([pd.DataFrame(fit.transform(data)[:, 0]), pd.DataFrame(fit.transform(data)[:, 1])], axis=1)
+    scores.index = data.index
+    scores.columns = ["PC1", "PC2"]
+
+    loadings = pd.concat([pd.DataFrame(fit.components_[0]), pd.DataFrame(fit.components_[1])], axis=1)
+    loadings.index = [i.split(";")[1].strip() for i in data.columns]
+    loadings.columns = ["PC1", "PC2"]
+
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))
+    fig.add_trace(
+        go.Scatter(
+            mode='markers+text',
+            x=scores["PC1"],
+            y=scores["PC2"],
+            text=scores.index,
+            textposition="top center",
+            textfont=dict(
+                size=10,
+                color="black"),
+            marker=dict(
+                color='blue',
+                size=8,
+                line=dict(
+                    color='black',
+                    width=1))), 
+        row=1, col=1)
+    
+    fig.add_trace(
+        go.Scatter(
+            mode='markers',
+            x=loadings["PC1"],
+            y=loadings["PC2"],
+            opacity=0.7,
+            text=loadings.index,
+            marker=dict(
+                color='crimson',
+                size=8,
+                line=dict(
+                    color='black',
+                    width=1))),
+        row=1, col=2)
+    
+    fig.update_layout(
+        height=650, 
+        width=1250, 
+        showlegend=False,
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False),
+        xaxis2=dict(showgrid=False),
+        yaxis2=dict(showgrid=False),
+        title_text=title),
+    fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
+    fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
+    fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
+    fig.update_yaxes(title_text="Principal Component 1", row=1, col=2)
+
+    fig.show()
