@@ -58,8 +58,6 @@ def makeFigure():
     fit = mixedCl_plsr.fit(data, Y_cv)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(data)
 
-    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
-
     plotR2YQ2Y(ax[0], ncl, centers, Y_cv)
 
 #     plotMixedClusteringPLSR_GridSearch(ax[1], data, info, Y_cv)
@@ -160,11 +158,13 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_, treatments):
+def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
     X_scores, _ = mixedCl_plsr.named_steps.plsr.transform(X, Y)
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     PC1_xload, PC2_xload = mixedCl_plsr.named_steps.plsr.x_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.x_loadings_[:, 1]
     PC1_yload, PC2_yload = mixedCl_plsr.named_steps.plsr.y_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.y_loadings_[:, 1]
+
+    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     # Scores
     ax[0].scatter(PC1_scores, PC2_scores)
@@ -199,7 +199,8 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, colors_, treatments):
     ax[1].set_ylim([(-1 * max(list(PC2_xload) + list(PC2_yload))) - spacer, max(list(PC2_xload) + list(PC2_yload)) + spacer])
 
 
-def plotclusteraverages(ax, X, model_plsr, colors_, mixed=True):
+def plotclusteraverages(ax, X, model_plsr, ncl, mixed=True):
+    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
     if mixed:
         centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 6:].T).T
     if not mixed:
