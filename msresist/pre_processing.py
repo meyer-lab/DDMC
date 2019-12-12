@@ -48,10 +48,10 @@ def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=Fal
         ABC = VFilter(ABC, merging_indices)
 
     ABC = MergeDfbyMean(
-                ABC.copy(), 
-                ABC.iloc[3:13], 
-                merging_indices
-                ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
+        ABC.copy(),
+        ABC.iloc[3:13],
+        merging_indices
+    ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
 
     if FCfilter:
         ABC = FoldChangeFilter(ABC)
@@ -125,16 +125,16 @@ def VFilter(ABC, merging_indices):
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"])
     TripsTable = FilterByStdev(TripsTable)
-    
+
     merging_indices += ["BioReps", "r2_Std"]
 
     ABC = pd.concat([
-                NonRecTable, 
-                DupsTable, 
-                TripsTable
-                ]
-            ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
-    
+        NonRecTable,
+        DupsTable,
+        TripsTable
+    ]
+    ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
+
     # Including non-overlapping peptides
     return ABC
 
