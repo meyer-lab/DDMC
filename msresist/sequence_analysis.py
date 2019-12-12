@@ -327,11 +327,11 @@ def pairwise_score(seq1, seq2, matrix):
 
 def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
-    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 6:])
-    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 6:]))
+    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 7:])
+    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
-    gmmpval = pd.DataFrame(np.log(1 - pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])).replace({float(1): float(0.9999999999999)})))
-    gmmprob = pd.DataFrame(gmm.predict_proba(X.iloc[:, 6:])) * 100
+    gmmpval = pd.DataFrame(np.log(1 - pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:])).replace({float(1): float(0.9999999999999)})))
+    gmmprob = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:])) * 100
     return init_clusters, gmmpval, gmmprob
 
 
