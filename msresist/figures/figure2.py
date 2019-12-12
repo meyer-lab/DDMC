@@ -210,5 +210,5 @@ def plotclusteraverages(ax, X, model_plsr, ncl, mixed=True):
     ax.legend()
 
     ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(X.columns[6:], rotation=70, rotation_mode="anchor")
+    ax.set_xticklabels(X.columns[7:], rotation=70, rotation_mode="anchor")
     ax.set_ylabel("normalized signal")
