@@ -180,11 +180,11 @@ def plotVarReplicates(ax, ABC):
 
 def plotClustergram(data, lim, title):
     g = sns.clustermap(
-        data, 
-        method="complete", 
-        cmap="bwr", 
+        data,
+        method="complete",
+        cmap="bwr",
         robust=True,
-        vmax=lim, 
+        vmax=lim,
         vmin=-lim)
     g.fig.suptitle(title, fontsize=17)
 
@@ -203,7 +203,7 @@ def plotpca_explained(ax, data, ncomp):
 
     for i, exp in enumerate(explained):
         if i > 0:
-            exp+=acc_expl[i-1]
+            exp += acc_expl[i - 1]
             acc_expl.append(exp)
         else:
             acc_expl.append(exp)
@@ -212,14 +212,14 @@ def plotpca_explained(ax, data, ncomp):
     ax.set_ylabel("% Variance Explained")
     ax.set_xlabel("Components")
     ax.set_xticks(range(ncomp))
-    ax.set_xticklabels([i+1 for i in range(ncomp)])
+    ax.set_xticklabels([i + 1 for i in range(ncomp)])
 
 
 def plotpca_ScoresLoadings(ax, data):
     fit = PCA(n_components=2).fit(data)
     PC1_scores, PC2_scores = fit.transform(data)[:, 0], fit.transform(data)[:, 1]
     PC1_loadings, PC2_loadings = fit.components_[0], fit.components_[1]
-    
+
     colors_ = cm.rainbow(np.linspace(0, 1, PC1_scores.size))
 
     # Scores
@@ -247,7 +247,7 @@ def plotpca_ScoresLoadings(ax, data):
     ax[1].axvline(x=0, color='0.25', linestyle='--')
     spacer = 0.04
     ax[1].set_xlim([(-1 * max(PC1_loadings) - spacer), (max(PC1_loadings) + spacer)])
-    ax[1].set_ylim([(-1 * max(PC2_loadings) - spacer), (max(PC2_loadings) + spacer)]);
+    ax[1].set_ylim([(-1 * max(PC2_loadings) - spacer), (max(PC2_loadings) + spacer)])
 
 
 def plotpca_ScoresLoadings_plotly(data, title, loc=False):
@@ -279,9 +279,9 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
                 size=8,
                 line=dict(
                     color='black',
-                    width=1))), 
+                    width=1))),
         row=1, col=1)
-    
+
     fig.add_trace(
         go.Scatter(
             mode='markers',
@@ -296,10 +296,10 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
                     color='black',
                     width=1))),
         row=1, col=2)
-    
+
     fig.update_layout(
-        height=650, 
-        width=1250, 
+        height=650,
+        width=1250,
         showlegend=False,
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
