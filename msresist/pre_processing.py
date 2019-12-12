@@ -35,20 +35,23 @@ def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=Fal
     longnames, shortnames = FormatName(ABC)
     ABC["Protein"] = longnames
     ABC = ABC.assign(Abbv=shortnames)
-    merging_indices = list(ABC.columns[:3]) + [ABC.columns[-1]]
+    merging_indices = list(ABC.columns[:3]) + ["Abbv"]
 
     if rawdata:
         return ABC
 
     if motifs:
         ABC = pYmotifs(ABC, longnames)
-        merging_indices = list(ABC.columns[:3]) + list(ABC.columns[-2:])
+        merging_indices += ["Position"]
 
     if Vfilter:
         ABC = VFilter(ABC, merging_indices)
-        merging_indices += ["r2_Std", "BioReps"]
 
-    ABC = MergeDfbyMean(ABC.copy(), ABC.iloc[3:13], merging_indices).reset_index()[merging_indices[:3] + list(filesin[0].columns[3:13]) + merging_indices[3:]]
+    ABC = MergeDfbyMean(
+                ABC.copy(), 
+                ABC.iloc[3:13], 
+                merging_indices
+                ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
 
     if FCfilter:
         ABC = FoldChangeFilter(ABC)
@@ -66,13 +69,13 @@ def MergeDfbyMean(X, values, indices):
 
 def LinearFoldChange(X):
     """ Convert to linear fold-change from log2 mean-centered. """
-    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 4]), axis=0)
+    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 3]), axis=0)
     return X
 
 
 def FoldChangeToControl(X):
     """ Convert to fold-change to control. """
-    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 4], axis=0)
+    X.iloc[:, 3:13] = X.iloc[:, 3:13].div(X.iloc[:, 3], axis=0)
     return X
 
 
@@ -112,19 +115,27 @@ def VFilter(ABC, merging_indices):
 
     NonRecTable = BuildMatrix(NonRecPeptides, ABC)
     NonRecTable = NonRecTable.assign(BioReps=list("1" * NonRecTable.shape[0]))
-    NonRecTable = NonRecTable.assign(r2_Std=list(["NA"] * NonRecTable.shape[0]))
+    NonRecTable = NonRecTable.assign(r2_Std=list(["N/A"] * NonRecTable.shape[0]))
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(DupsTable, DupsTable.iloc[3:13], list(merging_indices) + ["r2_Std"])
+    DupsTable = MergeDfbyMean(DupsTable, DupsTable.iloc[3:13], merging_indices)
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(merging_indices) + ["BioReps"])
+    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"])
     TripsTable = FilterByStdev(TripsTable)
+    
+    merging_indices += ["BioReps", "r2_Std"]
 
-#         ABC_mc = pd.concat([DupsTable, TripsTable])   # Leaving non-overlapping peptides out
-    ABC = pd.concat([NonRecTable, DupsTable, TripsTable])  # Including non-overlapping peptides
+    ABC = pd.concat([
+                NonRecTable, 
+                DupsTable, 
+                TripsTable
+                ]
+            ).reset_index()[merging_indices[:3] + list(ABC.columns[3:13]) + merging_indices[3:]]
+    
+    # Including non-overlapping peptides
     return ABC
 
 
@@ -133,9 +144,8 @@ def MapOverlappingPeptides(ABC):
     correlation, those showing up >= 3 to take the std. Those showing up 1 can be included or not in the final data set.
     Final dfs are formed by 'Name', 'Peptide', '#Recurrences'. """
     dups = pd.pivot_table(ABC, index=["Protein", "Sequence"], aggfunc="size").sort_values()
-    #     dups_counter = {i: list(dups).count(i) for i in list(dups)}
     dups = pd.DataFrame(dups).reset_index()
-    dups.columns = [ABC.columns[1], ABC.columns[0], "Recs"]
+    dups.columns = [ABC.columns[0], ABC.columns[1], "Recs"]
     NonRecPeptides = dups[dups["Recs"] == 1]
     RangePeptides = dups[dups["Recs"] == 2]
     StdPeptides = dups[dups["Recs"] >= 3]
@@ -192,7 +202,7 @@ def DupsMeanAndRange(duplicates, header):
     func_dup = {}
     for i in header[3:13]:
         func_dup[i] = np.mean, np.ptp
-    ABC_dups_avg = pd.pivot_table(duplicates, values=header[3:13], index=["Protein", "Sequence"], aggfunc=func_dup)
+    ABC_dups_avg = pd.pivot_table(duplicates, values=header[3:13], index=header[:2], aggfunc=func_dup)
     ABC_dups_avg = ABC_dups_avg.reset_index()[header]
     return ABC_dups_avg
 
@@ -218,12 +228,17 @@ def FilterByStdev(X, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
+#     display(pd.DataFrame(StdMeans))
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-    if X.columns[3][0] == "Position":
-        Means = pd.concat([X.iloc[:, :5], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+#     display(Stds)
+#     display(pd.DataFrame(Xidx))
+    if "Position" in X.columns:
+        Means = pd.concat([X.iloc[:, :6], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     else:
-        Means = pd.concat([X.iloc[:, :4], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
-    Means.columns = Means.iloc[Xidx, :].columns.droplevel(1)
+        Means = pd.concat([X.iloc[:, :5], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    Means = Means.iloc[Xidx, :]
+    Means.columns = Means.columns.droplevel(1)
+    StdMeans = pd.DataFrame(StdMeans).iloc[Xidx, :]
     return Means.assign(r2_Std=StdMeans)
 
 
