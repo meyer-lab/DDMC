@@ -178,8 +178,14 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-def plotClustergram(ABC, title):
-    g = sns.clustermap(ABC.iloc[:, 7:], method="single", robust=True)
+def plotClustergram(data, lim, title):
+    g = sns.clustermap(
+        data, 
+        method="complete", 
+        cmap="bwr", 
+        robust=True,
+        vmax=lim, 
+        vmin=-lim)
     g.fig.suptitle(title, fontsize=17)
 
 
@@ -244,7 +250,7 @@ def plotpca_ScoresLoadings(ax, data):
     ax[1].set_ylim([(-1 * max(PC2_loadings) - spacer), (max(PC2_loadings) + spacer)]);
 
 
-def plotpca_ScoresLoadings_plotly(data, title):
+def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fit = PCA(n_components=2).fit(data)
 
     scores = pd.concat([pd.DataFrame(fit.transform(data)[:, 0]), pd.DataFrame(fit.transform(data)[:, 1])], axis=1)
@@ -254,7 +260,9 @@ def plotpca_ScoresLoadings_plotly(data, title):
     loadings = pd.concat([pd.DataFrame(fit.components_[0]), pd.DataFrame(fit.components_[1])], axis=1)
     loadings.index = data.columns
     loadings.columns = ["PC1", "PC2"]
-
+    if loc:
+        loadings = loadings.set_index(data.columns)
+        print(loadings.loc[loc])
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))
     fig.add_trace(
         go.Scatter(
@@ -301,6 +309,6 @@ def plotpca_ScoresLoadings_plotly(data, title):
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
     fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
-    fig.update_yaxes(title_text="Principal Component 1", row=1, col=2)
+    fig.update_yaxes(title_text="Principal Component 2", row=1, col=2)
 
     fig.show()
