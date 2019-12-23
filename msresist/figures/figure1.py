@@ -188,7 +188,7 @@ def plotClustergram(data, title, lim=False, robust=True):
         vmin=-lim)
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
-    ax.set_ylabel("");
+    ax.set_ylabel("")
 
 
 #     p = g.dendrogram_row.reordered_ind
