@@ -178,12 +178,12 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-def plotClustergram(data, lim, title):
+def plotClustergram(data, title, lim=False, robust=True):
     g = sns.clustermap(
         data,
         method="complete",
         cmap="bwr",
-        robust=True,
+        robust=robust,
         vmax=lim,
         vmin=-lim)
     g.fig.suptitle(title, fontsize=17)
