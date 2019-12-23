@@ -116,7 +116,7 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
     except BaseException:
         print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
         raise
-    
+
     return pos, mappedMotif
 
 
