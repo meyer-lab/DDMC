@@ -75,59 +75,71 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     return matchedNames
 
 
+def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
+    """ For a given MS peptide, finds it in the ProteomeDict, and maps the +/-5 AA from the p-site, accounting
+    for peptides phosphorylated multiple times concurrently. """
+    MS_seqU = MS_seq.upper()
+    MS_name = protnames[i]
+    try:
+        UP_seq = ProteomeDict[MS_name]
+        assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq
+        assert MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))], \
+            "check " + MS_name + " with seq " + MS_seq
+        regexPattern = re.compile(MS_seqU)
+        MatchObs = list(regexPattern.finditer(UP_seq))
+        if "y" in MS_seq:
+            pY_idx = list(re.compile("y").finditer(MS_seq))
+            assert len(pY_idx) != 0
+            center_idx = pY_idx[0].start()
+            y_idx = center_idx + MatchObs[0].start()
+            DoS_idx = None
+            if len(pY_idx) > 1:
+                DoS_idx = pY_idx[1:]
+                assert len(DoS_idx) != 0
+            elif "t" in MS_seq or "s" in MS_seq:
+                DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
+                assert len(DoS_idx) != 0
+            mappedMotif = makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx)
+            pos = "Y" + str(y_idx + 1) + "-p"
+
+        if "y" not in MS_seq:
+            pTS_idx = list(re.compile("t|s").finditer(MS_seq))
+            assert len(pTS_idx) != 0
+            center_idx = pTS_idx[0].start()
+            ts_idx = center_idx + MatchObs[0].start()
+            DoS_idx = None
+            if len(pTS_idx) > 1:
+                DoS_idx = pTS_idx[1:]
+            mappedMotif = makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx)
+            pos = str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p"
+
+    except BaseException:
+        print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
+        raise
+
+    return pos, mappedMotif
+
+
 def GeneratingKinaseMotifs(names, seqs):
-    """ Generates phosphopeptide motifs accounting for doubly phospho-peptides. """
+    """ Main function to generate motifs using 'findmotif' in parallel. """
     motif_size = 5
     proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, mapped_motifs, uni_pos = [], [], []
-    Allseqs, Testseqs = [], []
+    Allseqs, Testseqs, futuress = [], [], []
+
+    e = ThreadPoolExecutor()
+    for i, MS_seq in enumerate(seqs):
+        futuress.append(e.submit(findmotif, MS_seq, protnames, ProteomeDict, motif_size, i))
 
     for i, MS_seq in enumerate(seqs):
-        MS_seqU = MS_seq.upper()
-        MS_name = protnames[i]
-        try:
-            UP_seq = ProteomeDict[MS_name]
-            assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq
-            assert MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))], \
-                "check " + MS_name + " with seq " + MS_seq
-            Allseqs.append(MS_seq)
-            regexPattern = re.compile(MS_seqU)
-            MatchObs = list(regexPattern.finditer(UP_seq))
-            if "y" in MS_seq:
-                pY_idx = list(re.compile("y").finditer(MS_seq))
-                assert len(pY_idx) != 0
-                center_idx = pY_idx[0].start()
-                y_idx = center_idx + MatchObs[0].start()
-                DoS_idx = None
-                if len(pY_idx) > 1:
-                    DoS_idx = pY_idx[1:]
-                    assert len(DoS_idx) != 0
-                elif "t" in MS_seq or "s" in MS_seq:
-                    DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
-                    assert len(DoS_idx) != 0
-                uni_pos.append("Y" + str(y_idx + 1) + "-p")
-                MS_names.append(MS_name)
-                Testseqs.append(MS_seq)
-                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx))
-
-            if "y" not in MS_seq:
-                pTS_idx = list(re.compile("t|s").finditer(MS_seq))
-                assert len(pTS_idx) != 0
-                center_idx = pTS_idx[0].start()
-                ts_idx = center_idx + MatchObs[0].start()
-                DoS_idx = None
-                if len(pTS_idx) > 1:
-                    DoS_idx = pTS_idx[1:]
-                uni_pos.append(str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p")
-                MS_names.append(MS_name)
-                Testseqs.append(MS_seq)
-                mapped_motifs.append(makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx))
-
-        except BaseException:
-            print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
-            raise
+        pos, mappedMotif = futuress[i].result()
+        Allseqs.append(MS_seq)
+        MS_names.append(protnames[i])
+        Testseqs.append(MS_seq)
+        uni_pos.append(pos)
+        mapped_motifs.append(mappedMotif)
 
     li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
     if li_dif:
