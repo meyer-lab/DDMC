@@ -178,15 +178,17 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-def plotClustergram(data, lim, title):
+def plotClustergram(data, title, lim=False, robust=True):
     g = sns.clustermap(
         data,
         method="complete",
         cmap="bwr",
-        robust=True,
+        robust=robust,
         vmax=lim,
         vmin=-lim)
     g.fig.suptitle(title, fontsize=17)
+    ax = g.ax_heatmap
+    ax.set_ylabel("")
 
 
 #     p = g.dendrogram_row.reordered_ind
@@ -251,6 +253,8 @@ def plotpca_ScoresLoadings(ax, data):
 
 
 def plotpca_ScoresLoadings_plotly(data, title, loc=False):
+    """ Interactive PCA plot. Note that this works best by pre-defining the dataframe's
+    indices which will serve as labels for each dot in the plot. """
     fit = PCA(n_components=2).fit(data)
 
     scores = pd.concat([pd.DataFrame(fit.transform(data)[:, 0]), pd.DataFrame(fit.transform(data)[:, 1])], axis=1)
@@ -260,8 +264,8 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     loadings = pd.concat([pd.DataFrame(fit.components_[0]), pd.DataFrame(fit.components_[1])], axis=1)
     loadings.index = data.columns
     loadings.columns = ["PC1", "PC2"]
+
     if loc:
-        loadings = loadings.set_index(data.columns)
         print(loadings.loc[loc])
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))
     fig.add_trace(
@@ -288,7 +292,7 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
             x=loadings["PC1"],
             y=loadings["PC2"],
             opacity=0.7,
-            text=loadings.index,
+            text=["Protein: " + loadings.index[i][0] + "  Pos: " + loadings.index[i][1] for i in range(len(loadings.index))],
             marker=dict(
                 color='crimson',
                 size=8,
