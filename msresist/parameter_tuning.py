@@ -43,7 +43,7 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
                                plsr__n_components=list(np.arange(1, nn + 1))))
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
-    print("Check")
+#     print("Check")
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {
