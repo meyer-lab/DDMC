@@ -152,8 +152,8 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.set_title("Correlation Measured vs Predicted")
     ax.set_xlabel("Measured Cell Viability")
     ax.set_ylabel("Predicted Cell Viability")
-    ax.set_xlim([1, np.max(Y)*1.2])
-    ax.set_ylim([1, np.max(Y)*1.2])
+    ax.set_xlim([1, np.max(Y) * 1.2])
+    ax.set_ylim([1, np.max(Y) * 1.2])
     coeff, _ = sp.stats.pearsonr(list(Y_predictions), list(Y))
     textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
@@ -208,17 +208,17 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
     plsr = PLSRegression(ncomp)
     X_scores, _ = plsr.fit_transform(X, Y)
     scores = pd.concat([pd.DataFrame(X_scores[:, 0]),
-                       pd.DataFrame(X_scores[:, 1])], axis=1)
+                        pd.DataFrame(X_scores[:, 1])], axis=1)
     scores.index = X.index
     scores.columns = ["PC1", "PC2"]
-    
+
     xloads = pd.concat([pd.DataFrame(plsr.x_loadings_[:, 0]),
-                       pd.DataFrame(plsr.x_loadings_[:, 1])], axis=1)
+                        pd.DataFrame(plsr.x_loadings_[:, 1])], axis=1)
     yloads = pd.concat([pd.DataFrame(plsr.y_loadings_[:, 0]),
-                       pd.DataFrame(plsr.y_loadings_[:, 1])], axis=1)
-    
+                        pd.DataFrame(plsr.y_loadings_[:, 1])], axis=1)
+
     xloads.index, yloads.index = X.columns, yloads.index.rename("Cell Viability")
-    xloads.columns, yloads.columns = [["PC1", "PC2"]]*2
+    xloads.columns, yloads.columns = [["PC1", "PC2"]] * 2
 
     if loc:
         print(loadings.loc[loc])

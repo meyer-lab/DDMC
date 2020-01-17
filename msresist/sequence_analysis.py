@@ -195,7 +195,7 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
 
 
 def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
-    """ Expectation step of the EM algorithm. Used for predict and score in 
+    """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
     cl_seqs = [ForegroundSeqs(cluster, pYTS) for cluster in cl_seqs]
