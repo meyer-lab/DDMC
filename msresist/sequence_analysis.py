@@ -194,37 +194,9 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
-    """ Do the sequence assignment. """
-    scores = []
-    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-    if distance_method == "Binomial":
-        for z in range(ncl):
-            gmm_score = gmmp.iloc[j, z] * GMMweight
-            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_scre is either NaN or -Inf, motif= %s" % motif)
-            freq_matrix = frequencies(cl_seqs[z])
-            BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
-            BPM_score = MeanBinomProbs(BPM, motif, pYTS)
-            scores.append(BPM_score + gmm_score)
-        score, idx = min((score, idx) for (idx, score) in enumerate(scores))
-
-    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-    if distance_method == "PAM250":
-        for z in range(ncl):
-            gmm_score = gmmp.iloc[j, z] * GMMweight
-            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in cl_seqs[z]]
-            PAM250_score = np.mean(PAM250_scores)
-            scores.append(PAM250_score + gmm_score)
-        score, idx = max((score, idx) for (idx, score) in enumerate(scores))
-
-    assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
-
-    return score, idx
-
-
 def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
-    """ The input is going to be new data and we want to use the fitted model's sequence labels to reconstruct the BPM or
-    averaged PAM250 scores per cluster to predict the new labels. It's pretty much the same as assignSeqs but accounting for the fact that here we start with either all sequences or only a test set. Include ThreadPoolExecutor."""
+    """ Expectation step of the EM algorithm. Used for predict and score in
+    clustering.py """
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
     cl_seqs = [ForegroundSeqs(cluster, pYTS) for cluster in cl_seqs]
     labels, scores, futuress = [], [], []
@@ -238,6 +210,40 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
         labels.append(idx)
         scores.append(score)
     return np.array(labels), np.array(scores)
+
+
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
+    """ Do the sequence assignment. """
+    scores = []
+    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
+    if distance_method == "Binomial":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_scre is either NaN or -Inf, motif= %s" % motif)
+            freq_matrix = frequencies(cl_seqs[z])
+            BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
+            BPM_score = MeanBinomProbs(BPM, motif, pYTS)
+#             print(motif)
+#             print(gmm_score)
+#             print(BPM_score)
+            scores.append(BPM_score + gmm_score)
+        score, idx = min((score, idx) for (idx, score) in enumerate(scores))
+#         print(scores)
+#         print(idx)
+#         display(gmmp)
+
+    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
+    if distance_method == "PAM250":
+        for z in range(ncl):
+            gmm_score = gmmp.iloc[j, z] * GMMweight
+            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) * 10 for seq in cl_seqs[z]]
+            PAM250_score = np.mean(PAM250_scores)
+            scores.append(PAM250_score + gmm_score)
+        score, idx = max((score, idx) for (idx, score) in enumerate(scores))
+
+    assert idx <= ncl - 1, ("idx out of bounds, scores list: %s" % scores)
+
+    return score, idx
 
 
 def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_type, max_n_iter):
