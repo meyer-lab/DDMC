@@ -267,6 +267,7 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
 
     if loc:
         print(loadings.loc[loc])
+
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))
     fig.add_trace(
         go.Scatter(
@@ -302,8 +303,8 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
         row=1, col=2)
 
     fig.update_layout(
-        height=650,
-        width=1250,
+        height=500,
+        width=1000,
         showlegend=False,
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
