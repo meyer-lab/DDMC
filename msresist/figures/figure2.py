@@ -6,6 +6,8 @@ import os
 import pandas as pd
 import numpy as np
 import scipy as sp
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict
 from sklearn.cross_decomposition import PLSRegression
@@ -123,8 +125,8 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y):
-    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y)
+def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y, distance_method):
+    CVresults_max, CVresults_min, best_params = MSclusPLSR_tuning(X, info, Y, distance_method)
     ncl_GMMweight_ncomp = CVresults_min.sort_values(by="Ranking").iloc[:21, :]
 
     labels = []
@@ -150,8 +152,8 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.set_title("Correlation Measured vs Predicted")
     ax.set_xlabel("Measured Cell Viability")
     ax.set_ylabel("Predicted Cell Viability")
-    ax.set_xlim([1, 18])
-    ax.set_ylim([1, 18])
+    ax.set_xlim([1, np.max(Y) * 1.2])
+    ax.set_ylim([1, np.max(Y) * 1.2])
     coeff, _ = sp.stats.pearsonr(list(Y_predictions), list(Y))
     textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
@@ -194,9 +196,98 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
 
-    spacer = 5
+    spacer = 0.5
     ax[1].set_xlim([(-1 * max(list(PC1_xload) + list(PC1_yload))) - spacer, max(list(PC1_xload) + list(PC1_yload)) + spacer])
     ax[1].set_ylim([(-1 * max(list(PC2_xload) + list(PC2_yload))) - spacer, max(list(PC2_xload) + list(PC2_yload)) + spacer])
+
+
+def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
+    """ Interactive PLSR plot. Note that this works best by pre-defining the dataframe's
+    indices which will serve as labels for each dot in the plot. """
+
+    plsr = PLSRegression(ncomp)
+    X_scores, _ = plsr.fit_transform(X, Y)
+    scores = pd.concat([pd.DataFrame(X_scores[:, 0]),
+                        pd.DataFrame(X_scores[:, 1])], axis=1)
+    scores.index = X.index
+    scores.columns = ["PC1", "PC2"]
+
+    xloads = pd.concat([pd.DataFrame(plsr.x_loadings_[:, 0]),
+                        pd.DataFrame(plsr.x_loadings_[:, 1])], axis=1)
+    yloads = pd.concat([pd.DataFrame(plsr.y_loadings_[:, 0]),
+                        pd.DataFrame(plsr.y_loadings_[:, 1])], axis=1)
+
+    xloads.index, yloads.index = X.columns, yloads.index.rename("Cell Viability")
+    xloads.columns, yloads.columns = [["PC1", "PC2"]] * 2
+
+    if loc:
+        print(loadings.loc[loc])
+
+    colors_ = ["red", "black"]
+
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("PLSR Scores", "PLSR Loadings"))
+    fig.add_trace(
+        go.Scatter(
+            mode='markers+text',
+            x=scores["PC1"],
+            y=scores["PC2"],
+            text=scores.index,
+            textposition="top center",
+            textfont=dict(
+                size=10,
+                color="black"),
+            marker=dict(
+                color='blue',
+                size=8,
+                line=dict(
+                    color='black',
+                    width=1))),
+        row=1, col=1)
+
+    fig.add_trace(
+        go.Scatter(
+            mode='markers',
+            x=xloads["PC1"],
+            y=xloads["PC2"],
+            opacity=0.7,
+            text=["Protein: " + xloads.index[i][0] + "  Pos: " + xloads.index[i][1] for i in range(len(xloads.index))],
+            marker=dict(
+                color=[colors_[i] for i in labels],
+                size=8,
+                line=dict(
+                    color='black',
+                    width=1))),
+        row=1, col=2)
+
+    fig.add_trace(
+        go.Scatter(
+            mode='markers',
+            x=yloads["PC1"],
+            y=yloads["PC2"],
+            opacity=0.7,
+            text=yloads.index.name,
+            marker=dict(
+                color='green',
+                size=10,
+                line=dict(
+                    color='black',
+                    width=1))),
+        row=1, col=2)
+
+    fig.update_layout(
+        height=500,
+        width=1000,
+        showlegend=False,
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False),
+        xaxis2=dict(showgrid=False),
+        yaxis2=dict(showgrid=False))
+    fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
+    fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
+    fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
+    fig.update_yaxes(title_text="Principal Component 2", row=1, col=2)
+
+    fig.show()
 
 
 def plotclusteraverages(ax, X, model_plsr, ncl, mixed=True):

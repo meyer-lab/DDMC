@@ -32,20 +32,24 @@ def kmeansPLSR_tuning(X, Y):
     return CVresults_max, pd.DataFrame(data=std_scores), fit.best_params_
 
 
-def MSclusPLSR_tuning(X, info, Y):
+def MSclusPLSR_tuning(X, info, Y, distance_method):
     """ Cross-validation: Simultaneous hyperparameter search. """
-    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, ncl=2)), ("plsr", PLSRegression(n_components=2))])
+    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, distance_method=distance_method, ncl=2)), ("plsr", PLSRegression(n_components=2))])
 
     param_grid = []
-    for nn in range(2, 11):
-        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__GMMweight=[0, 2.5, 5, 7.5, 10]))
+    for nn in range(2, 16):
+        param_grid.append(dict(MSclustering__ncl=[nn],
+                               MSclustering__GMMweight=[0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+                               plsr__n_components=list(np.arange(1, nn + 1))))
 
-    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=10, return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
+    grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
+#     print("Check")
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     std_scores = {
         "Ranking": CVresults_max["rank_test_score"],
         "#Clusters": CVresults_max["param_MSclustering__ncl"],
+        "#Components": CVresults_max["param_plsr__n_components"],
         "GMMweights": CVresults_max["param_MSclustering__GMMweight"],
         "mean_test_scores": CVresults_max["mean_test_score"],
         "mean_train_scores": CVresults_max["mean_train_score"],
