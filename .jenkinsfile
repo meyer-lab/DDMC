@@ -8,7 +8,7 @@ pipeline {
     stage('Clean/Setup') {
       steps {
         sh 'tlmgr update --self'
-        sh 'tlmgr install tcolorbox'
+        sh 'tlmgr install tcolorbox pgf'
         sh 'git submodule update --init --recursive && make clean'
         sh 'make venv'
       }
