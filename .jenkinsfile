@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { label 'docker' }
   options {
     timeout(time: 24, unit: 'HOURS')
     parallelsAlwaysFailFast()
@@ -14,7 +14,7 @@ pipeline {
     }
     stage('Lint') {
       steps {
-        sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
+        sh 'make pylint.log'
         recordIssues qualityGates: [[threshold: 5, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
       }
     }

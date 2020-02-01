@@ -3,24 +3,32 @@ NOTEBOOKS ?= $(wildcard *.ipynb)
 all: figure1.svg figure2.svg figure3.svg figure4.svg $(NOTEBOOKS:%.ipynb=%.pdf)
 
 # Figure rules
-figure%.svg: genFigure.py msresist/figures/figure%.py
-	./genFigure.py $*
+figure%.svg: venv genFigure.py msresist/figures/figure%.py
+	. venv/bin/activate && ./genFigure.py $*
 
-$(fdir)/figure%pdf: $(fdir)/figure%svg
-	rsvg-convert --keep-image-data -f pdf $< -o $@
+venv: venv/bin/activate
 
-test:
-	pytest
+venv/bin/activate: requirements.txt
+	test -d venv || virtualenv --system-site-packages venv
+	. venv/bin/activate && pip install -Uqr requirements.txt
+	touch venv/bin/activate
 
-testprofile:
-	python3 -m cProfile -o profile /usr/local/bin/pytest
-	gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+test: venv
+	. venv/bin/activate && pytest
 
-testcover:
-	pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
+testprofile: venv
+	. venv/bin/activate && python3 -m cProfile -o profile /usr/local/bin/pytest
+	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+
+testcover: venv
+	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
+
+pylint.log: venv
+	. venv/bin/activate && (pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")
 
 %.pdf: %.ipynb
-	jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
+	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
 	rm -f *.svg *.pdf
+	rm -rf venv
