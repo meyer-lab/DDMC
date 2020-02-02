@@ -7,8 +7,6 @@ pipeline {
   stages {
     stage('Clean/Setup') {
       steps {
-        sh 'tlmgr update --self'
-        sh 'tlmgr install tcolorbox pgf environ trimspaces parskip adjustbox collectbox ucs eurosym'
         sh 'git submodule update --init --recursive && make clean'
         sh 'make venv'
       }
