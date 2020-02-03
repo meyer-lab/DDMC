@@ -7,7 +7,6 @@ import math
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from numba import jit
 from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -316,7 +315,6 @@ def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
     return X
 
 
-@jit(nopython=True)
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
     eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
@@ -326,7 +324,6 @@ def match_AAs(pair, matrix):
         return matrix[pair]
 
 
-@jit(nopython=True)
 def pairwise_score(seq1: str, seq2: str, matrix) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
     score = 0.0
