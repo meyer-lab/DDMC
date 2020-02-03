@@ -158,14 +158,20 @@ def MapOverlappingPeptides(ABC):
 def BuildMatrix(peptides, ABC):
     """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
+    ABC = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False)
+
     corrcoefs, peptideslist, bioReps = [], [], []
     for idx, seq in enumerate(peptides.iloc[:, 1]):
         name = peptides.iloc[idx, 0]
-        pepts = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False).loc[seq, name]
-        pepts = pepts.iloc[:, 1:]
-        names = pepts.iloc[:, 0]
+
+        # Skip blank
         if name == "(blank)":
             continue
+
+        pepts = ABC.loc[seq, name]
+        pepts = pepts.iloc[:, 1:]
+        names = pepts.iloc[:, 0]
+
         if len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
