@@ -7,6 +7,7 @@ import math
 import numpy as np
 import pandas as pd
 from collections import defaultdict
+from numba import jit
 from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -29,17 +30,14 @@ def pYmotifs(ABC, ABC_names):
 
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
-    longnames, shortnames = [], []
-    list(map(lambda v: longnames.append(v.split("OS")[0].strip()), X.iloc[:, 0]))
-    list(map(lambda v: shortnames.append(v.split("GN=")[1].split(" PE")[0].strip()), X.iloc[:, 0]))
+    longnames = [v.split("OS")[0].strip() for v in X.iloc[:, 0]]
+    shortnames = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
     return longnames, shortnames
 
 
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
-    seqs = []
-    list(map(lambda v: seqs.append(v.split("-")[0]), X.iloc[:, 1]))
-    return seqs
+    return [v.split("-")[0] for v in X.iloc[:, 1]]
 
 
 def DictProteomeNameToSeq(X):
@@ -172,7 +170,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
-#     Now go through and copy over phosphorylation
+    # Now go through and copy over phosphorylation
     if DoS_idx:
         for ppIDX in DoS_idx:
             position = ppIDX.start() - center_idx
@@ -223,14 +221,8 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
             freq_matrix = frequencies(cl_seqs[z])
             BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
             BPM_score = MeanBinomProbs(BPM, motif, pYTS)
-#             print(motif)
-#             print(gmm_score)
-#             print(BPM_score)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
-#         print(scores)
-#         print(idx)
-#         display(gmmp)
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
@@ -310,19 +302,21 @@ def EM_clustering(data, info, ncl, GMMweight, pYTS, distance_method, covariance_
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), store_scores, ICs, n_iter, gmmp, bg_pwm
-
-    def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
-        X = copy.deepcopy(clusters)
-        clusters_idx = copy.deepcopy(init_clusters_idx)
-
-        for sublist in clusters_idx:
-            if j in sublist:
-                pop_idx = [clusters_idx.index(sublist), sublist.index(j)]
-                X[pop_idx[0]].pop(pop_idx[1])
-        return X
+    return cl_seqs, np.array(labels), scores, ICs, n_iter, gmmp, bg_pwm
 
 
+def DeleteQuerySeqInRefClusters(j, clusters, init_clusters_idx):
+    X = copy.deepcopy(clusters)
+    clusters_idx = copy.deepcopy(init_clusters_idx)
+
+    for sublist in clusters_idx:
+        if j in sublist:
+            pop_idx = [clusters_idx.index(sublist), sublist.index(j)]
+            X[pop_idx[0]].pop(pop_idx[1])
+    return X
+
+
+@jit(nopython=True)
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
     eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
@@ -332,14 +326,14 @@ def match_AAs(pair, matrix):
         return matrix[pair]
 
 
-def pairwise_score(seq1, seq2, matrix):
+@jit(nopython=True)
+def pairwise_score(seq1: str, seq2: str, matrix) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
-    score = 0
+    score = 0.0
     for i in range(len(seq1)):
         if i == 5:
             continue
-        pair = (seq1[i], seq2[i])
-        score += match_AAs(pair, matrix)
+        score += match_AAs((seq1[i], seq2[i]), matrix)
     return score
 
 
