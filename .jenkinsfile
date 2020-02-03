@@ -1,11 +1,16 @@
 pipeline {
-  agent any
+  agent { label 'docker' }
   options {
     timeout(time: 24, unit: 'HOURS')
     parallelsAlwaysFailFast()
   }
   stages {
-    stage('Clean') { steps { sh 'git clean -ffdx && make clean' } }
+    stage('Clean/Setup') {
+      steps {
+        sh 'git submodule update --init --recursive && make clean'
+        sh 'make venv'
+      }
+    }
     stage('Test') {
       steps {
         sh 'make testcover'
@@ -14,14 +19,20 @@ pipeline {
     }
     stage('Lint') {
       steps {
-        sh '(pylint --rcfile=.pylintrc msresist > pylint.log || echo "pylint exited with $?")'
+        sh 'make pylint.log'
         recordIssues qualityGates: [[threshold: 5, type: 'TOTAL_HIGH', unstable: true], [threshold: 60, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
       }
     }
-    stage('Build Notebooks') {
+    stage('Build') {
       steps {
-        sh 'make all'
+        lock ('manubot') {
+          sh 'make output/biol/manuscript.md'
+          sh 'make output/method/manuscript.md'
+        }
+        sh 'make -j 2 all'
         archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
+        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/biol', reportFiles:'manuscript.html', reportName:'Methods Paper'])
+        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/method', reportFiles:'manuscript.html', reportName:'Biology Paper'])
       }
     }
   }
