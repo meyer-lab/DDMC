@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install pur
-        run: pip3 install pur
+        run: apt-get install python3-setuptools && pip3 install pur
       - name: Upgrade packages
         run: pur -r requirements.txt
       - name: Create Pull Request
