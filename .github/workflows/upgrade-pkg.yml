@@ -11,7 +11,7 @@ jobs:
       - name: Install pur
         run: pip3 install -U wheel setuptools && pip3 install -U pur
       - name: Upgrade packages
-        run: pur -r requirements.txt
+        run: export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin" && pur -r requirements.txt
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
         uses: peter-evans/create-pull-request@v2
