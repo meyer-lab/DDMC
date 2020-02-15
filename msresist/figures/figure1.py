@@ -46,7 +46,7 @@ def makeFigure():
     BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
     
     #A: Cell Viability EndPoint across mutants and treatments
-    t = 120
+    t = 72
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     BarPlot_UtErlAF154(ax[0], BR1_UT, BR2_UT, BR3_UT, BR1_E, BR2_E, BR3_E, BR1_AE, BR2_AE, BR3_AE, t, lines)
 
