@@ -3,7 +3,8 @@ This creates Figure 4.
 """
 from .common import subplotLabel, getSetup
 import pandas as pd
-from msresist.pre_processing import preprocessing, preprocess_seqs, MergeDfbyMean 
+from msresist.sequence_analysis import preprocess_seqs
+from msresist.pre_processing import preprocessing MergeDfbyMean 
 from msresist.figures.figure2 import plotR2YQ2Y, plotMeasuredVsPredicted, plotScoresLoadings, plotclusteraverages
 
 
