@@ -137,7 +137,7 @@ def EGFR(ax, f):
     ax.plot(egfr1131, marker="o", label="Y1131-p", color = "darkblue")
     ax.legend(loc=0)
 
-    ax.set_xticklabels(list(axl702.index), rotation = 45)
+    ax.set_xticklabels(list(egfr1172.index), rotation = 45)
     ax.set_title("EGFR")
     ax.set_ylabel("normalized signal")
 
@@ -163,7 +163,7 @@ def OtherRTKs(ax, f):
     ax.plot(epha6_644, marker="o", label="EPHA6 Y644-p", color = "darkcyan")
     ax.legend(loc=0)
 
-    ax.set_xticklabels(list(axl702.index), rotation = 45)
+    ax.set_xticklabels(list(met1003.index), rotation = 45)
     ax.set_ylabel("Normalized Signal")
     ax.set_title("Other Bypass RTKs")
 
@@ -177,31 +177,17 @@ def adapters(ax, f):
     E_crk136 = f.loc["CRK", "QEEAEyVRALF"].iloc[0, 3:]
     E_anxa2238 = f.loc["ANXA2", "KsYSPyDMLES"].iloc[0, 3:]
 
-    ax[0, 0].plot(E_shb246, marker="x", color="black", label="SHB Y246-p")
-    ax[0, 0].legend(loc=0)
+    ax.plot(E_shb246, marker="x", color="black", label="SHB Y246-p")
+    ax.plot(E_stat3686, marker="x", color="darkorange", label="STAT3 Y686-p")
+    ax.plot(E_shc1427, marker="x", color="darkred", label="SHC1 Y427-p")
+    ax.plot(E_gab1659, marker="x", color="darkblue", label="GAB1 Y659-p")
+    ax.plot(E_gab2266, marker="x", color="lightblue", label="GAB2 Y266-p")
+    ax.plot(E_crk136, marker="x", color="darkgreen", label="CRK Y136-p")
+    ax.plot(E_anxa2238, marker="x", color="darkcyan", label="ANXA2 238-p")
 
-    ax[0, 1].plot(E_stat3686, marker="x", color="darkorange", label="STAT3 Y686-p")
-    ax[0, 1].legend(loc=0)
-
-    ax[0, 2].plot(E_shc1427, marker="x", color="darkred", label="SHC1 Y427-p")
-    ax[0, 2].legend(loc=0)
-
-    ax[1, 0].plot(E_gab1659, marker="x", color="darkblue", label="GAB1 Y659-p")
-    ax[1, 0].plot(E_gab2266, marker="x", color="lightblue", label="GAB2 Y266-p")
-    ax[1, 0].legend(loc=0)
-
-    ax[1, 1].plot(E_crk136, marker="x", color="darkgreen", label="CRK Y136-p")
-    ax[1, 1].legend(loc=0)
-
-
-    ax[1, 2].plot(E_anxa2238, marker="x", color="darkcyan", label="ANXA2 238-p")
-    ax[1, 2].legend(loc=0)
-
-    ax[1, 0].set_xticklabels(list(axl702.index), rotation = 45)
-    ax[1, 1].set_xticklabels(list(axl702.index), rotation = 45)
-    ax[1, 2].set_xticklabels(list(axl702.index), rotation = 45)
-    ax[0, 0].set_ylabel("Normalized Signal")
-    ax[1, 0].set_ylabel("Normalized Signal")
+    ax.set_xticklabels(list(E_shb246.index), rotation = 45)
+    ax.set_ylabel("Normalized Signal")
+    ax.set_ylabel("Normalized Signal")
 
 def ERK(ax, f):
     E_erk1s = f.loc["MAPK3", "GFLTEyVATRW"].iloc[0, 3:]
@@ -217,7 +203,7 @@ def ERK(ax, f):
     ax.plot(E_erk5s, marker="o", color="darkgreen", label="ERK5 Y221-p")
     ax.legend(loc=0)
 
-    ax.set_xticklabels(list(axl702.index), rotation = 45)
+    ax.set_xticklabels(list(E_erk1s.index), rotation = 45)
     ax.set_ylabel("Normalized Signal")
 
 
