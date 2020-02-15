@@ -233,10 +233,9 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
     return score, idx
 
 def gmm_initialize(ncl, data):
-    weights = np.ones((ncl)) / ncl
     means = np.random.choice(data.flatten(), (ncl, data.shape[1]))
     cov = [make_spd_matrix(data.shape[1]) for i in range(ncl)]
-    return weights, means, cov
+    return means, cov
 
 
 def gmm_e_step(ncl, data, means, cov, distance_method):
@@ -255,7 +254,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
 
     # Initialize with gmm clusters and generate gmm pval matrix
 #     cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-    weights, means, cov = gmm_initialize(ncl, d)
+    means, cov = gmm_initialize(ncl, d)
     gmmp, labels = gmm_e_step(ncl, d, means, cov, distance_method=distance_method)
     Xcl = ABC.assign(GMM_cluster=labels)
     cl_seqs = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
