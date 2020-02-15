@@ -154,9 +154,6 @@ def OtherRTKs(ax, f):
 
     epha6_644 = f.loc["EPHB6", "GLGVKyyIDPS"].iloc[0, 3:]
 
-
-    fig, ax = plt.subplots(ncols=3, nrows=2, figsize=(14,8), sharex=True, sharey=True, squeeze=True)
-
     ax.plot(met1003, marker="o", label="MET Y1003-p", color = "black")
     ax.plot(erbb2877, marker="o", label="HER2 Y877-p", color = "darkorange")
     ax.plot(erbb31328, marker="o", label="HER3 Y1328-p", color = "darkred")
@@ -178,10 +175,6 @@ def adapters(ax, f):
     E_gab2266 = f.loc["GAB2", "FRDSTyDLPRS"].iloc[0, 3:]
     E_crk136 = f.loc["CRK", "QEEAEyVRALF"].iloc[0, 3:]
     E_anxa2238 = f.loc["ANXA2", "KsYSPyDMLES"].iloc[0, 3:]
-
-
-    fig, ax = plt.subplots(ncols=3, nrows=2, figsize=(14,8), sharex=True, sharey=True, squeeze=True)
-
 
     ax[0, 0].plot(E_shb246, marker="x", color="black", label="SHB Y246-p")
     ax[0, 0].legend(loc=0)
@@ -215,9 +208,6 @@ def ERK(ax, f):
     E_erk3s = f.loc["MAPK1", "GFLTEyVATRW"].iloc[0, 3:]
     E_erk3d = f.loc["MAPK1", "GFLtEyVATRW"].iloc[0, 3:]
     E_erk5s = f.loc["MAPK7", "YFMTEyVATRW"].iloc[0, 3:]
-
-    fig, ax = plt.subplots(ncols=3, nrows=2, figsize=(14,8), sharex=False, sharey=True, squeeze=True)
-
 
     ax.plot(E_erk1s, marker="o", color="black", label="ERK1 Y204-p")
 #     ax.plot(E_erk1d, marker="o", color="darkorange", label="ERK1 T202-p;Y204-p")

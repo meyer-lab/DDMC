@@ -137,7 +137,6 @@ def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
     assert sp.stats.pearsonr(BR3t0, BR3fc)[1] > 0.05, (BR3t0, BR3fc)
 
     width=0.4
-    fig, ax = plt.subplots(1, 1, figsize=(10,6))
     ax.set_title("Cell Viability-" + str(t) + "h " + title)
     ax.set_xticks(np.arange(1, 11, 1))
     ax.set_xticklabels(BR2.columns[1:], rotation=45)
@@ -390,9 +389,6 @@ def OtherRTKs(ax, E, EA):
     EA_erbb31328 = EA.loc["ERBB3", "FDNPDyWHSRL"][3:]
 
     EA_erbb2877 = EA.loc["ERBB2", "IDETEyHADGG"][3:]
-
-
-    fig, ax = plt.subplots(ncols=3, nrows=1, figsize=(20,5), sharex=True, sharey=True, squeeze=True)
 
     ax.plot(E_met1003, marker="o", color = "red", label="MET pY1003 Erlotinib")
     ax.plot(EA_met1003, marker="o", color = "green", label="MET pY1003 Erl + AF154")
