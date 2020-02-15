@@ -73,8 +73,8 @@ def makeFigure():
     plotVarReplicates(ax[4:6], X)
     
     # F: AXL
-    f = preprocessing(AXLwt=True, motifs=True, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=True, mc_row=True)
-    z = f.set_index(['Abbv', 'Sequence'])
+    df = preprocessing(AXLwt=True, motifs=True, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=True, mc_row=True)
+    z = df.set_index(['Abbv', 'Sequence'])
     AXL(ax[6], z)
 
     # G: EGFR
