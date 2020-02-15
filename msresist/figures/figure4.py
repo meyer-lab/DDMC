@@ -8,7 +8,7 @@ from msresist.figures.figure2_AXLmodel import plotR2YQ2Y, plotMeasuredVsPredicte
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((7, 9), (4, 3))
+    ax, f = getSetup((7, 9), (2, 3))
 
     # blank out first axis for cartoon
     ax[0].axis('off')
