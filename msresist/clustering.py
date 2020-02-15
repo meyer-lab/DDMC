@@ -69,8 +69,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight=1, pYTS="Y", distance_method="PAM250", covariance_type="diag", max_n_iter=100000):
-        #         print("init")
+    def __init__(self, info, ncl, GMMweight, distance_method, pYTS="Y", covariance_type="diag", max_n_iter=100000):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
@@ -81,9 +80,8 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-#         print(self.ncl, self.GMMweight)
         self.cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_, self.bg_pwm_ = EM_clustering(X, self.info,
-                                                                                                                    self.ncl, self.GMMweight, self.pYTS, self.distance_method,
+                                                                                                                    self.ncl, self.GMMweight, self.distance_method, self.pYTS,
                                                                                                                     self.covariance_type, self.max_n_iter)
         return self
 
@@ -119,7 +117,7 @@ class MassSpecClustering(BaseEstimator):
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
-                "GMMweight": self.GMMweight, "pYTS": self.pYTS, "distance_method": self.distance_method,
+                "GMMweight": self.GMMweight, "distance_method": self.distance_method, "pYTS": self.pYTS,
                 "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
 
     def set_params(self, **parameters):
