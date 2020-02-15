@@ -58,7 +58,7 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    d.index = treatments
+    d.index = lines
 
     distance_method = "PAM250"
     ncl = 2
@@ -78,7 +78,7 @@ def makeFigure():
 
     plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines)
 
-    plotclusteraverages(ax[5], centers.T, treatments)
+    plotclusteraverages(ax[5], centers.T, lines)
 
     # Add subplot labels
     subplotLabel(ax)
