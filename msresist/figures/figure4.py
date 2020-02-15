@@ -2,7 +2,7 @@
 This creates Figure 4.
 """
 from .common import subplotLabel, getSetup
-from msresist.figures.figure2_AXLmodel import plotR2YQ2Y, plotMeasuredVsPredicted, plotScoresLoadings, plotclusteraverages
+from msresist.figures.figure2 import plotR2YQ2Y, plotMeasuredVsPredicted, plotScoresLoadings, plotclusteraverages
 
 
 def makeFigure():
