@@ -21,6 +21,7 @@ import matplotlib.cm as cm
 import seaborn as sns
 from ..sequence_analysis import FormatName, pYmotifs
 from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
+from ..figures.figure1 import plotpca_ScoresLoadings, plotVarReplicates
 
 path = os.path.dirname(os.path.abspath(__file__))
 
