@@ -60,6 +60,7 @@ def makeFigure():
     plotpca_ScoresLoadings(ax[2:4], d)
     
     #E: Variability across overlapping peptides in MS replicates
+    X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     plotVarReplicates(ax, X)
     
     #F-: Phosphorylation levels of Selected peptides
