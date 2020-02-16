@@ -267,10 +267,11 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
 
 
 def plotclusteraverages(ax, centers, treatments):
-    colors_ = cm.rainbow(np.linspace(0, centers.shape[1], centers.shape[1]))
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
 
     for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color=colors_[i])
+        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color= colors_[i])
 
     ax.set_xticks(np.arange(centers.shape[1]))
     ax.set_xticklabels(treatments, rotation=45)
