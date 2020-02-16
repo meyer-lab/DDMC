@@ -57,7 +57,7 @@ def makeFigure():
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines)
+    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, treatments)
 
     plotclusteraverages(ax[5], centers.T, treatments)
 
