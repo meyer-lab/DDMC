@@ -276,3 +276,37 @@ def plotclusteraverages(ax, centers, treatments):
     ax.set_xticklabels(treatments, rotation=45)
     ax.set_ylabel("Normalized Signal", fontsize=12)
     ax.legend()
+
+
+def plotKmeansPLSR_GridSearch(ax, X, Y):
+    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
+    twoC = np.abs(CVresults_min.iloc[:2, 3])
+    threeC = np.abs(CVresults_min.iloc[2:5, 3])
+    fourC = np.abs(CVresults_min.iloc[5:9, 3])
+    fiveC = np.abs(CVresults_min.iloc[9:14, 3])
+    sixC = np.abs(CVresults_min.iloc[14:20, 3])
+
+    width = 1
+    groupgap = 1
+
+    x1 = np.arange(len(twoC))
+    x2 = np.arange(len(threeC)) + groupgap + len(twoC)
+    x3 = np.arange(len(fourC)) + groupgap * 2 + len(twoC) + len(threeC)
+    x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
+    x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
+
+    ax.bar(x1, twoC, width, edgecolor='black', color="g")
+    ax.bar(x2, threeC, width, edgecolor='black', color="g")
+    ax.bar(x3, fourC, width, edgecolor='black', color="g")
+    ax.bar(x4, fiveC, width, edgecolor="black", color="g")
+    ax.bar(x5, sixC, width, edgecolor="black", color="g")
+
+    comps = []
+    for ii in range(2, 7):
+        comps.append(list(np.arange(1, ii + 1)))
+    flattened = [nr for cluster in comps for nr in cluster]
+
+    ax.set_xticks(np.concatenate((x1, x2, x3, x4, x5)))
+    ax.set_xticklabels(flattened, fontsize=10)
+    ax.set_xlabel("Number of Components per Cluster")
+    ax.set_ylabel("Mean-Squared Error (MSE)")
