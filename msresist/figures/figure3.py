@@ -82,6 +82,8 @@ def makeFigure():
 
     # H: Other RTKs
     OtherRTKs(ax[8], z)
+    
+    ax[1].axis('off')
 
     # Add subplot labels
     subplotLabel(ax)

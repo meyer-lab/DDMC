@@ -52,6 +52,7 @@ def makeFigure():
 
     E = preprocessing(Axlmuts_Erl=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
     A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
+    E.columns = A.columns
     d = A.select_dtypes(include=['float64']).T
     #B: blank out second axis for signaling ClusterMap
     ax[1].axis('off')
@@ -61,12 +62,12 @@ def makeFigure():
     
     #E: Variability across overlapping peptides in MS replicates
     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
-    plotVarReplicates(ax, X)
+    plotVarReplicates(ax[4:6], X)
     
     #F-: Phosphorylation levels of Selected peptides
-    AXL(ax[4:7], E, A)
+    AXL(ax[7], E, A)
 
-    EGFR(ax[7:9], E, A)
+    EGFR(ax[8], E, A)
 
     OtherRTKs(ax[9], E, A)
 
@@ -161,6 +162,7 @@ def BarPlot_UtErlAF154(ax, BR1_UT, BR2_UT, BR3_UT, BR1_E, BR2_E, BR3_E, BR1_AE, 
 
     ax = sns.barplot(x="AXL mutants Y->F", y="Cell Viability (fold-change t=0)", hue="Treatment", data=c, ci="sd")
     ax.set_title("t=" + str(t) + "h")
+    ax.set_xticklabels(lines, rotation=45)
 
 
 # Plot Separately
@@ -213,8 +215,8 @@ def plotpca_ScoresLoadings(ax, data):
     ax[0].axvline(x=0, color='0.25', linestyle='--')
 
     spacer = 0.25
-    ax[0].set_xlim([(-1 * max(PC1_scores)) - spacer, max(PC1_scores) + spacer])
-    ax[0].set_ylim([(-1 * max(PC2_scores)) - spacer, max(PC2_scores) + spacer])
+    ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
+    ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
     for i, txt in enumerate(list(data.columns)):
@@ -339,24 +341,17 @@ def AXL(ax, E, EA):
     EA_axl866 = EA.loc["AXL", "HPAGRyVLCPS"][3:]
     EA_axl702 = EA.loc["AXL", "IYNGDyYRQGR"][3:]
 
-    ax[0].plot(E_axl759, marker="o", label="erlotinib", color = "red")
-    ax[0].plot(EA_axl759, marker="o", label="erl + AF154", color = "green")
-    ax[0].set_title("AXL Y759-p", fontsize=15)
-    ax[0].legend(loc=0)
+    ax.plot(E_axl759, marker="o", label="pY759 Erlotinib", color = "red")
+    ax.plot(EA_axl759, marker="o", label="pY759 Erl + AF154", color = "green")
+    ax.set_title("AXL", fontsize=12)
+    ax.plot(E_axl866, marker="o", color = "red", label="pY866 Erlotinib")
+    ax.plot(EA_axl866, marker="o", color = "green", label="pY866 erl + AF154")
 
-    ax[1].plot(E_axl866, marker="o", color = "red", label="erlotinib")
-    ax[1].plot(EA_axl866, marker="o", color = "green", label="erl + AF154")
-    ax[1].set_title("AXL Y866-p", fontsize=15)
-    ax[1].legend(loc=0)
+    ax.plot(EA_axl702, marker="o", color="green", label="pY702 erl + AF154")
+    ax.legend(loc=0)
 
-    ax[2].plot(EA_axl702, marker="o", color="green", label="erl + AF154")
-    ax[2].set_title("AXL Y702-p", fontsize=15)
-    ax[2].legend(loc=0)
-
-    ax[0].set_xticklabels(list(EA_axl702.index), rotation = 45)
-    ax[1].set_xticklabels(list(EA_axl702.index), rotation = 45)
-    ax[2].set_xticklabels(list(EA_axl702.index), rotation = 45)
-    ax[0].set_ylabel("Normalized Signal", fontsize=15)
+    ax.set_xticklabels(list(EA_axl702.index), rotation = 45)
+    ax.set_ylabel("Normalized Signal", fontsize=10)
 
 
 def EGFR(ax, E, EA):
@@ -366,19 +361,17 @@ def EGFR(ax, E, EA):
     EA_egfr1172 = EA.loc["EGFR", "LDNPDyQQDFF"][3:]
     EA_egfr1197 = EA.loc["EGFR", "AENAEyLRVAP"][3:]
 
-    ax[0].plot(E_egfr1172, marker="o", label="erlotinib", color = "red")
-    ax[0].plot(EA_egfr1172, marker="o", label="erl + AF154", color = "green")
-    ax[0].set_title("EGFR Y1172-p", fontsize=15)
-    ax[0].legend(loc=0)
+    ax.plot(E_egfr1172, marker="o", label="pY1172 erlotinib", color = "red")
+    ax.plot(EA_egfr1172, marker="o", label="pY1172 erl + AF154", color = "green")
+    ax.set_title("EGFR Y1172-p", fontsize=12)
 
-    ax[1].plot(E_egfr1197, marker="o", color = "red", label="erlotinib")
-    ax[1].plot(EA_egfr1197, marker="o", color = "green", label="erl + AF154")
-    ax[1].set_title("EGFR Y1197-p", fontsize=15)
-    ax[1].legend(loc=0)
+    ax.plot(E_egfr1197, marker="o", color = "red", label="pY1197 erlotinib")
+    ax.plot(EA_egfr1197, marker="o", color = "green", label="pY1197 erl + AF154")
+    ax.set_title("EGFR Y1197-p", fontsize=12)
+    ax.legend(loc=0)
 
-    ax[0].set_ylabel("Normalized Signal", fontsize=15);
-    ax[0].set_xticklabels(list(E_egfr1172.index), rotation = 45)
-    ax[1].set_xticklabels(list(E_egfr1172.index), rotation = 45)
+    ax.set_ylabel("Normalized Signal", fontsize=12);
+    ax.set_xticklabels(list(E_egfr1172.index), rotation = 45)
 
 
 def OtherRTKs(ax, E, EA):
@@ -399,7 +392,7 @@ def OtherRTKs(ax, E, EA):
     ax.plot(EA_erbb2877, marker="o", color="green", label="HER pY877 Erl + AF154")
 
     ax.legend(loc=0)
-    ax.set_ylabel("Normalized Signal", fontsize=15)
+    ax.set_ylabel("Normalized Signal", fontsize=12)
     ax.set_xticklabels(list(E_met1003.index), rotation = 45)
     
 
