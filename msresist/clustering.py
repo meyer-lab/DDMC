@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
-from sklearn.mixture.base import BaseEstimator
+from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from msresist.sequence_analysis import EM_clustering, e_step
 
