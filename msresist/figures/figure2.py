@@ -11,7 +11,7 @@ from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.pipeline import Pipeline
-from msresist.cluster import MassSpecClustering
+from msresist.clustering import MassSpecClustering
 from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
 from msresist.sequence_analysis import preprocess_seqs
