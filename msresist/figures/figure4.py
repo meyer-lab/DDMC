@@ -39,7 +39,7 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     treatments = list(d.index)
-    
+
     ncl = 2
     distance_method = "PAM250"
     GMMweight = 0.75

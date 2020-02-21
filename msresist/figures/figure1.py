@@ -65,6 +65,8 @@ def makeFigure():
     plotVarReplicates(ax[4:6], X)
     
     #F-: Phosphorylation levels of Selected peptides
+    plotProteinSites()
+    
     AXL(ax[7], E, A)
 
     EGFR(ax[8], E, A)
@@ -332,233 +334,54 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-def AXL(ax, E, EA):
-    E_axl759 = E.loc["AXL", "ENSEIyDYLRQ"][3:]
-    E_axl866 = E.loc["AXL", "HPAGRyVLCPS"][3:]
+def plotProteinSites(ax, x, prot, title):
+    x = x.set_index(["Abbv"])
+    peptides = pd.DataFrame(x.loc[prot])
+    assert peptides.shape[0] > 0
+    if peptides.shape[1] == 1:
+        peptides = peptides.T
+        d = peptides.iloc[:, 4:]
+    else:
+        d = peptides.select_dtypes(include=['float64'])
 
-
-    EA_axl759 = EA.loc["AXL", "ENSEIyDYLRQ"][3:]
-    EA_axl866 = EA.loc["AXL", "HPAGRyVLCPS"][3:]
-    EA_axl702 = EA.loc["AXL", "IYNGDyYRQGR"][3:]
-
-    ax.plot(E_axl759, marker="o", label="pY759 Erlotinib", color = "red")
-    ax.plot(EA_axl759, marker="o", label="pY759 Erl + AF154", color = "green")
-    ax.set_title("AXL", fontsize=12)
-    ax.plot(E_axl866, marker="o", color = "red", label="pY866 Erlotinib")
-    ax.plot(EA_axl866, marker="o", color = "green", label="pY866 erl + AF154")
-
-    ax.plot(EA_axl702, marker="o", color="green", label="pY702 erl + AF154")
+    positions = x.loc[prot]["Position"]
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
+    for i in range(peptides.shape[0]):
+        if peptides.shape[0] == 1:
+            ax.plot(d.iloc[i, :], marker="o", label=positions, color = colors_[i])
+        else:
+            ax.plot(d.iloc[i, :], marker="o", label=positions[i], color = colors_[i])
+    
     ax.legend(loc=0)
-
-    ax.set_xticklabels(list(EA_axl702.index), rotation = 45)
+    ax.set_xticklabels(x.columns[4:], rotation=45)
     ax.set_ylabel("Normalized Signal", fontsize=10)
+    ax.set_title(title)
 
 
-def EGFR(ax, E, EA):
-    E_egfr1172 = E.loc["EGFR", "LDNPDyQQDFF"][3:]
-    E_egfr1197 = E.loc["EGFR", "AENAEyLRVAP"][3:]
+def plotProteinSitesEvsA(ax, E, A, prot, title):
+    "Plot fold change between AF154 vs Erlotinib only"
+    E.insert(5, "Treatment", ["erlotinib"]*E.shape[0])
+    A.insert(5, "Treatment", ["AF154"]*A.shape[0])
+    c = pd.concat([E, A])
+    x = c.set_index(["Abbv"])
 
-    EA_egfr1172 = EA.loc["EGFR", "LDNPDyQQDFF"][3:]
-    EA_egfr1197 = EA.loc["EGFR", "AENAEyLRVAP"][3:]
+    peptides = pd.DataFrame(x.loc[prot])
+    assert peptides.shape[0] > 0
+    d = peptides.groupby(["Position", "Treatment"]).mean().reset_index().set_index("Position")
 
-    ax.plot(E_egfr1172, marker="o", label="pY1172 erlotinib", color = "red")
-    ax.plot(EA_egfr1172, marker="o", label="pY1172 erl + AF154", color = "green")
-    ax.set_title("EGFR Y1172-p", fontsize=12)
+    fd, positions = [], []
+    for pos in list(set(d.index)):
+        x = d.loc[pos]
+        if x.shape[0] == 2:
+            positions.append(pos)
+            fd.append(x[x["Treatment"]=="AF154"].iloc[0, 1:].div(x[x["Treatment"]=="erlotinib"].iloc[0, 1:]))
 
-    ax.plot(E_egfr1197, marker="o", color = "red", label="pY1197 erlotinib")
-    ax.plot(EA_egfr1197, marker="o", color = "green", label="pY1197 erl + AF154")
-    ax.set_title("EGFR Y1197-p", fontsize=12)
-    ax.legend(loc=0)
-
-    ax.set_ylabel("Normalized Signal", fontsize=12);
-    ax.set_xticklabels(list(E_egfr1172.index), rotation = 45)
-
-
-def OtherRTKs(ax, E, EA):
-    E_met1003 = E.loc["MET", "NESVDyRATFP"][3:]
-    EA_met1003 = EA.loc["MET", "NESVDyRATFP"][3:]
-
-    E_erbb31328 = E.loc["ERBB3", "FDNPDyWHSRL"][3:]
-    EA_erbb31328 = EA.loc["ERBB3", "FDNPDyWHSRL"][3:]
-
-    EA_erbb2877 = EA.loc["ERBB2", "IDETEyHADGG"][3:]
-
-    ax.plot(E_met1003, marker="o", color = "red", label="MET pY1003 Erlotinib")
-    ax.plot(EA_met1003, marker="o", color = "green", label="MET pY1003 Erl + AF154")
-    
-    ax.plot(E_erbb31328, marker="o", color = "red", label="HER3 pY1328 erlotinib")
-    ax.plot(EA_erbb31328, marker="o", color = "green", label="HER3 pY1328Erl + AF154")
-    
-    ax.plot(EA_erbb2877, marker="o", color="green", label="HER pY877 Erl + AF154")
+    colors_ = cm.rainbow(np.linspace(0, 1, len(positions)))
+    for j in range(len(positions)):
+        ax.plot(fd[j], marker="o", label=positions[j], color = colors_[j])
 
     ax.legend(loc=0)
-    ax.set_ylabel("Normalized Signal", fontsize=12)
-    ax.set_xticklabels(list(E_met1003.index), rotation = 45)
-    
-
-def adapters(ax, E, EA):
-    E_shb246 = E.loc["SHB", "TIADDySDPFD"][3:]
-    E_stat3686 = E.loc["STAT3", "EAFGKyCRPES"][3:]
-    E_shc1427 = E.loc["SHC1", "FDDPSyVNVQN"][3:]
-    E_gab1659 = E.loc["GAB1", "DERVDyVVVDQ"][3:]
-    E_gab2266 = E.loc["GAB2", "FRDSTyDLPRS"][3:]
-    E_crk136 = E.loc["CRK", "QEEAEyVRALF"][3:]
-    E_anxa2238 = E.loc["ANXA2", "KsYSPyDMLES"][3:]
-
-
-
-    EA_shb246 = EA.loc["SHB", "TIADDySDPFD"][3:]
-    EA_stat3686 = EA.loc["STAT3", "EAFGKyCRPES"][3:]
-    EA_shc1427 = EA.loc["SHC1", "FDDPSyVNVQN"][3:]
-    EA_gab1659 = EA.loc["GAB1", "DERVDyVVVDQ"][3:]
-    EA_gab2266 = EA.loc["GAB2", "FRDSTyDLPRS"][3:]
-    EA_crk136 = EA.loc["CRK", "QEEAEyVRALF"][3:]
-    EA_anxa2238 = EA.loc["ANXA2", "KsYSPyDMLES"][3:]
-    EA_dapp1 = EA.loc["DAPP1", "EEPSIyESVRV"][3:]
-
-    ax[0, 0].plot(E_shb246, marker="x", color="gray", label="erlotinib")
-    ax[0, 0].plot(EA_shb246, marker="o", color="darkorange", label="erl + AF154")
-    ax[0, 0].set_title("SHB - Y246-p")
-    ax[0, 0].legend(loc=0)
-    ax[0, 0].set_ylabel("Normalized Signal")
-
-    ax[0, 1].plot(E_stat3686, marker="x", color="gray", label="erlotinib")
-    ax[0, 1].plot(EA_stat3686, marker="o", color="darkred", label="erl + AF154")
-    ax[0, 1].set_title("SHB Y686-p")
-    ax[0, 1].legend(loc=0)
-
-    ax[0, 2].plot(E_shc1427, marker="x", color="gray", label="erlotinib")
-    ax[0, 2].plot(EA_shc1427, marker="o", color="darkorange", label="erl + AF154")
-    ax[0, 2].set_title("SHC1 Y427-p")
-    ax[0, 2].legend(loc=0)
-
-    ax[0, 3].plot(E_gab1659, marker="x", color="gray", label="erlotinib")
-    ax[0, 3].plot(EA_gab1659, marker="o", color="darkblue", label="erl + AF154")
-    ax[0, 3].set_title("GAB1 Y659-p")
-    ax[0, 3].legend(loc=0)
-
-    ax[1, 0].plot(E_gab2266, marker="x", color="gray", label="erlotinib")
-    ax[1, 0].plot(EA_gab2266, marker="o", color="darkgreen", label="erl + AF154")
-    ax[1, 0].set_title("GAB2 Y266-p")
-    ax[1, 0].set_ylabel("Normalized Signal")
-    ax[1, 0].legend(loc=0)
-
-    ax[1, 1].plot(E_crk136, marker="x", color="gray", label="erlotinib")
-    ax[1, 1].plot(EA_crk136, marker="o", color="darkcyan", label="erl + AF154")
-    ax[1, 1].set_title("CRK Y136-p")
-    ax[1, 1].legend(loc=0)
-
-    ax[1, 2].plot(E_anxa2238, marker="x", color="gray", label="erlotinib")
-    ax[1, 2].plot(EA_anxa2238, marker="o", color="brown", label="erl + AF154")
-    ax[1, 2].set_title("ANXA2 Y238-p")
-    ax[1, 2].legend(loc=0)
-
-    ax[1, 3].plot(EA_dapp1, marker="o", color="red", label="erl + AF154")
-    ax[1, 3].set_title("DAPP1 Y139-p")
-    ax[1, 3].legend(loc=0)
-
-    ax[1, 0].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[1, 1].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[1, 2].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[1, 3].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[0, 0].set_ylabel("Normalized Signal")
-    ax[1, 0].set_ylabel("Normalized Signal")
-
-
-def ERK(ax, E, EA):
-    E_erk1s = E.loc["MAPK3", "GFLTEyVATRW"][3:]
-    E_erk1d = E.loc["MAPK3", "GFLtEyVATRW"][3:]
-    E_erk3s = E.loc["MAPK1", "GFLTEyVATRW"][3:]
-    E_erk3d = E.loc["MAPK1", "GFLtEyVATRW"][3:]
-    E_erk5s = E.loc["MAPK7", "YFMTEyVATRW"][3:]
-
-    EA_erk1s = EA.loc["MAPK3", "GFLTEyVATRW"][3:]
-    EA_erk1d = EA.loc["MAPK3", "GFLtEyVATRW"][3:]
-    EA_erk3s = EA.loc["MAPK1", "GFLTEyVATRW"][3:]
-    EA_erk3d = EA.loc["MAPK1", "GFLtEyVATRW"][3:]
-    AE_erk5s = EA.loc["MAPK7", "YFMTEyVATRW"][3:]
-
-    ax[0, 0].plot(E_erk1s, marker="x", color="gray", label="erlotinib")
-    ax[0, 0].plot(EA_erk1s, marker="o", color="darkorange", label="erl + AF154")
-    ax[0, 0].set_title("ERK1 - Y187-p")
-    ax[0, 0].legend(loc=0)
-    ax[0, 0].set_ylabel("normalized signal")
-    ax[0, 0].set_xticklabels([])
-
-    ax[0, 1].plot(E_erk1d, marker="x", color="gray")
-    ax[0, 1].plot(EA_erk1d, marker="o", color="darkred")
-    ax[0, 1].set_title("ERK1 - T185-p;Y187-p")
-    ax[0, 1].set_xticklabels([])
-
-    ax[0, 2].plot(E_erk3s, marker="x", color="gray")
-    ax[0, 2].plot(EA_erk3s, marker="o", color="darkcyan")
-    ax[0, 2].set_title("ERK3 - Y187-p")
-    ax[0, 2].set_xticklabels(list(E_met1003.index), rotation = 45)
-
-
-    ax[1, 0].plot(E_erk3d, marker="x", color="gray")
-    ax[1, 0].plot(EA_erk3d, marker="o", color="darkblue")
-    ax[1, 0].set_title("ERK3 - T185-p;Y187-p")
-
-    ax[1, 1].plot(E_erk5s, marker="x", color="gray")
-    ax[1, 1].plot(AE_erk5s, marker="o", color="darkgreen")
-    ax[1, 1].set_title("ERK5 - Y221-p")
-
-    ax[1, 2].remove()
-
-    ax[1, 0].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[1, 1].set_xticklabels(list(E_met1003.index), rotation = 45)
-    ax[0, 0].set_ylabel("Normalized Signal")
-    ax[1, 0].set_ylabel("Normalized Signal")
-
-
-def JNK(ax, E, EA):
-    E_jnk2_185s = E.loc["MAPK9", "FMMTPyVVTRY"][3:]
-    E_jnk2_223s = E.loc["MAPK10", "FMMTPyVVTRY"][3:]
-
-    EA_jnk2_185s = EA.loc["MAPK9", "FMMTPyVVTRY"][3:]
-    EA_jnk2_223s = EA.loc["MAPK10", "FMMTPyVVTRY"][3:]
-
-    ax[0, 0].plot(E_jnk2_185s, marker="x", color="gray", label="erlotinib")
-    ax[0, 0].plot(EA_jnk2_185s, marker="o", color="darkorange", label="erl + AF154")
-    ax[0, 0].set_title("JNK2 Y185-p")
-    ax[0, 0].legend(loc=0)
-    ax[0, 0].set_ylabel("Normalized Signal")
-    ax[0, 0].set_xticklabels([])
-
-    ax[0, 1].plot(E_jnk2_223s, marker="x", color="gray")
-    ax[0, 1].plot(EA_jnk2_223s, marker="o", color="darkred")
-    ax[0, 1].set_title("JNK3 Y185-p")
-    ax[0, 1].set_xticklabels([])
-
-    ax[1, 0].set_xticklabels(list(E_jnk2_185s.index), rotation = 45)
-    ax[1, 1].set_xticklabels(list(E_jnk2_185s.index), rotation = 45)
-    ax[0, 0].set_ylabel("Normalized Signal")
-    ax[1, 0].set_ylabel("Normalized Signal")
-
-
-def p38(ax, E, EA):
-    E_p38G_185 = E.loc["MAPK12", "SEMTGyVVTRW"][3:]
-    E_p38D_182 = E.loc["MAPK13", "AEMTGyVVTRW"][3:]
-    E_p38A_182 = E.loc["MAPK14", "DEMTGyVATRW"][3:]
-
-    EA_p38G_185 = EA.loc["MAPK12", "SEMTGyVVTRW"][3:]
-    EA_p38D_182 = EA.loc["MAPK13", "AEMTGyVVTRW"][3:]
-    EA_p38A_182 = EA.loc["MAPK14", "DEMTGyVATRW"][3:]
-
-    ax[0, 2].plot(E_p38G_185, marker="x", color="gray", label="erlotinib")
-    ax[0, 2].plot(EA_p38G_185, marker="o", color="darkgreen", label="erl + AF154")
-    ax[0, 2].set_title("P38G Y185-p")
-    ax[0, 2].legend(loc=0)
-    ax[0, 2].set_xticklabels(list(E_met1003.index), rotation = 45)
-
-
-    ax[1, 0].plot(E_p38D_182, marker="x", color="gray")
-    ax[1, 0].plot(EA_p38D_182, marker="o", color="darkblue")
-    ax[1, 0].set_title("P38D Y182-p")
-    ax[1, 0].set_ylabel("Normalized Signal")
-
-
-    ax[1, 1].plot(E_p38A_182, marker="x", color="gray")
-    ax[1, 1].plot(EA_p38A_182, marker="o", color="darkcyan")
-    ax[1, 1].set_title("P38A Y182-p")
+    ax.set_ylabel("Fold-change AF154 vs Erl Only", fontsize=10)
+    ax.set_xticklabels(E.columns[6:], rotation=45)
+    ax.set_title(title)
