@@ -23,7 +23,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (4, 3))
+    ax, f = getSetup((12, 10), (3, 4))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
@@ -64,14 +64,18 @@ def makeFigure():
     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     plotVarReplicates(ax[4:6], X)
     
-    #F-: Phosphorylation levels of Selected peptides
-    plotProteinSites()
+    #F-: Phosphorylation levels of selected peptides
+    E = E.reset_index()
+    A = A.reset_index()
+
+    plotProteinSites(ax[6], A.copy(), "AXL", "AXL")
+    plotProteinSitesEvsA(ax[7], E.copy(), A.copy(), "AXL", "AXL")
     
-    AXL(ax[7], E, A)
-
-    EGFR(ax[8], E, A)
-
-    OtherRTKs(ax[9], E, A)
+    plotProteinSites(ax[8], A.copy(), "EGFR", "EGFR")
+    plotProteinSitesEvsA(ax[9], E.copy(), A.copy(), "EGFR", "EGFR")
+    
+    plotProteinSites(ax[10], A.copy(), "MAPK3", "ERK1")
+    plotProteinSitesEvsA(ax[11], E.copy(), A.copy(), "MAPK3", "ERK1")
 
     # Add subplot labels
     subplotLabel(ax)
@@ -335,6 +339,7 @@ def plotVarReplicates(ax, ABC):
 
 
 def plotProteinSites(ax, x, prot, title):
+    "Plot all phosphopeptides for a given protein"
     x = x.set_index(["Abbv"])
     peptides = pd.DataFrame(x.loc[prot])
     assert peptides.shape[0] > 0
