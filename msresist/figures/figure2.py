@@ -13,7 +13,6 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.pipeline import Pipeline
 from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
-from msresist.clustering import MassSpecClustering
 from msresist.sequence_analysis import preprocess_seqs
 import matplotlib.colors as colors
 import matplotlib.cm as cm
