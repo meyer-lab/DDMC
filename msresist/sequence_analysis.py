@@ -12,8 +12,6 @@ from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
 from scipy.stats import binom, multivariate_normal
 from sklearn.mixture import GaussianMixture
-from sklearn.mixture._gaussian_mixture import _estimate_gaussian_covariances_diag
-from sklearn.datasets import make_spd_matrix
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -229,19 +227,6 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
     return score, idx
 
-def gmm_initialize(ncl, data):
-    means = np.random.choice(data.flatten(), (ncl, data.shape[1]))
-    cov = [make_spd_matrix(data.shape[1]) for i in range(ncl)]
-    return means, cov
-
-
-def gmm_e_step(ncl, data, means, cov, distance_method):
-    gmmprob = pd.DataFrame([multivariate_normal.pdf(x=data, mean=means[j], cov=cov[j]) for j in range(ncl)]).T
-    if distance_method == "Binomial":
-        return gmmpval, np.argmin(np.array(gmmpval), axis=1)
-    if distance_method == "PAM250":
-        return gmmprob, np.argmax(np.array(gmmprob), axis=1)
-
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
@@ -250,11 +235,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
 
     # Initialize with gmm clusters and generate gmm pval matrix
-#     cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
-    means, cov = gmm_initialize(ncl, d)
-    gmmp, labels = gmm_e_step(ncl, d, means, cov, distance_method=distance_method)
-    Xcl = ABC.assign(GMM_cluster=labels)
-    cl_seqs = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method, pYTS)
 
     # Background sequences
     bg_seqs = BackgroundSeqs(pYTS)
@@ -264,9 +245,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
-        # Update cluster centers and likelihood of each peptide regarding the data
-        if n_iter > 0:
-            gmmp, _ = gmm_e_step(ncl, d, means, cov, distance_method)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
         data_reassign = data.T.copy()
@@ -288,17 +266,16 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            cl_seqs, gmm_pvals, gmm_proba = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method, pYTS)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
             assert False not in [len(sublist) > 0 for sublist in cl_seqs]
             continue
 
-        # M step: Update motifs, cluster centers, and cov matrix
+        # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
-        data_reassign = data_reassign.assign(Clusters=labels)
-        means = np.array([data_reassign[data_reassign["Clusters"] == i].iloc[:, :-1].mean() for i in range(ncl)])
-        nk = gmmp.sum(axis=0) + 10 * np.finfo(np.array(gmmp).dtype).eps
-        cov = _estimate_gaussian_covariances_diag(resp=gmmp, X=d, nk=nk, means=means, reg_covar=1e-6)
+        gmmp = HardAssignments(labels, ncl)
+        gmm._m_step(d, gmmp)
+        gmmp = pd.DataFrame(gmmp)
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
@@ -313,6 +290,14 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), scores, ICs, n_iter, gmmp, bg_pwm
+
+def HardAssignments(labels, ncl):
+    m = []
+    for idx in labels:
+        l = [0]*ncl
+        l[idx] = 1
+        m.append(l)
+    return np.array(m)
 
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
@@ -333,14 +318,17 @@ def pairwise_score(seq1: str, seq2: str, matrix) -> float:
     return score
 
 
-def gmm_initialCl_and_pvalues(X, ncl, covariance_type, pYTS):
+def gmm_initialize(X, ncl, covariance_type, distance_method, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 7:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
-    gmmpval = pd.DataFrame(np.log(1 - pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:])).replace({float(1): float(0.9999999999999)})))
-    gmmprob = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:])) * 100
-    return init_clusters, gmmpval, gmmprob
+    gmm_pred = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:]))
+    if distance_method == "PAM250":
+        gmmp = gmm_pred * 100
+    if distance_method == "Binomial":
+        gmmp = pd.DataFrame(np.log(1 - gmm_pred.replace({float(1): float(0.9999999999999)})))
+    return gmm, init_clusters, gmmp
 
 
 def preprocess_seqs(X, pYTS):
