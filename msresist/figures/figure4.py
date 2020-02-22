@@ -14,7 +14,7 @@ from msresist.figures.figure2 import plotR2YQ2Y, plotMeasuredVsPredicted, plotSc
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (2, 3))
+    ax, f = getSetup((12, 8), (2, 3))
 
     # blank out first axis for cartoon
     ax[0].axis('off')
@@ -40,9 +40,10 @@ def makeFigure():
 
     treatments = list(d.index)
 
-    ncl = 2
+    ncl = 5
     distance_method = "PAM250"
-    GMMweight = 0.75
+    GMMweight = 1
+    b = 4
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
     centers = MSC.transform(d)

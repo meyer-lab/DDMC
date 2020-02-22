@@ -26,7 +26,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (2, 3))
+    ax, f = getSetup((12, 8), (2, 3))
 
     # blank out first axis for cartoon
     ax[0].axis('off')
@@ -61,13 +61,14 @@ def makeFigure():
     d.index = lines
 
     distance_method = "PAM250"
-    ncl = 2
+    ncl = 5
     GMMweight = 1
+    b = 4
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
     centers = MSC.transform(d)
 
-    plotR2YQ2Y(ax[1], centers, cv)
+    plotR2YQ2Y(ax[1], centers, cv, b)
     
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
