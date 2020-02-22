@@ -4,7 +4,7 @@ This creates Figure 4.
 from .common import subplotLabel, getSetup
 import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.pipeline import Pipelinegit 
+from sklearn.pipeline import Pipeline 
 from msresist.sequence_analysis import preprocess_seqs
 from msresist.pre_processing import preprocessing, MergeDfbyMean
 from msresist.clustering import MassSpecClustering
