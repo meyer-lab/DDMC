@@ -5,7 +5,7 @@ Testing file for the clustering methods by data and sequence.
 import unittest
 import numpy as np
 from ..clustering import MassSpecClustering
-from ..sequence_analysis import preprocess_seqs, gmm_initialCl_and_pvalues
+from ..sequence_analysis import preprocess_seqs, gmm_initialize
 from ..pre_processing import preprocessing
 
 
@@ -29,7 +29,7 @@ class TestClustering(unittest.TestCase):
         MSC = MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(data, fooCV)
         Cl_seqs = MSC.cl_seqs_
 
-        gmm_cl, _, _ = gmm_initialCl_and_pvalues(ABC, ncl, covariance_type, pYTS)
+        _, gmm_cl, _ = gmm_initialize(ABC, ncl, covariance_type, pYTS)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
         # assert that EM clusters are different than GMM clusters
