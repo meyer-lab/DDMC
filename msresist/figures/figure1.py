@@ -23,57 +23,48 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (3, 4))
+    ax, f = getSetup((16, 10), (3, 4))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
 
-    # Read in data
+    # Read in Cell Viability data
     BR1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR1.csv").iloc[:, 1:]
     BR2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR2.csv').iloc[:, 1:]
     BR3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR3.csv').iloc[:, 1:]
-    
-    BR1_UT = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('UT')]], axis=1)
-    BR1_E = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-E')]], axis=1)
-    BR1_AE = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-A/E')]], axis=1)
 
-    BR2_UT = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('UT')]], axis=1)
-    BR2_E = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-E')]], axis=1)
-    BR2_AE = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-A/E')]], axis=1)
-
-    BR3_UT = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('UT')]], axis=1)
-    BR3_E = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-E')]], axis=1)
-    BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
-    
-    #A: Cell Viability EndPoint across mutants and treatments
     t = 72
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    BarPlot_UtErlAF154(ax[0], BR1_UT, BR2_UT, BR3_UT, BR1_E, BR2_E, BR3_E, BR1_AE, BR2_AE, BR3_AE, t, lines)
 
+    # Read in Mass Spec data
     E = preprocessing(Axlmuts_Erl=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
     A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
     E.columns = A.columns
     d = A.select_dtypes(include=['float64']).T
+    
+    #A: Cell Viability 
+    BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, t, lines)
+
     #B: blank out second axis for signaling ClusterMap
     ax[1].axis('off')
-    
+
     #C&D: Scores and Loadings MS data
     plotpca_ScoresLoadings(ax[2:4], d)
-    
+
     #E: Variability across overlapping peptides in MS replicates
     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     plotVarReplicates(ax[4:6], X)
-    
+
     #F-: Phosphorylation levels of selected peptides
     E = E.reset_index()
     A = A.reset_index()
 
     plotProteinSites(ax[6], A.copy(), "AXL", "AXL")
     plotProteinSitesEvsA(ax[7], E.copy(), A.copy(), "AXL", "AXL")
-    
+
     plotProteinSites(ax[8], A.copy(), "EGFR", "EGFR")
     plotProteinSitesEvsA(ax[9], E.copy(), A.copy(), "EGFR", "EGFR")
-    
+
     plotProteinSites(ax[10], A.copy(), "MAPK3", "ERK1")
     plotProteinSitesEvsA(ax[11], E.copy(), A.copy(), "MAPK3", "ERK1")
 
@@ -154,7 +145,19 @@ def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
     ax.set_ylabel("Fold-change to t=0h")
 
 
-def BarPlot_UtErlAF154(ax, BR1_UT, BR2_UT, BR3_UT, BR1_E, BR2_E, BR3_E, BR1_AE, BR2_AE, BR3_AE, t, lines):
+def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, t, lines):
+    BR1_UT = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('UT')]], axis=1)
+    BR1_E = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-E')]], axis=1)
+    BR1_AE = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-A/E')]], axis=1)
+
+    BR2_UT = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('UT')]], axis=1)
+    BR2_E = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-E')]], axis=1)
+    BR2_AE = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-A/E')]], axis=1)
+
+    BR3_UT = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('UT')]], axis=1)
+    BR3_E = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-E')]], axis=1)
+    BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
+    
     br1_ut = FCendpoint(BR1_UT, t, ["UT"]*10, lines)
     br2_ut = FCendpoint(BR2_UT, t, ["UT"]*10, lines)
     br3_ut = FCendpoint(BR3_UT, t, ["UT"]*10, lines)
