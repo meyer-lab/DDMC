@@ -223,7 +223,7 @@ def plotpca_ScoresLoadings(ax, data):
     ax[0].axhline(y=0, color='0.25', linestyle='--')
     ax[0].axvline(x=0, color='0.25', linestyle='--')
 
-    spacer = 0.25
+    spacer = 0.5
     ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
@@ -236,7 +236,7 @@ def plotpca_ScoresLoadings(ax, data):
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
-    spacer = 0.25
+    spacer = 0.5
     ax[1].set_xlim([(-1 * max(np.abs(PC1_loadings)) - spacer), (max(np.abs(PC1_loadings)) + spacer)])
     ax[1].set_ylim([(-1 * max(np.abs(PC2_loadings)) - spacer), (max(np.abs(PC2_loadings)) + spacer)])
 

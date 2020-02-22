@@ -273,9 +273,10 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
-        gmmp = HardAssignments(labels, ncl)
-        gmm._m_step(d, gmmp)
-        gmmp = pd.DataFrame(gmmp)
+        gmmp_hard = HardAssignments(labels, ncl)
+        gmm._m_step(d, gmmp_hard)
+        gmmp = pd.DataFrame(gmm.predict_proba(d))
+        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
@@ -291,6 +292,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), scores, ICs, n_iter, gmmp, bg_pwm
 
+
 def HardAssignments(labels, ncl):
     m = []
     for idx in labels:
@@ -298,6 +300,7 @@ def HardAssignments(labels, ncl):
         l[idx] = 1
         m.append(l)
     return np.array(m)
+
 
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
@@ -318,16 +321,21 @@ def pairwise_score(seq1: str, seq2: str, matrix) -> float:
     return score
 
 
+def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
+    if distance_method == "PAM250":
+        gmmp = gmm_pred * 100
+    if distance_method == "Binomial":
+        gmmp = pd.DataFrame(np.log(1 - gmm_pred.replace({float(1): float(0.9999999999999)})))
+    return gmmp
+
+
 def gmm_initialize(X, ncl, covariance_type, distance_method, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 7:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
     gmm_pred = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:]))
-    if distance_method == "PAM250":
-        gmmp = gmm_pred * 100
-    if distance_method == "Binomial":
-        gmmp = pd.DataFrame(np.log(1 - gmm_pred.replace({float(1): float(0.9999999999999)})))
+    gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
     return gmm, init_clusters, gmmp
 
 

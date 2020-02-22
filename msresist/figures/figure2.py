@@ -62,7 +62,7 @@ def makeFigure():
 
     distance_method = "PAM250"
     ncl = 5
-    GMMweight = 1
+    GMMweight = 0.0
     b = 4
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
@@ -200,7 +200,7 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
     if loc:
         print(loadings.loc[loc])
 
-    colors_ = ["red", "black"]
+    colors_ = ["black", "red", "blue", "lightgoldenrodyellow", "brown", "cyan", "orange", "gray"]
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PLSR Scores", "PLSR Loadings"))
     fig.add_trace(
