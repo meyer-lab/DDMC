@@ -80,8 +80,8 @@ def makeFigure():
     plotProteinSites(ax[9], df.copy(), "ERBB2", "HER2")
     plotProteinSites(ax[10], df.copy(), "ERBB3", "HER3")
     plotProteinSites(ax[11], df.copy(), "GAB1", "GAB1")
-    plotProteinSites(ax[12], df.copy(), "ERK1", "MAPK3")
-    plotProteinSites(ax[13], df.copy(), "ERK3", "MAPK1")
+    plotProteinSites(ax[12], df.copy(), "MAPK3", "ERK1")
+    plotProteinSites(ax[13], df.copy(), "MAPK1", "ERK3")
     plotProteinSites(ax[14], df.copy(), "YES1", "YES1")
 
     # Add subplot labels
