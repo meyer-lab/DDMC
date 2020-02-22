@@ -29,7 +29,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (3, 3))
+    ax, f = getSetup((12, 10), (5, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
