@@ -55,7 +55,7 @@ def makeFigure():
     treatments = ABC.columns[7:]
 
     # Set up model pipeline
-    ncl, GMMweight, ncomp = 2, 2.5, 2
+    ncl, GMMweight, ncomp = 2, 0.5, 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method="Binomial")), ('plsr', PLSRegression(ncomp))])
     fit = mixedCl_plsr.fit(data, Y_cv)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(data)
@@ -63,11 +63,11 @@ def makeFigure():
     plotR2YQ2Y(ax[0], ncl, centers, Y_cv)
 
 #     plotMixedClusteringPLSR_GridSearch(ax[1], data, info, Y_cv)
-    plotKmeansPLSR_GridSearch(ax[1], data, Y_cv)
+#     plotKmeansPLSR_GridSearch(ax[1], data, Y_cv)
 
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
+    plotMeasuredVsPredicted(ax[1], mixedCl_plsr, data, Y_cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, Y_cv, ncl, treatments)
+    plotScoresLoadings(ax[2:4], fit, centers, Y_cv, ncl, treatments)
 
     plotclusteraverages(ax[5], ABC, mixedCl_plsr, ncl)
 
@@ -144,7 +144,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y, distance_method):
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size, n_jobs=-1)))
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
     Y = list(Y)
     ax.scatter(Y, Y_predictions)
     ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
