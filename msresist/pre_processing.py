@@ -13,7 +13,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
 
-def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=False, motifs=False, Vfilter=False, FCfilter=False, log2T=False, rawdata=False, mc_row=False, mc_col=False):
+def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, Axlmuts_ErlF154_BR2=False, C_r=False, motifs=False, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=False, rawdata=False, mc_row=False, mc_col=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
@@ -28,10 +28,13 @@ def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=Fal
     if Axlmuts_Erl:
         filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_unstim_BR1_raw.csv"), header=0))
     if Axlmuts_ErlF154:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_ActivatingAb_BR1_raw.csv"), header=0))
+        br1 = pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_ActivatingAb_BR1_raw.csv"), header=0)
+        br2 = pd.read_csv(os.path.join(path, "./data/Raw/PC9_mutants_ActivatingAb_BR2_raw.csv"))
+        br2.columns = br1.columns
+        filesin.append(br1)
+        filesin.append(br2)
 
     ABC = MeanCenter(Log2T(pd.concat(filesin)), mc_row, mc_col)
-
     longnames, shortnames = FormatName(ABC)
     ABC["Protein"] = longnames
     ABC = ABC.assign(Abbv=shortnames)
@@ -57,7 +60,10 @@ def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, C_r=Fal
         ABC = FoldChangeFilter(ABC)
 
     if not log2T:
-        ABC = LinearFoldChange(ABC)
+        if FCtoUT:
+            ABC = LinearFoldChange(ABC)
+        if not FCtoUT:
+            ABC = Linear(ABC)
 
     return ABC[merging_indices + list(filesin[0].columns[3:13])]
 
@@ -70,6 +76,12 @@ def MergeDfbyMean(X, values, indices):
 def LinearFoldChange(X):
     """ Convert to linear fold-change from log2 mean-centered. """
     X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13])).div(np.power(2, X.iloc[:, 3]), axis=0)
+    return X
+
+
+def Linear(X):
+    """ Convert to linear fold-change from log2 mean-centered. """
+    X.iloc[:, 3:13] = pd.DataFrame(np.power(2, X.iloc[:, 3:13]))
     return X
 
 
@@ -105,7 +117,7 @@ def FoldChangeFilter(X):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy())
-    Xidx = np.any(XX.iloc[:, 3:13].values <= 0.5, axis=1) | np.any(XX.iloc[:, 3:13].values >= 2.0, axis=1)
+    Xidx = np.any(XX.iloc[:, 3:13].values <= 0.8, axis=1) | np.any(XX.iloc[:, 3:13].values >= 1.2, axis=1)
     return X.iloc[Xidx, :]
 
 
@@ -199,7 +211,7 @@ def BuildMatrix(peptides, ABC):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.6):
+def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, -1].values >= corrCut
     return X.iloc[Xidx, :]
@@ -233,7 +245,7 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.4):
+def FilterByStdev(X, stdCut=0.5):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
@@ -260,3 +272,11 @@ def peptidefinder(X, loc, Protein=False, Abbv=False, Sequence=False):
     if Sequence:
         found = X[X["Sequence"].str.contains(loc)]
     return found
+
+
+def MergeTR(data):
+    """ Convenient to merge by mean all TRs of IncuCyte """
+    for i in range(1, data.shape[1], 2):
+        data.iloc[:, i] = data.iloc[:, i:i+1].mean(axis=1)
+
+    return data.drop(data.columns[[i+1 for i in range(1, data.shape[1], 2)]], axis="columns")
