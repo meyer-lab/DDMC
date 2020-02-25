@@ -1,7 +1,6 @@
 """
 This creates Figure 2.
 """
-
 import os
 import pandas as pd
 import numpy as np
@@ -12,15 +11,13 @@ from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.pipeline import Pipeline
+from msresist.clustering import MassSpecClustering
 from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components
-from msresist.clustering import MassSpecClustering
 from msresist.sequence_analysis import preprocess_seqs
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 from msresist.pre_processing import preprocessing, MergeDfbyMean
-import warnings
-warnings.simplefilter("ignore")
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -29,47 +26,61 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 9), (2, 3))
+    ax, f = getSetup((12, 8), (2, 3))
 
     # blank out first axis for cartoon
-#     ax[0].axis('off')
+    ax[0].axis('off')
 
     # Cell Viability
-    Y_cv1 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw3.csv')).iloc[:30, :11]
-    Y_cv2 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw4.csv')).iloc[:29, :11]
+    cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR1.csv").iloc[:, 1:]
+    cv1_ab = cv1.loc[:, cv1.columns.str.contains('-A/E')]
+    cv2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR2.csv').iloc[:, 1:]
+    cv2_ab = cv2.loc[:, cv2.columns.str.contains('-A/E')]
+    cv3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR3.csv').iloc[:, 1:]
+    cv3_ab = cv3.loc[:, cv2.columns.str.contains('-A/E')]
 
-    for ii in range(1, Y_cv2.columns.size):
-        Y_cv1.iloc[:, ii] /= Y_cv1.iloc[0, ii]
-        Y_cv2.iloc[:, ii] /= Y_cv2.iloc[0, ii]
+    for ii in range(0, cv2_ab.columns.size):
+        cv1_ab.iloc[:, ii] /= cv1_ab.iloc[0, ii]
+        cv2_ab.iloc[:, ii] /= cv2_ab.iloc[0, ii]
+        cv3_ab.iloc[:, ii] /= cv3_ab.iloc[0, ii]
 
-    Y_cv = MergeDfbyMean(pd.concat([Y_cv1, Y_cv2], axis=0), Y_cv1.columns, "Elapsed")
-    Y_cv = Y_cv.reset_index()[Y_cv1.columns]
-    Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
+    cv = pd.concat([cv1_ab, cv2_ab, cv3_ab], axis=0)
+    cv.insert(0, "Elapsed",  cv1.iloc[:, 0])
+    cv =  MergeDfbyMean(cv, cv1_ab.columns, "Elapsed").reset_index()
+    cv = cv[cv["Elapsed"] == 120].iloc[0, 1:]
+    cv = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
 
     # Phosphorylation data
-    ABC = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True)
-    ABC = preprocess_seqs(ABC, "Y")
+    X = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, mc_row=True)
+    X = preprocess_seqs(X, "Y").sort_values(by="Protein")
 
-    data = ABC.iloc[:, 7:].T
-    info = ABC.iloc[:, :7]
-    treatments = ABC.columns[7:]
+    d = X.select_dtypes(include=['float64']).T
+    i = X.select_dtypes(include=['object'])
 
-    # Set up model pipeline
-    ncl, GMMweight, ncomp = 2, 2.5, 2
-    mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method="Binomial")), ('plsr', PLSRegression(ncomp))])
-    fit = mixedCl_plsr.fit(data, Y_cv)
-    centers = mixedCl_plsr.named_steps.mixedCl.transform(data)
+    lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
+    d.index = lines
 
-    plotR2YQ2Y(ax[0], ncl, centers, Y_cv)
+    distance_method = "PAM250"
+    ncl = 5
+    GMMweight = 0.0
+    b = 4
 
-#     plotMixedClusteringPLSR_GridSearch(ax[1], data, info, Y_cv)
-    plotKmeansPLSR_GridSearch(ax[1], data, Y_cv)
+    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
+    centers = MSC.transform(d)
 
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, data, Y_cv)
+    plotR2YQ2Y(ax[1], centers, cv, b)
+    
+    ncomp = 2
+    mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
+    fit = mixedCl_plsr.fit(d, cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, Y_cv, ncl, treatments)
+    centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 
-    plotclusteraverages(ax[5], ABC, mixedCl_plsr, ncl)
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
+
+    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines)
+
+    plotclusteraverages(ax[5], centers.T, lines)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -77,52 +88,18 @@ def makeFigure():
     return f
 
 
-def plotR2YQ2Y(ax, ncl, centers, Y):
-    Q2Y = Q2Y_across_components(centers, Y, ncl + 1)
-    R2Y = R2Y_across_components(centers, Y, ncl + 1)
+def plotR2YQ2Y(ax, centers, Y, b=3):
+    Q2Y = Q2Y_across_components(centers, Y, b)
+    R2Y = R2Y_across_components(centers, Y, b)
 
-    range_ = np.arange(1, ncl + 1)
+    range_ = np.arange(1, b)
 
     ax.bar(range_ + 0.15, Q2Y, width=0.3, align='center', label='Q2Y', color="darkblue")
     ax.bar(range_ - 0.15, R2Y, width=0.3, align='center', label='R2Y', color="black")
     ax.set_title("R2Y/Q2Y Cell Viability")
     ax.set_xticks(range_)
     ax.set_xlabel("Number of Components")
-    ax.legend(loc=3)
-
-
-def plotKmeansPLSR_GridSearch(ax, X, Y):
-    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
-    twoC = np.abs(CVresults_min.iloc[:2, 3])
-    threeC = np.abs(CVresults_min.iloc[2:5, 3])
-    fourC = np.abs(CVresults_min.iloc[5:9, 3])
-    fiveC = np.abs(CVresults_min.iloc[9:14, 3])
-    sixC = np.abs(CVresults_min.iloc[14:20, 3])
-
-    width = 1
-    groupgap = 1
-
-    x1 = np.arange(len(twoC))
-    x2 = np.arange(len(threeC)) + groupgap + len(twoC)
-    x3 = np.arange(len(fourC)) + groupgap * 2 + len(twoC) + len(threeC)
-    x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
-    x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
-
-    ax.bar(x1, twoC, width, edgecolor='black', color="g")
-    ax.bar(x2, threeC, width, edgecolor='black', color="g")
-    ax.bar(x3, fourC, width, edgecolor='black', color="g")
-    ax.bar(x4, fiveC, width, edgecolor="black", color="g")
-    ax.bar(x5, sixC, width, edgecolor="black", color="g")
-
-    comps = []
-    for ii in range(2, 7):
-        comps.append(list(np.arange(1, ii + 1)))
-    flattened = [nr for cluster in comps for nr in cluster]
-
-    ax.set_xticks(np.concatenate((x1, x2, x3, x4, x5)))
-    ax.set_xticklabels(flattened, fontsize=10)
-    ax.set_xlabel("Number of Components per Cluster")
-    ax.set_ylabel("Mean-Squared Error (MSE)")
+    ax.legend(loc=0)
 
 
 def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y, distance_method):
@@ -179,8 +156,8 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
     ax[0].axvline(x=0, color='0.25', linestyle='--')
 
     spacer = 0.5
-    ax[0].set_xlim([(-1 * max(PC1_scores)) - spacer, max(PC1_scores) + spacer])
-    ax[0].set_ylim([(-1 * max(PC2_scores)) - spacer, max(PC2_scores) + spacer])
+    ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
+    ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
     numbered = []
@@ -197,8 +174,8 @@ def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
     ax[1].axvline(x=0, color='0.25', linestyle='--')
 
     spacer = 0.5
-    ax[1].set_xlim([(-1 * max(list(PC1_xload) + list(PC1_yload))) - spacer, max(list(PC1_xload) + list(PC1_yload)) + spacer])
-    ax[1].set_ylim([(-1 * max(list(PC2_xload) + list(PC2_yload))) - spacer, max(list(PC2_xload) + list(PC2_yload)) + spacer])
+    ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
+    ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
 
 
 def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
@@ -223,7 +200,7 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
     if loc:
         print(loadings.loc[loc])
 
-    colors_ = ["red", "black"]
+    colors_ = ["black", "red", "blue", "lightgoldenrodyellow", "brown", "cyan", "orange", "gray"]
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PLSR Scores", "PLSR Loadings"))
     fig.add_trace(
@@ -290,16 +267,48 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
     fig.show()
 
 
-def plotclusteraverages(ax, X, model_plsr, ncl, mixed=True):
-    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
-    if mixed:
-        centers = model_plsr.named_steps.mixedCl.transform(X.iloc[:, 7:].T).T
-    if not mixed:
-        centers = model_plsr.named_steps.kmeans.transform(X.iloc[:, 7:].T).T
+def plotclusteraverages(ax, centers, treatments):
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
+
     for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i])
-    ax.legend()
+        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color= colors_[i])
 
     ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(X.columns[7:], rotation=70, rotation_mode="anchor")
-    ax.set_ylabel("normalized signal")
+    ax.set_xticklabels(treatments, rotation=45)
+    ax.set_ylabel("Normalized Signal", fontsize=12)
+    ax.legend()
+
+
+def plotKmeansPLSR_GridSearch(ax, X, Y):
+    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
+    twoC = np.abs(CVresults_min.iloc[:2, 3])
+    threeC = np.abs(CVresults_min.iloc[2:5, 3])
+    fourC = np.abs(CVresults_min.iloc[5:9, 3])
+    fiveC = np.abs(CVresults_min.iloc[9:14, 3])
+    sixC = np.abs(CVresults_min.iloc[14:20, 3])
+
+    width = 1
+    groupgap = 1
+
+    x1 = np.arange(len(twoC))
+    x2 = np.arange(len(threeC)) + groupgap + len(twoC)
+    x3 = np.arange(len(fourC)) + groupgap * 2 + len(twoC) + len(threeC)
+    x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
+    x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
+
+    ax.bar(x1, twoC, width, edgecolor='black', color="g")
+    ax.bar(x2, threeC, width, edgecolor='black', color="g")
+    ax.bar(x3, fourC, width, edgecolor='black', color="g")
+    ax.bar(x4, fiveC, width, edgecolor="black", color="g")
+    ax.bar(x5, sixC, width, edgecolor="black", color="g")
+
+    comps = []
+    for ii in range(2, 7):
+        comps.append(list(np.arange(1, ii + 1)))
+    flattened = [nr for cluster in comps for nr in cluster]
+
+    ax.set_xticks(np.concatenate((x1, x2, x3, x4, x5)))
+    ax.set_xticklabels(flattened, fontsize=10)
+    ax.set_xlabel("Number of Components per Cluster")
+    ax.set_ylabel("Mean-Squared Error (MSE)")

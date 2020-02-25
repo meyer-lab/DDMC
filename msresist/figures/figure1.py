@@ -23,45 +23,57 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (3, 3))
+    ax, f = getSetup((16, 10), (3, 4))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
 
-    # Read in data
-    Y_cv1 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw3.csv')).iloc[:30, :11]
-    Y_cv2 = pd.read_csv(os.path.join(path, '../data/Phenotypic_data/CV_raw4.csv')).iloc[:29, :11]
+    # Read in Cell Viability data
+    BR1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR1.csv").iloc[:, 1:]
+    BR2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR2.csv').iloc[:, 1:]
+    BR3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR3.csv').iloc[:, 1:]
 
-    # Assert that there's no significant influence of the initial seeding density
-    Y_cvE3_0 = Y_cv1[Y_cv1["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:] / Y_cvE3_0
+    t = 72
+    lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
 
-    Y_cvE4_0 = Y_cv2[Y_cv2["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:] / Y_cvE4_0
+    # Read in Mass Spec data
+    E = preprocessing(Axlmuts_Erl=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
+    A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
+    E.columns = A.columns
+    d = A.select_dtypes(include=['float64']).T
+    
+    #A: Cell Viability 
+    BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, t, lines)
 
-    assert sp.stats.pearsonr(Y_cvE3_0, Y_fcE3)[1] > 0.05
-    assert sp.stats.pearsonr(Y_cvE4_0, Y_fcE4)[1] > 0.05
+    #B: blank out second axis for signaling ClusterMap
+    ax[1].axis('off')
 
-    # Normalize to t=0
-    for ii in range(1, Y_cv2.columns.size):
-        Y_cv1.iloc[:, ii] /= Y_cv1.iloc[0, ii]
-        Y_cv2.iloc[:, ii] /= Y_cv2.iloc[0, ii]
+    #C&D: Scores and Loadings MS data
+    plotpca_ScoresLoadings(ax[2:4], d)
 
-    plotTimeCourse(ax[0:2], Y_cv1, Y_cv2)
+    #E: Variability across overlapping peptides in MS replicates
+    X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
+    plotVarReplicates(ax[4:6], X)
 
-    plotAveragedEndpoint(ax[2], Y_cv1, Y_cv2)
+    #F-: Phosphorylation levels of selected peptides
+    E = E.reset_index()
+    A = A.reset_index()
 
-    plotRTKs(ax[3:7])
+    plotProteinSites(ax[6], A.copy(), "AXL", "AXL")
+    plotProteinSitesEvsA(ax[7], E.copy(), A.copy(), "AXL", "AXL")
 
-    X = preprocessing(AXLwt=True, rawdata=True)
-    plotVarReplicates(ax[7:9], X)
+    plotProteinSites(ax[8], A.copy(), "EGFR", "EGFR")
+    plotProteinSitesEvsA(ax[9], E.copy(), A.copy(), "EGFR", "EGFR")
+
+    plotProteinSites(ax[10], A.copy(), "MAPK3", "ERK1")
+    plotProteinSitesEvsA(ax[11], E.copy(), A.copy(), "MAPK3", "ERK1")
 
     # Add subplot labels
     subplotLabel(ax)
 
     return f
 
-
+  
 def plotTimeCourse(ax, Y_cv1, Y_cv2):
     """ Plots the Incucyte timecourse. """
     ax[0].set_title("Experiment 3")
@@ -90,94 +102,79 @@ def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
     ax.set_ylabel("% Confluency")
 
 
-def plotReplicatesFoldChangeEndpoint(ax, Y_cv1, Y_cv2):
-    range_ = np.linspace(1, 10, 10)
+def FCendpoint(d, tp, t, l):
+    dt0 = d[d["Elapsed"] == 0].iloc[0, 1:]
+    dfc = d[d["Elapsed"] == tp].iloc[0, 1:] / dt0
+    
+    # Assert that there's no significant influence of the initial seeding density
+    assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
 
-    Y_cvE3_0 = Y_cv1[Y_cv1["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE3 = Y_cv1[Y_cv1["Elapsed"] == 72].iloc[0, 1:] / Y_cvE3_0
+    dfc = pd.DataFrame(dfc).reset_index()
 
-    Y_cvE4_0 = Y_cv2[Y_cv2["Elapsed"] == 0].iloc[0, 1:]
-    Y_fcE4 = Y_cv2[Y_cv2["Elapsed"] == 72].iloc[0, 1:] / Y_cvE4_0
+    dfc["AXL mutants Y->F"] = l
+    dfc["Treatment"] = t
+    dfc = dfc[["index", "AXL mutants Y->F", "Treatment", 0]]
+    dfc.columns = ["index", "AXL mutants Y->F", "Treatment", "Cell Viability (fold-change t=0)"]
+    return dfc.iloc[:, 1:]
 
-    ax.set_title("Cell Viability - 72h")
+
+def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
+    range_ = np.linspace(1, len(BR2.columns[1:]), len(BR2.columns[1:]))
+
+    BR1t0 = BR1[BR1["Elapsed"] == 0].iloc[0, 1:]
+    BR1t135fc = BR1[BR1["Elapsed"] == t].iloc[0, 1:] / BR1t0
+
+    BR2t0 = BR2[BR2["Elapsed"] == 0].iloc[0, 1:]
+    BR2fc = BR2[BR2["Elapsed"] == t].iloc[0, 1:] / BR2t0
+
+    BR3t0 = BR3[BR3["Elapsed"] == 0].iloc[0, 1:]
+    BR3fc = BR3[BR3["Elapsed"] == t].iloc[0, 1:] / BR3t0
+
+    assert sp.stats.pearsonr(BR1t0, BR1t135fc)[1] > 0.05, (BR1t0, BR1t135fc)
+    assert sp.stats.pearsonr(BR2t0, BR2fc)[1] > 0.05, (BR2t0, BR2fc)
+    assert sp.stats.pearsonr(BR3t0, BR3fc)[1] > 0.05, (BR3t0, BR3fc)
+
+    width=0.4
+    ax.set_title("Cell Viability-" + str(t) + "h " + title)
     ax.set_xticks(np.arange(1, 11, 1))
-    ax.set_xticklabels(Y_cv1.columns[1:])
-    ax.bar(range_ + 0.15, Y_fcE3, width=0.3, align='center', label='Exp3', color="black")
-    ax.bar(range_ - 0.15, Y_fcE4, width=0.3, align='center', label='Exp4', color="darkgreen")
+    ax.set_xticklabels(BR2.columns[1:], rotation=45)
+    ax.bar(range_ - 0.20, BR1t135fc, width=width, align='center', label='BR1', color="black")
+    ax.bar(range_ - 0.20, BR2fc, width=width, align='center', label='BR2', color="darkgreen")
+    ax.bar(range_ + 0.20, BR3fc, width=width, align='center', label='BR3', color="darkblue")
     ax.legend()
-    ax.set_ylabel("Fold-change 72h vs 0h")
+    ax.set_ylabel("Fold-change to t=0h")
 
 
-def plotAveragedEndpoint(ax, Y_cv1, Y_cv2):
-    range_ = np.linspace(1, 10, 10)
+def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, t, lines):
+    BR1_UT = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('UT')]], axis=1)
+    BR1_E = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-E')]], axis=1)
+    BR1_AE = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-A/E')]], axis=1)
 
-    Y_cv = MergeDfbyMean(pd.concat([Y_cv1, Y_cv2], axis=0), Y_cv1.columns, "Elapsed")
-    Y_cv = Y_cv.reset_index()[Y_cv1.columns]
-    Y_cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
+    BR2_UT = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('UT')]], axis=1)
+    BR2_E = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-E')]], axis=1)
+    BR2_AE = pd.concat([BR2.iloc[:, 0], BR2.loc[:, BR2.columns.str.contains('-A/E')]], axis=1)
 
-    ax.set_title("Cell Viability - 72h")
-    ax.set_xticks(np.arange(1, 11, 1))
-    ax.set_xticklabels(Y_cv1.columns[1:])
-    ax.bar(range_, Y_cv, width=0.5, align='center', color="black")
-    ax.set_ylabel("% Confluency")
+    BR3_UT = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('UT')]], axis=1)
+    BR3_E = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-E')]], axis=1)
+    BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
+    
+    br1_ut = FCendpoint(BR1_UT, t, ["UT"]*10, lines)
+    br2_ut = FCendpoint(BR2_UT, t, ["UT"]*10, lines)
+    br3_ut = FCendpoint(BR3_UT, t, ["UT"]*10, lines)
+    br1_e = FCendpoint(BR1_E, t, ["Erlotinib"]*10, lines)
+    br2_e = FCendpoint(BR2_E, t, ["Erlotinib"]*10, lines)
+    br3_e = FCendpoint(BR3_E, t, ["Erlotinib"]*10, lines)
+    br1_ae = FCendpoint(BR1_AE, t, ["Erl + AF154"]*10, lines)
+    br2_ae = FCendpoint(BR2_AE, t, ["Erl + AF154"]*10, lines)
+    br3_ae = FCendpoint(BR3_AE, t, ["Erl + AF154"]*10, lines)
+    c = pd.concat([br2_ut, br3_ut, br2_e, br3_e, br2_ae, br3_ae])
 
-
-def plotRTKs(ax):
-    ABC = preprocessing(AXLwt=True)
-    header = ABC.columns
-
-    EGFR = ABC[ABC["Sequence"].str.contains("SHQISLDNPDyQQDFFP")].mean()
-    IGFR = ABC[ABC["Sequence"].str.contains("IYETDYyR")].iloc[:, 3:13].mean()
-    MET = ABC[ABC["Sequence"].str.contains("MYDkEyYSVHNk")].iloc[:, 3:13].mean()
-    AXL = ABC[ABC["Sequence"].str.contains("YNGDyYR")].iloc[:, 3:13].mean()
-
-    ax[0].set_title("EGFR: pY1172", fontsize=13)
-    ax[0].plot(EGFR)
-    ax[0].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
-    ax[1].set_title("IGFR: pY1190", fontsize=13)
-    ax[1].plot(IGFR)
-    ax[1].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
-    ax[2].set_title("MET: pY1234", fontsize=13)
-    ax[2].plot(MET)
-    ax[2].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
-    ax[3].set_title("AXL: pY702", fontsize=13)
-    ax[3].plot(AXL)
-    ax[3].set_xticklabels(header[3:], rotation=80, horizontalalignment='right')
+    ax = sns.barplot(x="AXL mutants Y->F", y="Cell Viability (fold-change t=0)", hue="Treatment", data=c, ci="sd")
+    ax.set_title("t=" + str(t) + "h")
+    ax.set_xticklabels(lines, rotation=45)
 
 
-def plotVarReplicates(ax, ABC):
-    ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
-    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
-
-    # Correlation of Duplicates, optionally filtering first
-    DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
-    # DupsTable = CorrCoefFilter(DupsTable)
-    DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
-    assert(DupsTable.shape[0] / 2 == DupsTable_drop.shape[0])
-
-    # Stdev of Triplicates, optionally filtering first
-    StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
-    Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
-    # Xidx = np.all(Stds.values <= 0.4, axis=1)
-    # Stds = Stds.iloc[Xidx, :]
-
-    n_bins = 10
-    ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins)
-    ax[0].set_ylabel("Number of peptides", fontsize=12)
-    ax[0].set_xlabel("Pearson Correlation Coefficients N= " + str(DupsTable_drop.shape[0]), fontsize=12)
-    textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
-    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, fontsize=12, verticalalignment='top', bbox=props)
-
-    ax[1].hist(Stds.mean(axis=1), bins=n_bins)
-    ax[1].set_ylabel("Number of peptides", fontsize=12)
-    ax[1].set_xlabel("Mean of Standard Deviations N= " + str(Stds.shape[0]), fontsize=12)
-    textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
-    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
-
-
+# Plot Separately
 def plotClustergram(data, title, lim=False, robust=True):
     g = sns.clustermap(
         data,
@@ -189,14 +186,6 @@ def plotClustergram(data, title, lim=False, robust=True):
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
     ax.set_ylabel("")
-
-
-#     p = g.dendrogram_row.reordered_ind
-#     corr = ABC_mc.iloc[p, 2:].T.corr(method='pearson')
-#     Correlation heatmap was really just for exploration. Not including here.
-#     ax[1] = sns.heatmap(corr,  vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True, ax=ax[1])
-#     ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=80, horizontalalignment='right')
-#     ax[1].set_title("Correlation Heatmap");
 
 
 def plotpca_explained(ax, data, ncomp):
@@ -235,8 +224,8 @@ def plotpca_ScoresLoadings(ax, data):
     ax[0].axvline(x=0, color='0.25', linestyle='--')
 
     spacer = 0.5
-    ax[0].set_xlim([(-1 * max(PC1_scores)) - spacer, max(PC1_scores) + spacer])
-    ax[0].set_ylim([(-1 * max(PC2_scores)) - spacer, max(PC2_scores) + spacer])
+    ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
+    ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
     for i, txt in enumerate(list(data.columns)):
@@ -247,9 +236,9 @@ def plotpca_ScoresLoadings(ax, data):
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
-    spacer = 0.04
-    ax[1].set_xlim([(-1 * max(PC1_loadings) - spacer), (max(PC1_loadings) + spacer)])
-    ax[1].set_ylim([(-1 * max(PC2_loadings) - spacer), (max(PC2_loadings) + spacer)])
+    spacer = 0.5
+    ax[1].set_xlim([(-1 * max(np.abs(PC1_loadings)) - spacer), (max(np.abs(PC1_loadings)) + spacer)])
+    ax[1].set_ylim([(-1 * max(np.abs(PC2_loadings)) - spacer), (max(np.abs(PC2_loadings)) + spacer)])
 
 
 def plotpca_ScoresLoadings_plotly(data, title, loc=False):
@@ -317,3 +306,90 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig.update_yaxes(title_text="Principal Component 2", row=1, col=2)
 
     fig.show()
+
+
+def plotVarReplicates(ax, ABC):
+    ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
+    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
+
+    # Correlation of Duplicates, optionally filtering first
+    DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
+    # DupsTable = CorrCoefFilter(DupsTable)
+    DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
+    assert(DupsTable.shape[0] / 2 == DupsTable_drop.shape[0])
+
+    # Stdev of Triplicates, optionally filtering first
+    StdPeptides = BuildMatrix(StdPeptides, ABC)
+    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
+    Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
+    # Xidx = np.all(Stds.values <= 0.4, axis=1)
+    # Stds = Stds.iloc[Xidx, :]
+
+    n_bins = 10
+    ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins)
+    ax[0].set_ylabel("Number of peptides", fontsize=12)
+    ax[0].set_xlabel("Pearson Correlation Coefficients N= " + str(DupsTable_drop.shape[0]), fontsize=12)
+    textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+
+    ax[1].hist(Stds.mean(axis=1), bins=n_bins)
+    ax[1].set_ylabel("Number of peptides", fontsize=12)
+    ax[1].set_xlabel("Mean of Standard Deviations N= " + str(Stds.shape[0]), fontsize=12)
+    textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
+    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
+    ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+
+
+def plotProteinSites(ax, x, prot, title):
+    "Plot all phosphopeptides for a given protein"
+    x = x.set_index(["Abbv"])
+    peptides = pd.DataFrame(x.loc[prot])
+    assert peptides.shape[0] > 0
+    if peptides.shape[1] == 1:
+        peptides = peptides.T
+        d = peptides.iloc[:, 4:]
+    else:
+        d = peptides.select_dtypes(include=['float64'])
+
+    positions = x.loc[prot]["Position"]
+    
+    colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
+    for i in range(peptides.shape[0]):
+        if peptides.shape[0] == 1:
+            ax.plot(d.iloc[i, :], marker="o", label=positions, color = colors_[i])
+        else:
+            ax.plot(d.iloc[i, :], marker="o", label=positions[i], color = colors_[i])
+    
+    ax.legend(loc=0)
+    ax.set_xticklabels(x.columns[4:], rotation=45)
+    ax.set_ylabel("Normalized Signal", fontsize=10)
+    ax.set_title(title)
+
+
+def plotProteinSitesEvsA(ax, E, A, prot, title):
+    "Plot fold change between AF154 vs Erlotinib only"
+    E.insert(5, "Treatment", ["erlotinib"]*E.shape[0])
+    A.insert(5, "Treatment", ["AF154"]*A.shape[0])
+    c = pd.concat([E, A])
+    x = c.set_index(["Abbv"])
+
+    peptides = pd.DataFrame(x.loc[prot])
+    assert peptides.shape[0] > 0
+    d = peptides.groupby(["Position", "Treatment"]).mean().reset_index().set_index("Position")
+
+    fd, positions = [], []
+    for pos in list(set(d.index)):
+        x = d.loc[pos]
+        if x.shape[0] == 2:
+            positions.append(pos)
+            fd.append(x[x["Treatment"]=="AF154"].iloc[0, 1:].div(x[x["Treatment"]=="erlotinib"].iloc[0, 1:]))
+
+    colors_ = cm.rainbow(np.linspace(0, 1, len(positions)))
+    for j in range(len(positions)):
+        ax.plot(fd[j], marker="o", label=positions[j], color = colors_[j])
+
+    ax.legend(loc=0)
+    ax.set_ylabel("Fold-change AF154 vs Erl Only", fontsize=10)
+    ax.set_xticklabels(E.columns[6:], rotation=45)
+    ax.set_title(title)
