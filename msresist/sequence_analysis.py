@@ -208,8 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
-            bpm = BPM[z].set_index("Residue")
-            BPM_score = MeanBinomProbs(bpm, motif, pYTS)
+            BPM_score = MeanBinomProbs(BPM[z], motif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
