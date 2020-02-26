@@ -305,10 +305,7 @@ def HardAssignments(labels, ncl):
 def match_AAs(pair, matrix):
     """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
     eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
-    if pair not in matrix:
-        return matrix[(tuple(reversed(pair)))]
-    else:
-        return matrix[pair]
+    return matrix[pair]
 
 
 def pairwise_score(seq1: str, seq2: str, matrix) -> float:
