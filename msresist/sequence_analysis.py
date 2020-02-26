@@ -10,7 +10,7 @@ from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
-from scipy.stats import binom
+from scipy.stats import binom, multivariate_normal
 from sklearn.mixture import GaussianMixture
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -230,7 +230,7 @@ def BPM(cl_seqs, bg_pwm, distance_method):
         BPM = []
         for z in range(len(cl_seqs)):
             freqs = frequencies(cl_seqs[z])
-            BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm))
+            BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm).set_index("Residue"))
     if distance_method == "PAM250":
         BPM = False
     return BPM
