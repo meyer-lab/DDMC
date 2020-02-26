@@ -121,7 +121,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y, distance_method):
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size, n_jobs=-1)))
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
     Y = list(Y)
     ax.scatter(Y, Y_predictions)
     ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
