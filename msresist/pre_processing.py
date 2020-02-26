@@ -13,7 +13,20 @@ path = os.path.dirname(os.path.abspath(__file__))
 ###-------------------------- Pre-processing Raw Data --------------------------###
 
 
-def preprocessing(AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlF154=False, Axlmuts_ErlF154_BR2=False, C_r=False, motifs=False, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=False, rawdata=False, mc_row=False, mc_col=False):
+def preprocessing(
+        AXLwt=False,
+        Axlmuts_Erl=False,
+        Axlmuts_ErlF154=False,
+        Axlmuts_ErlF154_BR2=False,
+        C_r=False,
+        motifs=False,
+        Vfilter=False,
+        FCfilter=False,
+        log2T=False,
+        FCtoUT=False,
+        rawdata=False,
+        mc_row=False,
+        mc_col=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
@@ -277,6 +290,6 @@ def peptidefinder(X, loc, Protein=False, Abbv=False, Sequence=False):
 def MergeTR(data):
     """ Convenient to merge by mean all TRs of IncuCyte """
     for i in range(1, data.shape[1], 2):
-        data.iloc[:, i] = data.iloc[:, i:i+1].mean(axis=1)
+        data.iloc[:, i] = data.iloc[:, i:i + 1].mean(axis=1)
 
-    return data.drop(data.columns[[i+1 for i in range(1, data.shape[1], 2)]], axis="columns")
+    return data.drop(data.columns[[i + 1 for i in range(1, data.shape[1], 2)]], axis="columns")
