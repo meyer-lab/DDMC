@@ -432,10 +432,10 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
 def MeanBinomProbs(BPM, motif, pYTS):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     BPM = BPM.set_index("Residue")
-    probs = []
+    probs = 0.0
     for i, aa in enumerate(motif):
         if i == 5:
             assert aa == pYTS, ("wrong central AA: %s" % aa)
             continue
-        probs.append(float(BPM.loc[aa][i]))
-    return np.mean(probs)
+        probs += float(BPM.loc[aa][i])
+    return probs / (len(motif) - 1)
