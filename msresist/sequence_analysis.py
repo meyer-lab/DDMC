@@ -124,7 +124,7 @@ def GeneratingKinaseMotifs(names, seqs):
     protnames = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, mapped_motifs, uni_pos = [], [], []
     Allseqs, Testseqs = [], []
-    
+
     for i, MS_seq in enumerate(seqs):
         pos, mappedMotif = findmotif(MS_seq, protnames, ProteomeDict, motif_size, i)
         Allseqs.append(MS_seq)
@@ -296,7 +296,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
 def HardAssignments(labels, ncl):
     m = []
     for idx in labels:
-        l = [0]*ncl
+        l = [0] * ncl
         l[idx] = 1
         m.append(l)
     return np.array(m)
@@ -350,23 +350,24 @@ def preprocess_seqs(X, pYTS):
 
 
 def BackgroundSeqs(pYTS):
-    """ Build Background data set for either "Y", "S", or "T". 
-    Source: https://www.phosphosite.org/staticDownloads.action - 
+    """ Build Background data set for either "Y", "S", or "T".
+    Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
-    Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations, 
+    Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
     bg_seqs = []
     refseqs = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv").iloc[:, 1]
     for i, seq in enumerate(refseqs):
-        motif = str(seq)[7-5:7+6].upper()
+        motif = str(seq)[7 - 5:7 + 6].upper()
         if "_" in motif or "Y" != motif[5]:
             continue
 
-        assert len(motif) == 11, "Wrong sequence length: %s" % motif 
+        assert len(motif) == 11, "Wrong sequence length: %s" % motif
 
         bg_seqs.append(Seq(motif, IUPAC.protein))
 
     return bg_seqs
+
 
 def ForegroundSeqs(Allseqs, pYTS):
     """ Build Background data set for either "Y", "S", or "T". """
