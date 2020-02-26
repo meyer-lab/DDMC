@@ -4,7 +4,7 @@ This creates Figure 4.
 from .common import subplotLabel, getSetup
 import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.pipeline import Pipeline 
+from sklearn.pipeline import Pipeline
 from msresist.sequence_analysis import preprocess_seqs
 from msresist.pre_processing import preprocessing, MergeDfbyMean
 from msresist.clustering import MassSpecClustering
@@ -49,7 +49,7 @@ def makeFigure():
     centers = MSC.transform(d)
 
     plotR2YQ2Y(ax[1], centers, cv)
-    
+
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
 
@@ -66,4 +66,3 @@ def makeFigure():
     subplotLabel(ax)
 
     return f
-

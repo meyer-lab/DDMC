@@ -45,8 +45,8 @@ def makeFigure():
         cv3_ab.iloc[:, ii] /= cv3_ab.iloc[0, ii]
 
     cv = pd.concat([cv1_ab, cv2_ab, cv3_ab], axis=0)
-    cv.insert(0, "Elapsed",  cv1.iloc[:, 0])
-    cv =  MergeDfbyMean(cv, cv1_ab.columns, "Elapsed").reset_index()
+    cv.insert(0, "Elapsed", cv1.iloc[:, 0])
+    cv = MergeDfbyMean(cv, cv1_ab.columns, "Elapsed").reset_index()
     cv = cv[cv["Elapsed"] == 120].iloc[0, 1:]
     cv = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
 
@@ -69,7 +69,7 @@ def makeFigure():
     centers = MSC.transform(d)
 
     plotR2YQ2Y(ax[1], centers, cv, b)
-    
+
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = mixedCl_plsr.fit(d, cv)
@@ -268,11 +268,11 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
 
 
 def plotclusteraverages(ax, centers, treatments):
-    
+
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
 
     for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color= colors_[i])
+        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color=colors_[i])
 
     ax.set_xticks(np.arange(centers.shape[1]))
     ax.set_xticklabels(treatments, rotation=45)
