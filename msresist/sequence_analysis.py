@@ -208,8 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
-            bpm = BPM[z].set_index("Residue")
-            BPM_score = MeanBinomProbs(bpm, motif, pYTS)
+            BPM_score = MeanBinomProbs(BPM[z], motif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
@@ -258,7 +257,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
             BPM = []
             for z in range(ncl):
                 freqs = frequencies(cl_seqs[z])
-                BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm))
+                BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm).set_index("Residue"))
         else:
             BPM = False
 
