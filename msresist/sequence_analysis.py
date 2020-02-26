@@ -226,6 +226,15 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
     return score, idx
 
+def BPM(cl_seqs, bg_pwm, distance_method):
+    if distance_method == "Binomial":
+        BPM = []
+        for z in range(len(cl_seqs)):
+            freqs = frequencies(cl_seqs[z])
+            BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm))
+    if distance_method == "PAM250":
+        BPM = False
+    return BPM
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
@@ -254,16 +263,9 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         DictScore = defaultdict(list)
 
         # E step: Assignment of each peptide based on data and seq
-        if distance_method == "Binomial":
-            BPM = []
-            for z in range(ncl):
-                freqs = frequencies(cl_seqs[z])
-                BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm))
-        else:
-            BPM = False
-
+        binoM = BPM(cl_seqs, bg_pwm, distance_method)
         for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, BPM)
+            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, binoM)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
