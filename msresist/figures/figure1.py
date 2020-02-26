@@ -41,21 +41,21 @@ def makeFigure():
     A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
     E.columns = A.columns
     d = A.select_dtypes(include=['float64']).T
-    
-    #A: Cell Viability 
+
+    # A: Cell Viability
     BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, t, lines)
 
-    #B: blank out second axis for signaling ClusterMap
+    # B: blank out second axis for signaling ClusterMap
     ax[1].axis('off')
 
-    #C&D: Scores and Loadings MS data
+    # C&D: Scores and Loadings MS data
     plotpca_ScoresLoadings(ax[2:4], d)
 
-    #E: Variability across overlapping peptides in MS replicates
+    # E: Variability across overlapping peptides in MS replicates
     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     plotVarReplicates(ax[4:6], X)
 
-    #F-: Phosphorylation levels of selected peptides
+    # F-: Phosphorylation levels of selected peptides
     E = E.reset_index()
     A = A.reset_index()
 
@@ -73,7 +73,7 @@ def makeFigure():
 
     return f
 
-  
+
 def plotTimeCourse(ax, Y_cv1, Y_cv2):
     """ Plots the Incucyte timecourse. """
     ax[0].set_title("Experiment 3")
@@ -105,7 +105,7 @@ def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
 def FCendpoint(d, tp, t, l):
     dt0 = d[d["Elapsed"] == 0].iloc[0, 1:]
     dfc = d[d["Elapsed"] == tp].iloc[0, 1:] / dt0
-    
+
     # Assert that there's no significant influence of the initial seeding density
     assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
 
@@ -134,7 +134,7 @@ def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
     assert sp.stats.pearsonr(BR2t0, BR2fc)[1] > 0.05, (BR2t0, BR2fc)
     assert sp.stats.pearsonr(BR3t0, BR3fc)[1] > 0.05, (BR3t0, BR3fc)
 
-    width=0.4
+    width = 0.4
     ax.set_title("Cell Viability-" + str(t) + "h " + title)
     ax.set_xticks(np.arange(1, 11, 1))
     ax.set_xticklabels(BR2.columns[1:], rotation=45)
@@ -157,16 +157,16 @@ def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, t, lines):
     BR3_UT = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('UT')]], axis=1)
     BR3_E = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-E')]], axis=1)
     BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
-    
-    br1_ut = FCendpoint(BR1_UT, t, ["UT"]*10, lines)
-    br2_ut = FCendpoint(BR2_UT, t, ["UT"]*10, lines)
-    br3_ut = FCendpoint(BR3_UT, t, ["UT"]*10, lines)
-    br1_e = FCendpoint(BR1_E, t, ["Erlotinib"]*10, lines)
-    br2_e = FCendpoint(BR2_E, t, ["Erlotinib"]*10, lines)
-    br3_e = FCendpoint(BR3_E, t, ["Erlotinib"]*10, lines)
-    br1_ae = FCendpoint(BR1_AE, t, ["Erl + AF154"]*10, lines)
-    br2_ae = FCendpoint(BR2_AE, t, ["Erl + AF154"]*10, lines)
-    br3_ae = FCendpoint(BR3_AE, t, ["Erl + AF154"]*10, lines)
+
+    br1_ut = FCendpoint(BR1_UT, t, ["UT"] * 10, lines)
+    br2_ut = FCendpoint(BR2_UT, t, ["UT"] * 10, lines)
+    br3_ut = FCendpoint(BR3_UT, t, ["UT"] * 10, lines)
+    br1_e = FCendpoint(BR1_E, t, ["Erlotinib"] * 10, lines)
+    br2_e = FCendpoint(BR2_E, t, ["Erlotinib"] * 10, lines)
+    br3_e = FCendpoint(BR3_E, t, ["Erlotinib"] * 10, lines)
+    br1_ae = FCendpoint(BR1_AE, t, ["Erl + AF154"] * 10, lines)
+    br2_ae = FCendpoint(BR2_AE, t, ["Erl + AF154"] * 10, lines)
+    br3_ae = FCendpoint(BR3_AE, t, ["Erl + AF154"] * 10, lines)
     c = pd.concat([br2_ut, br3_ut, br2_e, br3_e, br2_ae, br3_ae])
 
     ax = sns.barplot(x="AXL mutants Y->F", y="Cell Viability (fold-change t=0)", hue="Treatment", data=c, ci="sd")
@@ -353,14 +353,14 @@ def plotProteinSites(ax, x, prot, title):
         d = peptides.select_dtypes(include=['float64'])
 
     positions = x.loc[prot]["Position"]
-    
+
     colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
     for i in range(peptides.shape[0]):
         if peptides.shape[0] == 1:
-            ax.plot(d.iloc[i, :], marker="o", label=positions, color = colors_[i])
+            ax.plot(d.iloc[i, :], marker="o", label=positions, color=colors_[i])
         else:
-            ax.plot(d.iloc[i, :], marker="o", label=positions[i], color = colors_[i])
-    
+            ax.plot(d.iloc[i, :], marker="o", label=positions[i], color=colors_[i])
+
     ax.legend(loc=0)
     ax.set_xticklabels(x.columns[4:], rotation=45)
     ax.set_ylabel("Normalized Signal", fontsize=10)
@@ -369,8 +369,8 @@ def plotProteinSites(ax, x, prot, title):
 
 def plotProteinSitesEvsA(ax, E, A, prot, title):
     "Plot fold change between AF154 vs Erlotinib only"
-    E.insert(5, "Treatment", ["erlotinib"]*E.shape[0])
-    A.insert(5, "Treatment", ["AF154"]*A.shape[0])
+    E.insert(5, "Treatment", ["erlotinib"] * E.shape[0])
+    A.insert(5, "Treatment", ["AF154"] * A.shape[0])
     c = pd.concat([E, A])
     x = c.set_index(["Abbv"])
 
@@ -383,11 +383,11 @@ def plotProteinSitesEvsA(ax, E, A, prot, title):
         x = d.loc[pos]
         if x.shape[0] == 2:
             positions.append(pos)
-            fd.append(x[x["Treatment"]=="AF154"].iloc[0, 1:].div(x[x["Treatment"]=="erlotinib"].iloc[0, 1:]))
+            fd.append(x[x["Treatment"] == "AF154"].iloc[0, 1:].div(x[x["Treatment"] == "erlotinib"].iloc[0, 1:]))
 
     colors_ = cm.rainbow(np.linspace(0, 1, len(positions)))
     for j in range(len(positions)):
-        ax.plot(fd[j], marker="o", label=positions[j], color = colors_[j])
+        ax.plot(fd[j], marker="o", label=positions[j], color=colors_[j])
 
     ax.legend(loc=0)
     ax.set_ylabel("Fold-change AF154 vs Erl Only", fontsize=10)

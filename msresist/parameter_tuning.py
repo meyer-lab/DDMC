@@ -48,7 +48,7 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
     std_scores = {
         "Ranking": CVresults_max["rank_test_score"],
         "#Clusters": CVresults_max["param_MSclustering__ncl"],
-#         "#Components": CVresults_max["param_plsr__n_components"],
+        #         "#Components": CVresults_max["param_plsr__n_components"],
         "GMMweights": CVresults_max["param_MSclustering__GMMweight"],
         "mean_test_scores": CVresults_max["mean_test_score"],
         "mean_train_scores": CVresults_max["mean_train_score"],

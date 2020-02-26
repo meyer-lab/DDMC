@@ -48,8 +48,7 @@ def makeFigure():
 
     assert sp.stats.pearsonr(cv1t0, cv1)[1] > 0.05
     assert sp.stats.pearsonr(cv2t0, cv2)[1] > 0.05
-    
-    
+
     # Phosphorylation data
     X = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     X = preprocess_seqs(X, "Y").sort_values(by="Protein")
@@ -71,7 +70,7 @@ def makeFigure():
     # E: Variability across overlapping peptides in MS replicates
     X = preprocessing(AXLwt=True, rawdata=True)
     plotVarReplicates(ax[4:6], X)
-    
+
     # F: AXL
     df = preprocessing(AXLwt=True, motifs=True, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=True, mc_row=True)
     plotProteinSites(ax[6], df.copy(), "AXL", "AXL")
@@ -94,10 +93,9 @@ def BarPlot_FCendpoint(ax, x, y, t, lines):
     c = pd.concat([x, y]).reset_index()
     c.columns = ["lines", "Cell Viability (fold-change t=0)"]
 
-    ax = sns.barplot(x="lines", 
-                     y="Cell Viability (fold-change t=0)", 
-                     data=c, ci="sd", 
+    ax = sns.barplot(x="lines",
+                     y="Cell Viability (fold-change t=0)",
+                     data=c, ci="sd",
                      color="darkcyan")
 
     ax.set_title("t =" + str(t) + "h")
-    
