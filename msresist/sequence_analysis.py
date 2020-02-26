@@ -200,7 +200,7 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, freqs):
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, BPM):
     """ Do the sequence assignment. """
     scores = []
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
@@ -208,8 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
-            BPM = BinomialMatrix(len(cl_seqs[z]), freqs[z], bg_pwm)
-            BPM_score = MeanBinomProbs(BPM, motif, pYTS)
+            BPM_score = MeanBinomProbs(BPM[z], motif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
@@ -255,14 +254,15 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
 
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            freqs = []
+            BPM = []
             for z in range(ncl):
-                freqs.append(frequencies(cl_seqs[z]))
+                freqs = frequencies(cl_seqs[z])
+                BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm))
         else:
-            freqs = False
+            BPM = False
 
         for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, freqs)
+            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, BPM)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
