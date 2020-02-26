@@ -10,7 +10,7 @@ from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
-from scipy.stats import binom, multivariate_normal
+from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -437,5 +437,5 @@ def MeanBinomProbs(BPM, motif, pYTS):
         if i == 5:
             assert aa == pYTS, ("wrong central AA: %s" % aa)
             continue
-        probs += float(BPM.loc[aa][i])
+        probs += BPM.at[aa, i]
     return probs / (len(motif) - 1)
