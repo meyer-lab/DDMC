@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: pandoc-tablenos
+Version: 2.1.1
+Summary: Table number filter for pandoc
+Home-page: https://github.com/tomduck/pandoc-tablenos
+Author: Thomas J. Duck
+Author-email: tomduck@tomduck.ca
+License: GPL
+Download-URL: https://github.com/tomduck/pandoc-tablenos/tarball/2.1.1
+Keywords: pandoc table numbers filter
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Environment :: Console
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python
+Requires-Dist: pandoc-xnos (<3.0,>=2.1.2)
+
+A pandoc filter for numbering tables and their references
+when converting markdown to other formats.
+
+

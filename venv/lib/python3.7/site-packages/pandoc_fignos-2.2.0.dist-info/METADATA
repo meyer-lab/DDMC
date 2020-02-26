@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: pandoc-fignos
+Version: 2.2.0
+Summary: Figure number filter for pandoc
+Home-page: https://github.com/tomduck/pandoc-fignos
+Author: Thomas J. Duck
+Author-email: tomduck@tomduck.ca
+License: GPL
+Download-URL: https://github.com/tomduck/pandoc-fignos/tarball/2.2.0
+Keywords: pandoc figure numbers filter
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Environment :: Console
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python
+Requires-Dist: pandoc-xnos (<3.0,>=2.2.0)
+
+A pandoc filter for numbering figures and their references
+when converting markdown to other formats.
+
+

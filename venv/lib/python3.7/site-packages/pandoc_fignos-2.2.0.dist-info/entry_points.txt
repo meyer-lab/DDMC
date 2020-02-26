@@ -1,0 +1,3 @@
+[console_scripts]
+pandoc-fignos = pandoc_fignos:main
+

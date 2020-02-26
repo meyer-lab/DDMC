@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: pandoc-xnos
+Version: 2.3.0
+Summary: Library code for the pandoc-xnos filter suite.
+Home-page: https://github.com/tomduck/pandoc-xnos
+Author: Thomas J. Duck
+Author-email: tomduck@tomduck.ca
+License: GPL
+Download-URL: https://github.com/tomduck/pandoc-xnos/tarball/2.3.0
+Keywords: pandoc filters
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Environment :: Console
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python
+Requires-Dist: pandocfilters (<2,>=1.4.2)
+Requires-Dist: psutil (<6,>=4.1.0)
+
+Library code for the pandoc-xnos filter suite.
+
+
