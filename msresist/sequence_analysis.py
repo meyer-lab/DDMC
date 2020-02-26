@@ -200,7 +200,7 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS):
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, BPM):
     """ Do the sequence assignment. """
     scores = []
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
@@ -208,9 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
-            freq_matrix = frequencies(cl_seqs[z])
-            BPM = BinomialMatrix(len(cl_seqs[z]), freq_matrix, bg_pwm)
-            BPM_score = MeanBinomProbs(BPM, motif, pYTS)
+            BPM_score = MeanBinomProbs(BPM[z], motif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
@@ -227,6 +225,15 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
     return score, idx
 
+def BPM(cl_seqs, bg_pwm, distance_method):
+    if distance_method == "Binomial":
+        BPM = []
+        for z in range(len(cl_seqs)):
+            freqs = frequencies(cl_seqs[z])
+            BPM.append(BinomialMatrix(len(cl_seqs[z]), freqs, bg_pwm).set_index("Residue"))
+    if distance_method == "PAM250":
+        BPM = False
+    return BPM
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
@@ -255,8 +262,9 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         DictScore = defaultdict(list)
 
         # E step: Assignment of each peptide based on data and seq
+        binoM = BPM(cl_seqs, bg_pwm, distance_method)
         for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS)
+            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, binoM)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -432,7 +440,6 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
 
 def MeanBinomProbs(BPM, motif, pYTS):
     """ Take the mean of all pvalues corresponding to each motif residue. """
-    BPM = BPM.set_index("Residue")
     probs = 0.0
     for i, aa in enumerate(motif):
         if i == 5:
