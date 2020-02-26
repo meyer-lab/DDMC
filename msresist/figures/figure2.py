@@ -60,7 +60,7 @@ def makeFigure():
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     d.index = lines
 
-    distance_method = "PAM250"
+    distance_method = "Binomial"
     ncl = 5
     GMMweight = 0.0
     b = 4
