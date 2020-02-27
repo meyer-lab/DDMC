@@ -310,7 +310,7 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-@lru_cache(maxsize=200000)
+@lru_cache(maxsize=900000)
 def pairwise_score(seq1: str, seq2: str) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
     score = 0.0
