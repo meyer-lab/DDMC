@@ -341,7 +341,7 @@ def plotVarReplicates(ax, ABC):
     ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
 
 
-def plotProteinSites(ax, x, prot, title):
+def plotProteinSites(ax, x, prot, title, legend=True):
     "Plot all phosphopeptides for a given protein"
     x = x.set_index(["Abbv"])
     peptides = pd.DataFrame(x.loc[prot])
@@ -360,10 +360,10 @@ def plotProteinSites(ax, x, prot, title):
             ax.plot(d.iloc[i, :], marker="o", label=positions, color=colors_[i])
         else:
             ax.plot(d.iloc[i, :], marker="o", label=positions[i], color=colors_[i])
-
-    ax.legend(loc=0)
+    if legend:
+        ax.legend(loc=0)
     ax.set_xticklabels(x.columns[4:], rotation=45)
-    ax.set_ylabel("Normalized Signal", fontsize=10)
+    ax.set_ylabel("Log2(p-signal)", fontsize=10)
     ax.set_title(title)
 
 
