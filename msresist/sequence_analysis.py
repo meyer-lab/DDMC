@@ -226,6 +226,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
 
     return score, idx
 
+
 def BPM(cl_seqs, bg_pwm, distance_method):
     if distance_method == "Binomial":
         BPM = []
@@ -235,6 +236,7 @@ def BPM(cl_seqs, bg_pwm, distance_method):
     if distance_method == "PAM250":
         BPM = False
     return BPM
+
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
