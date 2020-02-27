@@ -302,22 +302,16 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-def match_AAs(pair, matrix):
-    """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
-    eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
-    try:
-        return matrix[pair]
-    except KeyError:
-        return matrix[tuple(reversed(pair))]
-
-
 def pairwise_score(seq1: str, seq2: str, matrix) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
     score = 0.0
     for i in range(len(seq1)):
         if i == 5:
             continue
-        score += match_AAs((seq1[i], seq2[i]), matrix)
+        try:
+            score += matrix[(seq1[i], seq2[i])]
+        except KeyError:
+            score += matrix[(seq2[i], seq1[i])]
     return score
 
 
