@@ -10,6 +10,7 @@ from Bio import SeqIO, motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
+from functools import lru_cache
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
 
@@ -216,7 +217,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
     if distance_method == "PAM250":
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] / 10 * GMMweight
-            PAM250_scores = [pairwise_score(motif, seq, MatrixInfo.pam250) for seq in cl_seqs[z]]
+            PAM250_scores = [pairwise_score(str(motif), str(seq)) for seq in cl_seqs[z]]
             PAM250_score = np.mean(PAM250_scores)
             scores.append(PAM250_score + gmm_score)
         score, idx = max((score, idx) for (idx, score) in enumerate(scores))
@@ -254,7 +255,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     for n_iter in range(max_n_iter):
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
-        data_reassign = data.T.copy()
 
         store_Dicts.append(DictMotifToCluster)
         store_Clseqs.append(cl_seqs)
@@ -310,22 +310,19 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-def match_AAs(pair, matrix):
-    """ Bio.SubsMat.MatrixInfo's substitution matrices are dictionaries are triangles of the matrix.
-    eg: it may include ('V', 'E') but not ('E'. 'V'). This ensures correct access to this dictionary. """
-    if pair not in matrix:
-        return matrix[(tuple(reversed(pair)))]
-    else:
-        return matrix[pair]
-
-
-def pairwise_score(seq1: str, seq2: str, matrix) -> float:
+@lru_cache(maxsize=900000)
+def pairwise_score(seq1: str, seq2: str) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
     score = 0.0
     for i in range(len(seq1)):
         if i == 5:
             continue
-        score += match_AAs((seq1[i], seq2[i]), matrix)
+
+        if (seq1[i], seq2[i]) in MatrixInfo.pam250:
+            score += MatrixInfo.pam250[(seq1[i], seq2[i])]
+        else:
+            score += MatrixInfo.pam250[(seq2[i], seq1[i])]
+
     return score
 
 
