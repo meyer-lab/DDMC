@@ -313,14 +313,16 @@ def HardAssignments(labels, ncl):
 @lru_cache(maxsize=200000)
 def pairwise_score(seq1: str, seq2: str) -> float:
     " Compute distance between two kinase motifs. Note this does not account for gaps."
-    PAM250_HEADS = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
-
     score = 0.0
     for i in range(len(seq1)):
         if i == 5:
             continue
 
-        score += PAM250[PAM250_HEADS.index(seq1[i]), PAM250_HEADS.index(seq2[i])]
+        if (seq1[i], seq2[i]) in MatrixInfo.pam250:
+            score += MatrixInfo.pam250[(seq1[i], seq2[i])]
+        else:
+            score += MatrixInfo.pam250[(seq2[i], seq1[i])]
+
     return score
 
 
