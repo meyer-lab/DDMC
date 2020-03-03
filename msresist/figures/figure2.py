@@ -69,7 +69,7 @@ def makeFigure():
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = mixedCl_plsr.fit(d, cv)
 
-    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b)
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
 
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 

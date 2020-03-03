@@ -54,7 +54,7 @@ def makeFigure():
     fit = mixedCl_plsr.fit(d, cv)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
     
-    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b)
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
     
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
 
