@@ -29,7 +29,7 @@ def makeFigure():
 
     Y_cv = MergeDfbyMean(pd.concat([Y_cv1, Y_cv2], axis=0), Y_cv1.columns, "Elapsed")
     Y_cv = Y_cv.reset_index()[Y_cv1.columns]
-    cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
+    v = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
     # Phosphorylation data
     X = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
@@ -54,11 +54,11 @@ def makeFigure():
     fit = mixedCl_plsr.fit(d, cv)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
     
-    plotR2YQ2Y(ax[1], mixedCl_plsr, d, cv, 2, b)
-
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b)
+    
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, treatments)
+    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, treatments, CV=2)
 
     plotclusteraverages(ax[5], centers.T, treatments)
 

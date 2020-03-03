@@ -48,7 +48,7 @@ def makeFigure():
     cv.insert(0, "Elapsed", cv1.iloc[:, 0])
     cv = MergeDfbyMean(cv, cv1_ab.columns, "Elapsed").reset_index()
     cv = cv[cv["Elapsed"] == 120].iloc[0, 1:]
-    cv = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
+    v = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
 
     # Phosphorylation data
     X = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, mc_row=True)
@@ -69,7 +69,7 @@ def makeFigure():
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = mixedCl_plsr.fit(d, cv)
 
-    plotR2YQ2Y(ax[1], mixedCl_plsr, d, cv, 2, b)
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b)
 
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 
