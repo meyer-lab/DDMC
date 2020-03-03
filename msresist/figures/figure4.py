@@ -45,13 +45,13 @@ def makeFigure():
     GMMweight = 0.75
     b = ncl + 1
 
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
+    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, v)
     centers = MSC.transform(d)
 
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
 
-    fit = mixedCl_plsr.fit(d, cv)
+    fit = mixedCl_plsr.fit(d, v)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
     
     plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
