@@ -80,20 +80,21 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        for i in range(5):
-        self.cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_, self.gmmp_, self.bg_pwm_ = EM_clustering(X, self.info, self.ncl, self.GMMweight, self.distance_method, self.pYTS, self.covariance_type, self.max_n_iter)
+        self.cl_seqs_, self.labels_, self.scores_, self.IC_, self.n_iter_ = EM_clustering(X, self.info, self.ncl, self.GMMweight,
+                                                                            self.distance_method, self.pYTS, self.covariance_type, 
+                                                                            self.max_n_iter)
         return self
 
     def transform(self, X):
         """ calculate cluster averages. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
 
         centers, _ = ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
 
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
@@ -101,14 +102,14 @@ class MassSpecClustering(BaseEstimator):
     def predict(self, X, _Y=None):
         """ Predict the cluster each sequence in ABC belongs to. If this estimator is gridsearched alone it
         won't work since all sequences are passed. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
 
         labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_", "gmmp_", "bg_pwm_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "IC_", "n_iter_"])
 
         _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
         return np.mean(scores)
