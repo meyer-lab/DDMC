@@ -248,8 +248,9 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method, pYTS)
 
     # Background sequences
-    bg_seqs = BackgroundSeqs(pYTS)
-    bg_pwm = position_weight_matrix(bg_seqs)
+    if distance_method == "Binomial":
+        bg_seqs = BackgroundSeqs(pYTS)
+        bg_pwm = position_weight_matrix(bg_seqs)
 
     # EM algorithm
     DictMotifToCluster = defaultdict(list)
@@ -300,7 +301,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), scores, ICs, n_iter, gmmp, bg_pwm
+    return cl_seqs, np.array(labels), scores, ICs, n_iter
 
 
 def HardAssignments(labels, ncl):
@@ -314,7 +315,7 @@ def HardAssignments(labels, ncl):
 
 @lru_cache(maxsize=900000)
 def pairwise_score(seq1: str, seq2: str) -> float:
-    " Compute distance between two kinase motifs. Note this does not account for gaps."
+    """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0.0
     for i in range(len(seq1)):
         if i == 5:
@@ -338,7 +339,7 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
 
 def gmm_initialize(X, ncl, covariance_type, distance_method, pYTS):
     """ Return peptides data set including its labels and pvalues matrix. """
-    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type).fit(X.iloc[:, 7:])
+    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type, max_iter=100000000).fit(X.iloc[:, 7:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
     init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
     gmm_pred = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:]))

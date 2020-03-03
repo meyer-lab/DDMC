@@ -60,25 +60,22 @@ def makeFigure():
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     d.index = lines
 
-    distance_method = "PAM250"
-    ncl = 5
-    GMMweight = 0.0
-    b = 4
-
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
-    centers = MSC.transform(d)
-
-    plotR2YQ2Y(ax[1], centers, cv, b)
+    distance_method = "Binomial"
+    ncl = 3
+    GMMweight = 0.75
+    b = ncl + 1
 
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = mixedCl_plsr.fit(d, cv)
 
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, cv, 2, b)
+
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines)
+    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines, CV=2)
 
     plotclusteraverages(ax[5], centers.T, lines)
 
@@ -88,9 +85,9 @@ def makeFigure():
     return f
 
 
-def plotR2YQ2Y(ax, model, X, Y, b=3, cv):
-    Q2Y = Q2Y_across_components(model, X, Y, b, cv)
-    R2Y = R2Y_across_components(model, X, Y, b, cv)
+def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
+    Q2Y = Q2Y_across_components(model, X, Y, cv, b)
+    R2Y = R2Y_across_components(model, X, Y, cv, b)
 
     range_ = np.arange(1, b)
 

@@ -40,10 +40,10 @@ def makeFigure():
 
     treatments = list(d.index)
 
-    ncl = 5
+    ncl = 3
     distance_method = "PAM250"
-    GMMweight = 1
-    b = 4
+    GMMweight = 0.75
+    b = ncl + 1
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
     centers = MSC.transform(d)
