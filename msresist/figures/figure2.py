@@ -73,9 +73,9 @@ def makeFigure():
 
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, v)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines, CV=2)
+    plotScoresLoadings(ax[3:5], fit, centers, v, ncl, lines, CV=2)
 
     plotclusteraverages(ax[5], centers.T, lines)
 

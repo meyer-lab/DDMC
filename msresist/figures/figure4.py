@@ -56,9 +56,9 @@ def makeFigure():
     
     plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
     
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, v)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, treatments, CV=2)
+    plotScoresLoadings(ax[3:5], fit, centers, v, ncl, treatments, CV=2)
 
     plotclusteraverages(ax[5], centers.T, treatments)
 
