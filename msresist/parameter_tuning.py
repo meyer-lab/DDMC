@@ -60,6 +60,7 @@ def GridSearch_CV(model, parameters, cv, X, Y=None, scoring=None):
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
     return CVresults_max
 
+
 def set_grid():
     param_grid = []
     for nn in range(2, 16):
