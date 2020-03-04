@@ -253,7 +253,6 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, pYTS, covaria
     for i in range(n):
         cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter)
         scores.append(score)
-        print(score)
         products.append([cl_seqs, labels, score, n_iter])
 
     if distance_method == "Binomial":

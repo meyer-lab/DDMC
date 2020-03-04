@@ -39,23 +39,16 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
     param_grid = set_grid()
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error", n_jobs=-1)
-#     print("Check")
-    concscores = []
-    for i in range(5):
-        print(i)
-        fit = grid.fit(X, Y)
-        CVresults_max = pd.DataFrame(data=fit.cv_results_)
-        std_scores = {
-            "#Clusters": CVresults_max["param_MSclustering__ncl"],
-            "#Components": CVresults_max["param_plsr__n_components"],
-            "GMMweights": CVresults_max["param_MSclustering__GMMweight"],
-            "mean_test_scores": CVresults_max["mean_test_score"],
-            "mean_train_scores": CVresults_max["mean_train_score"],
-        }
-        concscores.append(pd.DataFrame(std_scores))
-
-    return pd.concat(concscores)
-
+    fit = grid.fit(X, Y)
+    CVresults_max = pd.DataFrame(data=fit.cv_results_)
+    std_scores = {
+        "#Clusters": CVresults_max["param_MSclustering__ncl"],
+        "#Components": CVresults_max["param_plsr__n_components"],
+        "GMMweights": CVresults_max["param_MSclustering__GMMweight"],
+        "mean_test_scores": CVresults_max["mean_test_score"],
+        "mean_train_scores": CVresults_max["mean_train_score"],
+    }
+    return std_scores
 
 ###------------ General GridSearch Structure ------------------###
 
