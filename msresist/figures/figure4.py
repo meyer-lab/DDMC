@@ -29,7 +29,7 @@ def makeFigure():
 
     Y_cv = MergeDfbyMean(pd.concat([Y_cv1, Y_cv2], axis=0), Y_cv1.columns, "Elapsed")
     Y_cv = Y_cv.reset_index()[Y_cv1.columns]
-    cv = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
+    v = Y_cv[Y_cv["Elapsed"] == 72].iloc[0, 1:]
 
     # Phosphorylation data
     X = preprocessing(AXLwt=True, motifs=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
@@ -40,25 +40,25 @@ def makeFigure():
 
     treatments = list(d.index)
 
-    ncl = 5
+    ncl = 3
     distance_method = "PAM250"
-    GMMweight = 1
-    b = 4
+    GMMweight = 0.75
+    b = ncl + 1
 
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
+    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, v)
     centers = MSC.transform(d)
-
-    plotR2YQ2Y(ax[1], centers, cv)
 
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
 
-    fit = mixedCl_plsr.fit(d, cv)
+    fit = mixedCl_plsr.fit(d, v)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
+    
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
+    
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, v)
 
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
-
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, treatments)
+    plotScoresLoadings(ax[3:5], fit, centers, v, ncl, treatments, CV=2)
 
     plotclusteraverages(ax[5], centers.T, treatments)
 
