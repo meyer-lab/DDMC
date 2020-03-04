@@ -181,7 +181,6 @@ def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
 
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
 # Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
-# might be able to find more reliable sources.
 
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
@@ -209,7 +208,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
         for z in range(ncl):
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
-            NumMotif = TranslateMotifsToIdx(motif)
+            NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(BPM[z], NumMotif, pYTS)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
@@ -239,15 +238,30 @@ def BPM(cl_seqs, distance_method, bg_pwm):
     return BPM
 
 
-def TranslateMotifsToIdx(motif):
-    aa = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
-        'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+def TranslateMotifsToIdx(motif, aa):
     ResToNum = dict(zip(aa, np.arange(len(aa))))
     NumMotif = []
     for res in list(motif):
         NumMotif.append(ResToNum[res.upper()])
     assert len(NumMotif) == len(motif)
     return NumMotif
+
+
+def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter, n=5):
+    """ Run Coclustering n times and return the best fit. """
+    scores, products = [], []
+    for i in range(n):
+        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter)
+        scores.append(score)
+        print(score)
+        products.append([cl_seqs, labels, score, n_iter])
+
+    if distance_method == "Binomial":
+        idx = np.argmin(scores)
+    if distance_method == "PAM250":
+        idx = np.argmax(scores)
+
+    return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
 
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
@@ -276,7 +290,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         store_Dicts.append(DictMotifToCluster)
         store_Clseqs.append(cl_seqs)
         DictMotifToCluster = defaultdict(list)
-        DictScore = defaultdict(list)
 
         # E step: Assignment of each peptide based on data and seq
         binoM = BPM(cl_seqs, distance_method, bg_pwm)
@@ -286,7 +299,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
             scores.append(score)
             seq_reassign[idx].append(motif)
             DictMotifToCluster[motif].append(idx)
-            DictScore[motif].append(score)
 
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
@@ -310,12 +322,12 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
                 assert False not in [len(set(sublist)) == 1 for sublist in list(DictMotifToCluster.values())]
             ICs = [InformationContent(seqs) for seqs in cl_seqs]
             cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-            return cl_seqs, np.array(labels), scores, ICs, n_iter
+            return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), scores, ICs, n_iter
+    return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
 
 def HardAssignments(labels, ncl):
