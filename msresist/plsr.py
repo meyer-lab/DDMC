@@ -22,7 +22,7 @@ def R2Y_across_components(model, X, Y, cv, max_comps):
             model.set_params(n_components=b)
         if cv == 2:
             model.set_params(plsr__n_components=b)
-        model.fit(X, Y)   
+        model.fit(X, Y)
         R2Ys.append(model.score(X, Y))
     return R2Ys
 
