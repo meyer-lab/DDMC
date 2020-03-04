@@ -48,7 +48,7 @@ def makeFigure():
     cv.insert(0, "Elapsed", cv1.iloc[:, 0])
     cv = MergeDfbyMean(cv, cv1_ab.columns, "Elapsed").reset_index()
     cv = cv[cv["Elapsed"] == 120].iloc[0, 1:]
-    cv = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
+    v = cv[["PC9-A/E", "AXL KO-A/E", "Kdead-A/E", "Kin-A/E", "M4-A/E", "M5-A/E", "M7-A/E", "M10-A/E", "M11-A/E", "M15-A/E"]]
 
     # Phosphorylation data
     X = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, mc_row=True)
@@ -60,25 +60,22 @@ def makeFigure():
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     d.index = lines
 
-    distance_method = "PAM250"
-    ncl = 5
-    GMMweight = 0.0
-    b = 4
-
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(d, cv)
-    centers = MSC.transform(d)
-
-    plotR2YQ2Y(ax[1], centers, cv, b)
+    distance_method = "Binomial"
+    ncl = 3
+    GMMweight = 0.75
+    b = ncl + 1
 
     ncomp = 2
     mixedCl_plsr = Pipeline([('mixedCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
-    fit = mixedCl_plsr.fit(d, cv)
+    fit = mixedCl_plsr.fit(d, v)
+
+    plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
 
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
 
-    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, cv)
+    plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, v)
 
-    plotScoresLoadings(ax[3:5], fit, centers, cv, ncl, lines)
+    plotScoresLoadings(ax[3:5], fit, centers, v, ncl, lines, CV=2)
 
     plotclusteraverages(ax[5], centers.T, lines)
 
@@ -88,9 +85,9 @@ def makeFigure():
     return f
 
 
-def plotR2YQ2Y(ax, centers, Y, b=3):
-    Q2Y = Q2Y_across_components(centers, Y, b)
-    R2Y = R2Y_across_components(centers, Y, b)
+def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
+    Q2Y = Q2Y_across_components(model, X, Y, cv, b)
+    R2Y = R2Y_across_components(model, X, Y, cv, b)
 
     range_ = np.arange(1, b)
 
@@ -121,7 +118,7 @@ def plotMixedClusteringPLSR_GridSearch(ax, X, info, Y, distance_method):
 
 def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size)))
+    Y_predictions = list(np.squeeze(cross_val_predict(plsr_model, X, Y, cv=Y.size, n_jobs=-1)))
     Y = list(Y)
     ax.scatter(Y, Y_predictions)
     ax.plot(np.unique(Y), np.poly1d(np.polyfit(Y, Y_predictions, 1))(np.unique(Y)), color="r")
@@ -137,12 +134,19 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
     ax.text(0.80, 0.09, textstr, transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, mixedCl_plsr, X, Y, ncl, treatments):
-    X_scores, _ = mixedCl_plsr.named_steps.plsr.transform(X, Y)
-    PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-    PC1_xload, PC2_xload = mixedCl_plsr.named_steps.plsr.x_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.x_loadings_[:, 1]
-    PC1_yload, PC2_yload = mixedCl_plsr.named_steps.plsr.y_loadings_[:, 0], mixedCl_plsr.named_steps.plsr.y_loadings_[:, 1]
+def plotScoresLoadings(ax, model, X, Y, ncl, treatments, CV):
+    """ Plot scores and loadings plot """
+    if CV == 1:
+        X_scores, _ = model.transform(X, Y)
+        PC1_xload, PC2_xload = model.x_loadings_[:, 0], model.x_loadings_[:, 1]
+        PC1_yload, PC2_yload = model.y_loadings_[:, 0], model.y_loadings_[:, 1]
 
+    if CV == 2:
+        X_scores, _ = model.named_steps.plsr.transform(X, Y)
+        PC1_xload, PC2_xload = model.named_steps.plsr.x_loadings_[:, 0], model.named_steps.plsr.x_loadings_[:, 1]
+        PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, 0], model.named_steps.plsr.y_loadings_[:, 1]
+
+    PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     # Scores
@@ -268,7 +272,7 @@ def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
 
 
 def plotclusteraverages(ax, centers, treatments):
-
+    """Plot the cluster averages across conditions """
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
 
     for i in range(centers.shape[0]):
@@ -312,3 +316,22 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_xticklabels(flattened, fontsize=10)
     ax.set_xlabel("Number of Components per Cluster")
     ax.set_ylabel("Mean-Squared Error (MSE)")
+
+
+def plotCoClusteringGridSearch(ax, grid_results):
+    labels = []
+    for ii in range(grid_results.shape[0]):
+        labels.append(str(grid_results.iloc[ii, 1]) + 
+                      "|" + str(grid_results.iloc[ii, 2]) + 
+                      "|" + str(grid_results.iloc[ii, 3]))
+
+
+    fig, ax = plt.subplots(1,1,figsize=(25,10))
+
+    width = 0.5
+    ax.bar(np.arange(grid_results.shape[0]), np.abs(grid_results.iloc[:, 4]), width, edgecolor='black', color='g')
+    ax.set_xticks(np.arange(grid_results.shape[0]))
+    ax.set_xticklabels(labels, fontsize=12)
+    ax.set_xlabel("#Clusters | #Components | GMM Weight", fontsize=16)
+    ax.set_ylabel("Mean-Squared Error (MSE)", fontsize=16)
+    ax.set_title("Top20 Hyperparameter Combinations", fontsize=20)
