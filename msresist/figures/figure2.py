@@ -321,12 +321,11 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
 def plotCoClusteringGridSearch(ax, grid_results):
     labels = []
     for ii in range(grid_results.shape[0]):
-        labels.append(str(grid_results.iloc[ii, 1]) + 
-                      "|" + str(grid_results.iloc[ii, 2]) + 
+        labels.append(str(grid_results.iloc[ii, 1]) +
+                      "|" + str(grid_results.iloc[ii, 2]) +
                       "|" + str(grid_results.iloc[ii, 3]))
 
-
-    fig, ax = plt.subplots(1,1,figsize=(25,10))
+    fig, ax = plt.subplots(1, 1, figsize=(25, 10))
 
     width = 0.5
     ax.bar(np.arange(grid_results.shape[0]), np.abs(grid_results.iloc[:, 4]), width, edgecolor='black', color='g')
