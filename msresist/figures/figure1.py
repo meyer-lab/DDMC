@@ -32,8 +32,9 @@ def makeFigure():
     BR1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR1.csv").iloc[:, 1:]
     BR2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR2.csv').iloc[:, 1:]
     BR3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR3.csv').iloc[:, 1:]
-
-    t = 72
+    
+    itp = 6
+    ftp = 72
     lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
 
     # Read in Mass Spec data
@@ -43,7 +44,7 @@ def makeFigure():
     d = A.select_dtypes(include=['float64']).T
 
     # A: Cell Viability
-    BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, t, lines)
+    BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, itp, ftp, lines)
 
     # B: blank out second axis for signaling ClusterMap
     ax[1].axis('off')
@@ -102,12 +103,14 @@ def plotReplicatesEndpoint(ax, Y_cv1, Y_cv2):
     ax.set_ylabel("% Confluency")
 
 
-def FCendpoint(d, tp, t, l):
-    dt0 = d[d["Elapsed"] == 0].iloc[0, 1:]
-    dfc = d[d["Elapsed"] == tp].iloc[0, 1:] / dt0
+def FCendpoint(d, itp, ftp, t, l):
+    """ Calculates fold-change to t=0h, asserts no influence of iniital seeding, and formats for seaborn. """
+    dt0 = d[d["Elapsed"] == itp].iloc[0, 1:]
+    dfc = d[d["Elapsed"] == ftp].iloc[0, 1:] / dt0
 
     # Assert that there's no significant influence of the initial seeding density
-    assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
+    if itp < 12:
+        assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
 
     dfc = pd.DataFrame(dfc).reset_index()
 
@@ -119,6 +122,7 @@ def FCendpoint(d, tp, t, l):
 
 
 def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
+    """ Cell viability bar plot at a specific end point across conditions, without error bars"""
     range_ = np.linspace(1, len(BR2.columns[1:]), len(BR2.columns[1:]))
 
     BR1t0 = BR1[BR1["Elapsed"] == 0].iloc[0, 1:]
@@ -145,7 +149,8 @@ def plotReplicatesFoldChangeEndpoint(BR2, BR3, t, title):
     ax.set_ylabel("Fold-change to t=0h")
 
 
-def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, t, lines):
+def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, itp, ftp, lines):
+    """ Cell viability bar plot at a specific end point across conditions, with error bars"""
     BR1_UT = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('UT')]], axis=1)
     BR1_E = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-E')]], axis=1)
     BR1_AE = pd.concat([BR1.iloc[:, 0], BR1.loc[:, BR1.columns.str.contains('-A/E')]], axis=1)
@@ -158,24 +163,26 @@ def BarPlot_UtErlAF154(ax, BR1, BR2, BR3, t, lines):
     BR3_E = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-E')]], axis=1)
     BR3_AE = pd.concat([BR2.iloc[:, 0], BR3.loc[:, BR3.columns.str.contains('-A/E')]], axis=1)
 
-    br1_ut = FCendpoint(BR1_UT, t, ["UT"] * 10, lines)
-    br2_ut = FCendpoint(BR2_UT, t, ["UT"] * 10, lines)
-    br3_ut = FCendpoint(BR3_UT, t, ["UT"] * 10, lines)
-    br1_e = FCendpoint(BR1_E, t, ["Erlotinib"] * 10, lines)
-    br2_e = FCendpoint(BR2_E, t, ["Erlotinib"] * 10, lines)
-    br3_e = FCendpoint(BR3_E, t, ["Erlotinib"] * 10, lines)
-    br1_ae = FCendpoint(BR1_AE, t, ["Erl + AF154"] * 10, lines)
-    br2_ae = FCendpoint(BR2_AE, t, ["Erl + AF154"] * 10, lines)
-    br3_ae = FCendpoint(BR3_AE, t, ["Erl + AF154"] * 10, lines)
-    c = pd.concat([br2_ut, br3_ut, br2_e, br3_e, br2_ae, br3_ae])
+    br1_ut = FCendpoint(BR1_UT, itp, ftp, ["UT"] * 10, lines)
+    br2_ut = FCendpoint(BR2_UT, itp, ftp, ["UT"] * 10, lines)
+    br3_ut = FCendpoint(BR3_UT, itp, ftp, ["UT"] * 10, lines)
+    br1_e = FCendpoint(BR1_E, itp, ftp, ["Erlotinib"] * 10, lines)
+    br2_e = FCendpoint(BR2_E, itp, ftp, ["Erlotinib"] * 10, lines)
+    br3_e = FCendpoint(BR3_E, itp, ftp, ["Erlotinib"] * 10, lines)
+    br1_ae = FCendpoint(BR1_AE, itp, ftp, ["Erl + AF154"] * 10, lines)
+    br2_ae = FCendpoint(BR2_AE, itp, ftp, ["Erl + AF154"] * 10, lines)
+    br3_ae = FCendpoint(BR3_AE, itp, ftp, ["Erl + AF154"] * 10, lines)
+#     c = pd.concat([br1_ut, br2_ut, br3_ut, br1_e, br2_e, br3_e, br1_ae, br2_ae, br3_ae])
+    c = pd.concat([br1_ut, br2_ut, br1_e, br2_e, br1_ae, br2_ae])
 
     ax = sns.barplot(x="AXL mutants Y->F", y="Cell Viability (fold-change t=0)", hue="Treatment", data=c, ci="sd")
-    ax.set_title("t=" + str(t) + "h")
+    ax.set_title("t=" + str(ftp) + "/" + str(itp) + "h")
     ax.set_xticklabels(lines, rotation=45)
 
 
 # Plot Separately
 def plotClustergram(data, title, lim=False, robust=True):
+    """ Clustergram plot. """
     g = sns.clustermap(
         data,
         method="complete",
