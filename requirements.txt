@@ -1,9 +1,9 @@
-matplotlib==3.1.2
+matplotlib==3.2.0
 numpy==1.18.1
 scipy==1.4.1
 seaborn==0.10.0
 svgutils==0.3.1
-pandas==1.0.0
+pandas==1.0.1
 manubot==0.3.1
 pandoc-fignos==2.2.0
 pandoc-eqnos==2.1.1
@@ -13,6 +13,6 @@ pylint==2.4.4
 pytest==5.3.5
 pytest-cov==2.8.1
 biopython==1.76
-scikit-learn==0.22.1
-plotly==4.5.0
+scikit-learn==0.22.2.post1
+plotly==4.5.3
 jupyter==1.0.0
