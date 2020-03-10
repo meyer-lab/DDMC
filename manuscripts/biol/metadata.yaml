@@ -8,22 +8,10 @@ keywords:
 lang: en-US
 authors:
   -
-    github: cyrillustan
-    name: Cyrillus Tan
-    initials: CT
-    affiliations:
-      - Department of Bioinformatics, University of California, Los Angeles
-  -
-    name: Stephen Lees
-    initials: SL
-    affiliations:
-      - Department of Bioengineering, University of California, Los Angeles
-  -
     name: Falk Nimmerjahn
     initials: FN
     affiliations:
       - Friedrich-Alexander-University of Erlangen-Nürnberg
-    funders: Grant NIH U01-AI-148119
   -
     github: aarmey
     name: Aaron S. Meyer
@@ -36,4 +24,3 @@ authors:
       - Department of Bioinformatics, University of California, Los Angeles
       - Jonsson Comprehensive Cancer Center, University of California, Los Angeles
       - Eli and Edythe Broad Center of Regenerative Medicine and Stem Cell Research, University of California, Los Angeles
-    funders: Grant NIH XXX
