@@ -74,12 +74,14 @@ def makeFigure():
 
     return f
 
-def FC_timecourse(ax, r1, r2, itp, ftp, lines, treatment, title, ylabel, r3=False, FC=False):
+def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r3=False, FC=False):
     """ Fold-change time course of cell viability data. Initial and final time points must be specified. """
     if type(r3) == pd.core.frame.DataFrame:
         ds = [r1, r2, r3]
-    else:
+    if type(r2) == pd.core.frame.DataFrame:
         ds = [r1, r2]
+    else:
+        ds = [r1]
 
     c = []
     for i in range(len(ds)):
@@ -102,7 +104,7 @@ def FC_timecourse(ax, r1, r2, itp, ftp, lines, treatment, title, ylabel, r3=Fals
 
     sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
 
-    if treatment != "-UT":
+    if treatment != "UT":
         ax.legend().remove()
 
     ax.set_title(title)
@@ -150,7 +152,7 @@ def FCendpoint(d, itp, ftp, t, l, FC):
     return dfc.iloc[:, 1:]
 
 
-def barplot_UtErlAF154(ax, lines, r1, r2, itp, ftp, r3=False, FC=False):
+def barplot_UtErlAF154(ax, lines, r1, itp, ftp, r2=False, r3=False, FC=False):
     """ Cell viability bar plot at a specific end point across conditions, with error bars"""
     if type(r3) == pd.core.frame.DataFrame:
         ds = [r1, r2, r3]
@@ -173,7 +175,7 @@ def barplot_UtErlAF154(ax, lines, r1, r2, itp, ftp, r3=False, FC=False):
     ax.set_xticklabels(lines, rotation=45)
 
 
-def barplotFC_TvsUT(ax, r1, r2, itp, ftp, l, r3=False, FC=False):
+def barplotFC_TvsUT(ax, r1, itp, ftp, l, r2=False, r3=False, FC=False):
     """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines. """
     if type(r3) == pd.core.frame.DataFrame:
         ds = [r1, r2, r3]
