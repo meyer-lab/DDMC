@@ -18,56 +18,55 @@ sns.set(color_codes=True)
 
 
 path = os.path.dirname(os.path.abspath(__file__))
-
+pd.set_option('display.max_columns', 30)
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 10), (3, 4))
+    ax, f = getSetup((15, 12), (3, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
 
     # Read in Cell Viability data
-    BR1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR1.csv").iloc[:, 1:]
-    BR2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR2.csv').iloc[:, 1:]
-    BR3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/20200130-AXLmutantsPhase_MeanTRs_BR3.csv').iloc[:, 1:]
+    r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
+    r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
+    r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
 
-    itp = 6
+    itp = 24
     ftp = 72
-    lines = ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
+    lines = ["PC9","KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+
 
     # Read in Mass Spec data
-    E = preprocessing(Axlmuts_Erl=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
-    A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True).set_index(['Abbv', 'Sequence'])
-    E.columns = A.columns
-    d = A.select_dtypes(include=['float64']).T
+    A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
+    A.columns = list(A.columns[:5]) + ["PC9", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    A.columns = list(A.columns[:5]) + lines
 
     # A: Cell Viability
-    BarPlot_UtErlAF154(ax[0], BR1, BR2, BR3, itp, ftp, lines)
+    ylabel = "fold-change to t=" + str(itp) + "h"
+    title = "Cell Viability - Erl + AF154 "
+    FC_timecourse(ax[0], r2, itp, ftp, lines, "A/E", title, ylabel, r2=r3, FC=True)
+    barplot_UtErlAF154(ax[1], lines, r2, itp, ftp, r2=r3, FC=True)
 
     # B: blank out second axis for signaling ClusterMap
-    ax[1].axis('off')
+#     ax[1].axis('off')
 
     # C&D: Scores and Loadings MS data
-    plotpca_ScoresLoadings(ax[2:4], d)
+    A = A.drop(["PC9"], axis=1)
+    d = A.select_dtypes(include=['float64']).T
+    plotpca_ScoresLoadings(ax[2:4], d, list(A["Abbv"]))
 
     # E: Variability across overlapping peptides in MS replicates
     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     plotVarReplicates(ax[4:6], X)
 
     # F-: Phosphorylation levels of selected peptides
-    E = E.reset_index()
     A = A.reset_index()
 
     plotProteinSites(ax[6], A.copy(), "AXL", "AXL")
-    plotProteinSitesEvsA(ax[7], E.copy(), A.copy(), "AXL", "AXL")
-
-    plotProteinSites(ax[8], A.copy(), "EGFR", "EGFR")
-    plotProteinSitesEvsA(ax[9], E.copy(), A.copy(), "EGFR", "EGFR")
-
-    plotProteinSites(ax[10], A.copy(), "MAPK3", "ERK1")
-    plotProteinSitesEvsA(ax[11], E.copy(), A.copy(), "MAPK3", "ERK1")
+    plotProteinSites(ax[7], A.copy(), "EGFR", "EGFR")
+    plotProteinSites(ax[8], A.copy(), "MAPK3", "ERK1")
 
     # Add subplot labels
     subplotLabel(ax)
@@ -104,8 +103,8 @@ def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r
 
     sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
 
-    if treatment != "UT":
-        ax.legend().remove()
+#     if treatment != "UT":
+#         ax.legend().remove()
 
     ax.set_title(title)
 
@@ -253,7 +252,7 @@ def plotpca_explained(ax, data, ncomp):
     ax.set_xticklabels([i + 1 for i in range(ncomp)])
 
 
-def plotpca_ScoresLoadings(ax, data):
+def plotpca_ScoresLoadings(ax, data, pn):
     fit = PCA(n_components=2).fit(data)
     PC1_scores, PC2_scores = fit.transform(data)[:, 0], fit.transform(data)[:, 1]
     PC1_loadings, PC2_loadings = fit.components_[0], fit.components_[1]
@@ -275,15 +274,18 @@ def plotpca_ScoresLoadings(ax, data):
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
-    for i, txt in enumerate(list(data.columns)):
-        ax[1].annotate(txt, (PC1_loadings[i], PC2_loadings[i]))
+    poi = ["AXL", "EGFR", "MET", "MAPK1", "MAPK3", "CDK1", "CDK2", "GAB1", "GAB2"]
+    for i, txt in enumerate(pn):
+        if txt in poi:
+            ax[1].annotate(txt, (PC1_loadings[i], PC2_loadings[i]))
     ax[1].scatter(PC1_loadings, PC2_loadings, c=np.arange(PC1_loadings.size), cmap=colors.ListedColormap(colors_))
     ax[1].set_title('PCA Loadings')
     ax[1].set_xlabel('Principal Component 1')
     ax[1].set_ylabel('Principal Component 2')
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
-    spacer = 0.5
+
+    spacer = 0.05
     ax[1].set_xlim([(-1 * max(np.abs(PC1_loadings)) - spacer), (max(np.abs(PC1_loadings)) + spacer)])
     ax[1].set_ylim([(-1 * max(np.abs(PC2_loadings)) - spacer), (max(np.abs(PC2_loadings)) + spacer)])
 
