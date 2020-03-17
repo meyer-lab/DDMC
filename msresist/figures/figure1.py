@@ -23,7 +23,7 @@ pd.set_option('display.max_columns', 30)
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 3))
+    ax, f = getSetup((13, 12), (4, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
@@ -35,13 +35,13 @@ def makeFigure():
 
     itp = 24
     ftp = 72
-    lines = ["PC9","KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    lines = ["PC9","KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
 
     # Read in Mass Spec data
     A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
-    A.columns = list(A.columns[:5]) + ["PC9", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-    A.columns = list(A.columns[:5]) + lines
+    A.columns = list(A.columns[:5]) + ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    A = A[list(A.columns[:5]) + lines]
 
     # A: Cell Viability
     ylabel = "fold-change to t=" + str(itp) + "h"
@@ -49,24 +49,38 @@ def makeFigure():
     FC_timecourse(ax[0], r2, itp, ftp, lines, "A/E", title, ylabel, r2=r3, FC=True)
     barplot_UtErlAF154(ax[1], lines, r2, itp, ftp, r2=r3, FC=True)
 
-    # B: blank out second axis for signaling ClusterMap
-#     ax[1].axis('off')
+    # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
+    ax[2].axis('off')
+    ax[5].axis('off')
 
-    # C&D: Scores and Loadings MS data
+    # Scores and Loadings MS data
     A = A.drop(["PC9"], axis=1)
     d = A.select_dtypes(include=['float64']).T
-    plotpca_ScoresLoadings(ax[2:4], d, list(A["Abbv"]))
+    plotpca_ScoresLoadings(ax[3:5], d, list(A["Abbv"]), list(A["Sequence"]))
 
-    # E: Variability across overlapping peptides in MS replicates
-    X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
-    plotVarReplicates(ax[4:6], X)
+    # Variability across overlapping peptides in MS replicates
+#     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
+#     plotVarReplicates(ax[4:6], X)
 
-    # F-: Phosphorylation levels of selected peptides
+    # Phosphorylation levels of selected peptides
     A = A.reset_index()
+    RTKs = {"AXL":"Y702-p", "EGFR":"Y1197-p", "MET":"Y1003-p", "ERBB2":"Y877-p", "ERBB3":"Y1328-p", "EPHA2":"Y594-p", "EPHB3":"Y792-p"}
+    plot_IdSites(ax[6], A.copy(), RTKs, "RTKs")
 
-    plotProteinSites(ax[6], A.copy(), "AXL", "AXL")
-    plotProteinSites(ax[7], A.copy(), "EGFR", "EGFR")
-    plotProteinSites(ax[8], A.copy(), "MAPK3", "ERK1")
+    adapters = {"GAB1":"Y627-p", "GAB2":"T265-p", "CRK":"Y251-p", "CRKL":"Y251-p", "SHC1":"Y426-p"}
+    plot_IdSites(ax[7], A.copy(), adapters, "Adapters")
+
+    erks = {"MAPK3":"Y204-p", "MAPK1":"Y187-p", "MAPK7":"Y221-p"}
+    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK3"}
+    plot_IdSites(ax[8], A.copy(), erks, "ERK kinases", erks_rn)
+
+    jnks = {"MAPK9":"Y185-p", "MAPK10":"Y223-p"}
+    jnks_rn = {"MAPK9":"JNK2", "MAPK10":"JNK3"}
+    plot_IdSites(ax[8], A.copy(), jnks, "JNK kinases", jnks_rn)
+
+    p38s = {"MAPK12":"Y185-p", "MAPK13":"Y182-p", "MAPK14":"Y182-p"}
+    p38s_rn = {"MAPK12":"P38G", "MAPK13":"P38D", "MAPK14":"P38A"}
+    plot_IdSites(ax[8], A.copy(), p38s, "JNK kinases", p38s_rn)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -252,7 +266,7 @@ def plotpca_explained(ax, data, ncomp):
     ax.set_xticklabels([i + 1 for i in range(ncomp)])
 
 
-def plotpca_ScoresLoadings(ax, data, pn):
+def plotpca_ScoresLoadings(ax, data, pn, ps):
     fit = PCA(n_components=2).fit(data)
     PC1_scores, PC2_scores = fit.transform(data)[:, 0], fit.transform(data)[:, 1]
     PC1_loadings, PC2_loadings = fit.components_[0], fit.components_[1]
@@ -274,9 +288,10 @@ def plotpca_ScoresLoadings(ax, data, pn):
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
-    poi = ["AXL", "EGFR", "MET", "MAPK1", "MAPK3", "CDK1", "CDK2", "GAB1", "GAB2"]
-    for i, txt in enumerate(pn):
-        if txt in poi:
+    poi = ["AXL Y702-p", "AXL Y866-p", "AXL Y481-p", "RAB13 Y5-p", "RAB2B Y3-p", "CBLB Y889-p", "SOS1 Y1196-p", "GAB2 T265-p", "GAB1 Y406", "CRKL Y251-p", "PACSIN2 Y388-p", "SHC1 S426-p", "GSK3A Y279-p", "NME2 Y52-p", "CDK1 Y15-p", "MAPK3 T207-p", "TNS3 Y802-p", "GIT1 Y383-p", "KIRREL1 Y622-p", "BCAR1 Y234-p", "NEDD9 S182-p", "RIN1 Y681-p", "ATP8B1 Y1217", "MAPK3 Y204-p", "ATP1A1 Y55-p", "YES1 Y446", "EPHB3 Y792-p", "SLC35E1 Y403-p"]
+    for i, name in enumerate(pn):
+        p = name + " " + ps[i]
+        if p in poi:
             ax[1].annotate(txt, (PC1_loadings[i], PC2_loadings[i]))
     ax[1].scatter(PC1_loadings, PC2_loadings, c=np.arange(PC1_loadings.size), cmap=colors.ListedColormap(colors_))
     ax[1].set_title('PCA Loadings')
@@ -358,6 +373,7 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
 
 
 def plotVarReplicates(ax, ABC):
+    """ Plot variability of overlapping peptides across MS biological replicates. """
     ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
@@ -376,22 +392,22 @@ def plotVarReplicates(ax, ABC):
 
     n_bins = 10
     ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins)
-    ax[0].set_ylabel("Number of peptides", fontsize=12)
-    ax[0].set_xlabel("Pearson Correlation Coefficients N= " + str(DupsTable_drop.shape[0]), fontsize=12)
+    ax[0].set_ylabel("Number of peptides")
+    ax[0].set_xlabel("Pearson Correlation Coefficients (n=" + str(DupsTable_drop.shape[0]) + ")")
     textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, verticalalignment='top', bbox=props)
 
     ax[1].hist(Stds.mean(axis=1), bins=n_bins)
-    ax[1].set_ylabel("Number of peptides", fontsize=12)
-    ax[1].set_xlabel("Mean of Standard Deviations N= " + str(Stds.shape[0]), fontsize=12)
+    ax[1].set_ylabel("Number of peptides")
+    ax[1].set_xlabel("Mean of Standard Deviations (n=" + str(Stds.shape[0]) + ")")
     textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[1].text(.8, .96, textstr, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+    ax[1].text(.75, .96, textstr, transform=ax[1].transAxes, verticalalignment='top', bbox=props)
 
 
-def plotProteinSites(ax, x, prot, title):
-    "Plot all phosphopeptides for a given protein"
+def plot_AllSites(ax, x, prot, title):
+    """ Plot all phosphopeptides for a given protein. """
     x = x.set_index(["Abbv"])
     peptides = pd.DataFrame(x.loc[prot])
     assert peptides.shape[0] > 0
@@ -411,34 +427,26 @@ def plotProteinSites(ax, x, prot, title):
             ax.plot(d.iloc[i, :], marker="o", label=positions[i], color=colors_[i])
 
     ax.legend(loc=0)
-    ax.set_xticklabels(x.columns[4:], rotation=45)
-    ax.set_ylabel("Normalized Signal", fontsize=10)
+    ax.set_xticklabels(x.columns[5:], rotation=45)
+    ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
 
 
-def plotProteinSitesEvsA(ax, E, A, prot, title):
-    "Plot fold change between AF154 vs Erlotinib only"
-    E.insert(5, "Treatment", ["erlotinib"] * E.shape[0])
-    A.insert(5, "Treatment", ["AF154"] * A.shape[0])
-    c = pd.concat([E, A])
-    x = c.set_index(["Abbv"])
-
-    peptides = pd.DataFrame(x.loc[prot])
-    assert peptides.shape[0] > 0
-    d = peptides.groupby(["Position", "Treatment"]).mean().reset_index().set_index("Position")
-
-    fd, positions = [], []
-    for pos in list(set(d.index)):
-        x = d.loc[pos]
-        if x.shape[0] == 2:
-            positions.append(pos)
-            fd.append(x[x["Treatment"] == "AF154"].iloc[0, 1:].div(x[x["Treatment"] == "erlotinib"].iloc[0, 1:]))
-
-    colors_ = cm.rainbow(np.linspace(0, 1, len(positions)))
-    for j in range(len(positions)):
-        ax.plot(fd[j], marker="o", label=positions[j], color=colors_[j])
+def plot_IdSites(ax, x, d, title, rn=False):
+    """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
+    x = x.set_index(["Abbv", "Position"])
+    colors_ = cm.rainbow(np.linspace(0, 1, len(l)))
+    n = list(d.keys())
+    p = list(d.values())
+    for i in range(len(l)):
+        c = x.loc([n[i], p[i]])
+        assert type(c) != NoneType, "Peptide not found."
+        if rn:
+            ax.plot(c.select_dtypes(include=['float64'], marker="o", label=rn[n[i]], color=colors_[i]))
+        if rn == False:
+            ax.plot(c.select_dtypes(include=['float64'], marker="o", label=n[i], color=colors_[i]))
 
     ax.legend(loc=0)
-    ax.set_ylabel("Fold-change AF154 vs Erl Only", fontsize=10)
-    ax.set_xticklabels(E.columns[6:], rotation=45)
+    ax.set_xticklabels(x.columns[5:], rotation=45)
+    ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
