@@ -171,7 +171,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
-    pidx = [str(UP_seq_copy[motif_size]).upper() + str(ps_protein_idx) + "-p"]
+    pidx = [str(UP_seq_copy[motif_size]).upper() + str(ps_protein_idx + 1) + "-p"]
     # Now go through and copy over phosphorylation
     if DoS_idx:
         for ppIDX in DoS_idx:
@@ -182,10 +182,8 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
                 UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
                 assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], \
                     UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
-                if position > 0:
-                    pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx - position) + "-p")
-                if position < 0:
-                    pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx + position) + "-p")
+                if position != 0:
+                    pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx + position + 1) + "-p")
                     
 
     return ''.join(UP_seq_copy), pidx

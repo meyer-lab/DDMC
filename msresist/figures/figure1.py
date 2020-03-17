@@ -80,7 +80,7 @@ def makeFigure():
 
     p38s = {"MAPK12":"Y185-p", "MAPK13":"Y182-p", "MAPK14":"Y182-p"}
     p38s_rn = {"MAPK12":"P38G", "MAPK13":"P38D", "MAPK14":"P38A"}
-    plot_IdSites(ax[8], A.copy(), p38s, "JNK kinases", p38s_rn)
+    plot_IdSites(ax[9], A.copy(), p38s, "JNK kinases", p38s_rn)
 
     # Add subplot labels
     subplotLabel(ax)
