@@ -126,7 +126,7 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
 def GeneratingKinaseMotifs(names, seqs):
     """ Main function to generate motifs using 'findmotif' in parallel. """
     motif_size = 5
-    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
+    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, mapped_motifs, uni_pos = [], [], []
@@ -172,6 +172,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
     pidx = [str(UP_seq_copy[motif_size]).upper() + str(ps_protein_idx + 1) + "-p"]
+
     # Now go through and copy over phosphorylation
     if DoS_idx:
         for ppIDX in DoS_idx:

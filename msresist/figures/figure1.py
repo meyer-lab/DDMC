@@ -12,6 +12,7 @@ import scipy as sp
 import seaborn as sns
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+import matplotlib.image as mpimg
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 sns.set(color_codes=True)
@@ -23,7 +24,7 @@ pd.set_option('display.max_columns', 30)
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((13, 12), (4, 3))
+    ax, f = getSetup((10, 13), (4, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
@@ -50,37 +51,44 @@ def makeFigure():
     barplot_UtErlAF154(ax[1], lines, r2, itp, ftp, r2=r3, FC=True)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    ax[2].axis('off')
-    ax[5].axis('off')
+    hm_af154 = mpimg.imread('reducedHM_AF154.png')
+    hm_erl = mpimg.imread('reducedHM_Erl.png')
+    ax[2].imshow(hm_af154)
+    ax[2].axis("off")
+    ax[3].imshow(hm_erl)
+    ax[3].axis("off")
 
     # Scores and Loadings MS data
     A = A.drop(["PC9"], axis=1)
     d = A.select_dtypes(include=['float64']).T
-    plotpca_ScoresLoadings(ax[3:5], d, list(A["Abbv"]), list(A["Sequence"]))
+    plotpca_ScoresLoadings(ax[4:6], d, list(A["Abbv"]), list(A["Position"]))
 
     # Variability across overlapping peptides in MS replicates
 #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
 #     plotVarReplicates(ax[4:6], X)
 
     # Phosphorylation levels of selected peptides
-    A = A.reset_index()
-    RTKs = {"AXL":"Y702-p", "EGFR":"Y1197-p", "MET":"Y1003-p", "ERBB2":"Y877-p", "ERBB3":"Y1328-p", "EPHA2":"Y594-p", "EPHB3":"Y792-p"}
-    plot_IdSites(ax[6], A.copy(), RTKs, "RTKs")
+    A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
+    
+    plot_AllSites(ax[6], A.copy(), "AXL", "AXL p-sites")
+    
+    RTKs = {"EGFR":"Y1197-p", "MET":"Y1003-p", "ERBB2":"Y877-p", "ERBB3":"Y1328-p", "EPHB3":"Y792-p"}
+    plot_IdSites(ax[7], A.copy(), RTKs, "RTKs")
 
-    adapters = {"GAB1":"Y627-p", "GAB2":"T265-p", "CRK":"Y251-p", "CRKL":"Y251-p", "SHC1":"Y426-p"}
-    plot_IdSites(ax[7], A.copy(), adapters, "Adapters")
+    adapters = {"GAB1":"Y627-p", "GAB2":"T265-p", "CRK":"Y251-p", "CRKL":"Y251-p", "SHC1":"S426-p"}
+    plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
-    erks = {"MAPK3":"Y204-p", "MAPK1":"Y187-p", "MAPK7":"Y221-p"}
-    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK3"}
-    plot_IdSites(ax[8], A.copy(), erks, "ERK kinases", erks_rn)
+    erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
+    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK3", "MAPK7":"ERK5"}
+    plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
     jnks = {"MAPK9":"Y185-p", "MAPK10":"Y223-p"}
     jnks_rn = {"MAPK9":"JNK2", "MAPK10":"JNK3"}
-    plot_IdSites(ax[8], A.copy(), jnks, "JNK kinases", jnks_rn)
+    plot_IdSites(ax[10], A.copy(), jnks, "JNK", jnks_rn)
 
     p38s = {"MAPK12":"Y185-p", "MAPK13":"Y182-p", "MAPK14":"Y182-p"}
     p38s_rn = {"MAPK12":"P38G", "MAPK13":"P38D", "MAPK14":"P38A"}
-    plot_IdSites(ax[9], A.copy(), p38s, "JNK kinases", p38s_rn)
+    plot_IdSites(ax[11], A.copy(), p38s, "P38", p38s_rn)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -271,10 +279,8 @@ def plotpca_ScoresLoadings(ax, data, pn, ps):
     PC1_scores, PC2_scores = fit.transform(data)[:, 0], fit.transform(data)[:, 1]
     PC1_loadings, PC2_loadings = fit.components_[0], fit.components_[1]
 
-    colors_ = cm.rainbow(np.linspace(0, 1, PC1_scores.size))
-
     # Scores
-    ax[0].scatter(PC1_scores, PC2_scores)
+    ax[0].scatter(PC1_scores, PC2_scores, linewidths=0.2)
     for j, txt in enumerate(list(data.index)):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
     ax[0].set_title('PCA Scores')
@@ -292,8 +298,8 @@ def plotpca_ScoresLoadings(ax, data, pn, ps):
     for i, name in enumerate(pn):
         p = name + " " + ps[i]
         if p in poi:
-            ax[1].annotate(txt, (PC1_loadings[i], PC2_loadings[i]))
-    ax[1].scatter(PC1_loadings, PC2_loadings, c=np.arange(PC1_loadings.size), cmap=colors.ListedColormap(colors_))
+            ax[1].annotate(name, (PC1_loadings[i], PC2_loadings[i]))
+    ax[1].scatter(PC1_loadings, PC2_loadings, c="darkred", linewidths=0.2, alpha=0.7)
     ax[1].set_title('PCA Loadings')
     ax[1].set_xlabel('Principal Component 1')
     ax[1].set_ylabel('Principal Component 2')
@@ -422,12 +428,12 @@ def plot_AllSites(ax, x, prot, title):
     colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
     for i in range(peptides.shape[0]):
         if peptides.shape[0] == 1:
-            ax.plot(d.iloc[i, :], marker="o", label=positions, color=colors_[i])
+            ax.plot(d.iloc[i, :], marker=".", label=positions, color=colors_[i])
         else:
-            ax.plot(d.iloc[i, :], marker="o", label=positions[i], color=colors_[i])
+            ax.plot(d.iloc[i, :], marker=".", label=positions[i], color=colors_[i])
 
     ax.legend(loc=0)
-    ax.set_xticklabels(x.columns[5:], rotation=45)
+    ax.set_xticklabels(x.columns[4:], rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
 
@@ -435,18 +441,33 @@ def plot_AllSites(ax, x, prot, title):
 def plot_IdSites(ax, x, d, title, rn=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
     x = x.set_index(["Abbv", "Position"])
-    colors_ = cm.rainbow(np.linspace(0, 1, len(l)))
     n = list(d.keys())
     p = list(d.values())
-    for i in range(len(l)):
-        c = x.loc([n[i], p[i]])
-        assert type(c) != NoneType, "Peptide not found."
+    colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
+    for i in range(len(n)):
+        c = x.loc[n[i], p[i]]
+        assert type(c) != None, "Peptide not found."
         if rn:
-            ax.plot(c.select_dtypes(include=['float64'], marker="o", label=rn[n[i]], color=colors_[i]))
+            ax.plot(c[4:], marker=".", label=rn[n[i]], color=colors_[i])
         if rn == False:
-            ax.plot(c.select_dtypes(include=['float64'], marker="o", label=n[i], color=colors_[i]))
+            ax.plot(c[4:], marker=".", label=n[i], color=colors_[i])
 
     ax.legend(loc=0)
-    ax.set_xticklabels(x.columns[5:], rotation=45)
+    ax.set_xticklabels(c.index[3:], rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
+
+
+def selectpeptides(x, koi):
+    l = []
+    for n, p in koi.items():
+        try:
+            q = x.loc[str(n), str(p)][5:]
+            q[5:] = q[5:].astype("float")
+            l.append(x.loc[str(n), str(p)])
+        except:
+            continue
+    ms = pd.DataFrame(l)
+    ms = pd.concat(l, axis=1).T.reset_index()
+    ms.columns = x.reset_index().columns
+    return ms
