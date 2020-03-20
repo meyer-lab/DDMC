@@ -1,5 +1,5 @@
 
-all: figure1.svg figure2.svg figure3.svg figure4.svg output/method/manuscript.html output/biol/manuscript.html
+all: figure1.svg figure2.svg figure3.svg output/method/manuscript.html output/biol/manuscript.html
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
