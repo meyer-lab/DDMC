@@ -21,6 +21,7 @@ def makeFigure():
     ax, f = getSetup((15, 10), (3, 4), multz={8: 1, 10: 1})
     
     # blank out first axis for cartoon
+
     # ax[0].axis('off')
 
     # Read in Cell Migration data on collagen
@@ -64,3 +65,4 @@ def makeFigure():
     subplotLabel(ax)
     
     return f
+
