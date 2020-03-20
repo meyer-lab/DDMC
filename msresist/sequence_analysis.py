@@ -96,8 +96,11 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
             elif "t" in MS_seq or "s" in MS_seq:
                 DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
                 assert len(DoS_idx) != 0
-            mappedMotif = makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx)
-            pos = "Y" + str(y_idx + 1) + "-p"
+            mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx)
+            if len(pidx) == 1:
+                 pos = pidx[0]
+            if len(pidx) > 1:
+                pos = ";".join(pidx)
 
         if "y" not in MS_seq:
             pTS_idx = list(re.compile("t|s").finditer(MS_seq))
@@ -107,8 +110,11 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
             DoS_idx = None
             if len(pTS_idx) > 1:
                 DoS_idx = pTS_idx[1:]
-            mappedMotif = makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx)
-            pos = str(MS_seqU[center_idx]) + str(ts_idx + 1) + "-p"
+            mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx)
+            if len(pidx) == 1:
+                 pos = pidx[0]
+            if len(pidx) > 1:
+                pos = ";".join(pidx)
 
     except BaseException:
         print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
@@ -120,7 +126,7 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
 def GeneratingKinaseMotifs(names, seqs):
     """ Main function to generate motifs using 'findmotif' in parallel. """
     motif_size = 5
-    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot.fa"), 'r')
+    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), 'r')
     ProteomeDict = DictProteomeNameToSeq(proteome)
     protnames = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, mapped_motifs, uni_pos = [], [], []
@@ -149,34 +155,39 @@ def GeneratingKinaseMotifs(names, seqs):
     return MS_names, mapped_motifs, uni_pos
 
 
-def makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx):
+def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
     """ Make a motif out of the matched sequences. """
-    UP_seq_copy = list(UP_seq[max(0, y_idx - motif_size):y_idx + motif_size + 1])
+    UP_seq_copy = list(UP_seq[max(0, ps_protein_idx - motif_size):ps_protein_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
     # If we ran off the end of the sequence at the beginning or at the end, append a gap
-    if y_idx - motif_size < 0:
-        for _ in range(motif_size - y_idx):
+    if ps_protein_idx - motif_size < 0:
+        for _ in range(motif_size - ps_protein_idx):
             UP_seq_copy.insert(0, "-")
 
-    elif y_idx + motif_size + 1 > len(UP_seq):
-        for _ in range(y_idx + motif_size - len(UP_seq) + 1):
+    elif ps_protein_idx + motif_size + 1 > len(UP_seq):
+        for _ in range(ps_protein_idx + motif_size - len(UP_seq) + 1):
             UP_seq_copy.extend("-")
 
     UP_seq_copy[motif_size] = UP_seq_copy[motif_size].lower()
 
+    pidx = [str(UP_seq_copy[motif_size]).upper() + str(ps_protein_idx + 1) + "-p"]
+
     # Now go through and copy over phosphorylation
     if DoS_idx:
         for ppIDX in DoS_idx:
-            position = ppIDX.start() - center_idx
+            position = ppIDX.start() - center_motif_idx
             # If the phosphosite is within the motif
             if abs(position) < motif_size:
                 editPos = position + motif_size
                 UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
                 assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], \
                     UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
+                if position != 0:
+                    pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx + position + 1) + "-p")
+                    
 
-    return ''.join(UP_seq_copy)
+    return ''.join(UP_seq_copy), pidx
 
 
 ###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
