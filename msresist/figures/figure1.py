@@ -3,7 +3,7 @@ This creates Figure 1.
 """
 from .common import subplotLabel, getSetup
 from ..sequence_analysis import FormatName, pYmotifs
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, MergeDfbyMean
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd
 from sklearn.decomposition import PCA
 import os
 import pandas as pd
@@ -20,6 +20,7 @@ sns.set(color_codes=True)
 
 path = os.path.dirname(os.path.abspath(__file__))
 pd.set_option('display.max_columns', 30)
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -45,14 +46,17 @@ def makeFigure():
     A = A[list(A.columns[:5]) + lines]
 
     # A: Cell Viability
+    tr1 = ["-UT", '-E', '-A/E']
+    tr2 = ["Untreated", 'Erlotinib', 'Erl + AF154']
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
+    c = ["white", "windows blue", "scarlet"]
     FC_timecourse(ax[0], r2, itp, ftp, lines, "A/E", title, ylabel, r2=r3, FC=True)
-    barplot_UtErlAF154(ax[1], lines, r2, itp, ftp, r2=r3, FC=True)
+    barplot_UtErlAF154(ax[1], lines, r1, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", r2=r2, r3=r3, FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread('reducedHM_AF154.png')
-    hm_erl = mpimg.imread('reducedHM_Erl.png')
+    hm_af154 = mpimg.imread('CV_reducedHM_AF154.png')
+    hm_erl = mpimg.imread('CV_reducedHM_Erl.png')
     ax[2].imshow(hm_af154)
     ax[2].axis("off")
     ax[3].imshow(hm_erl)
@@ -123,7 +127,9 @@ def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r
 
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
-    sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
+#     pal = sns.xkcd_palette(custom_colors)
+    pal = sns.color_palette("Spectral", 10)
+    sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
 
 #     if treatment != "UT":
 #         ax.legend().remove()
@@ -158,7 +164,7 @@ def timepoint_fc(d, itp, ftp):
     return pd.DataFrame(dfc).reset_index()
     
 
-def FCendpoint(d, itp, ftp, t, l, FC):
+def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
     """ Compute fold-change plus format for seaborn bar plot. """
     if FC == True:
         dfc = timepoint_fc(d, itp, ftp)
@@ -169,59 +175,61 @@ def FCendpoint(d, itp, ftp, t, l, FC):
     dfc["AXL mutants Y->F"] = l
     dfc["Treatment"] = t
     dfc = dfc[["index", "AXL mutants Y->F", "Treatment", 0]]
-    dfc.columns = ["index", "AXL mutants Y->F", "Treatment", "fold-change to t=" + str(itp) + "h"]
+    dfc.columns = ["index", "AXL mutants Y->F", "Treatment", ylabel]
     return dfc.iloc[:, 1:]
 
 
-def barplot_UtErlAF154(ax, lines, r1, itp, ftp, r2=False, r3=False, FC=False):
+def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=False, r3=False, FC=False, colors=colors):
     """ Cell viability bar plot at a specific end point across conditions, with error bars"""
     if type(r3) == pd.core.frame.DataFrame:
         ds = [r1, r2, r3]
-    else:
+    if type(r2) == pd.core.frame.DataFrame:
         ds = [r1, r2]
-
-    tr1 = ['-UT', '-E', '-A/E']
-    tr2 = ['UT', 'Erlotinib', 'Erl + AF154']
+    else:
+        ds = [r1]
 
     c = []
     for d in ds:
         for i, t in enumerate(tr1):
             x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
-            x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, FC)
+            x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, ylabel, FC)
             c.append(x)
     
     c = pd.concat(c)
-    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to t=" + str(itp) + "h", hue="Treatment", data=c, ci="sd", ax=ax)
-    ax.set_title("Cell Viability - Endpoint at " + str(ftp) + "h")
+    pal = sns.xkcd_palette(colors)
+    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth":.5}, **{"edgecolor":"black"})
+    
+    ax.set_title(title)
     ax.set_xticklabels(lines, rotation=45)
 
 
-def barplotFC_TvsUT(ax, r1, itp, ftp, l, r2=False, r3=False, FC=False):
+def barplotFC_TvsUT(ax, r1, itp, ftp, l, tr1, tr2, title, r2=False, r3=False, FC=False, colors=colors):
     """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines. """
     if type(r3) == pd.core.frame.DataFrame:
         ds = [r1, r2, r3]
-    else:
+    if type(r2) == pd.core.frame.DataFrame:
         ds = [r1, r2]
-    
-    tr1 = ['-E', '-A/E']
-    tr2 = ['Erlotinib', 'Erl + AF154']
-    
+    else:
+        ds = [r1]
+
     c = []
     for d in ds:
-        for j, t in enumerate(tr1):
-            x = fc_TvsUT(d, itp, ftp, l, t, tr2[j], FC)
+        for j in range(1, len(tr1)):
+            x = fc_TvsUT(d, itp, ftp, l, j, tr1, tr2[j], FC)
             c.append(x)
 
     c = pd.concat(c)
-    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax)
-    ax.set_title("Cell Viability - Endpoint at " + str(ftp) + "h")
+    pal = sns.xkcd_palette(colors)
+    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth":.5}, **{"edgecolor":"black"})
+    sns.set_context(rc = {'patch.linewidth': 5})
+    ax.set_title(title)
     ax.set_xticklabels(l, rotation=45);
 
 
-def fc_TvsUT(d, itp, ftp, l, t, tr2, FC):
+def fc_TvsUT(d, itp, ftp, l, j, tr1, tr2, FC):
     """ Preprocess fold-change to untreated. """
-    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains('-UT')]], axis=1)
-    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
+    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
+    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[j])]], axis=1)
 
     if FC == True:
         ut = timepoint_fc(ut, itp, ftp).iloc[:, 1]
@@ -230,6 +238,7 @@ def fc_TvsUT(d, itp, ftp, l, t, tr2, FC):
     else:
         ut = ut[ut["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
         x = x[x["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
+    
 
     fc = pd.DataFrame(x.div(ut)).reset_index()
 
@@ -241,7 +250,7 @@ def fc_TvsUT(d, itp, ftp, l, t, tr2, FC):
 
 
 # Plot Separately since makefigure can't add it as a subplot
-def plotClustergram(data, title, lim=False, robust=True):
+def plotClustergram(data, title, lim=False, robust=True, figsize=(10, 10)):
     """ Clustergram plot. """
     g = sns.clustermap(
         data,
@@ -249,7 +258,8 @@ def plotClustergram(data, title, lim=False, robust=True):
         cmap="bwr",
         robust=robust,
         vmax=lim,
-        vmin=-lim)
+        vmin=-lim,
+        figsize=figsize)
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
     ax.set_ylabel("")
@@ -267,7 +277,7 @@ def plotpca_explained(ax, data, ncomp):
         else:
             acc_expl.append(exp)
 
-    ax.bar(range(ncomp), acc_expl)
+    ax.bar(range(ncomp), acc_expl, edgecolor="black", linewidth=1)
     ax.set_ylabel("% Variance Explained")
     ax.set_xlabel("Components")
     ax.set_xticks(range(ncomp))
@@ -397,14 +407,14 @@ def plotVarReplicates(ax, ABC):
     # Stds = Stds.iloc[Xidx, :]
 
     n_bins = 10
-    ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins)
+    ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins, edgecolor="black", linewidth=1)
     ax[0].set_ylabel("Number of peptides")
     ax[0].set_xlabel("Pearson Correlation Coefficients (n=" + str(DupsTable_drop.shape[0]) + ")")
     textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
     props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
     ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, verticalalignment='top', bbox=props)
 
-    ax[1].hist(Stds.mean(axis=1), bins=n_bins)
+    ax[1].hist(Stds.mean(axis=1), bins=n_bins, edgecolor="black", linewidth=1)
     ax[1].set_ylabel("Number of peptides")
     ax[1].set_xlabel("Mean of Standard Deviations (n=" + str(Stds.shape[0]) + ")")
     textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
@@ -462,9 +472,15 @@ def selectpeptides(x, koi):
     l = []
     for n, p in koi.items():
         try:
-            q = x.loc[str(n), str(p)][5:]
-            q[5:] = q[5:].astype("float")
-            l.append(x.loc[str(n), str(p)])
+            if type(p) == list:
+                for site in p:
+                    try:
+                        l.append(x.loc[str(n), str(site)])
+                    except:
+                        continue
+
+            if type(p) == str:
+                l.append(x.loc[str(n), str(p)])
         except:
             continue
     ms = pd.DataFrame(l)
