@@ -53,9 +53,9 @@ def makeFigure():
 
     fit = mixedCl_plsr.fit(d, v)
     centers = mixedCl_plsr.named_steps.mixedCl.transform(d)
-    
+
     plotR2YQ2Y(ax[1], mixedCl_plsr, d, v, cv=2, b=b)
-    
+
     plotMeasuredVsPredicted(ax[2], mixedCl_plsr, d, v)
 
     plotScoresLoadings(ax[3:5], fit, centers, v, ncl, treatments, CV=2)

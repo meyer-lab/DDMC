@@ -31,8 +31,8 @@ pipeline {
         }
         sh 'make -j 2 all'
         archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
-        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/biol', reportFiles:'manuscript.html', reportName:'Methods Paper'])
-        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/method', reportFiles:'manuscript.html', reportName:'Biology Paper'])
+        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/biol', reportFiles:'manuscript.html', reportName:'Biology Paper'])
+        publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/method', reportFiles:'manuscript.html', reportName:'Methods Paper'])
       }
     }
   }
