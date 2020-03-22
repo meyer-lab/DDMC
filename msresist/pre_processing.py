@@ -293,3 +293,27 @@ def MergeTR(data):
         data.iloc[:, i] = data.iloc[:, i:i + 2].mean(axis=1)
 
     return data.drop(data.columns[[i + 1 for i in range(1, data.shape[1], 2)]], axis="columns")
+
+
+def cv_pre(cv1, cv2, cv3, tr, itp, ftp, lines):
+    """ Preprocesses cell viability data sets for analysis. """
+    l = [cv1, cv2, cv3]
+    z = []
+    for i in range(len(l)):
+        c = l[i].loc[:, l[i].columns.str.contains(tr)]
+        c.insert(0, "Elapsed",  cv1.iloc[:, 0])
+        fc = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
+        z.append(fc)
+    
+    cv = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
+    cv.columns = ["lines", "viability"]
+    cv = cv.groupby("lines").mean().T
+    return cv[lines].iloc[0, :]
+
+
+def cm_pre(X, tr, ftp, lines):
+    """ Preprocesses migration data sets for analysis. """
+    x = X.loc[:, X.columns.str.contains(tr)]
+    x.insert(0, "Elapsed", X.iloc[:, 0])
+    cm = x[x["Elapsed"] == ftp].iloc[0, 1:]
+    return cm[lines]
