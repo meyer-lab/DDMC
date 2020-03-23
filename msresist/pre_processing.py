@@ -301,10 +301,10 @@ def cv_pre(cv1, cv2, cv3, tr, itp, ftp, lines):
     z = []
     for i in range(len(l)):
         c = l[i].loc[:, l[i].columns.str.contains(tr)]
-        c.insert(0, "Elapsed",  cv1.iloc[:, 0])
+        c.insert(0, "Elapsed", cv1.iloc[:, 0])
         fc = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
         z.append(fc)
-    
+
     cv = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
     cv.columns = ["lines", "viability"]
     cv = cv.groupby("lines").mean().T
