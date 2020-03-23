@@ -53,8 +53,8 @@ def makeFigure():
     barplot_UtErlAF154(ax[5], lines, ww, itp, ftp, tr1, tr2, "Wound Width - 24h", " ", colors=c)
     barplot_UtErlAF154(ax[7], lines, wc, itp, ftp, tr1, tr2, "Wound Confluency - 24h", " ", colors=c)
 
-    hm_af154 = mpimg.imread('CM_reducedHM_AF154.png')
-    hm_erl = mpimg.imread('CM_reducedHM_Erl.png') 
+    hm_af154 = mpimg.imread('msresist/data/Signaling/CM_reducedHM_AF154.png')
+    hm_erl = mpimg.imread('msresist/data/Signaling/CM_reducedHM_Erl.png') 
     ax[8].imshow(hm_af154)
     ax[8].axis("off")
     ax[9].imshow(hm_erl)
