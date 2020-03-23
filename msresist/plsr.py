@@ -31,16 +31,11 @@ def Q2Y_across_components(model, X, Y, cv, max_comps):
     """ Calculate Q2Y using cros_val_predct method. """
     Q2Ys = []
     for b in range(1, max_comps):
-<<<<<<< HEAD
-        plsr_model = PLSRegression(n_components=b)
-        y_pred = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
-=======
         if cv == 1:
             model.set_params(n_components=b)
         if cv == 2:
             model.set_params(plsr__n_components=b)
-        y_pred = cross_val_predict(model, X, Y, cv=Y.size, n_jobs=-1)
->>>>>>> master
+        y_pred = cross_val_predict(model, X, Y, cv=Y.shape[0], n_jobs=-1)
         Q2Ys.append(explained_variance_score(Y, y_pred))
     return Q2Ys
 

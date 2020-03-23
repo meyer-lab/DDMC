@@ -55,8 +55,8 @@ def makeFigure():
     barplot_UtErlAF154(ax[1], lines, r1, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", r2=r2, r3=r3, FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread('CV_reducedHM_AF154.png')
-    hm_erl = mpimg.imread('CV_reducedHM_Erl.png')
+    hm_af154 = mpimg.imread('msresist/data/Signaling/CV_reducedHM_AF154.png')
+    hm_erl = mpimg.imread('msresist/data/Signaling/CV_reducedHM_Erl.png')
     ax[2].imshow(hm_af154)
     ax[2].axis("off")
     ax[3].imshow(hm_erl)
