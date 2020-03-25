@@ -19,7 +19,6 @@ def preprocessing(
         Axlmuts_ErlAF154=False,
         Axlmuts_ErlAF154_BR2=False,
         CPTAC=False,
-        motifs=False,
         Vfilter=False,
         FCfilter=False,
         log2T=False,
@@ -67,9 +66,8 @@ def preprocessing(
     if rawdata:
         return X
 
-    if motifs:
-        X = pYmotifs(X, genes)
-        merging_indices += ["Position"]
+    X = pYmotifs(X, genes)
+    merging_indices += ["Position"]
 
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, FCto)

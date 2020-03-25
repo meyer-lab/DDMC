@@ -41,7 +41,7 @@ def makeFigure():
 
 
     # Read in Mass Spec data
-    A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
+    A = preprocessing(Axlmuts_ErlF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
     A.columns = list(A.columns[:5]) + ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
     A = A[list(A.columns[:5]) + lines]
 
