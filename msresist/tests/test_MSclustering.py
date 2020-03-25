@@ -14,7 +14,7 @@ class TestClustering(unittest.TestCase):
 
     def test_clusters(self):
         # """ Test that EMclustering is working by comparing with GMM clusters. """
-        ABC = preprocessing(AXLwt=True, Vfilter=True, FCfilter=True, log2T=True)
+        ABC = preprocessing(AXLwt=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
         ABC = preprocess_seqs(ABC, "Y")
         data = ABC.iloc[:, 7:].T
         info = ABC.iloc[:, :7]
