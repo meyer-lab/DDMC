@@ -69,11 +69,10 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight, distance_method, pYTS="Y", covariance_type="diag", max_n_iter=100000):
+    def __init__(self, info, ncl, GMMweight, distance_method, covariance_type="diag", max_n_iter=100000):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
-        self.pYTS = pYTS
         self.distance_method = distance_method
         self.covariance_type = covariance_type
         self.max_n_iter = max_n_iter
@@ -81,7 +80,7 @@ class MassSpecClustering(BaseEstimator):
     def fit(self, X, _):
         """ Compute EM clustering. """
         self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info, self.ncl, self.GMMweight,
-                                                                                    self.distance_method, self.pYTS, self.covariance_type,
+                                                                                    self.distance_method, self.covariance_type,
                                                                                     self.max_n_iter)
         return self
 
@@ -104,20 +103,20 @@ class MassSpecClustering(BaseEstimator):
         won't work since all sequences are passed. """
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
 
-        labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
+        labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl,)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
 
-        _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.pYTS)
+        _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl,)
         return np.mean(scores)
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
-                "GMMweight": self.GMMweight, "distance_method": self.distance_method, "pYTS": self.pYTS,
+                "GMMweight": self.GMMweight, "distance_method": self.distance_method,
                 "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
 
     def set_params(self, **parameters):

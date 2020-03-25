@@ -13,6 +13,7 @@ from Bio.SubsMat import MatrixInfo
 from functools import lru_cache
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
+from msresist.pre_processing import CountPsiteTypes
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -192,7 +193,6 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
                     UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
                 if position != 0:
                     pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx + position + 1) + "-p")
-                    
 
     return ''.join(UP_seq_copy), pidx
 
@@ -204,21 +204,21 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl, pYTS):
+def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
-    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
-    cl_seqs = [ForegroundSeqs(cluster, pYTS) for cluster in cl_seqs]
+    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]))
+    cl_seqs = [ForegroundSeqs(cluster) for cluster in cl_seqs]
     labels, scores = [], []
 
     for j, motif in enumerate(Allseqs):
-        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS)
+        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs)
         labels.append(idx)
         scores.append(score)
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, BPM):
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, BPM):
     """ Do the sequence assignment. """
     scores = []
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
@@ -227,7 +227,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
             gmm_score = gmmp.iloc[j, z] * GMMweight
             assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
             NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
-            BPM_score = MeanBinomProbs(BPM[z], NumMotif, pYTS)
+            BPM_score = MeanBinomProbs(BPM[z], NumMotif)
             scores.append(BPM_score + gmm_score)
         score, idx = min((score, idx) for (idx, score) in enumerate(scores))
 
@@ -265,11 +265,11 @@ def TranslateMotifsToIdx(motif, aa):
     return NumMotif
 
 
-def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter, n=5):
+def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter, n=5):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for i in range(n):
-        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter)
+        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter])
 
@@ -281,18 +281,18 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, pYTS, covaria
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
 
 
-def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_type, max_n_iter):
+def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]), pYTS)
+    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
-    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method, pYTS)
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
 
     # Background sequences
     if distance_method == "Binomial":
-        bg_seqs = BackgroundSeqs(pYTS)
+        bg_seqs = BackgroundSeq()
         bg_pwm = position_weight_matrix(bg_seqs)
 
     if distance_method == "PAM250":
@@ -311,7 +311,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         # E step: Assignment of each peptide based on data and seq
         binoM = BPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, pYTS, binoM)
+            score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binoM)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -320,7 +320,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, pYTS, covariance_
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method, pYTS)
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
             assert False not in [len(sublist) > 0 for sublist in cl_seqs]
             continue
@@ -380,11 +380,11 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
     return gmmp
 
 
-def gmm_initialize(X, ncl, covariance_type, distance_method, pYTS):
+def gmm_initialize(X, ncl, covariance_type, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type, max_iter=1).fit(X.iloc[:, 7:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
-    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1]), pYTS) for i in range(ncl)]
+    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1])) for i in range(ncl)]
     gmm_pred = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:]))
     gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
     return gmm, init_clusters, gmmp
@@ -393,40 +393,59 @@ def gmm_initialize(X, ncl, covariance_type, distance_method, pYTS):
 def preprocess_seqs(X, pYTS):
     """ Filter out any sequences with different than the specified central p-residue
     and/or any containing gaps."""
-    X = X[~X.iloc[:, 1].str.contains("-")]
+    X = X[~X["Sequence"].str.contains("-")]
+
     Xidx = []
-    for i in range(X.shape[0]):
-        Xidx.append(X.iloc[i, 1][5] == pYTS.lower())
+    for seq in X["Sequence"]:
+        Xidx.append(seq[5] == pYTS.lower())
     return X.iloc[Xidx, :]
 
 
-def BackgroundSeqs(pYTS):
-    """ Build Background data set for either "Y", "S", or "T".
+def BackgroundSeqs(X):
+    """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences. 
     Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
-    bg_seqs = []
-    refseqs = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv").iloc[:, 1]
+    #Get porportion of psite types in foreground set
+    forseqs = list(X["Sequence"])
+    pY, pS, pT, _ = CountPsiteTypes(X)
+    pYf = pY / len(forseqs)
+    pSf = pS / len(forseqs)
+    pTf = pT / len(forseqs)
+    
+    #Build background sequences
+    refseqs = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
+    refseqs = list(refseqs[~refseqs["SITE_+/-7_AA"].str.contains("_")])
+
+    pYn = int(len(refseqs) * pYf)
+    pSn = int(len(refsseqs) * pSf)
+    pTn = int(len(refsseqs) * pTf)
+
+    y_seqs, s_seqs, t_seqs = [], [], []
     for i, seq in enumerate(refseqs):
         motif = str(seq)[7 - 5:7 + 6].upper()
-        if "_" in motif or "Y" != motif[5]:
-            continue
-
         assert len(motif) == 11, "Wrong sequence length: %s" % motif
 
-        bg_seqs.append(Seq(motif, IUPAC.protein))
+        if motif[5] == "Y":
+            while len(y_seqs) < pYn:
+                y_seqs.append(Seq(motif, IUPAC.protein)
+        if motif[5] == "S":
+            while len(s_seqs) < pSn:
+                s_seqs.append(Seq(motif, IUPAC.protein)
+        if motif[5] == "T":
+            while len(t_seqs) < pTn
+                t_seqs.append(Seq(motif, IUPAC.protein)
+    
+    return y_seqs + s_seqs + t_seqs
 
-    return bg_seqs
 
-
-def ForegroundSeqs(Allseqs, pYTS):
+def ForegroundSeqs(Allseqs):
     """ Build Background data set for either "Y", "S", or "T". """
     seqs = []
     for motif in Allseqs:
         motif = motif.upper()
-        assert motif[5] == pYTS, "wrong central amino acid"
-        assert "-" not in pYTS, "gap in motif"
+        assert "-" not in motif, "gap in motif"
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
 
@@ -484,7 +503,7 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     return ''.join(motif)
 
 
-def MeanBinomProbs(BPM, motif, pYTS):
+def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
