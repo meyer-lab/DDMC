@@ -19,33 +19,42 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 ###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
 
-def pYmotifs(ABC, ABC_names):
+def pYmotifs(X, names):
     " Generate pY motifs for pre-processing. "
-    names, mapped_motifs, pXpos = GeneratingKinaseMotifs(ABC_names, FormatSeq(ABC))
-    ABC['Protein'] = names
-    ABC['Sequence'] = mapped_motifs
-    return ABC.assign(Position=pXpos)
+    names, motifs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
+    X = X.iloc[Xidx, :]
+    X['Gene'] = names
+    X['Sequence'] = motifs
+    X.insert(3, "Position", pXpos)
+    return X
 
 
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
-    longnames = [v.split("OS")[0].strip() for v in X.iloc[:, 0]]
-    shortnames = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
-    return longnames, shortnames
+    full = [v.split("OS")[0].strip() for v in X.iloc[:, 0]]
+    abbv = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
+    return full, abbv
 
 
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
-    return [v.split("-")[0] for v in X.iloc[:, 1]]
+    return [v.split("-")[0] for v in X["Sequence"]]
 
 
-def DictProteomeNameToSeq(X):
+def DictProteomeNameToSeq(X, n):
     """ To generate proteom's dictionary """
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
         UP_seq = str(rec2.seq)
-        UP_name = rec2.description.split("HUMAN ")[1].split(" OS")[0]
-        DictProtToSeq_UP[UP_name] = str(UP_seq)
+        if n == "full":
+            UP_name = rec2.description.split("HUMAN ")[1].split(" OS")[0]
+            DictProtToSeq_UP[UP_name] = str(UP_seq)
+        if n == "gene":
+            try:
+                UP_name = rec2.description.split(" GN=")[1].split(" ")[0]
+                DictProtToSeq_UP[UP_name] = str(UP_seq)
+            except:
+                continue
     return DictProtToSeq_UP
 
 
@@ -61,27 +70,38 @@ def getKeysByValue(dictOfElements, valueToFind):
 
 def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     """ Match protein names of MS and Uniprot's proteome. """
-    matchedNames = []
+    matchedNames, seqs, Xidx = [], [], []
+    counter = 0
     for i, MS_seq in enumerate(MS_seqs):
         MS_seqU = MS_seq.upper()
         MS_name = MS_names[i].strip()
         if MS_name in ProteomeDict and MS_seqU in ProteomeDict[MS_name]:
+            Xidx.append(i)
+            seqs.append(MS_seq)
             matchedNames.append(MS_name)
         else:
-            matchedNames.append(getKeysByValue(ProteomeDict, MS_seqU)[0])
-    return matchedNames
+            try:
+                newname = getKeysByValue(ProteomeDict, MS_seqU)[0]
+                assert MS_seqU in ProteomeDict[newname]
+                Xidx.append(i)
+                seqs.append(MS_seq)
+                matchedNames.append(newname)
+            except:
+                counter += 1
+                continue
+
+    print(str(counter) + "/" + str(len(MS_seqs)) + " peptides were not found in the proteome.")
+    assert len(matchedNames) == len(seqs)
+    return matchedNames, seqs, Xidx
 
 
-def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
+def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
     """ For a given MS peptide, finds it in the ProteomeDict, and maps the +/-5 AA from the p-site, accounting
     for peptides phosphorylated multiple times concurrently. """
     MS_seqU = MS_seq.upper()
-    MS_name = protnames[i]
     try:
         UP_seq = ProteomeDict[MS_name]
-        assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq
-        assert MS_name == list(ProteomeDict.keys())[list(ProteomeDict.values()).index(str(UP_seq))], \
-            "check " + MS_name + " with seq " + MS_seq
+        assert MS_seqU in UP_seq, "check " + MS_name + " with seq " + MS_seq + ". Protein sequence found: " + UP_seq
         regexPattern = re.compile(MS_seqU)
         MatchObs = list(regexPattern.finditer(UP_seq))
         if "y" in MS_seq:
@@ -117,42 +137,28 @@ def findmotif(MS_seq, protnames, ProteomeDict, motif_size, i):
                 pos = ";".join(pidx)
 
     except BaseException:
-        print("find and replace", MS_name, "in proteome_uniprot.txt. Use: ", MS_seq)
+        print(MS_name + " not in ProteomeDict.")
         raise
 
     return pos, mappedMotif
 
 
 def GeneratingKinaseMotifs(names, seqs):
-    """ Main function to generate motifs using 'findmotif' in parallel. """
+    """ Main function to generate motifs using 'findmotif'. """
     motif_size = 5
     proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), 'r')
-    ProteomeDict = DictProteomeNameToSeq(proteome)
-    protnames = MatchProtNames(ProteomeDict, names, seqs)
-    MS_names, mapped_motifs, uni_pos = [], [], []
-    Allseqs, Testseqs = [], []
+    ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
+    protnames, seqs, Xidx = MatchProtNames(ProteomeDict, names, seqs)
+    MS_names, mapped_motifs, uni_pos, = [], [], []
 
     for i, MS_seq in enumerate(seqs):
-        pos, mappedMotif = findmotif(MS_seq, protnames, ProteomeDict, motif_size, i)
-        Allseqs.append(MS_seq)
+        pos, mappedMotif = findmotif(MS_seq, protnames[i], ProteomeDict, motif_size)
         MS_names.append(protnames[i])
-        Testseqs.append(MS_seq)
-        uni_pos.append(pos)
         mapped_motifs.append(mappedMotif)
-
-    li_dif = [i for i in Testseqs + Allseqs if i not in Allseqs or i not in Testseqs]
-    if li_dif:
-        print(" Testseqs vs Allseqs may have different peptide sequences: ", li_dif)
-
-    assert len(names) == len(MS_names), "mapping incosistent number of names" \
-        + str(len(names)) + " " + str(len(MS_names))
-    assert len(seqs) == len(mapped_motifs), "mapping incosistent number of peptides" \
-        + str(len(seqs)) + " " + str(len(mapped_motifs))
-    assert len(uni_pos) == len(seqs), "inconsistent nubmer of pX positions" \
-        + str(len(seqs)) + " " + str(len(uni_pos))
+        uni_pos.append(pos)
 
     proteome.close()
-    return MS_names, mapped_motifs, uni_pos
+    return MS_names, mapped_motifs, uni_pos, Xidx
 
 
 def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):

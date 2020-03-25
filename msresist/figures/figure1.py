@@ -55,8 +55,8 @@ def makeFigure():
     barplot_UtErlAF154(ax[1], lines, r1, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", r2=r2, r3=r3, FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread('msresist/data/Signaling/CV_reducedHM_AF154.png')
-    hm_erl = mpimg.imread('msresist/data/Signaling/CV_reducedHM_Erl.png')
+    hm_af154 = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_AF154.png')
+    hm_erl = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_Erl.png')
     ax[2].imshow(hm_af154)
     ax[2].axis("off")
     ax[3].imshow(hm_erl)
@@ -83,7 +83,7 @@ def makeFigure():
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
     erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
-    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK3", "MAPK7":"ERK5"}
+    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK2", "MAPK7":"ERK5"}
     plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
     jnks = {"MAPK9":"Y185-p", "MAPK10":"Y223-p"}
