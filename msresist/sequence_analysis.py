@@ -22,6 +22,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def pYmotifs(X, names):
     " Generate pY motifs for pre-processing. "
     names, motifs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
+    print(len(pXpos))
     X = X.iloc[Xidx, :]
     X['Gene'] = names
     X['Sequence'] = motifs

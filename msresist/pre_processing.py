@@ -30,7 +30,8 @@ def preprocessing(
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
     6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
     Note 1: 'motifs' redefines peptide sequences as XXXXXyXXXXX which affects merging.
-    Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis."""
+    Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis.
+    Note 3: CPTAC is already normalized, so: mc_row and mc_col = False """
     filesin = list()
 
     if AXLwt:
@@ -67,16 +68,18 @@ def preprocessing(
         return X
 
     X = pYmotifs(X, genes)
-    merging_indices += ["Position"]
+    merging_indices.insert(3, "Position")
 
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, FCto)
+
+    object_headers = list(X.select_dtypes(include=['object']).columns)
 
     X = MergeDfbyMean(
         X.copy(),
         data_headers,
         merging_indices
-        ).reset_index()[merging_indices[:3] + data_headers + merging_indices[3:]]
+        ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
         X = FoldChangeFilter(X, data_headers, FCto)
@@ -87,7 +90,7 @@ def preprocessing(
         if not FCtoUT:
             X = Linear(X, data_headers)
 
-    return X[merging_indices + data_headers]
+    return X
 
 
 def preprocessCPTAC():
@@ -102,9 +105,7 @@ def preprocessCPTAC():
 
     return X.drop("Organism", axis=1)
 
-    
-    
-    
+
 def filter_NaNpeptides(X):
     Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= 0.15
     return X.iloc[Xidx, :]
@@ -183,7 +184,8 @@ def VFilter(ABC, merging_indices, data_headers, FCto):
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     TripsTable = FilterByStdev(TripsTable)
 
-    merging_indices += ["BioReps", "r2_Std"]
+    merging_indices.insert(4, "BioReps")
+    merging_indices.insert(5, "r2_Std")
 
     ABC = pd.concat([
         NonRecTable,
