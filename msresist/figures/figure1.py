@@ -41,7 +41,7 @@ def makeFigure():
 
 
     # Read in Mass Spec data
-    A = preprocessing(Axlmuts_ErlF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
+    A = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
     A.columns = list(A.columns[:5]) + ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
     A = A[list(A.columns[:5]) + lines]
 
@@ -65,7 +65,7 @@ def makeFigure():
     # Scores and Loadings MS data
     A = A.drop(["PC9"], axis=1)
     d = A.select_dtypes(include=['float64']).T
-    plotpca_ScoresLoadings(ax[4:6], d, list(A["Abbv"]), list(A["Position"]))
+    plotpca_ScoresLoadings(ax[4:6], d, list(A["Gene"]), list(A["Position"]))
 
     # Variability across overlapping peptides in MS replicates
 #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
@@ -424,7 +424,7 @@ def plotVarReplicates(ax, ABC):
 
 def plot_AllSites(ax, x, prot, title):
     """ Plot all phosphopeptides for a given protein. """
-    x = x.set_index(["Abbv"])
+    x = x.set_index(["Gene"])
     peptides = pd.DataFrame(x.loc[prot])
     assert peptides.shape[0] > 0
     if peptides.shape[1] == 1:
@@ -450,7 +450,7 @@ def plot_AllSites(ax, x, prot, title):
 
 def plot_IdSites(ax, x, d, title, rn=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
-    x = x.set_index(["Abbv", "Position"])
+    x = x.set_index(["Gene", "Position"])
     n = list(d.keys())
     p = list(d.values())
     colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
