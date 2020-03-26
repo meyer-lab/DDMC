@@ -10,9 +10,7 @@ from .sequence_analysis import FormatName, pYmotifs
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-###-------------------------- Pre-processing Raw Data --------------------------###
-
-
+###-------------------------- Pre-processing MS data --------------------------###
 def preprocessing(
         AXLwt=False,
         Axlmuts_Erl=False,
@@ -316,31 +314,6 @@ def peptidefinder(X, loc, Protein=False, Gene=False, Sequence=False):
     if Sequence:
         found = X[X["Sequence"].str.contains(loc)]
     return found
-
-
-def CountPsiteTypes(X):
-    """ Count number of different phosphorylation types in a MS data set."""
-    pS = 0
-    pT = 0
-    pY = 0
-    primed = 0
-
-    for seq in list(X["Sequence"]):
-        if "s" in seq[5]:
-            pS += 1
-        if 'y' in seq[5]:
-            pY += 1
-        if 't' in seq[5]:
-            pT += 1
-        pp = 0
-        for i in seq:
-            if i.islower():
-                pp += 1
-            if pp > 1:
-                primed += 1
-
-    return pY, pS, pT, primed
-
 
 
 ######----------pre-processing of phenotype data----------######

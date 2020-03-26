@@ -13,7 +13,6 @@ from Bio.SubsMat import MatrixInfo
 from functools import lru_cache
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
-from msresist.pre_processing import CountPsiteTypes
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,19 +27,43 @@ def pYmotifs(X, names):
     X['Gene'] = names
     X['Sequence'] = motifs
     X.insert(3, "Position", pXpos)
-    return X
+    return X[~X["Sequence"].str.contains("-")]
 
 
 def FormatName(X):
     """ Keep only the general protein name, without any other accession information """
     full = [v.split("OS")[0].strip() for v in X.iloc[:, 0]]
-    abbv = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
-    return full, abbv
+    gene = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
+    return full, gene
 
 
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
     return [v.split("-")[0] for v in X["Sequence"]]
+
+
+def CountPsiteTypes(X, cA):
+    """ Count number of different phosphorylation types in a MS data set."""
+    pS = 0
+    pT = 0
+    pY = 0
+    primed = 0
+
+    for seq in X:
+        if "s" in seq[cA]:
+            pS += 1
+        if 'y' in seq[cA]:
+            pY += 1
+        if 't' in seq[cA]:
+            pT += 1
+        pp = 0
+        for i in seq:
+            if i.islower():
+                pp += 1
+            if pp > 1:
+                primed += 1
+
+    return pY, pS, pT, primed
 
 
 def DictProteomeNameToSeq(X, n):
@@ -292,7 +315,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, 
 
     # Background sequences
     if distance_method == "Binomial":
-        bg_seqs = BackgroundSeq()
+        bg_seqs = BackgroundSeqs(ABC)
         bg_pwm = position_weight_matrix(bg_seqs)
 
     if distance_method == "PAM250":
@@ -320,6 +343,8 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, 
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+            print(seq_reassign)
+            raise SystemExit
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
             assert False not in [len(sublist) > 0 for sublist in cl_seqs]
@@ -402,41 +427,66 @@ def preprocess_seqs(X, pYTS):
 
 
 def BackgroundSeqs(X):
-    """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences. 
+    """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
+    Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
     #Get porportion of psite types in foreground set
     forseqs = list(X["Sequence"])
-    pY, pS, pT, _ = CountPsiteTypes(X)
-    pYf = pY / len(forseqs)
-    pSf = pS / len(forseqs)
-    pTf = pT / len(forseqs)
+    forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
+
+    pYf = forw_pYn / len(forseqs)
+    pSf = forw_pSn / len(forseqs)
+    pTf = forw_pTn / len(forseqs)
+
+    #Import backgroun sequences file
+    PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
+    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
+    refseqs = list(PsP["SITE_+/-7_AA"])
+    len_bg = int(len(refseqs))
+    backg_pYn, backg_pSn, backg_pTn, _ = CountPsiteTypes(refseqs, 7)
     
-    #Build background sequences
-    refseqs = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
-    refseqs = list(refseqs[~refseqs["SITE_+/-7_AA"].str.contains("_")])
+    # Make sure there are enough pY peptides to meet proportions
+    if backg_pYn >= len_bg * pYf:
+        pYn = int(len_bg * pYf)
+        pSn = int(len_bg * pSf)
+        pTn = int(len_bg * pTf)
 
-    pYn = int(len(refseqs) * pYf)
-    pSn = int(len(refsseqs) * pSf)
-    pTn = int(len(refsseqs) * pTf)
+    # Not enough pYs, adjust number of peptides based on maximum number of pY peptides
+    else:
+        tot_p = int(backg_pYn / pYf)
+        pYn = backg_pYn
+        pSn = int(tot_p * pSf)
+        pTn = int(tot_p * pTf)
 
+    # Build background sequences
+    bg_seqs = BackgProportions(refseqs, pYn, pSn, pTn)
+
+    return bg_seqs
+
+
+def BackgProportions(refseqs, pYn, pSn, pTn):
+    """ Provided the proportions, add peptides to background set. """
     y_seqs, s_seqs, t_seqs = [], [], []
+    pR = ["y", "t", "s"]
     for i, seq in enumerate(refseqs):
+        if seq[7] not in pR:
+            continue
+
         motif = str(seq)[7 - 5:7 + 6].upper()
         assert len(motif) == 11, "Wrong sequence length: %s" % motif
 
-        if motif[5] == "Y":
-            while len(y_seqs) < pYn:
-                y_seqs.append(Seq(motif, IUPAC.protein)
-        if motif[5] == "S":
-            while len(s_seqs) < pSn:
-                s_seqs.append(Seq(motif, IUPAC.protein)
-        if motif[5] == "T":
-            while len(t_seqs) < pTn
-                t_seqs.append(Seq(motif, IUPAC.protein)
-    
+        if motif[5] == "Y" and len(y_seqs) < pYn:
+            y_seqs.append(Seq(motif, IUPAC.protein))
+
+        if motif[5] == "S" and len(s_seqs) < pSn:
+            s_seqs.append(Seq(motif, IUPAC.protein))
+
+        if motif[5] == "T" and len(t_seqs) < pTn:
+            t_seqs.append(Seq(motif, IUPAC.protein))
+
     return y_seqs + s_seqs + t_seqs
 
 
@@ -507,8 +557,7 @@ def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
-        if i == 5:
-            assert aa == 19, ("wrong central numeric AA (19 == Y): %s" % aa)
+        if i == 5: #Skip central AA
             continue
         probs += BPM[aa, i]
     return probs / (len(motif) - 1)

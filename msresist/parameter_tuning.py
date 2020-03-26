@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.cross_decomposition import PLSRegression
-from .clustering import MyOwnKMEANS, MassSpecClustering
+from msresist.clustering import MyOwnKMEANS, MassSpecClustering
 
 
 ###------------ Building clustering method + PLSR pipeline and Tunning Hyperparameters ------------------###
