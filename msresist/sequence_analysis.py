@@ -405,7 +405,7 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
     return gmmp
 
 
-def gmm_initialize(X, ncl, covariance_type, distance_method):
+def gmm_initialize(X, ncl, covariance_type, distance_method, init=False):
     """ Return peptides data set including its labels and pvalues matrix. """
     gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type, max_iter=1).fit(X.iloc[:, 7:])
     Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
