@@ -346,7 +346,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, 
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
-            assert False not in [len(sublist) > 0 for sublist in cl_seqs], "Empty clusters after re-initialization"
+            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             continue
 
         # M step: Update motifs, cluster centers, and gmm probabilities
@@ -407,8 +407,11 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
 def gmm_initialize(X, ncl, covariance_type, distance_method, init=False):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
-    gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl)
-    labels = gmm.predict(d)
+    labels = [0, 0, 0]
+    while len(set(labels)) < ncl:
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1)
+        labels = gmm.predict(d)
+
     gmm_pred = pd.DataFrame(gmm.predict_proba(d))
     gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
 
