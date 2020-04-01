@@ -13,6 +13,7 @@ from Bio.SubsMat import MatrixInfo
 from functools import lru_cache
 from scipy.stats import binom
 from sklearn.mixture import GaussianMixture
+from pomegranate import GeneralMixtureModel, NormalDistribution
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -343,17 +344,15 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, 
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            print(seq_reassign)
-            raise SystemExit
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
-            assert False not in [len(sublist) > 0 for sublist in cl_seqs]
+            assert False not in [len(sublist) > 0 for sublist in cl_seqs], "Empty clusters after re-initialization"
             continue
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
         gmmp_hard = HardAssignments(labels, ncl)
-        gmm._m_step(d, gmmp_hard)
+        gmm.fit(d)
         gmmp = pd.DataFrame(gmm.predict_proba(d))
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
@@ -407,11 +406,14 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
 
 def gmm_initialize(X, ncl, covariance_type, distance_method, init=False):
     """ Return peptides data set including its labels and pvalues matrix. """
-    gmm = GaussianMixture(n_components=ncl, covariance_type=covariance_type, max_iter=1).fit(X.iloc[:, 7:])
-    Xcl = X.assign(GMM_cluster=gmm.predict(X.iloc[:, 7:]))
-    init_clusters = [ForegroundSeqs(list(Xcl[Xcl["GMM_cluster"] == i].iloc[:, 1])) for i in range(ncl)]
-    gmm_pred = pd.DataFrame(gmm.predict_proba(X.iloc[:, 7:]))
+    d = X.select_dtypes(include=['float64'])
+    gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl)
+    labels = gmm.predict(d)
+    gmm_pred = pd.DataFrame(gmm.predict_proba(d))
     gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
+
+    X["GMM_cluster"] = labels
+    init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
     return gmm, init_clusters, gmmp
 
 
