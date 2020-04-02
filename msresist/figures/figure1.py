@@ -483,7 +483,7 @@ def plot_IdSites(ax, x, d, title, rn=False):
     colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
     for i in range(len(n)):
         c = x.loc[n[i], p[i]]
-        assert not isinstance(c, None), "Peptide not found."
+        assert not (c is None), "Peptide not found."
         if rn:
             ax.plot(c[4:], marker=".", label=rn[n[i]], color=colors_[i])
         if not rn:
