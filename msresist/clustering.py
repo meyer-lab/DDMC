@@ -69,18 +69,17 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight, distance_method, covariance_type="diag", max_n_iter=100000):
+    def __init__(self, info, ncl, GMMweight, distance_method, max_n_iter=100000):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
         self.distance_method = distance_method
-        self.covariance_type = covariance_type
         self.max_n_iter = max_n_iter
 
     def fit(self, X, _):
         """ Compute EM clustering. """
         self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info, self.ncl, self.GMMweight,
-                                                                                    self.distance_method, self.covariance_type,
+                                                                                    self.distance_method,
                                                                                     self.max_n_iter)
         return self
 
@@ -117,7 +116,7 @@ class MassSpecClustering(BaseEstimator):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
                 "GMMweight": self.GMMweight, "distance_method": self.distance_method,
-                "covariance_type": self.covariance_type, "max_n_iter": self.max_n_iter}
+                "max_n_iter": self.max_n_iter}
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
@@ -134,12 +133,12 @@ def ClusterAverages(X, labels):
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
         if X.shape[1] > 11:
-            dict_clustermembers["Prot_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 0])
-            dict_clustermembers["abbv_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 3])
-            dict_clustermembers["seqs_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 1])
-            dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 2])
-            dict_clustermembers["Pos_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 4])
-            dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 6])
-            dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i].iloc[:, 5])
+            dict_clustermembers["Protein_C" + str(i + 1)] = list(X[X["cluster"] == i]["Protein"])
+            dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
+            dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])
+            dict_clustermembers["Position_C" + str(i + 1)] = list(X[X["cluster"] == i]["Position"])
+#             dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i]["UniprotAcc"])
+#             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
+#             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
 
     return pd.DataFrame(centers).T, pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))

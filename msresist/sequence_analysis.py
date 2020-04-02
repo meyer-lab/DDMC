@@ -231,7 +231,7 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
 def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
-    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]))
+    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
     cl_seqs = [ForegroundSeqs(cluster) for cluster in cl_seqs]
     labels, scores = [], []
 
@@ -289,11 +289,11 @@ def TranslateMotifsToIdx(motif, aa):
     return NumMotif
 
 
-def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter, n=5):
+def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n=5):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for i in range(n):
-        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter)
+        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter])
 
@@ -305,14 +305,14 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, covariance_ty
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
 
 
-def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, max_n_iter):
+def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    Allseqs = ForegroundSeqs(list(ABC.iloc[:, 1]))
+    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
-    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
 
     # Background sequences
     if distance_method == "Binomial":
@@ -344,7 +344,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, covariance_type, 
         # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, covariance_type, distance_method)
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
             assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             continue
@@ -404,7 +404,7 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
     return gmmp
 
 
-def gmm_initialize(X, ncl, covariance_type, distance_method, init=False):
+def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels = [0, 0, 0]
