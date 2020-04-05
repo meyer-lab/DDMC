@@ -37,8 +37,7 @@ def makeFigure():
 
     itp = 24
     ftp = 72
-    lines = ["PC9","KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-
+    lines = ["PC9", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
     # Read in Mass Spec data
     A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
@@ -73,25 +72,25 @@ def makeFigure():
 
     # Phosphorylation levels of selected peptides
     A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
-    
+
     plot_AllSites(ax[6], A.copy(), "AXL", "AXL p-sites")
-    
-    RTKs = {"EGFR":"Y1197-p", "MET":"Y1003-p", "ERBB2":"Y877-p", "ERBB3":"Y1328-p", "EPHB3":"Y792-p"}
+
+    RTKs = {"EGFR": "Y1197-p", "MET": "Y1003-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "Y792-p"}
     plot_IdSites(ax[7], A.copy(), RTKs, "RTKs")
 
-    adapters = {"GAB1":"Y627-p", "GAB2":"T265-p", "CRK":"Y251-p", "CRKL":"Y251-p", "SHC1":"S426-p"}
+    adapters = {"GAB1": "Y627-p", "GAB2": "T265-p", "CRK": "Y251-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
-    erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
-    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK3", "MAPK7":"ERK5"}
+    erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
+    erks_rn = {"MAPK3": "ERK1", "MAPK1": "ERK3", "MAPK7": "ERK5"}
     plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
-    jnks = {"MAPK9":"Y185-p", "MAPK10":"Y223-p"}
-    jnks_rn = {"MAPK9":"JNK2", "MAPK10":"JNK3"}
+    jnks = {"MAPK9": "Y185-p", "MAPK10": "Y223-p"}
+    jnks_rn = {"MAPK9": "JNK2", "MAPK10": "JNK3"}
     plot_IdSites(ax[10], A.copy(), jnks, "JNK", jnks_rn)
 
-    p38s = {"MAPK12":"Y185-p", "MAPK13":"Y182-p", "MAPK14":"Y182-p"}
-    p38s_rn = {"MAPK12":"P38G", "MAPK13":"P38D", "MAPK14":"P38A"}
+    p38s = {"MAPK12": "Y185-p", "MAPK13": "Y182-p", "MAPK14": "Y182-p"}
+    p38s_rn = {"MAPK12": "P38G", "MAPK13": "P38D", "MAPK14": "P38A"}
     plot_IdSites(ax[11], A.copy(), p38s, "P38", p38s_rn)
 
     # Add subplot labels
@@ -99,23 +98,24 @@ def makeFigure():
 
     return f
 
+
 def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r3=False, FC=False):
     """ Fold-change time course of cell viability data. Initial and final time points must be specified. """
-    if type(r3) == pd.core.frame.DataFrame:
+    if isinstance(r3, pd.core.frame.DataFrame):
         ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
+    if isinstance(r2, pd.core.frame.DataFrame):
         ds = [r1, r2]
     else:
         ds = [r1]
 
     c = []
     for i in range(len(ds)):
-        #Compute fold-change
-        if FC == True:
+        # Compute fold-change
+        if FC:
             for jj in range(1, ds[i].columns.size):
                 ds[i].iloc[:, jj] /= ds[i][ds[i]["Elapsed"] == itp].iloc[0, jj]
 
-        #Specify treatment
+        # Specify treatment
         r = ds[i].loc[:, ds[i].columns.str.contains(treatment)]
         r.columns = lines
         c.append(r)
@@ -129,7 +129,7 @@ def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r
 
 #     pal = sns.xkcd_palette(custom_colors)
     pal = sns.color_palette("Spectral", 10)
-    sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
+    sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
 
 #     if treatment != "UT":
 #         ax.legend().remove()
@@ -162,13 +162,13 @@ def timepoint_fc(d, itp, ftp):
 #         assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
 
     return pd.DataFrame(dfc).reset_index()
-    
+
 
 def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
     """ Compute fold-change plus format for seaborn bar plot. """
-    if FC == True:
+    if FC:
         dfc = timepoint_fc(d, itp, ftp)
-    else: 
+    else:
         dfc = pd.DataFrame(d[d["Elapsed"] == ftp].iloc[0, 1:]).reset_index()
         dfc.columns = ["index", 0]
 
@@ -181,9 +181,9 @@ def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
 
 def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=False, r3=False, FC=False, colors=colors):
     """ Cell viability bar plot at a specific end point across conditions, with error bars"""
-    if type(r3) == pd.core.frame.DataFrame:
+    if isinstance(r3, pd.core.frame.DataFrame):
         ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
+    if isinstance(r2, pd.core.frame.DataFrame):
         ds = [r1, r2]
     else:
         ds = [r1]
@@ -194,20 +194,20 @@ def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=Fals
             x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
             x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, ylabel, FC)
             c.append(x)
-    
+
     c = pd.concat(c)
     pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth":.5}, **{"edgecolor":"black"})
-    
+    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
+
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=45)
 
 
 def barplotFC_TvsUT(ax, r1, itp, ftp, l, tr1, tr2, title, r2=False, r3=False, FC=False, colors=colors):
     """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines. """
-    if type(r3) == pd.core.frame.DataFrame:
+    if isinstance(r3, pd.core.frame.DataFrame):
         ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
+    if isinstance(r2, pd.core.frame.DataFrame):
         ds = [r1, r2]
     else:
         ds = [r1]
@@ -220,10 +220,10 @@ def barplotFC_TvsUT(ax, r1, itp, ftp, l, tr1, tr2, title, r2=False, r3=False, FC
 
     c = pd.concat(c)
     pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth":.5}, **{"edgecolor":"black"})
-    sns.set_context(rc = {'patch.linewidth': 5})
+    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
+    sns.set_context(rc={'patch.linewidth': 5})
     ax.set_title(title)
-    ax.set_xticklabels(l, rotation=45);
+    ax.set_xticklabels(l, rotation=45)
 
 
 def fc_TvsUT(d, itp, ftp, l, j, tr1, tr2, FC):
@@ -231,14 +231,13 @@ def fc_TvsUT(d, itp, ftp, l, j, tr1, tr2, FC):
     ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
     x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[j])]], axis=1)
 
-    if FC == True:
+    if FC:
         ut = timepoint_fc(ut, itp, ftp).iloc[:, 1]
         x = timepoint_fc(x, itp, ftp).iloc[:, 1]
 
     else:
         ut = ut[ut["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
         x = x[x["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
-    
 
     fc = pd.DataFrame(x.div(ut)).reset_index()
 
@@ -304,7 +303,35 @@ def plotpca_ScoresLoadings(ax, data, pn, ps):
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
-    poi = ["AXL Y702-p", "AXL Y866-p", "AXL Y481-p", "RAB13 Y5-p", "RAB2B Y3-p", "CBLB Y889-p", "SOS1 Y1196-p", "GAB2 T265-p", "GAB1 Y406", "CRKL Y251-p", "PACSIN2 Y388-p", "SHC1 S426-p", "GSK3A Y279-p", "NME2 Y52-p", "CDK1 Y15-p", "MAPK3 T207-p", "TNS3 Y802-p", "GIT1 Y383-p", "KIRREL1 Y622-p", "BCAR1 Y234-p", "NEDD9 S182-p", "RIN1 Y681-p", "ATP8B1 Y1217", "MAPK3 Y204-p", "ATP1A1 Y55-p", "YES1 Y446", "EPHB3 Y792-p", "SLC35E1 Y403-p"]
+    poi = [
+        "AXL Y702-p",
+        "AXL Y866-p",
+        "AXL Y481-p",
+        "RAB13 Y5-p",
+        "RAB2B Y3-p",
+        "CBLB Y889-p",
+        "SOS1 Y1196-p",
+        "GAB2 T265-p",
+        "GAB1 Y406",
+        "CRKL Y251-p",
+        "PACSIN2 Y388-p",
+        "SHC1 S426-p",
+        "GSK3A Y279-p",
+        "NME2 Y52-p",
+        "CDK1 Y15-p",
+        "MAPK3 T207-p",
+        "TNS3 Y802-p",
+        "GIT1 Y383-p",
+        "KIRREL1 Y622-p",
+        "BCAR1 Y234-p",
+        "NEDD9 S182-p",
+        "RIN1 Y681-p",
+        "ATP8B1 Y1217",
+        "MAPK3 Y204-p",
+        "ATP1A1 Y55-p",
+        "YES1 Y446",
+        "EPHB3 Y792-p",
+        "SLC35E1 Y403-p"]
     for i, name in enumerate(pn):
         p = name + " " + ps[i]
         if p in poi:
@@ -456,10 +483,10 @@ def plot_IdSites(ax, x, d, title, rn=False):
     colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
     for i in range(len(n)):
         c = x.loc[n[i], p[i]]
-        assert type(c) != None, "Peptide not found."
+        assert not (c is None), "Peptide not found."
         if rn:
             ax.plot(c[4:], marker=".", label=rn[n[i]], color=colors_[i])
-        if rn == False:
+        if not rn:
             ax.plot(c[4:], marker=".", label=n[i], color=colors_[i])
 
     ax.legend(loc=0)
@@ -472,16 +499,16 @@ def selectpeptides(x, koi):
     l = []
     for n, p in koi.items():
         try:
-            if type(p) == list:
+            if isinstance(p, list):
                 for site in p:
                     try:
                         l.append(x.loc[str(n), str(site)])
-                    except:
+                    except BaseException:
                         continue
 
-            if type(p) == str:
+            if isinstance(p, str):
                 l.append(x.loc[str(n), str(p)])
-        except:
+        except BaseException:
             continue
     ms = pd.DataFrame(l)
     ms = pd.concat(l, axis=1).T.reset_index()
