@@ -22,7 +22,7 @@ def preprocessing(
         log2T=False,
         FCtoUT=False,
         rawdata=False,
-        mc_row=False,
+        mc_row=True,
         mc_col=False):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,

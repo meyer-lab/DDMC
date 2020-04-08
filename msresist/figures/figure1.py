@@ -101,44 +101,64 @@ def makeFigure():
     return f
 
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
-    """ Fold-change time course of cell viability data. Initial and final time points must be specified.
+    """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
     c = []
     for i in range(len(ds)):
-        #Compute fold-change
         if FC == True:
-            for jj in range(1, ds[i].columns.size):
-                ds[i].iloc[:, jj] /= ds[i][ds[i]["Elapsed"] == itp].iloc[0, jj]
+            d = ComputeFoldChange(ds[i], itp)
 
-        #Specify treatment
-        r = ds[i].loc[:, ds[i].columns.str.contains(treatment)]
-        r.columns = lines
+        r = FindTreatmentData(d, treatment, lines)
+
         c.append(r)
 
-    c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", ds[0].iloc[:, 0])
-    c = c[c["Elapsed"] <= ftp]
-    c = c[c["Elapsed"] >= itp]
+    tplabels = ds[0].iloc[:, 0]
+    c = ConcatenateBRs(c, tplabels, ftp, itp)
 
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
+    # Plot
     b = sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
 
-    if treatment != "UT":
+    if treatment != "UT": # Include legend only in the first subplot 
         ax.legend().remove()
 
     ax.set_title(title)
 
 
+def ComputeFoldChange(d, itp):
+    """ Take fold-change of the time lapse data set to an initial time point  """
+    for jj in range(1, d.columns.size):
+        d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
+    return d
+
+
+def FindTreatmentData(d, treatment, lines):
+    """ Find data corresponding to specified treatment and update columns """
+    r = d.loc[:, d.columns.str.contains(treatment)]
+    r.columns = lines 
+    return r
+
+
+def ConcatenateBRs(c, tplabels, ftp, itp):
+    """ Concatenate all BRs into the same data structure, insert time point labels, and include only desired range of data points """
+    c = pd.concat(c, axis=1)
+    c.insert(0, "Elapsed", tplabels) 
+    c = c[c["Elapsed"] <= ftp] 
+    c = c[c["Elapsed"] >= itp]
+    return c
+
+
 def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
-    """ Preprocess data for seaborn. """
-    y = pd.DataFrame()
-    elapsed, lines, cv = [], [], []
-    for idx, row in x.iterrows():
-        df = pd.DataFrame(row).T
-        elapsed.append(list(df["Elapsed"]) * (df.shape[1] - 1))
-        lines.append(list(df.columns[1:]))
-        cv.append(df.iloc[0, 1:].values)
+    """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
+    y = pd.DataFrame() 
+    elapsed, lines, cv = [], [], [] 
+    for idx, row in x.iterrows(): 
+        row = pd.DataFrame(row).T 
+        elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
+        lines.append(list(row.columns[1:])) 
+        cv.append(row.iloc[0, 1:].values) 
+
     y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
     y["Lines"] = [e for sl in lines for e in sl]
     y[ylabel] = [e for sl in cv for e in sl]
