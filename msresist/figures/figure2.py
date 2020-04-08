@@ -19,7 +19,7 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((15, 10), (3, 4), multz={8: 1, 10: 1})
-    
+
     # blank out first axis for cartoon
 
     # ax[0].axis('off')
@@ -60,9 +60,7 @@ def makeFigure():
     ax[9].imshow(hm_erl)
     ax[9].axis("off")
 
-
     # Add subplot labels
     subplotLabel(ax)
-    
-    return f
 
+    return f
