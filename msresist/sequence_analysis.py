@@ -289,10 +289,11 @@ def TranslateMotifsToIdx(motif, aa):
     return NumMotif
 
 
-def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n=5):
+def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n_runs):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
-    for i in range(n):
+    for i in range(n_runs):
+        print("run: ", i)
         cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter])
@@ -306,6 +307,7 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
+    # TODO: Add assertion to make sure scores go up/down
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
@@ -326,6 +328,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
+        print("iter: ", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
         store_Dicts.append(DictMotifToCluster)
@@ -365,6 +368,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
             cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
             return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
+        print(np.mean(scores))
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
@@ -380,14 +384,13 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-@lru_cache(maxsize=900000)
+@lru_cache(maxsize=9000000)
 def pairwise_score(seq1: str, seq2: str) -> float:
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0.0
     for i in range(len(seq1)):
         if i == 5:
             continue
-
         if (seq1[i], seq2[i]) in MatrixInfo.pam250:
             score += MatrixInfo.pam250[(seq1[i], seq2[i])]
         else:
@@ -441,14 +444,16 @@ def BackgroundSeqs(X):
     #Get porportion of psite types in foreground set
     forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
+    forw_tot = forw_pYn + forw_pSn + forw_pTn
 
-    pYf = forw_pYn / len(forseqs)
-    pSf = forw_pSn / len(forseqs)
-    pTf = forw_pTn / len(forseqs)
+    pYf = forw_pYn / forw_tot
+    pSf = forw_pSn / forw_tot
+    pTf = forw_pTn / forw_tot
 
     #Import backgroun sequences file
     PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
+    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
     refseqs = list(PsP["SITE_+/-7_AA"])
     len_bg = int(len(refseqs))
     backg_pYn, backg_pSn, backg_pTn, _ = CountPsiteTypes(refseqs, 7)
@@ -481,7 +486,8 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             continue
 
         motif = str(seq)[7 - 5:7 + 6].upper()
-        assert len(motif) == 11, "Wrong sequence length: %s" % motif
+        assert len(motif) == 11, "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
+        assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
             y_seqs.append(Seq(motif, IUPAC.protein))

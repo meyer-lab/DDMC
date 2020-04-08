@@ -69,18 +69,19 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. GMMweight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, GMMweight, distance_method, max_n_iter=100000):
+    def __init__(self, info, ncl, GMMweight, distance_method, max_n_iter=100000, n_runs=5):
         self.info = info
         self.ncl = ncl
         self.GMMweight = GMMweight
         self.distance_method = distance_method
         self.max_n_iter = max_n_iter
+        self.n_runs = n_runs
 
     def fit(self, X, _):
         """ Compute EM clustering. """
         self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info, self.ncl, self.GMMweight,
                                                                                     self.distance_method,
-                                                                                    self.max_n_iter)
+                                                                                    self.max_n_iter, self.n_runs)
         return self
 
     def transform(self, X):
@@ -132,7 +133,7 @@ def ClusterAverages(X, labels):
     dict_clustermembers = {}
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
-        if X.shape[1] > 11:
+        if "object" in list(X.dtypes):
             dict_clustermembers["Protein_C" + str(i + 1)] = list(X[X["cluster"] == i]["Protein"])
             dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
             dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])

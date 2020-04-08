@@ -46,13 +46,14 @@ def makeFigure():
     A = A[list(A.columns[:5]) + lines]
 
     # A: Cell Viability
+    ds = [r2, r3]
     tr1 = ["-UT", '-E', '-A/E']
     tr2 = ["Untreated", 'Erlotinib', 'Erl + AF154']
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
-    FC_timecourse(ax[0], r2, itp, ftp, lines, "A/E", title, ylabel, r2=r3, FC=True)
-    barplot_UtErlAF154(ax[1], lines, r1, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", r2=r2, r3=r3, FC=True, colors=c)
+    FC_timecourse(ax[0], ds, itp, ftp, lines, "A/E", title, FC=True)
+    barplot_UtErlAF154(ax[1], lines, ds, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_AF154.png')
@@ -99,15 +100,9 @@ def makeFigure():
 
     return f
 
-def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r3=False, FC=False):
-    """ Fold-change time course of cell viability data. Initial and final time points must be specified. """
-    if type(r3) == pd.core.frame.DataFrame:
-        ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
+    """ Fold-change time course of cell viability data. Initial and final time points must be specified.
+    Note that ds should be a list with all biological replicates. """
     c = []
     for i in range(len(ds)):
         #Compute fold-change
@@ -121,18 +116,16 @@ def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r
         c.append(r)
 
     c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", r1.iloc[:, 0])
+    c.insert(0, "Elapsed", ds[0].iloc[:, 0])
     c = c[c["Elapsed"] <= ftp]
     c = c[c["Elapsed"] >= itp]
 
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
-#     pal = sns.xkcd_palette(custom_colors)
-    pal = sns.color_palette("Spectral", 10)
-    sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
+    b = sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
 
-#     if treatment != "UT":
-#         ax.legend().remove()
+    if treatment != "UT":
+        ax.legend().remove()
 
     ax.set_title(title)
 
@@ -179,15 +172,9 @@ def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
     return dfc.iloc[:, 1:]
 
 
-def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=False, r3=False, FC=False, colors=colors):
-    """ Cell viability bar plot at a specific end point across conditions, with error bars"""
-    if type(r3) == pd.core.frame.DataFrame:
-        ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=False, colors=colors):
+    """ Cell viability bar plot at a specific end point across conditions, with error bars.
+    Note that ds should be a list containing all biological replicates."""
     c = []
     for d in ds:
         for i, t in enumerate(tr1):
@@ -203,15 +190,9 @@ def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=Fals
     ax.set_xticklabels(lines, rotation=45)
 
 
-def barplotFC_TvsUT(ax, r1, itp, ftp, l, tr1, tr2, title, r2=False, r3=False, FC=False, colors=colors):
-    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines. """
-    if type(r3) == pd.core.frame.DataFrame:
-        ds = [r1, r2, r3]
-    if type(r2) == pd.core.frame.DataFrame:
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def barplotFC_TvsUT(ax, ds, itp, ftp, l, tr1, tr2, title, FC=False, colors=colors):
+    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines.
+    Note that ds should be a list containing all biological replicates."""
     c = []
     for d in ds:
         for j in range(1, len(tr1)):
