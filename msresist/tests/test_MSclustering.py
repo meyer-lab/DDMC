@@ -30,8 +30,8 @@ class TestClustering(unittest.TestCase):
         MSC = MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(data, fooCV)
         Cl_seqs = MSC.cl_seqs_
 
-#         _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method)
-#         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
+        _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method)
+        gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
     
 
         # assert that EM clusters are different than GMM clusters
