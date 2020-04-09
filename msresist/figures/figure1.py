@@ -51,7 +51,7 @@ def makeFigure():
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
-    FC_timecourse(ax[0], ds, itp, ftp, lines, "A/E", title, FC=True)
+    FC_timecourse(ax[0], ds, itp, ftp, lines, "A/E", title, ylabel, FC=True)
     barplot_UtErlAF154(ax[1], lines, ds, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
@@ -105,6 +105,7 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     Note that ds should be a list with all biological replicates. """
     c = []
     for i in range(len(ds)):
+        d = ds[i]
         if FC == True:
             d = ComputeFoldChange(ds[i], itp)
 

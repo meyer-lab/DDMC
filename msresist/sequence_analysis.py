@@ -144,7 +144,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
                 assert len(DoS_idx) != 0
             mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx)
             if len(pidx) == 1:
-                pos = pidx[0]
+                 pos = pidx[0]
             if len(pidx) > 1:
                 pos = ";".join(pidx)
 
@@ -158,7 +158,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
                 DoS_idx = pTS_idx[1:]
             mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx)
             if len(pidx) == 1:
-                pos = pidx[0]
+                 pos = pidx[0]
             if len(pidx) > 1:
                 pos = ";".join(pidx)
 
@@ -328,7 +328,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
-        print("iter: ", n_iter)
+#         print("iter: ", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
         store_Dicts.append(DictMotifToCluster)
@@ -368,7 +368,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
             cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
             return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
-        print(np.mean(scores))
+#         print(np.mean(scores))
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     ICs = [InformationContent(seqs) for seqs in cl_seqs]
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
