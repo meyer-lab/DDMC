@@ -147,7 +147,7 @@ def MeanCenter(X, data_headers, mc_row, mc_col):
     return X
 
 
-def VarianceFilter(X, varCut=0.1):
+def VarianceFilter(X, data_headers, varCut=0.1):
     """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
     Xidx = np.var(X[data_headers].values, axis=1) > varCut
@@ -257,17 +257,6 @@ def CorrCoefFilter(X, corrCut=0.5):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, -1].values >= corrCut
     return X.iloc[Xidx, :]
-
-
-def DupsMeanAndRange(duplicates, data_headers):
-    """ Merge all duplicates by mean and range across conditions. Note this builds a multilevel header
-    meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Range). """
-    func_dup = {}
-    for i in data_headers:
-        func_dup[i] = np.mean, np.ptp
-    ABC_dups_avg = pd.pivot_table(duplicates, values=data_headers, index=header[:2], aggfunc=func_dup)
-    ABC_dups_avg = ABC_dups_avg.reset_index()[header]
-    return ABC_dups_avg
 
 
 def TripsMeanAndStd(triplicates, merging_indices, data_headers):
