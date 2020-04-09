@@ -144,7 +144,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
                 assert len(DoS_idx) != 0
             mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx)
             if len(pidx) == 1:
-                 pos = pidx[0]
+                pos = pidx[0]
             if len(pidx) > 1:
                 pos = ";".join(pidx)
 
@@ -158,7 +158,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
                 DoS_idx = pTS_idx[1:]
             mappedMotif, pidx = makeMotif(UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx)
             if len(pidx) == 1:
-                 pos = pidx[0]
+                pos = pidx[0]
             if len(pidx) > 1:
                 pos = ";".join(pidx)
 
