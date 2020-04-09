@@ -9,7 +9,7 @@ venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
 	test -d venv || virtualenv --system-site-packages venv
-	. venv/bin/activate && pip install -Uqr requirements.txt
+	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
 
 output/%/manuscript.md: venv manuscripts/%/*.md
