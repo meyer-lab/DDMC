@@ -32,7 +32,6 @@ class TestClustering(unittest.TestCase):
 
         _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
-    
 
         # assert that EM clusters are different than GMM clusters
         self.assertNotEqual(Cl_seqs, gmm_cl)
