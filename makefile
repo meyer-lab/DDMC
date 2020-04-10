@@ -16,7 +16,7 @@ output/%/manuscript.md: venv manuscripts/%/*.md
 	mkdir -p ./output/%
 	. venv/bin/activate && manubot process --content-directory=manuscripts/$*/ --output-directory=output/$*/ --log-level=WARNING
 
-output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg figure4.svg
+output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc \
 		--from=markdown --to=html5 --filter=pandoc-fignos --filter=pandoc-eqnos --filter=pandoc-tablenos \
