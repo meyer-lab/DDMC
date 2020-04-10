@@ -18,16 +18,16 @@
 
 #     d = X.select_dtypes(include=['float64']).T
 #     i = X.select_dtypes(include=['object'])
-    
+
 #     dred = d.iloc[:, :4000]
 #     ired = i.iloc[:4000, :]
-    
+
 #     distance_method = "Binomial"
 #     ncl = 3
 #     GMMweight = 0.5
 
 #     MSC = MassSpecClustering(ired, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=1).fit(dred, "NA")
-    
+
 #     plotclusteraverages(ax[0], MSC.transform(dred).T, dred.index)
 
 #     # Add subplot labels

@@ -82,8 +82,8 @@ def makeFigure():
     adapters = {"GAB1": "Y627-p", "GAB2": "T265-p", "CRK": "Y251-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
-    erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
-    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK2", "MAPK7":"ERK5"}
+    erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
+    erks_rn = {"MAPK3": "ERK1", "MAPK1": "ERK2", "MAPK7": "ERK5"}
 
     plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
@@ -100,13 +100,14 @@ def makeFigure():
 
     return f
 
+
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
     c = []
     for i in range(len(ds)):
         d = ds[i]
-        if FC == True:
+        if FC:
             d = ComputeFoldChange(ds[i], itp)
 
         r = FindTreatmentData(d, treatment, lines)
@@ -118,9 +119,9 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
     # Plot
-    b = sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
+    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
 
-    if treatment != "UT": # Include legend only in the first subplot 
+    if treatment != "UT":  # Include legend only in the first subplot
         ax.legend().remove()
 
     ax.set_title(title)
@@ -136,28 +137,28 @@ def ComputeFoldChange(d, itp):
 def FindTreatmentData(d, treatment, lines):
     """ Find data corresponding to specified treatment and update columns """
     r = d.loc[:, d.columns.str.contains(treatment)]
-    r.columns = lines 
+    r.columns = lines
     return r
 
 
 def ConcatenateBRs(c, tplabels, ftp, itp):
     """ Concatenate all BRs into the same data structure, insert time point labels, and include only desired range of data points """
     c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", tplabels) 
-    c = c[c["Elapsed"] <= ftp] 
+    c.insert(0, "Elapsed", tplabels)
+    c = c[c["Elapsed"] <= ftp]
     c = c[c["Elapsed"] >= itp]
     return c
 
 
 def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
     """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
-    y = pd.DataFrame() 
-    elapsed, lines, cv = [], [], [] 
-    for idx, row in x.iterrows(): 
-        row = pd.DataFrame(row).T 
+    y = pd.DataFrame()
+    elapsed, lines, cv = [], [], []
+    for idx, row in x.iterrows():
+        row = pd.DataFrame(row).T
         elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
-        lines.append(list(row.columns[1:])) 
-        cv.append(row.iloc[0, 1:].values) 
+        lines.append(list(row.columns[1:]))
+        cv.append(row.iloc[0, 1:].values)
 
     y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
     y["Lines"] = [e for sl in lines for e in sl]
