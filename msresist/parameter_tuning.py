@@ -61,6 +61,7 @@ def GridSearch_CV(model, parameters, cv, X, Y=None, scoring=None):
 
 
 def set_grid():
+    """ Define the parameter combinations to test the model with. """
     param_grid = []
     for nn in range(2, 16):
         if nn < 5:

@@ -15,7 +15,6 @@ def preprocessing(
         AXLwt=False,
         Axlmuts_Erl=False,
         Axlmuts_ErlAF154=False,
-        Axlmuts_ErlAF154_BR2=False,
         CPTAC=False,
         Vfilter=False,
         FCfilter=False,
@@ -50,7 +49,7 @@ def preprocessing(
 
     data_headers = list(filesin[0].select_dtypes(include=['float64']).columns)
     FCto = data_headers[0]
-    
+
     if mc_row or mc_col:
         X = MeanCenter(Log2T(pd.concat(filesin), data_headers), data_headers, mc_row, mc_col)
         fullnames, genes = FormatName(X)
@@ -104,8 +103,9 @@ def preprocessCPTAC():
     return X.drop("Organism", axis=1)
 
 
-def filter_NaNpeptides(X):
-    Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= 0.15
+def filter_NaNpeptides(X, cut):
+    """ Filter peptides that have a given percentage of missingness """
+    Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= cut
     return X.iloc[Xidx, :]
 
 
@@ -319,12 +319,12 @@ def cv_pre(cv1, cv2, cv3, tr, itp, ftp, lines):
     """ Preprocesses cell viability data sets for analysis. """
     l = [cv1, cv2, cv3]
     z = []
-    for i in range(len(l)):
-        c = l[i].loc[:, l[i].columns.str.contains(tr)]
-        c.insert(0, "Elapsed",  cv1.iloc[:, 0])
+    for i, sl in enumerate(l):
+        c = sl.loc[:, sl.columns.str.contains(tr)]
+        c.insert(0, "Elapsed", cv1.iloc[:, 0])
         fc = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
         z.append(fc)
-    
+
     cv = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
     cv.columns = ["lines", "viability"]
     cv = cv.groupby("lines").mean().T
@@ -337,4 +337,3 @@ def cm_pre(X, tr, ftp, lines):
     x.insert(0, "Elapsed", X.iloc[:, 0])
     cm = x[x["Elapsed"] == ftp].iloc[0, 1:]
     return cm[lines]
-
