@@ -40,22 +40,23 @@ def makeFigure():
     lines = ["PC9", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
     # Read in Mass Spec data
-    A = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
+    A = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
     A.columns = list(A.columns[:5]) + ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
     A = A[list(A.columns[:5]) + lines]
 
     # A: Cell Viability
+    ds = [r2, r3]
     tr1 = ["-UT", '-E', '-A/E']
     tr2 = ["Untreated", 'Erlotinib', 'Erl + AF154']
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
-    FC_timecourse(ax[0], r2, itp, ftp, lines, "A/E", title, ylabel, r2=r3, FC=True)
-    barplot_UtErlAF154(ax[1], lines, r1, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", r2=r2, r3=r3, FC=True, colors=c)
+    FC_timecourse(ax[0], ds, itp, ftp, lines, "A/E", title, ylabel, FC=True)
+    barplot_UtErlAF154(ax[1], lines, ds, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", FC=True, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread('msresist/data/Signaling/CV_reducedHM_AF154.png')
-    hm_erl = mpimg.imread('msresist/data/Signaling/CV_reducedHM_Erl.png')
+    hm_af154 = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_AF154.png')
+    hm_erl = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_Erl.png')
     ax[2].imshow(hm_af154)
     ax[2].axis("off")
     ax[3].imshow(hm_erl)
@@ -64,7 +65,7 @@ def makeFigure():
     # Scores and Loadings MS data
     A = A.drop(["PC9"], axis=1)
     d = A.select_dtypes(include=['float64']).T
-    plotpca_ScoresLoadings(ax[4:6], d, list(A["Abbv"]), list(A["Position"]))
+    plotpca_ScoresLoadings(ax[4:6], d, list(A["Gene"]), list(A["Position"]))
 
     # Variability across overlapping peptides in MS replicates
 #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
@@ -81,8 +82,9 @@ def makeFigure():
     adapters = {"GAB1": "Y627-p", "GAB2": "T265-p", "CRK": "Y251-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
-    erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
-    erks_rn = {"MAPK3": "ERK1", "MAPK1": "ERK3", "MAPK7": "ERK5"}
+    erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
+    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK2", "MAPK7":"ERK5"}
+
     plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
     jnks = {"MAPK9": "Y185-p", "MAPK10": "Y223-p"}
@@ -98,54 +100,65 @@ def makeFigure():
 
     return f
 
-
-def FC_timecourse(ax, r1, itp, ftp, lines, treatment, title, ylabel, r2=False, r3=False, FC=False):
-    """ Fold-change time course of cell viability data. Initial and final time points must be specified. """
-    if isinstance(r3, pd.core.frame.DataFrame):
-        ds = [r1, r2, r3]
-    if isinstance(r2, pd.core.frame.DataFrame):
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
+    """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
+    Note that ds should be a list with all biological replicates. """
     c = []
     for i in range(len(ds)):
-        # Compute fold-change
-        if FC:
-            for jj in range(1, ds[i].columns.size):
-                ds[i].iloc[:, jj] /= ds[i][ds[i]["Elapsed"] == itp].iloc[0, jj]
+        d = ds[i]
+        if FC == True:
+            d = ComputeFoldChange(ds[i], itp)
 
-        # Specify treatment
-        r = ds[i].loc[:, ds[i].columns.str.contains(treatment)]
-        r.columns = lines
+        r = FindTreatmentData(d, treatment, lines)
         c.append(r)
 
-    c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", r1.iloc[:, 0])
-    c = c[c["Elapsed"] <= ftp]
-    c = c[c["Elapsed"] >= itp]
+    tplabels = ds[0].iloc[:, 0]
+    c = ConcatenateBRs(c, tplabels, ftp, itp)
 
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
-#     pal = sns.xkcd_palette(custom_colors)
-    pal = sns.color_palette("Spectral", 10)
-    sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
+    # Plot
+    b = sns.lineplot(x="Elapsed (h)", y=ylabel , hue="Lines", data=d, err_style="bars", ci='sd',  ax=ax)
 
-#     if treatment != "UT":
-#         ax.legend().remove()
+    if treatment != "UT": # Include legend only in the first subplot 
+        ax.legend().remove()
 
     ax.set_title(title)
 
 
+def ComputeFoldChange(d, itp):
+    """ Take fold-change of the time lapse data set to an initial time point  """
+    for jj in range(1, d.columns.size):
+        d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
+    return d
+
+
+def FindTreatmentData(d, treatment, lines):
+    """ Find data corresponding to specified treatment and update columns """
+    r = d.loc[:, d.columns.str.contains(treatment)]
+    r.columns = lines 
+    return r
+
+
+def ConcatenateBRs(c, tplabels, ftp, itp):
+    """ Concatenate all BRs into the same data structure, insert time point labels, and include only desired range of data points """
+    c = pd.concat(c, axis=1)
+    c.insert(0, "Elapsed", tplabels) 
+    c = c[c["Elapsed"] <= ftp] 
+    c = c[c["Elapsed"] >= itp]
+    return c
+
+
 def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
-    """ Preprocess data for seaborn. """
-    y = pd.DataFrame()
-    elapsed, lines, cv = [], [], []
-    for idx, row in x.iterrows():
-        df = pd.DataFrame(row).T
-        elapsed.append(list(df["Elapsed"]) * (df.shape[1] - 1))
-        lines.append(list(df.columns[1:]))
-        cv.append(df.iloc[0, 1:].values)
+    """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
+    y = pd.DataFrame() 
+    elapsed, lines, cv = [], [], [] 
+    for idx, row in x.iterrows(): 
+        row = pd.DataFrame(row).T 
+        elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
+        lines.append(list(row.columns[1:])) 
+        cv.append(row.iloc[0, 1:].values) 
+
     y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
     y["Lines"] = [e for sl in lines for e in sl]
     y[ylabel] = [e for sl in cv for e in sl]
@@ -179,15 +192,9 @@ def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
     return dfc.iloc[:, 1:]
 
 
-def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=False, r3=False, FC=False, colors=colors):
-    """ Cell viability bar plot at a specific end point across conditions, with error bars"""
-    if isinstance(r3, pd.core.frame.DataFrame):
-        ds = [r1, r2, r3]
-    if isinstance(r2, pd.core.frame.DataFrame):
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=False, colors=colors):
+    """ Cell viability bar plot at a specific end point across conditions, with error bars.
+    Note that ds should be a list containing all biological replicates."""
     c = []
     for d in ds:
         for i, t in enumerate(tr1):
@@ -203,15 +210,9 @@ def barplot_UtErlAF154(ax, lines, r1, itp, ftp, tr1, tr2, ylabel, title, r2=Fals
     ax.set_xticklabels(lines, rotation=45)
 
 
-def barplotFC_TvsUT(ax, r1, itp, ftp, l, tr1, tr2, title, r2=False, r3=False, FC=False, colors=colors):
-    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines. """
-    if isinstance(r3, pd.core.frame.DataFrame):
-        ds = [r1, r2, r3]
-    if isinstance(r2, pd.core.frame.DataFrame):
-        ds = [r1, r2]
-    else:
-        ds = [r1]
-
+def barplotFC_TvsUT(ax, ds, itp, ftp, l, tr1, tr2, title, FC=False, colors=colors):
+    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines.
+    Note that ds should be a list containing all biological replicates."""
     c = []
     for d in ds:
         for j in range(1, len(tr1)):
@@ -451,7 +452,7 @@ def plotVarReplicates(ax, ABC):
 
 def plot_AllSites(ax, x, prot, title):
     """ Plot all phosphopeptides for a given protein. """
-    x = x.set_index(["Abbv"])
+    x = x.set_index(["Gene"])
     peptides = pd.DataFrame(x.loc[prot])
     assert peptides.shape[0] > 0
     if peptides.shape[1] == 1:
@@ -477,7 +478,7 @@ def plot_AllSites(ax, x, prot, title):
 
 def plot_IdSites(ax, x, d, title, rn=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
-    x = x.set_index(["Abbv", "Position"])
+    x = x.set_index(["Gene", "Position"])
     n = list(d.keys())
     p = list(d.values())
     colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
