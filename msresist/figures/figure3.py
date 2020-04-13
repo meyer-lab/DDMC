@@ -69,7 +69,7 @@ def makeFigure():
     y.columns = ["Viability", "Migration"]
 
     # Import Phosphorylation data and build X matrix
-    X = preprocessing(Axlmuts_ErlF154=True, motifs=True, Vfilter=False, FCfilter=False, log2T=True, mc_row=True)
+    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, mc_row=True)
     X = preprocess_seqs(X, "Y").sort_values(by="Protein")
 
     d = X.select_dtypes(include=['float64']).T
