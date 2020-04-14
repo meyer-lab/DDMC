@@ -78,7 +78,7 @@ def DictProteomeNameToSeq(X, n):
             try:
                 UP_name = rec2.description.split(" GN=")[1].split(" ")[0]
                 DictProtToSeq_UP[UP_name] = str(UP_seq)
-            except:
+            except BaseException:
                 continue
     return DictProtToSeq_UP
 
@@ -111,7 +111,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
                 Xidx.append(i)
                 seqs.append(MS_seq)
                 matchedNames.append(newname)
-            except:
+            except BaseException:
                 counter += 1
                 continue
 
@@ -330,7 +330,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts = [], []
     for n_iter in range(max_n_iter):
-#         print("iter: ", n_iter)
+        #         print("iter: ", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
         store_Dicts.append(DictMotifToCluster)
@@ -432,7 +432,7 @@ def BackgroundSeqs(X):
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
-    #Get porportion of psite types in foreground set
+    # Get porportion of psite types in foreground set
     forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -441,7 +441,7 @@ def BackgroundSeqs(X):
     pSf = forw_pSn / forw_tot
     pTf = forw_pTn / forw_tot
 
-    #Import backgroun sequences file
+    # Import backgroun sequences file
     PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
@@ -559,7 +559,7 @@ def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
-        if i == 5: #Skip central AA
+        if i == 5:  # Skip central AA
             continue
         probs += BPM[aa, i]
     return probs / (len(motif) - 1)
