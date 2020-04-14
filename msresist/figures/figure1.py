@@ -100,6 +100,7 @@ def makeFigure():
 
     return f
 
+  
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """

@@ -78,7 +78,7 @@ def DictProteomeNameToSeq(X, n):
             try:
                 UP_name = rec2.description.split(" GN=")[1].split(" ")[0]
                 DictProtToSeq_UP[UP_name] = str(UP_seq)
-            except:
+            except BaseException:
                 continue
     return DictProtToSeq_UP
 
@@ -111,7 +111,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
                 Xidx.append(i)
                 seqs.append(MS_seq)
                 matchedNames.append(newname)
-            except:
+            except BaseException:
                 counter += 1
                 continue
 
@@ -278,9 +278,7 @@ def BPM(cl_seqs, distance_method, bg_pwm):
         BPM = []
         for seqs in cl_seqs:
             freqs = frequencies(seqs)
-            bpm = BinomialMatrix(len(seqs), freqs, bg_pwm)
-            BPM.append(bpm)
-
+            BPM.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
     if distance_method == "PAM250":
         BPM = False
     return BPM
@@ -334,9 +332,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     DictMotifToCluster = defaultdict(list)
     store_Clseqs, store_Dicts, store_scores = [], [], []
     for n_iter in range(max_n_iter):
-        print("iter: ", n_iter)
-
-        # Initialize lists for current iteration
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
         DictMotifToCluster = defaultdict(list)
@@ -393,6 +388,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
                 return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
+#         print(np.mean(scores))
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), np.mean(scores), n_iter
