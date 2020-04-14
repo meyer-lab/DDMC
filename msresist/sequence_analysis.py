@@ -366,10 +366,14 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         print(np.mean(scores))
 
         # M step: Update motifs, cluster centers, and gmm probabilities
-        cl_seqs = seq_reassign
-        gmm.fit(d)
-        gmmp = gmm.predict_proba(d)
-        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
+        for i in range(3):
+            cl_seqs = seq_reassign
+            gmmp = HardAssignments(labels, ncl)
+            m_step(d, gmm, gmmp)
+            gmmp = gmm.predict_proba(d)
+            gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
+            print(gmmp)
+        raise SystemExit
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
@@ -392,6 +396,23 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), np.mean(scores), n_iter
+
+
+def m_step(d, gmm, gmmp):
+    """ Bypass gmm fitting step by working directly with the distribution objects. """
+    for i in range(gmmp.shape[1]):
+        weights = gmmp[:, i]
+        gmm.distributions[i].fit(d, weights=weights)
+
+
+def HardAssignments(labels, ncl):
+    """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
+    m = []
+    for idx in labels:
+        l = [0] * ncl
+        l[idx] = 1.0
+        m.append(l)
+    return np.array(m)
 
 
 @lru_cache(maxsize=9000000)
