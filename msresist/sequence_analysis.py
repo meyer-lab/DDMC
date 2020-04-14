@@ -350,8 +350,8 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
             seq_reassign[idx].append(motif)
             DictMotifToCluster[motif].append(idx)
 
-        # Assert there are not empty clusters before updating, otherwise re-initialize algorithm
-        if False in [len(sublist) > 0 for sublist in seq_reassign]:
+        # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
+        if True in [len(sl) < 2 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
@@ -366,25 +366,22 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         print(np.mean(scores))
 
         # M step: Update motifs, cluster centers, and gmm probabilities
-        for i in range(3):
-            cl_seqs = seq_reassign
-            gmmp = HardAssignments(labels, ncl)
-            m_step(d, gmm, gmmp)
-            gmmp = gmm.predict_proba(d)
-            gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
-            print(gmmp)
-        raise SystemExit
+        cl_seqs = seq_reassign
+        gmmp = HardAssignments(labels, ncl)
+        m_step(d, gmm, gmmp)
+        gmmp = gmm.predict_proba(d)
+        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
         if len(store_scores) >= 2:
-            # Assert EM is improving
-            if distance_method == "Binomial":
-                assert store_scores[-1] < store_scores[-2], \
-                "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
-            if distance_method == "PAM250":
-                assert store_scores[-1] > store_scores[-2], \
-                "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
+#             # Assert EM is improving
+#             if distance_method == "Binomial":
+#                 assert store_scores[-1] < store_scores[-2], \
+#                 "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
+#             if distance_method == "PAM250":
+#                 assert store_scores[-1] > store_scores[-2], \
+#                 "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
 
             # Check convergence
             if store_Dicts[-1] == store_Dicts[-2]:
