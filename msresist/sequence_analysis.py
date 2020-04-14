@@ -248,8 +248,9 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
         for z in range(ncl):
-            gmm_score = gmmp.iloc[j, z] * GMMweight
-            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, ("gmm_score is either NaN or -Inf, motif = %s" % motif)
+            gmm_score = gmmp[j, z] * GMMweight
+            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, "gmm_score is either \
+            NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
             NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
             scores.append(BPM_score + gmm_score)
@@ -258,7 +259,9 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs,
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
         for z in range(ncl):
-            gmm_score = gmmp.iloc[j, z] / 10 * GMMweight
+            gmm_score = gmmp[j, z] / 10 * GMMweight
+            assert math.isnan(gmm_score) == False and math.isinf(gmm_score) == False, "gmm_score is either \
+            NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
             PAM250_scores = [pairwise_score(str(motif), str(seq)) for seq in cl_seqs[z]]
             PAM250_score = np.mean(PAM250_scores)
             scores.append(PAM250_score + gmm_score)
@@ -275,7 +278,9 @@ def BPM(cl_seqs, distance_method, bg_pwm):
         BPM = []
         for seqs in cl_seqs:
             freqs = frequencies(seqs)
-            BPM.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
+            bpm = BinomialMatrix(len(seqs), freqs, bg_pwm)
+            BPM.append(bpm)
+
     if distance_method == "PAM250":
         BPM = False
     return BPM
@@ -309,7 +314,6 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
-    # TODO: Add assertion to make sure scores go up/down
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
@@ -328,13 +332,13 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
 
     # EM algorithm
     DictMotifToCluster = defaultdict(list)
-    store_Clseqs, store_Dicts = [], []
+    store_Clseqs, store_Dicts, store_scores = [], [], []
     for n_iter in range(max_n_iter):
-#         print("iter: ", n_iter)
+        print("iter: ", n_iter)
+
+        # Initialize lists for current iteration
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
-        store_Dicts.append(DictMotifToCluster)
-        store_Clseqs.append(cl_seqs)
         DictMotifToCluster = defaultdict(list)
 
         # E step: Assignment of each peptide based on data and seq
@@ -350,25 +354,41 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         if False in [len(sublist) > 0 for sublist in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-            assert cl_seqs != store_Clseqs[-1], "Same cluster assignments after re-initialization"
+            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
+            store_Clseqs, store_Dicts, store_scores = [], [], []
             continue
+
+        # Store current results
+        store_Dicts.append(DictMotifToCluster)
+        store_Clseqs.append(cl_seqs)
+        store_scores.append(np.mean(scores))
+        print(np.mean(scores))
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
         gmm.fit(d)
-        gmmp = pd.DataFrame(gmm.predict_proba(d))
+        gmmp = gmm.predict_proba(d)
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
-        if DictMotifToCluster == store_Dicts[-1]:
-            if GMMweight == 0:
-                assert False not in [len(set(sublist)) == 1 for sublist in list(DictMotifToCluster.values())]
-            cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-            return cl_seqs, np.array(labels), np.mean(scores), n_iter
+        if len(store_scores) >= 2:
+            # Assert EM is improving
+            if distance_method == "Binomial":
+                assert store_scores[-1] < store_scores[-2], \
+                "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
+            if distance_method == "PAM250":
+                assert store_scores[-1] > store_scores[-2], \
+                "EM is not improving. Prior ML: %s | New ML: %s" % (store_scores[-2], store_scores[-1])
 
-#         print(np.mean(scores))
+            # Check convergence
+            if store_Dicts[-1] == store_Dicts[-2]:
+                if GMMweight == 0:
+                    assert False not in [len(set(sublist)) == 1 for sublist in list(DictMotifToCluster.values())]
+                cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
+                return cl_seqs, np.array(labels), np.mean(scores), n_iter
+
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), np.mean(scores), n_iter
@@ -394,7 +414,8 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
     if distance_method == "PAM250":
         gmmp = gmm_pred * 100
     if distance_method == "Binomial":
-        gmmp = pd.DataFrame(np.log(1 - gmm_pred.replace({float(1): float(0.9999999999999)})))
+        gmm_pred[gmm_pred == 1] = 0.9999999999999
+        gmmp = np.log(1 - gmm_pred)
     return gmmp
 
 
@@ -406,7 +427,7 @@ def gmm_initialize(X, ncl, distance_method):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1)
         labels = gmm.predict(d)
 
-    gmm_pred = pd.DataFrame(gmm.predict_proba(d))
+    gmm_pred = gmm.predict_proba(d)
     gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
 
     X["GMM_cluster"] = labels
