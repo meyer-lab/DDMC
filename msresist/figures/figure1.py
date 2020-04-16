@@ -104,15 +104,15 @@ def makeFigure():
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
+    
     c = []
     for i in range(len(ds)):
-        d = ds[i]
+        d = ds[i].copy()
         if FC:
-            d = ComputeFoldChange(ds[i], itp)
+            d = ComputeFoldChange(d, itp)
 
         r = FindTreatmentData(d, treatment, lines)
         c.append(r)
-
     tplabels = ds[0].iloc[:, 0]
     c = ConcatenateBRs(c, tplabels, ftp, itp)
 
@@ -197,10 +197,11 @@ def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=Fals
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
     c = []
-    for d in ds:
+    for frame in ds:
+        d = frame.copy()
         for i, t in enumerate(tr1):
             x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
-            x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, ylabel, FC)
+            x = FCendpoint(x, itp, ftp, [tr2[i]] * len(lines), lines, ylabel, FC)
             c.append(x)
 
     c = pd.concat(c)
@@ -215,7 +216,8 @@ def barplotFC_TvsUT(ax, ds, itp, ftp, l, tr1, tr2, title, FC=False, colors=color
     """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines.
     Note that ds should be a list containing all biological replicates."""
     c = []
-    for d in ds:
+    for frame in ds:
+        d = frame.copy()
         for j in range(1, len(tr1)):
             x = fc_TvsUT(d, itp, ftp, l, j, tr1, tr2[j], FC)
             c.append(x)
