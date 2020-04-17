@@ -119,7 +119,7 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
     # Plot
-    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
+    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", err_kws = {"capsize" : 7}, ci='sd', ax=ax)
 
     if treatment != "UT":  # Include legend only in the first subplot
         ax.legend().remove()
@@ -156,13 +156,13 @@ def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
     elapsed, lines, cv = [], [], []
     for idx, row in x.iterrows():
         row = pd.DataFrame(row).T
-        elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
-        lines.append(list(row.columns[1:]))
-        cv.append(row.iloc[0, 1:].values)
+        elapsed.extend(list(row["Elapsed"]) * (row.shape[1] - 1))
+        lines.extend(list(row.columns[1:]))
+        cv.extend(row.iloc[0, 1:].values)
 
-    y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
-    y["Lines"] = [e for sl in lines for e in sl]
-    y[ylabel] = [e for sl in cv for e in sl]
+    y["Elapsed (h)"] = elapsed
+    y["Lines"] = lines
+    y[ylabel] = cv
     return y
 
 
