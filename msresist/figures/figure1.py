@@ -105,12 +105,8 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
     c = []
-    for i in range(len(ds)):
-        d = ds[i]
-        if FC:
-            d = ComputeFoldChange(ds[i], itp)
-
-        r = FindTreatmentData(d, treatment, lines)
+    for d in ds:
+        r = FoldChangeTransformations(d, treatment, itp, lines, FC)
         c.append(r)
 
     tplabels = ds[0].iloc[:, 0]
@@ -119,7 +115,7 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
 
     # Plot
-    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
+    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci=68, ax=ax)
 
     if treatment != "UT":  # Include legend only in the first subplot
         ax.legend().remove()
@@ -127,17 +123,50 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     ax.set_title(title)
 
 
-def ComputeFoldChange(d, itp):
+def FoldChangeTransformations(d, treatment, itp, lines, FC):
+    """ Compute fold-change if necessary and return treatment-specific data. """
+    if type(FC) == str:
+        r = ComputeFoldChange(d.copy(), itp, FC, treatment)
+    if type(FC) == int:
+        r = ComputeFoldChange(d.copy(), itp, FC, treatment)
+        r = FindTreatmentData(r, treatment, lines)
+    if type(FC) == bool:
+        r = FindTreatmentData(d, treatment, lines)
+    return r
+    
+
+def ComputeFoldChange(d, itp, FC, treatment):
     """ Take fold-change of the time lapse data set to an initial time point  """
-    for jj in range(1, d.columns.size):
-        d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
-    return d
+    #Fold change to a time point
+    if type(FC) == int:
+        for jj in range(1, d.columns.size):
+            d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
+        tr = d
+
+    #Fold change to a condition
+    if type(FC) == str:
+        if FC == "UT":
+            fcto = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
+        else:
+            fcto = d.loc[:, d.columns.str.contains(FC)]
+        if treatment == "UT":
+            tr = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
+        else:
+            tr = d.loc[:, d.columns.str.contains(treatment)]
+
+        for jj in range(0, tr.columns.size):
+            tr.iloc[:, jj] /= fcto.iloc[:, jj]
+    return tr
 
 
 def FindTreatmentData(d, treatment, lines):
     """ Find data corresponding to specified treatment and update columns """
-    r = d.loc[:, d.columns.str.contains(treatment)]
-    r.columns = lines
+    if treatment == "UT":
+        r = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
+        r.columns = lines
+    else:
+        r = d.loc[:, d.columns.str.contains(treatment)]
+        r.columns = lines
     return r
 
 
@@ -156,41 +185,23 @@ def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
     elapsed, lines, cv = [], [], []
     for idx, row in x.iterrows():
         row = pd.DataFrame(row).T
-        elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
-        lines.append(list(row.columns[1:]))
-        cv.append(row.iloc[0, 1:].values)
+        elapsed.extend(list(row["Elapsed"]) * (row.shape[1] - 1))
+        lines.extend(list(l) * (np.int((row.shape[1] - 1) / len(l))))
+        cv.extend(row.iloc[0, 1:].values)
 
-    y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
-    y["Lines"] = [e for sl in lines for e in sl]
-    y[ylabel] = [e for sl in cv for e in sl]
+    y["Elapsed (h)"] = elapsed
+    y["Lines"] = lines
+    y[ylabel] = cv
     return y
 
 
-def timepoint_fc(d, itp, ftp):
-    """ Calculate fold-change to specified time points, asserting no influnece of initial seeding. """
-    dt0 = d[d["Elapsed"] == itp].iloc[0, 1:]
-    dfc = d[d["Elapsed"] == ftp].iloc[0, 1:] / dt0
-
-    # Assert that there's no significant influence of the initial seeding density
-#     if itp < 12:
-#         assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
-
-    return pd.DataFrame(dfc).reset_index()
-
-
-def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
+def FormatDf(cv, t, l, ylabel):
     """ Compute fold-change plus format for seaborn bar plot. """
-    if FC:
-        dfc = timepoint_fc(d, itp, ftp)
-    else:
-        dfc = pd.DataFrame(d[d["Elapsed"] == ftp].iloc[0, 1:]).reset_index()
-        dfc.columns = ["index", 0]
-
+    dfc = pd.DataFrame()
+    dfc[ylabel] = cv
     dfc["AXL mutants Y->F"] = l
     dfc["Treatment"] = t
-    dfc = dfc[["index", "AXL mutants Y->F", "Treatment", 0]]
-    dfc.columns = ["index", "AXL mutants Y->F", "Treatment", ylabel]
-    return dfc.iloc[:, 1:]
+    return dfc
 
 
 def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=False, colors=colors):
@@ -199,55 +210,17 @@ def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=Fals
     c = []
     for d in ds:
         for i, t in enumerate(tr1):
-            x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
-            x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, ylabel, FC)
-            c.append(x)
+            r = FoldChangeTransformations(d, t, itp, lines, FC)
+            r.insert(0, "Elapsed", ds[0].iloc[:, 0])
+            z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t, lines, ylabel)
+            c.append(z)
 
     c = pd.concat(c)
     pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
+    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=45)
-
-
-def barplotFC_TvsUT(ax, ds, itp, ftp, l, tr1, tr2, title, FC=False, colors=colors):
-    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines.
-    Note that ds should be a list containing all biological replicates."""
-    c = []
-    for d in ds:
-        for j in range(1, len(tr1)):
-            x = fc_TvsUT(d, itp, ftp, l, j, tr1, tr2[j], FC)
-            c.append(x)
-
-    c = pd.concat(c)
-    pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
-    sns.set_context(rc={'patch.linewidth': 5})
-    ax.set_title(title)
-    ax.set_xticklabels(l, rotation=45)
-
-
-def fc_TvsUT(d, itp, ftp, l, j, tr1, tr2, FC):
-    """ Preprocess fold-change to untreated. """
-    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
-    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[j])]], axis=1)
-
-    if FC:
-        ut = timepoint_fc(ut, itp, ftp).iloc[:, 1]
-        x = timepoint_fc(x, itp, ftp).iloc[:, 1]
-
-    else:
-        ut = ut[ut["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
-        x = x[x["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
-
-    fc = pd.DataFrame(x.div(ut)).reset_index()
-
-    fc["AXL mutants Y->F"] = l
-    fc["Treatment"] = tr2
-    fc = fc[["index", "AXL mutants Y->F", "Treatment", fc.columns[1]]]
-    fc.columns = ["index", "AXL mutants Y->F", "Treatment", "fold-change to UT"]
-    return fc
 
 
 # Plot Separately since makefigure can't add it as a subplot
