@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 sns.set(color_codes=True)
@@ -101,6 +102,43 @@ def makeFigure():
     return f
 
 
+def IndividualTimeCourses(ds, itp, ftp, lines, t1, t2, ylabel, FC=False, savefig=False, figsize=(20, 10)):
+    """ Plot time course data of each cell line across treatments individually. """
+    c = []
+    for d in ds:
+        for i, t in enumerate(t1):
+            r = FoldChangeTransformations(d, t, itp, lines, FC)
+            c.append(r)
+
+    tplabels = ds[0].iloc[:, 0]
+    c = ConcatenateBRs(c, tplabels, ftp, itp)
+    
+#     treatments = [[t] * len(lines) for t in t2] * len(ds) * len(ds[0].columns)   
+    treatments = [[t] * len(lines) for t in t2] * int(c.shape[0] * (c.shape[1] - 1) / (len(lines) * len(t1)))
+    t = [y for x in treatments for y in x]
+    d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel, t)
+
+    fig, ax = plt.subplots(nrows=2, ncols=5, sharex=True, sharey=True, figsize=figsize)
+    for i, line in enumerate(lines):
+        x = d[d["Lines"] == line]
+        if i < 5:
+            sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[0, i])
+            ax[0, i].set_title(line, fontsize=17)
+            ax[0, i].set_ylabel(ylabel, fontsize=15)
+        else:
+            sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[1, i-5])
+            ax[1, i-5].set_title(line, fontsize=17)
+            ax[1, i-5].set_ylabel(ylabel, fontsize=15)
+        if i != 0 and i < 5:
+            ax[0, i].legend().remove
+        if i != 0 and i > 4:
+            ax[1, i-5].legend().remove
+
+    plt.tight_layout()
+    if savefig:
+        fig.savefig("TimeCourse.pdf")
+
+
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
@@ -112,7 +150,8 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     tplabels = ds[0].iloc[:, 0]
     c = ConcatenateBRs(c, tplabels, ftp, itp)
 
-    d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
+    treatments = [[treatment] * len(ds) * len(lines) * len(ds[0].columns)][0]
+    d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel, treatments)
 
     # Plot
     b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci=68, ax=ax)
@@ -179,7 +218,7 @@ def ConcatenateBRs(c, tplabels, ftp, itp):
     return c
 
 
-def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
+def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel, treatments):
     """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
     y = pd.DataFrame()
     elapsed, lines, cv = [], [], []
@@ -191,6 +230,7 @@ def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
 
     y["Elapsed (h)"] = elapsed
     y["Lines"] = lines
+    y["Treatments"] = treatments
     y[ylabel] = cv
     return y
 
