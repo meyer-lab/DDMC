@@ -3,7 +3,7 @@ This creates Figure 1.
 """
 from .common import subplotLabel, getSetup
 from ..sequence_analysis import FormatName, pYmotifs
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
 from sklearn.decomposition import PCA
 import os
 import pandas as pd
@@ -102,21 +102,27 @@ def makeFigure():
     return f
 
 
-def IndividualTimeCourses(ds, itp, ftp, lines, t1, t2, ylabel, FC=False, savefig=False, figsize=(20, 10)):
+def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, figsize=(20, 10)):
     """ Plot time course data of each cell line across treatments individually. """
+    ds = FixColumnLabels(ds)
     c = []
     for d in ds:
-        for i, t in enumerate(t1):
-            r = FoldChangeTransformations(d, t, itp, lines, FC)
-            c.append(r)
+        if TimePointFC:
+            d = TimePointFoldChange(d, TimePointFC)
+        for t in t1:
+            r = d.copy()
+            if TreatmentFC:
+                r = TreatmentFoldChange(r, TreatmentFC, t)
+                c.append(r)
+            else:
+                r = r.loc[:, r.columns.str.contains(t)]
+                c.append(r)
 
-    tplabels = ds[0].iloc[:, 0]
-    c = ConcatenateBRs(c, tplabels, ftp, itp)
-    
-#     treatments = [[t] * len(lines) for t in t2] * len(ds) * len(ds[0].columns)   
+    elapsed = ds[0].iloc[:, 0]
+    c = ConcatenateBRs(c, ftp, TimePointFC, elapsed)
     treatments = [[t] * len(lines) for t in t2] * int(c.shape[0] * (c.shape[1] - 1) / (len(lines) * len(t1)))
     t = [y for x in treatments for y in x]
-    d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel, t)
+    d = TransformTimeCourseMatrixForSeaborn(c, lines, TimePointFC, ylabel, t)
 
     fig, ax = plt.subplots(nrows=2, ncols=5, sharex=True, sharey=True, figsize=figsize)
     for i, line in enumerate(lines):
@@ -148,7 +154,7 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
         c.append(r)
 
     tplabels = ds[0].iloc[:, 0]
-    c = ConcatenateBRs(c, tplabels, ftp, itp)
+    c = ConcatenateBRs(c, ftp, itp)
 
     treatments = [[treatment] * len(ds) * len(lines) * len(ds[0].columns)][0]
     d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel, treatments)
@@ -162,57 +168,26 @@ def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     ax.set_title(title)
 
 
-def FoldChangeTransformations(d, treatment, itp, lines, FC):
-    """ Compute fold-change if necessary and return treatment-specific data. """
-    if type(FC) == str:
-        r = ComputeFoldChange(d.copy(), itp, FC, treatment)
-    if type(FC) == int:
-        r = ComputeFoldChange(d.copy(), itp, FC, treatment)
-        r = FindTreatmentData(r, treatment, lines)
-    if type(FC) == bool:
-        r = FindTreatmentData(d, treatment, lines)
-    return r
+def TimePointFoldChange(d, itp):
+    """ Take fold-change of the time lapse data set to an initial time point  """
+    for jj in range(1, d.columns.size):
+        d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
+    return d
     
 
-def ComputeFoldChange(d, itp, FC, treatment):
+def TreatmentFoldChange(d, FC, treatment):
     """ Take fold-change of the time lapse data set to an initial time point  """
-    #Fold change to a time point
-    if type(FC) == int:
-        for jj in range(1, d.columns.size):
-            d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
-        tr = d
-
-    #Fold change to a condition
-    if type(FC) == str:
-        if FC == "UT":
-            fcto = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
-        else:
-            fcto = d.loc[:, d.columns.str.contains(FC)]
-        if treatment == "UT":
-            tr = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
-        else:
-            tr = d.loc[:, d.columns.str.contains(treatment)]
-
-        for jj in range(0, tr.columns.size):
-            tr.iloc[:, jj] /= fcto.iloc[:, jj]
+    fcto = d.loc[:, d.columns.str.contains(FC)]
+    tr = d.loc[:, d.columns.str.contains(treatment)]
+    for jj in range(0, tr.columns.size):
+        tr.iloc[:, jj] /= fcto.iloc[:, jj]
     return tr
 
 
-def FindTreatmentData(d, treatment, lines):
-    """ Find data corresponding to specified treatment and update columns """
-    if treatment == "UT":
-        r = d.loc[:, ~d.columns.str.contains("-")].iloc[:, 1:]
-        r.columns = lines
-    else:
-        r = d.loc[:, d.columns.str.contains(treatment)]
-        r.columns = lines
-    return r
-
-
-def ConcatenateBRs(c, tplabels, ftp, itp):
+def ConcatenateBRs(c, ftp, itp, elapsed):
     """ Concatenate all BRs into the same data structure, insert time point labels, and include only desired range of data points """
     c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", tplabels)
+    c.insert(0, "Elapsed", elapsed)
     c = c[c["Elapsed"] <= ftp]
     c = c[c["Elapsed"] >= itp]
     return c
@@ -244,13 +219,23 @@ def FormatDf(cv, t, l, ylabel):
     return dfc
 
 
-def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=False, colors=colors):
+def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=False, TreatmentFC=False, colors=colors):
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
+    ds = FixColumnLabels(ds)
     c = []
     for d in ds:
-        for i, t in enumerate(tr1):
-            r = FoldChangeTransformations(d, t, itp, lines, FC)
+        if TimePointFC:
+            d = TimePointFoldChange(d, TimePointFC)
+        for t in t1:
+            r = d.copy()
+            if TreatmentFC:
+                r = TreatmentFoldChange(r, TreatmentFC, t)
+                c.append(r)
+            else:
+                r = r.loc[:, r.columns.str.contains(t)]
+                c.append(r)
+
             r.insert(0, "Elapsed", ds[0].iloc[:, 0])
             z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t, lines, ylabel)
             c.append(z)
