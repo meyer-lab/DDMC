@@ -18,7 +18,7 @@ from msresist.sequence_analysis import preprocess_seqs
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import seaborn as sns
-from msresist.pre_processing import preprocessing, MergeDfbyMean, cv_pre, cm_pre
+from msresist.pre_processing import preprocessing, MergeDfbyMean, y_pre
 import warnings
 from Bio import BiopythonWarning
 warnings.simplefilter('ignore', BiopythonWarning)
@@ -132,10 +132,10 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
 
     ax.bar(range_ + 0.15, Q2Y, width=0.3, align='center', label='Q2Y', color="darkblue")
     ax.bar(range_ - 0.15, R2Y, width=0.3, align='center', label='R2Y', color="black")
-    ax.set_title("R2Y/Q2Y - Cross-validation strategy: " + str(cv))
+    ax.set_title("R2Y/Q2Y - Cross-validation strategy: " + str(cv), fontsize=17)
     ax.set_xticks(range_)
-    ax.set_xlabel("Number of Components")
-    ax.set_xlabel("Variance")
+    ax.set_xlabel("Number of Components", fontsize=15)
+    ax.set_ylabel("Variance", fontsize=15)
     ax.legend(loc=0)
 
 
@@ -147,7 +147,9 @@ def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
         ypred = Y_predictions[:, i]
         ax[i].scatter(y, ypred)
         ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-        ax[i].set(title=label, xlabel="Measured", ylabel="Predicted")
+        ax[i].set_xlabel("Measured", fontsize=15)
+        ax[i].set_ylabel("Predicted", fontsize=15)
+        ax[i].set_title(label, fontsize=17)
         ax[i].set_xlim([np.min(y) * 0.9, np.max(y) * 1.1])
         ax[i].set_ylim([np.min(y) * 0.9, np.max(y) * 1.1])
 
@@ -177,9 +179,9 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv):
     ax[0].scatter(PC1_scores, PC2_scores)
     for j, txt in enumerate(treatments):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
-    ax[0].set_title('PLSR Model Scores')
-    ax[0].set_xlabel('Principal Component 1')
-    ax[0].set_ylabel('Principal Component 2')
+    ax[0].set_title('PLSR Model Scores', fontsize=17)
+    ax[0].set_xlabel('Principal Component 1', fontsize=15)
+    ax[0].set_ylabel('Principal Component 2', fontsize=15)
     ax[0].axhline(y=0, color='0.25', linestyle='--')
     ax[0].axvline(x=0, color='0.25', linestyle='--')
 
@@ -192,14 +194,16 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv):
     list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
     for i, txt in enumerate(numbered):
         ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-    ax[1].annotate("Viability", (PC1_yload[0] + 0.05, PC2_yload[0] - 0.05))
-    ax[1].annotate("Migration", (PC1_yload[1] + 0.05, PC2_yload[1] - 0.05))
+
+    markers = ["x", "D", "*"]
+    for i, label in enumerate(Y.columns):
+        ax[1].annotate(label, (PC1_yload[i] + 0.05, PC2_yload[i] - 0.05))
+        ax[1].scatter(PC1_yload[i], PC2_yload[i], color='black', marker=markers[i])
+
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
-    ax[1].scatter(PC1_yload[0], PC2_yload[0], color='grey', marker='x')
-    ax[1].scatter(PC1_yload[1], PC2_yload[1], color='#000000', marker='D')
-    ax[1].set_title('PLSR Model Loadings (Averaged Clusters)')
-    ax[1].set_xlabel('Principal Component 1')
-    ax[1].set_ylabel('Principal Component 2')
+    ax[1].set_title('PLSR Model Loadings (Averaged Clusters)', fontsize=17)
+    ax[1].set_xlabel('Principal Component 1', fontsize=15)
+    ax[1].set_ylabel('Principal Component 2', fontsize=15)
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
 

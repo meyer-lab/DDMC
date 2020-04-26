@@ -278,6 +278,21 @@ def plotClustergram(data, title, lim=False, robust=True, figsize=(10, 10)):
     ax = g.ax_heatmap
     ax.set_ylabel("")
 
+    
+def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
+    """ build PCA scores and loadings data frames. """
+    dScor = pd.DataFrame()
+    dLoad = pd.DataFrame()
+    for i in range(n_components):
+        cpca = "PC" + str(i+1)
+        dScor[cpca] = scores[:, i]
+        dLoad[cpca] = loadings[i, :]
+
+    for j in sIDX:
+        dScor[j] = list(df[j])
+    dLoad[lIDX] = df.select_dtypes(include=['float64']).columns
+    return dScor, dLoad
+
 
 def plotpca_explained(ax, data, ncomp):
     """ Cumulative variance explained for each principal component. """
