@@ -42,7 +42,7 @@ def preprocessing(
         br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
         br2.columns = br1.columns
         filesin.append(br1)
-        filesin.append(br2)
+#         filesin.append(br2)
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
@@ -315,25 +315,44 @@ def MergeTR(data):
     return data.drop(data.columns[[i + 1 for i in range(1, data.shape[1], 2)]], axis="columns")
 
 
-def cv_pre(cv1, cv2, cv3, tr, itp, ftp, lines):
-    """ Preprocesses cell viability data sets for analysis. """
-    l = [cv1, cv2, cv3]
+def y_pre(ds, tr, ftp, phenotype, all_lines, itp=False):
+    """ Preprocesses cell phenotype data sets for analysis. """
     z = []
-    for i, sl in enumerate(l):
+    for i, sl in enumerate(ds):
         c = sl.loc[:, sl.columns.str.contains(tr)]
-        c.insert(0, "Elapsed", cv1.iloc[:, 0])
-        fc = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
-        z.append(fc)
+        c.insert(0, "Elapsed", ds[0].iloc[:, 0])
+        c = c[list(c.columns[:3]) + [c.columns[4]] + [c.columns[3]] + list(c.columns[5:])]
+        if type(itp) != bool:
+            c = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
+        else:
+            c = c[c["Elapsed"] == ftp].iloc[0, 1:]
+        z.append(c)
+    
+    y = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
+    y.columns = ["Lines", phenotype]
+    y = y.groupby("Lines").mean().T[c.index].T.reset_index()
 
-    cv = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
-    cv.columns = ["lines", "viability"]
-    cv = cv.groupby("lines").mean().T
-    return cv[lines].iloc[0, :]
+    y["Lines"] = [s.split(tr)[0] for s in y.iloc[:, 0]]
+    y["Treatment"] = tr
+
+    if "-" in y["Lines"][1]:
+        y["Lines"] = [s.split("-")[0] for s in y.iloc[:, 0]]
+    
+    y["Lines"] = all_lines
+    return y[["Lines", "Treatment", phenotype]]
 
 
-def cm_pre(X, tr, ftp, lines):
-    """ Preprocesses migration data sets for analysis. """
-    x = X.loc[:, X.columns.str.contains(tr)]
-    x.insert(0, "Elapsed", X.iloc[:, 0])
-    cm = x[x["Elapsed"] == ftp].iloc[0, 1:]
-    return cm[lines]
+def FixColumnLabels(cv):
+    """ Fix column labels to use pandas locators. """
+    l = []
+    for label in cv[0].columns:
+        if "-" not in label and label != "Elapsed":
+            l.append(label + "-UT")
+        if "-" in label or label == "Elapsed":
+            l.append(label)
+
+
+    for d in cv:
+        d.columns = l
+
+    return cv

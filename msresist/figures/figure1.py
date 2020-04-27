@@ -3,7 +3,7 @@ This creates Figure 1.
 """
 from .common import subplotLabel, getSetup
 from ..sequence_analysis import FormatName, pYmotifs
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd
+from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
 from sklearn.decomposition import PCA
 import os
 import pandas as pd
@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 sns.set(color_codes=True)
@@ -34,25 +35,26 @@ def makeFigure():
     r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
     r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
     r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
+    r4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR4_Phase.csv")
 
     itp = 24
     ftp = 72
-    lines = ["PC9", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
     # Read in Mass Spec data
     A = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
-    A.columns = list(A.columns[:5]) + ["PC9", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    A.columns = list(A.columns[:5]) + ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
     A = A[list(A.columns[:5]) + lines]
 
     # A: Cell Viability
-    ds = [r2, r3]
+    ds = [r1, r2, r3, r4]
     tr1 = ["-UT", '-E', '-A/E']
     tr2 = ["Untreated", 'Erlotinib', 'Erl + AF154']
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
-    FC_timecourse(ax[0], ds, itp, ftp, lines, "A/E", title, ylabel, FC=True)
-    barplot_UtErlAF154(ax[1], lines, ds, itp, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", FC=True, colors=c)
+    IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
+    barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", TimePointFC=itp, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_AF154.png')
@@ -63,7 +65,7 @@ def makeFigure():
     ax[3].axis("off")
 
     # Scores and Loadings MS data
-    A = A.drop(["PC9"], axis=1)
+    A = A.drop(["WT"], axis=1)
     d = A.select_dtypes(include=['float64']).T
     plotpca_ScoresLoadings(ax[4:6], d, list(A["Gene"]), list(A["Position"]))
 
@@ -76,10 +78,10 @@ def makeFigure():
 
     plot_AllSites(ax[6], A.copy(), "AXL", "AXL p-sites")
 
-    RTKs = {"EGFR": "Y1197-p", "MET": "Y1003-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "Y792-p"}
+    RTKs = {"EGFR": "Y1197-p", "MET": "Y1003-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "T791-p"}
     plot_IdSites(ax[7], A.copy(), RTKs, "RTKs")
 
-    adapters = {"GAB1": "Y627-p", "GAB2": "T265-p", "CRK": "Y251-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
+    adapters = {"GAB1": "Y659-p", "GAB2": "T265-p", "CRK": "Y136-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
     erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
@@ -101,153 +103,211 @@ def makeFigure():
     return f
 
 
-def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
-    """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
-    Note that ds should be a list with all biological replicates. """
+def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10)):
+    """ Plot time course data of each cell line across treatments individually. """
+    ds = FixColumnLabels(ds)
     c = []
-    for i in range(len(ds)):
-        d = ds[i]
-        if FC:
-            d = ComputeFoldChange(ds[i], itp)
+    for d in ds:
+        if TimePointFC:
+            d = TimePointFoldChange(d, TimePointFC)
+        for t in t1:
+            r = d.copy()
+            if TreatmentFC:
+                r = TreatmentFoldChange(r, TreatmentFC, t)
+                c.append(r)
+            else:
+                r = r.loc[:, r.columns.str.contains(t)]
+                c.append(r)
 
-        r = FindTreatmentData(d, treatment, lines)
-        c.append(r)
+    elapsed = ds[0].iloc[:, 0]
+    c = ConcatenateBRs(c, ftp, TimePointFC, elapsed)
+    treatments = [[t] * len(lines) for t in t2] * int(c.shape[0] * (c.shape[1] - 1) / (len(lines) * len(t1)))
+    t = [y for x in treatments for y in x]
+    d = TransformTimeCourseMatrixForSeaborn(c, lines, TimePointFC, ylabel, t)
 
-    tplabels = ds[0].iloc[:, 0]
-    c = ConcatenateBRs(c, tplabels, ftp, itp)
+    if plot == "Full":
+        fig, ax = plt.subplots(nrows=2, ncols=5, sharex=True, sharey=True, figsize=figsize)
+        for i, line in enumerate(lines):
+            x = d[d["Lines"] == line]
+            if i < 5:
+                sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[0, i])
+                ax[0, i].set_title(line, fontsize=12)
+                ax[0, i].set_ylabel(ylabel, fontsize=11)
+            else:
+                sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[1, i-5])
+                ax[1, i-5].set_title(line, fontsize=12)
+                ax[1, i-5].set_ylabel(ylabel, fontsize=11)
+            if i != 0 and i < 5:
+                ax[0, i].legend().remove
+            if i != 0 and i > 4:
+                ax[1, i-5].legend().remove
 
-    d = TransformTimeCourseMatrixForSeaborn(c, lines, itp, ylabel)
+    if plot != "Full":
+        x = d[d["Lines"] == plot]
+        sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
+        ax_.set_title(plot, fontsize=12)
+        ax_.set_ylabel(ylabel, fontsize=11)
 
-    # Plot
-    b = sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Lines", data=d, err_style="bars", ci='sd', ax=ax)
-
-    if treatment != "UT":  # Include legend only in the first subplot
-        ax.legend().remove()
-
-    ax.set_title(title)
+    if savefig:
+        fig.savefig("TimeCourse.pdf")
 
 
-def ComputeFoldChange(d, itp):
+def TimePointFoldChange(d, itp):
     """ Take fold-change of the time lapse data set to an initial time point  """
     for jj in range(1, d.columns.size):
         d.iloc[:, jj] /= d[d["Elapsed"] == itp].iloc[0, jj]
     return d
+    
+
+def TreatmentFoldChange(d, FC, treatment):
+    """ Take fold-change of the time lapse data set to an initial time point  """
+    fcto = d.loc[:, d.columns.str.contains(FC)]
+    tr = d.loc[:, d.columns.str.contains(treatment)]
+    for jj in range(0, tr.columns.size):
+        tr.iloc[:, jj] /= fcto.iloc[:, jj]
+    return tr
 
 
-def FindTreatmentData(d, treatment, lines):
-    """ Find data corresponding to specified treatment and update columns """
-    r = d.loc[:, d.columns.str.contains(treatment)]
-    r.columns = lines
-    return r
-
-
-def ConcatenateBRs(c, tplabels, ftp, itp):
+def ConcatenateBRs(c, ftp, itp, elapsed):
     """ Concatenate all BRs into the same data structure, insert time point labels, and include only desired range of data points """
     c = pd.concat(c, axis=1)
-    c.insert(0, "Elapsed", tplabels)
+    c.insert(0, "Elapsed", elapsed)
     c = c[c["Elapsed"] <= ftp]
     c = c[c["Elapsed"] >= itp]
     return c
 
 
-def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel):
+def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel, treatments):
     """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
     y = pd.DataFrame()
     elapsed, lines, cv = [], [], []
     for idx, row in x.iterrows():
         row = pd.DataFrame(row).T
-        elapsed.append(list(row["Elapsed"]) * (row.shape[1] - 1))
-        lines.append(list(row.columns[1:]))
-        cv.append(row.iloc[0, 1:].values)
+        elapsed.extend(list(row["Elapsed"]) * (row.shape[1] - 1))
+        lines.extend(list(l) * (np.int((row.shape[1] - 1) / len(l))))
+        cv.extend(row.iloc[0, 1:].values)
 
-    y["Elapsed (h)"] = [e for sl in elapsed for e in sl]
-    y["Lines"] = [e for sl in lines for e in sl]
-    y[ylabel] = [e for sl in cv for e in sl]
+    y["Elapsed (h)"] = elapsed
+    y["Lines"] = lines
+    y["Treatments"] = treatments
+    y[ylabel] = cv
     return y
 
 
-def timepoint_fc(d, itp, ftp):
-    """ Calculate fold-change to specified time points, asserting no influnece of initial seeding. """
-    dt0 = d[d["Elapsed"] == itp].iloc[0, 1:]
-    dfc = d[d["Elapsed"] == ftp].iloc[0, 1:] / dt0
-
-    # Assert that there's no significant influence of the initial seeding density
-#     if itp < 12:
-#         assert sp.stats.pearsonr(dt0, dfc)[1] > 0.05
-
-    return pd.DataFrame(dfc).reset_index()
-
-
-def FCendpoint(d, itp, ftp, t, l, ylabel, FC):
+def FormatDf(cv, t, l, ylabel):
     """ Compute fold-change plus format for seaborn bar plot. """
-    if FC:
-        dfc = timepoint_fc(d, itp, ftp)
-    else:
-        dfc = pd.DataFrame(d[d["Elapsed"] == ftp].iloc[0, 1:]).reset_index()
-        dfc.columns = ["index", 0]
-
+    dfc = pd.DataFrame()
+    dfc[ylabel] = cv
     dfc["AXL mutants Y->F"] = l
     dfc["Treatment"] = t
-    dfc = dfc[["index", "AXL mutants Y->F", "Treatment", 0]]
-    dfc.columns = ["index", "AXL mutants Y->F", "Treatment", ylabel]
-    return dfc.iloc[:, 1:]
+    return dfc
 
 
-def barplot_UtErlAF154(ax, lines, ds, itp, ftp, tr1, tr2, ylabel, title, FC=False, colors=colors):
+def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=False, TreatmentFC=False, colors=colors):
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
+    ds = FixColumnLabels(ds)
     c = []
     for d in ds:
-        for i, t in enumerate(tr1):
-            x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(t)]], axis=1)
-            x = FCendpoint(x, itp, ftp, [tr2[i]] * 10, lines, ylabel, FC)
-            c.append(x)
+        if TimePointFC:
+            d = TimePointFoldChange(d, TimePointFC)
+        for t in t1:
+            r = d.copy()
+            if TreatmentFC:
+                r = TreatmentFoldChange(r, TreatmentFC, t)
+                c.append(r)
+            else:
+                r = r.loc[:, r.columns.str.contains(t)]
+                c.append(r)
+
+            r.insert(0, "Elapsed", ds[0].iloc[:, 0])
+            z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t, lines, ylabel)
+            c.append(z)
 
     c = pd.concat(c)
     pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
+    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=45)
 
 
-def barplotFC_TvsUT(ax, ds, itp, ftp, l, tr1, tr2, title, FC=False, colors=colors):
-    """ Bar plot of erl and erl + AF154 fold-change to untreated across cell lines.
-    Note that ds should be a list containing all biological replicates."""
+'''Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot'''
+def FCvsUT_TimeCourse(ax, ds, itp, ftp, lines, tr1, treatment, title, FC=False):
     c = []
-    for d in ds:
-        for j in range(1, len(tr1)):
-            x = fc_TvsUT(d, itp, ftp, l, j, tr1, tr2[j], FC)
-            c.append(x)
-
+    for i in range(len(ds)):
+        d = ds[i].copy()
+        d = d.drop(columns = ["Elapsed"])
+        d.insert(0, "Elapsed", ds[0].iloc[:, 0])
+        
+        if FC:
+            d = ComputeFoldChange(d, itp)
+        x = fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment)
+        c.append(x)
     c = pd.concat(c)
-    pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y="fold-change to UT", hue="Treatment", data=c, ci="sd", ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
-    sns.set_context(rc={'patch.linewidth': 5})
+    b = sns.lineplot(x="Elapsed (h)", y="Change vs UT", hue="Lines", data=c, err_style="bars", err_kws = {"capsize" : 7}, ci=68, ax=ax)
+    
     ax.set_title(title)
-    ax.set_xticklabels(l, rotation=45)
 
 
-def fc_TvsUT(d, itp, ftp, l, j, tr1, tr2, FC):
-    """ Preprocess fold-change to untreated. """
+
+def fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment):
     ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
-    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[j])]], axis=1)
+    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(treatment)]], axis=1)
+    c = []
+    for time in range(itp, ftp + 1, 3):
+        ut_time = ut[ut["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        x_time = x[x["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        
+        fc = pd.DataFrame(x_time.div(ut_time)).reset_index()
+        fc["Elapsed (h)"] = time
+        fc["Lines"] = lines
+        fc = fc[["index","Elapsed (h)", "Lines", fc.columns[1]]]
+        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs UT"]
+        c.append(fc)
+    c = pd.concat(c)
+    return c
+    
+    
 
-    if FC:
-        ut = timepoint_fc(ut, itp, ftp).iloc[:, 1]
-        x = timepoint_fc(x, itp, ftp).iloc[:, 1]
+def Phasenorm_Timecourse(ax, dphase, dtest, itp, ftp, treatment, lines, title, FC=False):
+    c = []
+    for i in range(len(dphase)):
+        dp = dphase[i].copy()
+        dt = dtest[i].copy()
+        dp = dp.drop(columns = ["Elapsed"])
+        dt = dt.drop(columns = ["Elapsed"])
+        dp.insert(0, "Elapsed", dphase[0].iloc[:, 0])
+        dt.insert(0, "Elapsed", dtest[0].iloc[:, 0])
+        
+        if FC:
+            dp = ComputeFoldChange(dp, itp)
+            dt = ComputeFoldChange(dt, itp)
+        x = fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines)
+        c.append(x)
+    c = pd.concat(c)
+    b = sns.lineplot(x="Elapsed (h)", y="Change vs Phase", hue="Lines", data=c, err_style="bars", err_kws = {"capsize" : 7}, ci=68, ax=ax)
 
-    else:
-        ut = ut[ut["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
-        x = x[x["Elapsed"] == ftp].iloc[0, 1:].reset_index(drop=True)
+    
+    ax.set_title(title)            
 
-    fc = pd.DataFrame(x.div(ut)).reset_index()
 
-    fc["AXL mutants Y->F"] = l
-    fc["Treatment"] = tr2
-    fc = fc[["index", "AXL mutants Y->F", "Treatment", fc.columns[1]]]
-    fc.columns = ["index", "AXL mutants Y->F", "Treatment", "fold-change to UT"]
-    return fc
+def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
+    dp = pd.concat([dp.iloc[:, 0], dp.loc[:, dp.columns.str.contains(treatment)]], axis=1)
+    dt = pd.concat([dt.iloc[:, 0], dt.loc[:, dt.columns.str.contains(treatment)]], axis=1)
+    c = []
+    for time in range(itp, ftp + 1, 3):
+        dp_time = dp[dp["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        dt_time = dt[dt["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        
+        fc = pd.DataFrame(dt_time.div(dp_time)).reset_index()
+        fc["Elapsed (h)"] = time
+        fc["Lines"] = lines
+        fc = fc[["index","Elapsed (h)", "Lines", fc.columns[1]]]
+        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs Phase"]
+        c.append(fc)
+    c = pd.concat(c)
+    return c  
 
 
 # Plot Separately since makefigure can't add it as a subplot
@@ -264,6 +324,21 @@ def plotClustergram(data, title, lim=False, robust=True, figsize=(10, 10)):
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
     ax.set_ylabel("")
+
+    
+def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
+    """ build PCA scores and loadings data frames. """
+    dScor = pd.DataFrame()
+    dLoad = pd.DataFrame()
+    for i in range(n_components):
+        cpca = "PC" + str(i+1)
+        dScor[cpca] = scores[:, i]
+        dLoad[cpca] = loadings[i, :]
+
+    for j in sIDX:
+        dScor[j] = list(df[j])
+    dLoad[lIDX] = df.select_dtypes(include=['float64']).columns
+    return dScor, dLoad
 
 
 def plotpca_explained(ax, data, ncomp):
