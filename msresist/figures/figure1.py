@@ -148,11 +148,11 @@ def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, Tre
 def FC_timecourse(ax, ds, itp, ftp, lines, treatment, title, ylabel, FC=False):
     """ Main function to plot fold-change time course of cell viability data. Initial and final time points must be specified.
     Note that ds should be a list with all biological replicates. """
+    
     c = []
     for d in ds:
         r = FoldChangeTransformations(d, treatment, itp, lines, FC)
         c.append(r)
-
     tplabels = ds[0].iloc[:, 0]
     c = ConcatenateBRs(c, ftp, itp)
 
@@ -246,6 +246,84 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=Fa
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=45)
+
+
+'''Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot'''
+def FCvsUT_TimeCourse(ax, ds, itp, ftp, lines, tr1, treatment, title, FC=False):
+    c = []
+    for i in range(len(ds)):
+        d = ds[i].copy()
+        d = d.drop(columns = ["Elapsed"])
+        d.insert(0, "Elapsed", ds[0].iloc[:, 0])
+        
+        if FC:
+            d = ComputeFoldChange(d, itp)
+        x = fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment)
+        c.append(x)
+    c = pd.concat(c)
+    b = sns.lineplot(x="Elapsed (h)", y="Change vs UT", hue="Lines", data=c, err_style="bars", err_kws = {"capsize" : 7}, ci=68, ax=ax)
+    
+    ax.set_title(title)
+
+
+
+def fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment):
+    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
+    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(treatment)]], axis=1)
+    c = []
+    for time in range(itp, ftp + 1, 3):
+        ut_time = ut[ut["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        x_time = x[x["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        
+        fc = pd.DataFrame(x_time.div(ut_time)).reset_index()
+        fc["Elapsed (h)"] = time
+        fc["Lines"] = lines
+        fc = fc[["index","Elapsed (h)", "Lines", fc.columns[1]]]
+        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs UT"]
+        c.append(fc)
+    c = pd.concat(c)
+    return c
+    
+    
+
+def Phasenorm_Timecourse(ax, dphase, dtest, itp, ftp, treatment, lines, title, FC=False):
+    c = []
+    for i in range(len(dphase)):
+        dp = dphase[i].copy()
+        dt = dtest[i].copy()
+        dp = dp.drop(columns = ["Elapsed"])
+        dt = dt.drop(columns = ["Elapsed"])
+        dp.insert(0, "Elapsed", dphase[0].iloc[:, 0])
+        dt.insert(0, "Elapsed", dtest[0].iloc[:, 0])
+        
+        if FC:
+            dp = ComputeFoldChange(dp, itp)
+            dt = ComputeFoldChange(dt, itp)
+        x = fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines)
+        c.append(x)
+    c = pd.concat(c)
+    b = sns.lineplot(x="Elapsed (h)", y="Change vs Phase", hue="Lines", data=c, err_style="bars", err_kws = {"capsize" : 7}, ci=68, ax=ax)
+
+    
+    ax.set_title(title)            
+
+
+def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
+    dp = pd.concat([dp.iloc[:, 0], dp.loc[:, dp.columns.str.contains(treatment)]], axis=1)
+    dt = pd.concat([dt.iloc[:, 0], dt.loc[:, dt.columns.str.contains(treatment)]], axis=1)
+    c = []
+    for time in range(itp, ftp + 1, 3):
+        dp_time = dp[dp["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        dt_time = dt[dt["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
+        
+        fc = pd.DataFrame(dt_time.div(dp_time)).reset_index()
+        fc["Elapsed (h)"] = time
+        fc["Lines"] = lines
+        fc = fc[["index","Elapsed (h)", "Lines", fc.columns[1]]]
+        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs Phase"]
+        c.append(fc)
+    c = pd.concat(c)
+    return c  
 
 
 # Plot Separately since makefigure can't add it as a subplot
