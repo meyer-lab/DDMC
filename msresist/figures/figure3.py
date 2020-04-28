@@ -42,7 +42,7 @@ def makeFigure():
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
 
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     mut_lines = all_lines[1:]
     g_lines = all_lines[2:]
 
@@ -54,17 +54,17 @@ def makeFigure():
     cv2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv')
     cv3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv')
     cv4 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv')
-    
+
     itp = 24
     ftp = 96
 
     cv = [cv1, cv2, cv3, cv4]
-    cv= FixColumnLabels(cv)
+    cv = FixColumnLabels(cv)
 
     v_ut = y_pre(cv, "UT", ftp, "Viability", all_lines, itp=itp)
     v_e = y_pre(cv, "-E", ftp, "Viability", all_lines, itp=itp)
     v_ae = y_pre(cv, "A/E", ftp, "Viability", all_lines, itp=itp)
-    
+
     # Cell Death
     red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
     red2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR2_RedCount.csv")
@@ -73,10 +73,10 @@ def makeFigure():
     red4.columns = red3.columns
 
     for jj in range(1, red1.columns.size):
-        red1.iloc[: , jj] /= cv1.iloc[:, jj]
-        red2.iloc[: , jj] /= cv2.iloc[:, jj]
-        red3.iloc[: , jj] /= cv3.iloc[:, jj]
-        red4.iloc[: , jj] /= cv4.iloc[:, jj]
+        red1.iloc[:, jj] /= cv1.iloc[:, jj]
+        red2.iloc[:, jj] /= cv2.iloc[:, jj]
+        red3.iloc[:, jj] /= cv3.iloc[:, jj]
+        red4.iloc[:, jj] /= cv4.iloc[:, jj]
 
     cD = [red1, red2, red3, red4]
     cD = FixColumnLabels(cD)
@@ -101,14 +101,14 @@ def makeFigure():
     # -------- PLOTS -------- #
     # PCA analysis of phenotypes
     y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"]], axis=1)
-    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"]], axis=1)
-    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"]], axis=1)
+    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"]], axis=1)
+    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"]], axis=1)
 
     y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
     y_fc["Treatment"] = "A fold-change to E"
 
     PCA_scores(ax[:2], y_fc, 3)
-    
+
     # MODEL
     y = y_fc.drop("Treatment", axis=1).set_index("Lines")
 
@@ -124,7 +124,7 @@ def makeFigure():
 
     plsr = PLSRegression(n_components=ncomp)
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
-    
+
     # Plot Measured vs Predicted
     plotMeasuredVsPredicted(ax[3:6], plsr, centers, y)
 
@@ -133,14 +133,13 @@ def makeFigure():
     CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
-    plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl+1)
+    plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
     gs = pd.read_csv("msresist/data/Model/20200320-GridSearch_pam250_CVWC_wPC9.csv")
     gs[gs["#Components"] == 2].head(10)
     plotGridSearch(ax[7], gs)
     plotMeasuredVsPredicted(ax[8:11], CoCl_plsr, d, y)
     plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
     plotclusteraverages(ax[13], centers.T, all_lines)
-
 
     # Add subplot labels
     subplotLabel(ax)
@@ -157,20 +156,18 @@ def PCA_scores(ax, d, n_components):
     varExp = np.round(pp.explained_variance_ratio_, 2)
 
     # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{'linewidth':.5, 'edgecolor':"k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{'linewidth': .5, 'edgecolor': "k"})
     ax[0].set_title("PCA Scores", fontsize=11)
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
 
     # Loadings
-    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{'linewidth':.5, 'edgecolor':"k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{'linewidth': .5, 'edgecolor': "k"})
     ax[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-    ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10);
-    
-
+    ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
 
 
 def plotGridSearch(ax, gs):
