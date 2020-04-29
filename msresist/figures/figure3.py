@@ -169,8 +169,6 @@ def PCA_scores(ax, d, n_components):
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10);
-    
-
 
 
 def plotGridSearch(ax, gs):
