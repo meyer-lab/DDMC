@@ -63,7 +63,7 @@ def makeFigure():
 
     c = ["white", "windows blue", "scarlet", "dark green"]
     barplot_UtErlAF154(ax[4], lines, ds, ftp, tr1, tr2, "RWD (%)", "Cell Migration (24h)", TimePointFC=False, TreatmentFC=False, colors=c)
-    
+
     tr1 = ['AF', '-E', 'A/E']
     tr2 = ['AF154', 'Erlotinib', 'Erl + AF154']
     barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "RWD fc to UT", "Cell Migration (24h)", TimePointFC=False, TreatmentFC="-UT", colors=c)
@@ -74,16 +74,16 @@ def makeFigure():
     A = A[list(A.columns[:5]) + lines]
     A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
 
-    set1 = {"BCAR1":["Y128-p", "Y410-p"], "BCAR3":"Y212-p", "NEDD9":["189-p", "S182-p"]}
+    set1 = {"BCAR1": ["Y128-p", "Y410-p"], "BCAR3": "Y212-p", "NEDD9": ["189-p", "S182-p"]}
     plot_AllSites(ax[6], A.copy(), set1, "BCAR & NEDD")
-    
-    CRK = {"CRK":"Y136-p", "CRKL":"Y251-p", "DOCK1":"Y1811-p", "ELMO2":"Y48-p"}
+
+    CRK = {"CRK": "Y136-p", "CRKL": "Y251-p", "DOCK1": "Y1811-p", "ELMO2": "Y48-p"}
     plot_AllSites(ax[7], A.copy(), CRK, "CRK-DOCK1-ELMO2 axis")
 
-    other = {"TNS1":"Y1326-p", "TNS3":["Y354-p", "Y855-p"], "CTTN":["Y421-p"], "PTPN11":["Y542-p", "Y584-p"], "PTK2":"Y397-p"}
+    other = {"TNS1": "Y1326-p", "TNS3": ["Y354-p", "Y855-p"], "CTTN": ["Y421-p"], "PTPN11": ["Y542-p", "Y584-p"], "PTK2": "Y397-p"}
     plot_AllSites(ax[7], A.copy(), other, "Various")
 
-    #Reduced Heatmaps
+    # Reduced Heatmaps
 #     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_AF154.png')
 #     hm_erl = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_Erl.png')
 #     ax[8].imshow(hm_af154)
