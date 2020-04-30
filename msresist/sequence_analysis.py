@@ -242,7 +242,7 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl):
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binomials, n_iter, freqs_):
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binomials, n_iter):
     """ Do the sequence assignment. """
     scaled_scores = []
     data_scores = []
@@ -313,14 +313,13 @@ def ScaleScores(seq_scores, data_scores, weight, sM, dM, distance_method):
 def BPM(cl_seqs, distance_method, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
     if distance_method == "Binomial":
-        BPM, freqs_ = [], []
+        BPM = []
         for seqs in cl_seqs:
             freqs = frequencies(seqs)
             BPM.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
-            freqs_.append(freqs)
     if distance_method == "PAM250":
         BPM = False
-    return BPM, freqs_
+    return BPM
 
 
 def TranslateMotifsToIdx(motif, aa):
@@ -377,9 +376,9 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
 
         # E step: Assignment of each peptide based on data and seq
-        binoM, freqs = BPM(cl_seqs, distance_method, bg_pwm)
+        binoM = BPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
-            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binoM, n_iter, freqs)
+            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binoM, n_iter)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -414,7 +413,20 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         gmmp = HardAssignments(labels, ncl)
         m_step(d, gmm, gmmp)
         gmmp = gmm.predict_proba(d)
+
+        if True in math.isnan(gmmp) or True in math.isinf(score):
+            print("before compatible:")
+            print("final score is either \
+        NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
+            print(gmm.predict())
+
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
+
+        if True in math.isnan(gmmp) or True in math.isinf(score):
+            print("after compatible:")
+            print("final score is either \
+        NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
+            print(gmm.predict())
 
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
@@ -447,7 +459,7 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-@lru_cache(maxsize=9000000)
+@lru_cache(maxsize=None)
 def pairwise_score(seq1: str, seq2: str) -> float:
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0.0
