@@ -61,13 +61,3 @@ def Q2Y_across_comp_manual(X_z, Y_z, max_comps, sublabel):
         Q2Y = 1 - (PRESS / SS)
         Q2Ys.append(Q2Y)
     return Q2Ys
-
-
-def PLSR(X, Y, nComponents):
-    """ Run PLSR. """
-    plsr = PLSRegression(n_components=nComponents)
-    X_scores, _ = plsr.fit_transform(X, Y)
-    PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-    PC1_xload, PC2_xload = plsr.x_loadings_[:, 0], plsr.x_loadings_[:, 1]
-    PC1_yload, PC2_yload = plsr.y_loadings_[:, 0], plsr.y_loadings_[:, 1]
-    return plsr, PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
