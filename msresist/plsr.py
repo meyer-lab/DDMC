@@ -1,7 +1,9 @@
 """PLSR analysis functions (plotting functions are located in msresist/figures/figure2)"""
 
+import scipy as sp
+import numpy as np
 from scipy.stats import zscore
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 from sklearn.cross_decomposition import PLSRegression
 
@@ -40,24 +42,28 @@ def Q2Y_across_components(model, X, Y, cv, max_comps):
     return Q2Ys
 
 
-def Q2Y_across_comp_manual(X_z, Y_z, max_comps, sublabel):
+def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
     "Calculate Q2Y manually."
     PRESS = 0
     SS = 0
     Q2Ys = []
+    Y = np.array(Y.reset_index().drop("Lines", axis=1))
+    X = np.array(X)
     for b in range(1, max_comps):
-        plsr_model = PLSRegression(n_components=b)
-        for train_index, test_index in LeaveOneOut().split(X_z, Y_z):
-            X_train, X_test = X_z[train_index], X_z[test_index]
-            Y_train, Y_test = Y_z[train_index], Y_z[test_index]
-            X_train = zscore_columns(X_train)
+        if cv == 1:
+            model.set_params(n_components=b)
+        if cv == 2:
+            model.set_params(plsr__n_components=b)
+        for train_index, test_index in LeaveOneOut().split(X, Y):
+            X_train, X_test = X[train_index], X[test_index]
+            Y_train, Y_test = Y[train_index], Y[test_index]
             Y_train = sp.stats.zscore(Y_train)
-            plsr_model.fit_transform(X_train, Y_train)
-            Y_predict_cv = plsr_model.predict(X_test)
-            PRESS_i = (Y_predict_cv - Y_test) ** 2
+            model.fit(X_train, Y_train)
+            Y_predict = model.predict(X_test)
+            PRESS_i = (Y_predict - Y_test) ** 2
             SS_i = (Y_test) ** 2
-            PRESS = PRESS + PRESS_i
-            SS = SS + SS_i
+            PRESS = np.mean(PRESS + PRESS_i)
+            SS = np.mean(SS + SS_i)
         Q2Y = 1 - (PRESS / SS)
         Q2Ys.append(Q2Y)
     return Q2Ys

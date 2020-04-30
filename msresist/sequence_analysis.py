@@ -414,7 +414,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         m_step(d, gmm, gmmp)
         gmmp = gmm.predict_proba(d)
 
-        if True in math.isnan(gmmp) or True in math.isinf(score):
+        if True in np.isnan(gmmp):
             print("before compatible:")
             print("final score is either \
         NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
@@ -422,7 +422,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
 
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
-        if True in math.isnan(gmmp) or True in math.isinf(score):
+        if True in np.isnan(gmmp):
             print("after compatible:")
             print("final score is either \
         NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
