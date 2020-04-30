@@ -322,12 +322,12 @@ def y_pre(ds, tr, ftp, phenotype, all_lines, itp=False):
         c = sl.loc[:, sl.columns.str.contains(tr)]
         c.insert(0, "Elapsed", ds[0].iloc[:, 0])
         c = c[list(c.columns[:3]) + [c.columns[4]] + [c.columns[3]] + list(c.columns[5:])]
-        if type(itp) != bool:
+        if not isinstance(itp, bool):
             c = c[c["Elapsed"] == ftp].iloc[0, 1:].div(c[c["Elapsed"] == itp].iloc[0, 1:])
         else:
             c = c[c["Elapsed"] == ftp].iloc[0, 1:]
         z.append(c)
-    
+
     y = pd.DataFrame(pd.concat(z, axis=0)).reset_index()
     y.columns = ["Lines", phenotype]
     y = y.groupby("Lines").mean().T[c.index].T.reset_index()
@@ -337,7 +337,7 @@ def y_pre(ds, tr, ftp, phenotype, all_lines, itp=False):
 
     if "-" in y["Lines"][1]:
         y["Lines"] = [s.split("-")[0] for s in y.iloc[:, 0]]
-    
+
     y["Lines"] = all_lines
     return y[["Lines", "Treatment", phenotype]]
 
@@ -350,7 +350,6 @@ def FixColumnLabels(cv):
             l.append(label + "-UT")
         if "-" in label or label == "Elapsed":
             l.append(label)
-
 
     for d in cv:
         d.columns = l
