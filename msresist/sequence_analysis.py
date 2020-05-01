@@ -242,52 +242,42 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, cl_seqs, ncl):
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binomials, n_iter):
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binomials):
     """ Do the sequence assignment. """
-    scaled_scores = []
-    data_scores = []
-    seq_scores = []
+    data_scores = np.zeros(ncl,)
+    seq_scores = np.zeros(ncl,)
+    final_scores = np.zeros(ncl,)
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
         for z in range(ncl):
-            gmm_score = gmmp[j, z]
             NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
-            scaled_scores.append(BPM_score * GMMweight + gmm_score)
-            data_scores.append(gmm_score)
-            seq_scores.append(BPM_score)
+            data_scores[z] = gmmp[j, z]
+            seq_scores[z] = BPM_score
+            final_scores[z] = BPM_score * GMMweight + gmmp[j, z]
         scores = ScaleScores(seq_scores, data_scores, GMMweight, min(seq_scores), min(data_scores), distance_method)
         DataIdx = np.argmin(data_scores)
         SeqIdx = np.argmin(seq_scores)
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
+        PAM250_score = 0
         for z in range(ncl):
-            gmm_score = gmmp[j, z]
-            PAM250_scores = [pairwise_score(str(motif), str(seq)) for seq in cl_seqs[z]]
-            scaled_scores.append(np.mean(PAM250_scores) * GMMweight + gmm_score)
-            data_scores.append(gmm_score)
-            seq_scores.append(np.mean(PAM250_scores))
+            for seq in cl_seqs[z]:
+                PAM250_score += pairwise_score(motif, seq)
+            PAM250_score /= len(cl_seqs[z])
+            data_scores[z] = gmmp[j, z]
+            seq_scores[z] = PAM250_score
+            final_scores[z] = PAM250_score * GMMweight + gmmp[j, z]
         scores = ScaleScores(seq_scores, data_scores, GMMweight, max(seq_scores), max(data_scores), distance_method)
         DataIdx = np.argmax(data_scores)
         SeqIdx = np.argmax(seq_scores)
 
     idx = np.argmax(scores)
-    score = scaled_scores[idx]
+    score = final_scores[idx]
 
     assert math.isnan(score) == False and math.isinf(score) == False, "final score is either \
     NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
-    
-#     if n_iter == 8:
-#         print(motif)
-#         print(f.consensus for f in freqs_)
-#         print("data scores: ", data_scores)
-#         print("seq scores: ", seq_scores)
-#         print("multiplied: ", scaled_scores)
-#         print("scaled: ", scores)
-#         print("assign: ", score, idx)
-#         print("==============================================")
-#         raise SystemExit
 
     return score, idx, SeqIdx, DataIdx
 
@@ -378,7 +368,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         binoM = BPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
-            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binoM, n_iter)
+            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, cl_seqs, binoM)
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -418,16 +408,16 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
             print("before compatible:")
             print("final score is either \
         NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
-            print(gmm.predict())
+            display(pd.DataFrame(gmmp).head())
+            display(pd.DataFrame(gmm.predict(d)).T)
+            print("CLUSTER SIZES: ", [len(cl) for cl in seq_reassign])
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
+            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
+            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
+            store_Clseqs, store_scores = [], []
+            raise SystemExit
 
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
-
-        if True in np.isnan(gmmp):
-            print("after compatible:")
-            print("final score is either \
-        NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp)))
-            print(gmm.predict())
-
         assert isinstance(cl_seqs[0][0], Seq), ("cl_seqs not Bio.Seq.Seq, check: %s" % cl_seqs)
 
         if len(store_scores) > 2:
@@ -436,7 +426,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
                 return cl_seqs, np.array(labels), np.mean(scores), n_iter
 
-#         print(np.mean(scores))
     print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), np.mean(scores), n_iter
@@ -466,12 +455,288 @@ def pairwise_score(seq1: str, seq2: str) -> float:
     for i, s1 in enumerate(seq1):
         if i == 5:
             continue
-        if (seq1[i], seq2[i]) in MatrixInfo.pam250:
-            score += MatrixInfo.pam250[(s1, seq2[i])]
+        if (seq1[i] + seq2[i]) in pam:
+            score += pam[(s1 + seq2[i])]
         else:
-            score += MatrixInfo.pam250[(seq2[i], s1)]
-
+            score += pam[(seq2[i] + s1)]
     return score
+
+pam = {'WF': 0,
+ 'LR': -3,
+ 'SP': 1,
+ 'VT': 0,
+ 'QQ': 4,
+ 'NA': 0,
+ 'ZY': -4,
+ 'WR': 2,
+ 'QA': 0,
+ 'SD': 0,
+ 'HH': 6,
+ 'SH': -1,
+ 'HD': 1,
+ 'LN': -3,
+ 'WA': -6,
+ 'YM': -2,
+ 'GR': -3,
+ 'YI': -1,
+ 'YE': -4,
+ 'BY': -3,
+ 'YA': -3,
+ 'VD': -2,
+ 'BS': 0,
+ 'YY': 10,
+ 'GN': 0,
+ 'EC': -5,
+ 'YQ': -4,
+ 'ZZ': 3,
+ 'VA': 0,
+ 'CC': 12,
+ 'MR': 0,
+ 'VE': -2,
+ 'TN': 0,
+ 'PP': 6,
+ 'VI': 4,
+ 'VS': -1,
+ 'ZP': 0,
+ 'VM': 2,
+ 'TF': -3,
+ 'VQ': -2,
+ 'KK': 5,
+ 'PD': -1,
+ 'IH': -2,
+ 'ID': -2,
+ 'TR': -1,
+ 'PL': -3,
+ 'KG': -2,
+ 'MN': -2,
+ 'PH': 0,
+ 'FQ': -5,
+ 'ZG': 0,
+ 'XL': -1,
+ 'TM': -1,
+ 'ZC': -5,
+ 'XH': -1,
+ 'DR': -1,
+ 'BW': -5,
+ 'XD': -1,
+ 'ZK': 0,
+ 'FA': -3,
+ 'ZW': -6,
+ 'FE': -5,
+ 'DN': 2,
+ 'BK': 1,
+ 'XX': -1,
+ 'FI': 1,
+ 'BG': 0,
+ 'XT': 0,
+ 'FM': 0,
+ 'BC': -4,
+ 'ZI': -2,
+ 'ZV': -2,
+ 'SS': 2,
+ 'LQ': -2,
+ 'WE': -7,
+ 'QR': 1,
+ 'NN': 2,
+ 'WM': -4,
+ 'QC': -5,
+ 'WI': -5,
+ 'SC': 0,
+ 'LA': -2,
+ 'SG': 1,
+ 'LE': -3,
+ 'WQ': -5,
+ 'HG': -2,
+ 'SK': 0,
+ 'QN': 1,
+ 'NR': 0,
+ 'HC': -3,
+ 'YN': -2,
+ 'GQ': -1,
+ 'YF': 7,
+ 'CA': -2,
+ 'VL': 2,
+ 'GE': 0,
+ 'GA': 1,
+ 'KR': 3,
+ 'ED': 3,
+ 'YR': -4,
+ 'MQ': -1,
+ 'TI': 0,
+ 'CD': -5,
+ 'VF': -1,
+ 'TA': 1,
+ 'TP': 0,
+ 'BP': -1,
+ 'TE': 0,
+ 'VN': -2,
+ 'PG': 0,
+ 'MA': -1,
+ 'KH': 0,
+ 'VR': -2,
+ 'PC': -3,
+ 'ME': -2,
+ 'KL': -3,
+ 'VV': 4,
+ 'MI': 2,
+ 'TQ': -1,
+ 'IG': -3,
+ 'PK': -1,
+ 'MM': 6,
+ 'KD': 0,
+ 'IC': -2,
+ 'ZD': 3,
+ 'FR': -4,
+ 'XK': -1,
+ 'QD': 2,
+ 'XG': -1,
+ 'ZL': -3,
+ 'XC': -3,
+ 'ZH': 2,
+ 'BL': -3,
+ 'BH': 1,
+ 'FF': 9,
+ 'XW': -4,
+ 'BD': 3,
+ 'DA': 0,
+ 'SL': -3,
+ 'XS': 0,
+ 'FN': -3,
+ 'SR': 0,
+ 'WD': -7,
+ 'VY': -2,
+ 'WL': -2,
+ 'HR': 2,
+ 'WH': -3,
+ 'HN': 2,
+ 'WT': -5,
+ 'TT': 3,
+ 'SF': -3,
+ 'WP': -6,
+ 'LD': -4,
+ 'BI': -2,
+ 'LH': -2,
+ 'SN': 1,
+ 'BT': 0,
+ 'LL': 6,
+ 'YK': -4,
+ 'EQ': 2,
+ 'YG': -5,
+ 'ZS': 0,
+ 'YC': 0,
+ 'GD': 1,
+ 'BV': -2,
+ 'EA': 0,
+ 'YW': 0,
+ 'EE': 4,
+ 'YS': -3,
+ 'CN': -4,
+ 'VC': -2,
+ 'TH': -1,
+ 'PR': 0,
+ 'VG': -1,
+ 'TL': -2,
+ 'VK': -2,
+ 'KQ': 1,
+ 'RA': -2,
+ 'IR': -2,
+ 'TD': 0,
+ 'PF': -5,
+ 'IN': -2,
+ 'KI': -2,
+ 'MD': -3,
+ 'VW': -6,
+ 'WW': 17,
+ 'MH': -2,
+ 'PN': 0,
+ 'KA': -1,
+ 'ML': 4,
+ 'KE': 0,
+ 'ZE': 3,
+ 'XN': 0,
+ 'ZA': 0,
+ 'ZM': -2,
+ 'XF': -2,
+ 'KC': -5,
+ 'BQ': 1,
+ 'XB': -1,
+ 'BM': -2,
+ 'FC': -4,
+ 'ZQ': 3,
+ 'XZ': -1,
+ 'FG': -5,
+ 'BE': 3,
+ 'XV': -1,
+ 'FK': -5,
+ 'BA': 0,
+ 'XR': -1,
+ 'DD': 4,
+ 'WG': -7,
+ 'ZF': -5,
+ 'SQ': -1,
+ 'WC': -8,
+ 'WK': -3,
+ 'HQ': 3,
+ 'LC': -6,
+ 'WN': -4,
+ 'SA': 1,
+ 'LG': -4,
+ 'WS': -2,
+ 'SE': 0,
+ 'HE': 1,
+ 'SI': -1,
+ 'HA': -1,
+ 'SM': -2,
+ 'YL': -1,
+ 'YH': 0,
+ 'YD': -4,
+ 'ER': -1,
+ 'XP': -1,
+ 'GG': 5,
+ 'GC': -3,
+ 'EN': 1,
+ 'YT': -3,
+ 'YP': -5,
+ 'TK': 0,
+ 'AA': 2,
+ 'PQ': 0,
+ 'TC': -2,
+ 'VH': -2,
+ 'TG': 0,
+ 'IQ': -2,
+ 'ZT': -1,
+ 'CR': -4,
+ 'VP': -1,
+ 'PE': -1,
+ 'MC': -5,
+ 'KN': 1,
+ 'II': 5,
+ 'PA': 1,
+ 'MG': -3,
+ 'TS': 1,
+ 'IE': -2,
+ 'PM': -2,
+ 'MK': 0,
+ 'IA': -1,
+ 'PI': -2,
+ 'RR': 6,
+ 'XM': -1,
+ 'LI': 2,
+ 'XI': -1,
+ 'ZB': 2,
+ 'XE': -1,
+ 'ZN': 1,
+ 'XA': 0,
+ 'BR': -1,
+ 'BN': 2,
+ 'FD': -6,
+ 'XY': -2,
+ 'ZR': 0,
+ 'FH': -2,
+ 'BF': -4,
+ 'FL': 2,
+ 'XQ': -1,
+ 'BB': 3}
 
 
 def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
