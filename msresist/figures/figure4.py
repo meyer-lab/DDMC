@@ -23,7 +23,7 @@ def makeFigure():
     ired = i.iloc[:3000, :]
     
     distance_method = "PAM250"
-    ncl = 3
+    ncl = 5
     GMMweight = 2000
 
     MSC = MassSpecClustering(ired, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=1).fit(dred, "NA")
