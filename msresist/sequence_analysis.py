@@ -270,15 +270,15 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
+        seq_scores = np.zeros(ncl, dtype=int)
+        for idx, assignments in enumerate(labels):
+            seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
+
         for z in range(ncl):
-            PAM250_score = 0
-            cl_idx = [i for i, e in enumerate(labels) if e == z]
-            for idx in cl_idx:
-                PAM250_score += Seq1Seq2ToScore[j, idx]
-            PAM250_score /= len(cl_seqs[z])
+#             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
+            seq_scores[z] /= len(cl_seqs[z]) #average score per cluster
             data_scores[z] = gmmp[j, z]
-            seq_scores[z] = PAM250_score
-            final_scores[z] = PAM250_score * GMMweight + gmmp[j, z]
+            final_scores[z] = seq_scores[z] * GMMweight + gmmp[j, z]
         scores = ScaleScores(seq_scores, data_scores, GMMweight, 
                              max(seq_scores), max(data_scores), distance_method)
         DataIdx = np.argmax(data_scores)
@@ -290,7 +290,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
     assert math.isnan(score) == False and math.isinf(score) == False, "final score is either \
     NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
 
-    return score, idx, DataIdx, SeqIdx
+    return score, idx
 
 
 def ScaleScores(seq_scores, data_scores, weight, sM, dM, distance_method):
@@ -357,6 +357,7 @@ def GenerateSeq1Seq2ToPAM250Distance(seqs):
     e = ThreadPoolExecutor(max_workers=32)
     futuress = [e.submit(innerloop, seqs, ii) for ii in range(len(seqs))]
 
+    print("calculating pam250 scores...")
     scores = []
     for ii in range(len(seqs)):
         scores.extend(futuress[ii].result())
@@ -364,8 +365,8 @@ def GenerateSeq1Seq2ToPAM250Distance(seqs):
     print("scores array ready")
     print("filling diagonal...")
     m = fill_lower_diag(scores, len(seqs))
-
     assert m[5, 5] == pairwise_score(seqs[5], seqs[5]), "PAM250 scores array is wrong."
+    print("Final scores matrix complete!")
     return m
 
 
@@ -388,14 +389,14 @@ def fill_lower_diag(scores, n):
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    print("clustering")
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
     Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
+    print("start initialization...")
     gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-    print("initialized")
+    print("gmm initialized")
 
     # Background sequences
     if distance_method == "Binomial":
@@ -407,7 +408,6 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         # Compute all pairwsie distances and generate seq vs seq to score dictionary
         seqs = [s.upper() for s in ABC["Sequence"]]
         Seq1Seq2ToScores = GenerateSeq1Seq2ToPAM250Distance(seqs)
-        print("Final scores matrix complete!")
         bg_pwm = False
 
     # EM algorithm
@@ -417,15 +417,13 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         print("N_ITER: ", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
-#         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
 
         # E step: Assignment of each peptide based on data and seq
         binoM = BPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
-            score, idx, DataIdx, SeqIdx = assignSeqs(ncl, motif, distance_method, 
+            score, idx = assignSeqs(ncl, motif, distance_method, 
                                                      GMMweight, gmmp, j, bg_pwm, 
-                                                     cl_seqs, binoM, Seq1Seq2ToScores, 
-                                                     store_labels[-1])
+                                                     cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -433,16 +431,13 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
 #                                                            SeqWins, DataWins, BothWin, MixWins)
                 
 
-#         print("SeqWins: ", SeqWins, "DataWins: ", DataWins, "BothWin ", BothWin, \
-#               "MixWins: ", MixWins)
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 2 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
-            store_Clseqs, store_scores, store_labels = [], [], []
-            store_labels.append(gmm.predict(d))
+            store_Clseqs, store_scores = [], []
             continue
 
         # Store current results
@@ -464,8 +459,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], \
             "Empty cluster(s) after re-initialization"
-            store_Clseqs, store_scores, store_labels = [], [], []
-            store_labels.append(gmm.predict(d))
+            store_Clseqs, store_scores = [], []
 
         if len(store_scores) > 2:
             # Check convergence
@@ -536,11 +530,12 @@ def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels = [0, 0, 0]
-    while len(set(labels)) < ncl:
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl,
-                                               max_iterations=1)
+    counter = 0
+    while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1)
         labels = gmm.predict(d)
-    gmm_pred = gmm.predict_proba(d)
+        gmm_pred = gmm.predict_proba(d)
+
     gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
 
     X["GMM_cluster"] = labels
