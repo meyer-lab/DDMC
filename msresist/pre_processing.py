@@ -318,7 +318,7 @@ def MergeTR(data):
 def y_pre(ds, tr, ftp, phenotype, all_lines, itp=False):
     """ Preprocesses cell phenotype data sets for analysis. """
     z = []
-    for i, sl in enumerate(ds):
+    for sl in ds:
         c = sl.loc[:, sl.columns.str.contains(tr)]
         c.insert(0, "Elapsed", ds[0].iloc[:, 0])
         c = c[list(c.columns[:3]) + [c.columns[4]] + [c.columns[3]] + list(c.columns[5:])]

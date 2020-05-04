@@ -5,7 +5,6 @@ import numpy as np
 from scipy.stats import zscore
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
-from sklearn.cross_decomposition import PLSRegression
 
 ###------------ PLSR model functions ------------------###
 

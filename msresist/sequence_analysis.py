@@ -12,7 +12,7 @@ from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
 from scipy.stats import binom
-from pomegranate import GeneralMixtureModel, NormalDistribution, MultivariateGaussianDistribution
+from pomegranate import GeneralMixtureModel, NormalDistribution
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -227,25 +227,22 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, Seq1Seq2ToScoreDict, 
-           cl_seqs, ncl, labels):
+def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, 
+           cl_seqs, ncl, Seq1Seq2ToScoreDict, labels):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
     Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
     cl_seqs = [ForegroundSeqs(cluster) for cluster in cl_seqs]
     labels, scores = [], []
-    SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
 
     binoM = BPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(Allseqs):
         
-        score, idx, DataIdx, SeqIdx = assignSeqs(ncl, motif, distance_method, 
-                                                     GMMweight, gmmp, j, bg_pwm, 
-                                                     cl_seqs, binoM, Seq1Seq2ToScoreDict)
+        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, 
+                                bg_pwm, cl_seqs, binoM, Seq1Seq2ToScoreDict, labels)
         labels.append(idx)
         scores.append(score)
-        seq_reassign[idx].append(motif)
-        SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx)
+#         SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx)
     return np.array(labels), np.array(scores)
 
 
@@ -314,13 +311,13 @@ def ScaleScores(seq_scores, data_scores, weight, sM, dM, distance_method):
 def BPM(cl_seqs, distance_method, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
     if distance_method == "Binomial":
-        BPM = []
+        bpm = []
         for seqs in cl_seqs:
             freqs = frequencies(seqs)
-            BPM.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
+            bpm.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
     if distance_method == "PAM250":
-        BPM = False
-    return BPM
+        bpm = False
+    return bpm
 
 
 def TranslateMotifsToIdx(motif, aa):
@@ -336,7 +333,7 @@ def TranslateMotifsToIdx(motif, aa):
 def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n_runs):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
-    for i in range(n_runs):
+    for _ in range(n_runs):
 #         print("run: ", i)
         cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, 
                                                        distance_method, max_n_iter)
@@ -353,7 +350,6 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 
 def GenerateSeq1Seq2ToPAM250Distance(seqs):
     """ Calculate all pairwise pam250 distances and generate dictionary """
-    print("start computing scores...")
     e = ThreadPoolExecutor(max_workers=32)
     futuress = [e.submit(innerloop, seqs, ii) for ii in range(len(seqs))]
 
@@ -372,10 +368,7 @@ def GenerateSeq1Seq2ToPAM250Distance(seqs):
 
 def innerloop(seqs, ii):
     ii += 1
-    MotifScores = np.empty(len(range(ii)), dtype='int')
-    for jj in range(ii):
-        MotifScores[jj] = pairwise_score(seqs[ii-1], seqs[jj])
-    return MotifScores
+    return (pairwise_score(seqs[ii-1], seqs[jj]) for jj in range(ii))
 
 
 def fill_lower_diag(scores, n):
@@ -520,9 +513,12 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
     """ Make data and sequencec scores as close in magnitude as possible. """
     if distance_method == "PAM250":
         gmmp = gmm_pred * 100
-    if distance_method == "Binomial":
+    elif distance_method == "Binomial":
         gmm_pred[gmm_pred == 1] = 0.9999999999999
         gmmp = np.log(1 - gmm_pred)
+    else:
+        "Distance method not recognized."
+        raise SystemExit
     return gmmp
 
 
@@ -530,7 +526,7 @@ def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels = [0, 0, 0]
-    counter = 0
+    a = [np.nan]
     while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1)
         labels = gmm.predict(d)
