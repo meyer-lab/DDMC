@@ -4,7 +4,6 @@ import os
 import re
 import math
 from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -348,36 +347,27 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
 
 
-def GenerateSeq1Seq2ToPAM250Distance(seqs):
+def MotifPam250Scores(seqs):
     """ Calculate all pairwise pam250 distances and generate dictionary """
-    e = ThreadPoolExecutor(max_workers=32)
-    futuress = [e.submit(innerloop, seqs, ii) for ii in range(len(seqs))]
-
-    print("calculating pam250 scores...")
-    scores = []
-    for ii in range(len(seqs)):
-        scores.extend(futuress[ii].result())
-
-    print("scores array ready")
-    print("filling diagonal...")
-    m = fill_lower_diag(scores, len(seqs))
-    assert m[5, 5] == pairwise_score(seqs[5], seqs[5]), "PAM250 scores array is wrong."
-    print("Final scores matrix complete!")
-    return m
-
-
-def innerloop(seqs, ii):
-    ii += 1
-    return (pairwise_score(seqs[ii-1], seqs[jj]) for jj in range(ii))
-
-
-def fill_lower_diag(scores, n):
-    mask = np.tri(n, dtype=bool, k=0)
+    n = len(seqs)
     out = np.zeros((n, n), dtype=int)
-    out[mask] = scores
+
+    e = ThreadPoolExecutor(max_workers=32)
+    for ii in range(n):
+        e.submit(innerloop, seqs, ii, out)
+    e.shutdown()
+
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
+
+    assert out[5, 5] == pairwise_score(seqs[5], seqs[5]), "PAM250 scores array is wrong."
     return out
+
+
+def innerloop(seqs, ii, out):
+    ii += 1
+    for jj in range(ii):
+        out[ii-1, jj] = pairwise_score(seqs[ii-1], seqs[jj])
 
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
@@ -400,7 +390,7 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
     elif distance_method == "PAM250":
         # Compute all pairwsie distances and generate seq vs seq to score dictionary
         seqs = [s.upper() for s in ABC["Sequence"]]
-        Seq1Seq2ToScores = GenerateSeq1Seq2ToPAM250Distance(seqs)
+        Seq1Seq2ToScores = MotifPam250Scores(seqs)
         bg_pwm = False
 
     # EM algorithm
@@ -495,7 +485,6 @@ def HardAssignments(labels, ncl):
     return np.array(m)
 
 
-@lru_cache(maxsize=None)
 def pairwise_score(seq1: str, seq2: str) -> float:
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0
