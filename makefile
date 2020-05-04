@@ -1,4 +1,4 @@
-
+ 
 all: figure1.svg figure2.svg figure3.svg output/method/manuscript.html output/biol/manuscript.html
 
 # Figure rules
