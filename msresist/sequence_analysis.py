@@ -4,7 +4,6 @@ import os
 import re
 import math
 from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -350,6 +349,7 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 
 def MotifPam250Scores(seqs):
     """ Calculate all pairwise pam250 distances and generate dictionary """
+    from multiprocessing import shared_memory
     n = len(seqs)
 
     out = np.zeros((n, n), dtype=int)
@@ -371,6 +371,7 @@ def MotifPam250Scores(seqs):
 
 
 def innerloop(seqs, ii, endi, shm_name, ddtype, n):
+    from multiprocessing import shared_memory
     existing_shm = shared_memory.SharedMemory(name=shm_name)
     out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
 
