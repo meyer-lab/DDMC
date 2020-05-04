@@ -37,6 +37,7 @@ def GetTimes(folder, extension):
     times = sorted(times)
     return times
 
+
 def Generate_dfs(folder, extension, times):
     '''Generates dfs of the data at each time point with an added column for time'''
     file_list = []
@@ -45,6 +46,7 @@ def Generate_dfs(folder, extension, times):
         file['Time'] = time
         file_list.append(file)
     return file_list
+
 
 def Calculate_closest(file_list, n=(1, 3)):
     '''Calculates distances to nearby cells and returns as dataframe ready to plot'''
@@ -59,15 +61,16 @@ def Calculate_closest(file_list, n=(1, 3)):
             x1, y1 = points.iloc[origin_cell, :]
             for other_cell in np.arange(points.shape[0]):
                 x2, y2 = points.iloc[other_cell, :]
-                distance = abs(math.sqrt((x2-x1)**2 + (y2-y1)**2))
+                distance = abs(math.sqrt((x2 - x1)**2 + (y2 - y1)**2))
                 distances.append(distance)
             distances = sorted(distances)
-            #shortest_n_distances_lists.append(distances[1:(n+1)])
-            shortest_n_distances.extend(distances[n[0]:(n[1]+1)])
+            # shortest_n_distances_lists.append(distances[1:(n+1)])
+            shortest_n_distances.extend(distances[n[0]:(n[1] + 1)])
         distances_df['Distances'] = shortest_n_distances
-        distances_df['Time'] = idx*3
+        distances_df['Time'] = idx * 3
         distances_by_time.append(distances_df)
     return pd.concat(distances_by_time)
+
 
 def PlotClosestN(folder, extension, ax, log=False, cells=(1, 3)):
     '''Plots specified range of nearby cells as boxplots with or without log transformation'''
@@ -129,10 +132,10 @@ def calculatedistances(file, mutant, treatment, replicate, cells=(1, 3)):
         x1, y1 = points.iloc[origin_cell, :]
         for other_cell in np.arange(points.shape[0]):
             x2, y2 = points.iloc[other_cell, :]
-            distance = abs(math.sqrt((x2-x1)**2 + (y2-y1)**2))
+            distance = abs(math.sqrt((x2 - x1)**2 + (y2 - y1)**2))
             distances.append(distance)
         distances = sorted(distances)
-        shortest_n_distances.extend(distances[cells[0]:(cells[1]+1)])
+        shortest_n_distances.extend(distances[cells[0]:(cells[1] + 1)])
     distances_df['Distances'] = shortest_n_distances
     distances_df['Mutant'] = mutant
     if replicate != 1:
@@ -161,10 +164,11 @@ def Plot_Logmean(folder, mutants, treatments, replicates, ax, vs_count=False, ce
     to_plot = pd.concat(dfs)
     if vs_count:
         sns.scatterplot(x='Cells', y='Log_Mean_Distances', hue='Condition', style='Condition', data=to_plot, ax=ax)
-        #for line in range(0, to_plot.shape[0]):
-             #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
+        # for line in range(0, to_plot.shape[0]):
+        #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
     else:
         sns.pointplot(x="Mutant", y='Log_Mean_Distances', hue='Condition', data=to_plot, ci=68, join=False, dodge=.25, ax=ax)
+
 
 def calculatedistances_logmean(file, mutant, treatment, vs_count, cells=(1, 3)):
     '''Calculates the average log distance to neighbors as defined by the cells argument and returns as a DataFrame in proper plotting format'''
@@ -183,11 +187,12 @@ def calculatedistances_logmean(file, mutant, treatment, vs_count, cells=(1, 3)):
     for length in shortest_n_distances:
         logs.append(math.log(length))
     if vs_count:
-        distances_df = {'Log_Mean_Distances':[np.mean(logs)], 'Cells':[points.shape[0]], 'Condition':[treatment], 'Mutant':[mutant]}
+        distances_df = {'Log_Mean_Distances': [np.mean(logs)], 'Cells': [points.shape[0]], 'Condition': [treatment], 'Mutant': [mutant]}
     else:
-        distances_df = {'Log_Mean_Distances':[np.mean(logs)], 'Mutant':[mutant], 'Condition':[treatment]}
+        distances_df = {'Log_Mean_Distances': [np.mean(logs)], 'Mutant': [mutant], 'Condition': [treatment]}
     distances_df = pd.DataFrame(distances_df)
     return distances_df
+
 
 def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     '''Plots the Ripley's K Estimate in comparison to the Poisson for a range of radii'''
@@ -204,9 +209,9 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
         reps = []
         for replicate in range(1, replicates + 1):
             if replicate != 1:
-                file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+str(replicate)+".csv")
+                file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + str(replicate) + ".csv")
             else:
-                file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+".csv")
+                file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + ".csv")
             points = file.loc[:, "X":"Y"].values
             reps.append(points)
         Kests = []
@@ -235,9 +240,9 @@ def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
             reps = []
             for replicate in range(1, replicates + 1):
                 if replicate != 1:
-                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+str(replicate)+".csv")
+                    file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + str(replicate) + ".csv")
                 else:
-                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+".csv")
+                    file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + ".csv")
                 points = file.loc[:, "X":"Y"].values
                 reps.append(points)
             Kests = []
@@ -269,7 +274,7 @@ def PlotRipleysK_TimeCourse(folder, extensions, timepoint, ax):
     data = np.vstack((r, poisson))
     treatments = []
     for idx, extension in enumerate(extensions):
-        file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+extension+'_'+str(timepoint)+".csv")
+        file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + extension + '_' + str(timepoint) + ".csv")
         points = file.loc[:, "X":"Y"].values
         treatments.append(points)
     Kests = []
