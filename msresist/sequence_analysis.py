@@ -3,7 +3,8 @@
 import os
 import re
 import math
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -350,12 +351,17 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 def MotifPam250Scores(seqs):
     """ Calculate all pairwise pam250 distances and generate dictionary """
     n = len(seqs)
-    out = np.zeros((n, n), dtype=int)
 
-    e = ThreadPoolExecutor(max_workers=32)
-    for ii in range(n):
-        e.submit(innerloop, seqs, ii, out)
-    e.shutdown()
+    out = np.zeros((n, n), dtype=int)
+    shm = shared_memory.SharedMemory(create=True, size=out.nbytes)
+    out = np.ndarray(out.shape, dtype=out.dtype, buffer=shm.buf)
+
+    with ProcessPoolExecutor(max_workers=32) as e:
+        for ii in range(0, n, 500):
+            e.submit(innerloop, seqs, ii, 500, shm.name, out.dtype, n)
+
+    out = out.copy()
+    shm.unlink()
 
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
@@ -364,10 +370,15 @@ def MotifPam250Scores(seqs):
     return out
 
 
-def innerloop(seqs, ii, out):
-    ii += 1
-    for jj in range(ii):
-        out[ii-1, jj] = pairwise_score(seqs[ii-1], seqs[jj])
+def innerloop(seqs, ii, endi, shm_name, ddtype, n):
+    existing_shm = shared_memory.SharedMemory(name=shm_name)
+    out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
+
+    for idxx in range(ii, ii + endi):
+        for jj in range(idxx + 1):
+            out[idxx, jj] = pairwise_score(seqs[idxx], seqs[jj])
+
+    existing_shm.close()
 
 
 def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
