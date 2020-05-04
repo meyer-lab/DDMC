@@ -126,7 +126,7 @@ def makeFigure():
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
-    plotMeasuredVsPredicted(ax[3:6], plsr, centers, y)
+    plotActualVsPredicted(ax[3:6], plsr, centers, y)
 
     # -------- Cross-validation 2 -------- #
 
@@ -137,7 +137,7 @@ def makeFigure():
     gs = pd.read_csv("msresist/data/Model/20200320-GridSearch_pam250_CVWC_wPC9.csv")
     gs[gs["#Components"] == 2].head(10)
     plotGridSearch(ax[7], gs)
-    plotMeasuredVsPredicted(ax[8:11], CoCl_plsr, d, y)
+    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y)
     plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
     plotclusteraverages(ax[13], centers.T, all_lines)
 
