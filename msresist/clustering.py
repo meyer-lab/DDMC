@@ -79,9 +79,8 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info, self.ncl, self.GMMweight,
-                                                                                    self.distance_method,
-                                                                                    self.max_n_iter, self.n_runs)
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info,
+                                            self.ncl, self.GMMweight, self.distance_method, self.max_n_iter, self.n_runs)
         return self
 
     def transform(self, X):
@@ -103,15 +102,15 @@ class MassSpecClustering(BaseEstimator):
         won't work since all sequences are passed. """
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
 
-        labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl,)
-        return labels
+#         labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.Seq1Seq2ToScoreDict, self.labels_)
+        return self.labels_
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
 
-        _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl,)
-        return np.mean(scores)
+#         _, scores = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.Seq1Seq2ToScoreDict, self.labels_)
+        return self.scores_
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
