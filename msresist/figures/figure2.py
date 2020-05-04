@@ -91,7 +91,9 @@ def makeFigure():
 #     ax[9].imshow(hm_erl)
 #     ax[9].axis("off")
 
+
     # Add subplot labels
     subplotLabel(ax)
-
+    
     return f
+

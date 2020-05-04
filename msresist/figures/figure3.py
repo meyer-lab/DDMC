@@ -8,13 +8,13 @@ import scipy as sp
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from msresist.clustering import MassSpecClustering
 from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
-from msresist.plsr import Q2Y_across_components, R2Y_across_components
+from msresist.plsr import Q2Y_across_components, R2Y_across_components, Q2Y_across_comp_manual
 from msresist.sequence_analysis import preprocess_seqs
 from msresist.figures.figure1 import pca_dfs
 import matplotlib.colors as colors
@@ -115,8 +115,8 @@ def makeFigure():
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "PAM250"
-    ncl = 4
-    GMMweight = 0.25
+    ncl = 10
+    GMMweight = 10
     ncomp = 2
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=5).fit(d, y)
@@ -126,7 +126,7 @@ def makeFigure():
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
-    plotMeasuredVsPredicted(ax[3:6], plsr, centers, y)
+    plotActualVsPredicted(ax[3:6], plsr, centers, y, 1)
 
     # -------- Cross-validation 2 -------- #
 
@@ -137,7 +137,7 @@ def makeFigure():
     gs = pd.read_csv("msresist/data/Model/20200320-GridSearch_pam250_CVWC_wPC9.csv")
     gs[gs["#Components"] == 2].head(10)
     plotGridSearch(ax[7], gs)
-    plotMeasuredVsPredicted(ax[8:11], CoCl_plsr, d, y)
+    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y, 2)
     plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
     plotclusteraverages(ax[13], centers.T, all_lines)
 
@@ -180,7 +180,7 @@ def plotGridSearch(ax, gs):
 
 def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     """ Plot R2Y/Q2Y variance explained by each component. """
-    Q2Y = Q2Y_across_components(model, X, Y, cv, b)
+    Q2Y = Q2Y_across_comp_manual(model, X, Y, cv, b)
     R2Y = R2Y_across_components(model, X, Y, cv, b)
 
     range_ = np.arange(1, b)
@@ -194,19 +194,50 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     ax.legend(loc=0)
 
 
-def plotMeasuredVsPredicted(ax, plsr_model, X, Y):
+def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
+    if y_pred == "cross-validation":
+#         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
+        cols = X.columns
+        y_ = np.array(Y.copy().reset_index().drop("Lines", axis=1))
+        X = np.array(X)
+        Y_predictions = []
+        if cv == 1:
+            for train_index, test_index in LeaveOneOut().split(X, y_):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                plsr_model.fit(X_train, Y_train)
+                Y_predict = list(plsr_model.predict(X_test).reshape(3,))
+                Y_predictions.append(Y_predict)
+        if cv == 2:
+            for train_index, test_index in LeaveOneOut().split(X, y_):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                X_train = pd.DataFrame(X_train)
+                X_train.columns = cols
+                plsr_model.fit(pd.DataFrame(X_train), Y_train)
+                Y_predict = list(plsr_model.predict(pd.DataFrame(X_test)).reshape(3,))
+                Y_predictions.append(Y_predict)
+
+        Y_predictions = np.array(Y_predictions)
+        ylabel = "Predicted"
+    if y_pred == "fit":
+        Y_predictions = plsr_model.fit(X, Y).predict(X)
+        ylabel = "Fit"
     for i, label in enumerate(Y.columns):
         y = Y.iloc[:, i]
         ypred = Y_predictions[:, i]
         ax[i].scatter(y, ypred)
         ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-        ax[i].set_xlabel("Measured", fontsize=11)
-        ax[i].set_ylabel("Predicted", fontsize=11)
+        ax[i].set_xlabel("Actual", fontsize=11)
+        ax[i].set_ylabel(ylabel, fontsize=11)
         ax[i].set_title(label, fontsize=12)
-        ax[i].set_xlim([np.min(y) * 0.9, np.max(y) * 1.1])
-        ax[i].set_ylim([np.min(y) * 0.9, np.max(y) * 1.1])
+
+        spacer = 1.1
+        ax[i].set_xlim(min(list(y) + list(ypred)) * spacer, max(list(y) + list(ypred)) * spacer)
+        ax[i].set_ylim(min(list(y) + list(ypred)) * spacer, max(list(y) + list(ypred)) * spacer)
 
         # Add correlation coefficient
         coeff, _ = sp.stats.pearsonr(ypred, y)

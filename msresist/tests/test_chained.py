@@ -3,7 +3,6 @@ Testing file for the chained methods.
 """
 import unittest
 import numpy as np
-import pandas as pd
 from sklearn.cluster import KMeans
 from ..pre_processing import preprocessing
 from ..clustering import ClusterAverages
