@@ -196,7 +196,7 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
 
 def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
-    if y_pred == "cross_validation":
+    if y_pred == "cross-validation":
 #         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
         y_ = np.array(Y.copy().reset_index().drop("Lines", axis=1))
         X = np.array(X)
