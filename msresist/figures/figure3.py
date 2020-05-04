@@ -115,8 +115,8 @@ def makeFigure():
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "PAM250"
-    ncl = 4
-    GMMweight = 0.25
+    ncl = 10
+    GMMweight = 10
     ncomp = 2
 
     MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=5).fit(d, y)

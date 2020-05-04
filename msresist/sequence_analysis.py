@@ -517,7 +517,7 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
         gmm_pred[gmm_pred == 1] = 0.9999999999999
         gmmp = np.log(1 - gmm_pred)
     else:
-        "Distance method not recognized."
+        "Distance method not regonized"
         raise SystemExit
     return gmmp
 
