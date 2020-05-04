@@ -126,7 +126,7 @@ def makeFigure():
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:6], plsr, centers, y)
+    plotActualVsPredicted(ax[3:6], plsr, centers, y, 1)
 
     # -------- Cross-validation 2 -------- #
 
@@ -137,7 +137,7 @@ def makeFigure():
     gs = pd.read_csv("msresist/data/Model/20200320-GridSearch_pam250_CVWC_wPC9.csv")
     gs[gs["#Components"] == 2].head(10)
     plotGridSearch(ax[7], gs)
-    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y)
+    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y, 2)
     plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
     plotclusteraverages(ax[13], centers.T, all_lines)
 
@@ -194,20 +194,33 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     ax.legend(loc=0)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
 #         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
+        cols = X.columns
         y_ = np.array(Y.copy().reset_index().drop("Lines", axis=1))
         X = np.array(X)
         Y_predictions = []
-        for train_index, test_index in LeaveOneOut().split(X, y_):
-            X_train, X_test = X[train_index], X[test_index]
-            Y_train, Y_test = y_[train_index], y_[test_index]
-            Y_train = sp.stats.zscore(Y_train)
-            plsr_model.fit(X_train, Y_train)
-            Y_predict = list(plsr_model.predict(X_test).reshape(3,))
-            Y_predictions.append(Y_predict)
+        if cv == 1:
+            for train_index, test_index in LeaveOneOut().split(X, y_):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                plsr_model.fit(X_train, Y_train)
+                Y_predict = list(plsr_model.predict(X_test).reshape(3,))
+                Y_predictions.append(Y_predict)
+        if cv == 2:
+            for train_index, test_index in LeaveOneOut().split(X, y_):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                X_train = pd.DataFrame(X_train)
+                X_train.columns = cols
+                plsr_model.fit(pd.DataFrame(X_train), Y_train)
+                Y_predict = list(plsr_model.predict(pd.DataFrame(X_test)).reshape(3,))
+                Y_predictions.append(Y_predict)
+
         Y_predictions = np.array(Y_predictions)
         ylabel = "Predicted"
     if y_pred == "fit":

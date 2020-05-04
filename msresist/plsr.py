@@ -49,10 +49,10 @@ def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
     Q2Ys = []
     cols = X.columns
     Y = np.array(Y.reset_index().drop("Lines", axis=1))
+    X = np.array(X)
     for b in range(1, max_comps):
         # Cross-validation across fixed clusters
         if cv == 1:
-            X = np.array(X)
             model.set_params(n_components=b)
             for train_index, test_index in LeaveOneOut().split(X, Y):
                 X_train, X_test = X[train_index], X[test_index]
@@ -67,7 +67,6 @@ def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
 
         # Chain long cross-validation
         if cv == 2:
-            X = np.array(X)
             model.set_params(plsr__n_components=b)
             for train_index, test_index in LeaveOneOut().split(X, Y):
                 X_train, X_test = X[train_index], X[test_index]
