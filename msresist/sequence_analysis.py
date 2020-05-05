@@ -226,7 +226,7 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm, 
+def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm,
            cl_seqs, ncl, Seq1Seq2ToScoreDict, labels):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
@@ -236,8 +236,8 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm,
 
     binoM = BPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(Allseqs):
-        
-        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, 
+
+        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j,
                                 bg_pwm, cl_seqs, binoM, Seq1Seq2ToScoreDict, labels)
         labels.append(idx)
         scores.append(score)
@@ -245,7 +245,7 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm,
     return np.array(labels), np.array(scores)
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm, 
+def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
                cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
@@ -259,7 +259,7 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
             data_scores[z] = gmmp[j, z]
             seq_scores[z] = BPM_score
             final_scores[z] = BPM_score * GMMweight + gmmp[j, z]
-        scores = ScaleScores(seq_scores, data_scores, GMMweight, 
+        scores = ScaleScores(seq_scores, data_scores, GMMweight,
                              min(seq_scores), min(data_scores), distance_method)
         DataIdx = np.argmin(data_scores)
         SeqIdx = np.argmin(seq_scores)
@@ -271,11 +271,11 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-#             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
-            seq_scores[z] /= len(cl_seqs[z]) #average score per cluster
+            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
+            seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * GMMweight + gmmp[j, z]
-        scores = ScaleScores(seq_scores, data_scores, GMMweight, 
+        scores = ScaleScores(seq_scores, data_scores, GMMweight,
                              max(seq_scores), max(data_scores), distance_method)
         DataIdx = np.argmax(data_scores)
         SeqIdx = np.argmax(seq_scores)
@@ -333,8 +333,8 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
-#         print("run: ", i)
-        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight, 
+        #         print("run: ", i)
+        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight,
                                                        distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter])
@@ -416,15 +416,14 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         binoM = BPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method, 
-                                                     GMMweight, gmmp, j, bg_pwm, 
-                                                     cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
+            score, idx = assignSeqs(ncl, motif, distance_method,
+                                    GMMweight, gmmp, j, bg_pwm,
+                                    cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
 #             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx
 #                                                            SeqWins, DataWins, BothWin, MixWins)
-                
 
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 2 for sl in seq_reassign]:
@@ -447,13 +446,13 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
         m_step(d, gmm, gmmp)
         gmmp = gmm.predict_proba(d)
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
-        
+
         if True in np.isnan(gmmp):
             print("All peptides assigned to the same cluster... Restart.")
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], \
-            "Empty cluster(s) after re-initialization"
+                "Empty cluster(s) after re-initialization"
             store_Clseqs, store_scores = [], []
 
         if len(store_scores) > 2:
@@ -505,7 +504,7 @@ def pairwise_score(seq1: str, seq2: str) -> float:
             continue
         try:
             score += int(MatrixInfo.pam250[(seq1[i], seq2[i])])
-        except:
+        except BaseException:
             score += int(MatrixInfo.pam250[(seq2[i], seq1[i])])
     return score
 
@@ -558,7 +557,7 @@ def BackgroundSeqs(X):
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
-    #Get porportion of psite types in foreground set
+    # Get porportion of psite types in foreground set
     forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -567,7 +566,7 @@ def BackgroundSeqs(X):
     pSf = forw_pSn / forw_tot
     pTf = forw_pTn / forw_tot
 
-    #Import backgroun sequences file
+    # Import backgroun sequences file
     PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
@@ -603,9 +602,9 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
         motif = str(seq)[7 - 5:7 + 6].upper()
         assert len(motif) == 11, \
-        "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
+            "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
         assert motif[5].lower() in pR, \
-        "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
+            "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
             y_seqs.append(Seq(motif, IUPAC.protein))
@@ -686,7 +685,7 @@ def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
-        if i == 5: #Skip central AA
+        if i == 5:  # Skip central AA
             continue
         probs += BPM[aa, i]
     return probs / (len(motif) - 1)

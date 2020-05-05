@@ -84,8 +84,8 @@ def makeFigure():
     adapters = {"GAB1": "Y659-p", "GAB2": "T265-p", "CRK": "Y136-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
     plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
 
-    erks = {"MAPK3":"Y204-p;T202-p", "MAPK1":"Y187-p;T185-p", "MAPK7":"Y221-p"}
-    erks_rn = {"MAPK3":"ERK1", "MAPK1":"ERK2", "MAPK7":"ERK5"}
+    erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
+    erks_rn = {"MAPK3": "ERK1", "MAPK1": "ERK2", "MAPK7": "ERK5"}
 
     plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
 
