@@ -22,20 +22,20 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_ = EM_clustering_opt(X, self.info,
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info,
                                             self.ncl, self.SeqWeight, self.distance_method, self.max_n_iter, self.n_runs)
         return self
 
     def transform(self, X):
         """ calculate cluster averages. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
         centers, _ = ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
@@ -43,17 +43,17 @@ class MassSpecClustering(BaseEstimator):
     def predict(self, X, _Y=None):
         """ Predict the cluster each sequence in ABC belongs to. If this estimator is gridsearched alone it
         won't work since all sequences are passed. """
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        labels, _ = e_step(X, self.distance_method, self.SeqWeight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl)
-        return self.labels_
+        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
+        return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        _, scores = e_step(X, self.distance_method, self.SeqWeight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl)
-        return self.scores_
+        _, scores = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
+        return scores
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """

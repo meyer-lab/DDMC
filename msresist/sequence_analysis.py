@@ -231,24 +231,24 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     scores, products = [], []
     for _ in range(n_runs):
 #         print("run: ", i)
-        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, SeqWeight, 
+        cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight, 
                                                        distance_method, max_n_iter)
         scores.append(score)
-        products.append([cl_seqs, labels, score, n_iter])
+        products.append([cl_seqs, labels, score, n_iter, gmmp])
 
     if distance_method == "Binomial":
         idx = np.argmin(scores)
     elif distance_method == "PAM250":
         idx = np.argmax(scores)
 
-    return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
+    return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4]
 
 
 def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
+    sequences = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
     print("start initialization...")
@@ -278,7 +278,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
-        for j, motif in enumerate(Allseqs):
+        for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, 
                                     j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
@@ -312,17 +312,17 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         if True in np.isnan(gmmp):
             print("bad gmm update")
-            gmmp = np.zeros((len(Allseqs), ncl))
+            gmmp = np.zeros((len(sequences), ncl))
 
         if len(store_scores) > 2:
             # Check convergence
             if store_Clseqs[-1] == store_Clseqs[-2]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, np.array(labels), np.mean(scores), n_iter
+                return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), np.mean(scores), n_iter
+    return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
 
 
 def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, 
@@ -364,17 +364,26 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
 
     return score, idx, SeqIdx, DataIdx
 
-
-def e_step(ABC, distance_method, SeqWeight, gmmp, bg_pwm, cl_seqs, ncl):
+def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
-    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
-    cl_seqs = [ForegroundSeqs(cluster) for cluster in cl_seqs]
-    labels = np.zeros(len(Allseqs))
-    scores = np.zeros(len(Allseqs))
+    d = X.select_dtypes(include=['float64'])
+    sequences = ForegroundSeqs(X["Sequence"])
+    cl_seqs = [ForegroundSeqs(cl) for cl in cl_seqs]
+
+    if distance_method == "Binomial":
+        bg_seqs = BackgroundSeqs(X)
+        bg_pwm = position_weight_matrix(bg_seqs)
+
+    elif distance_method == "PAM250":
+        bg_pwm = False
+
+    labels = np.zeros(len(sequences))
+    scores = np.zeros(len(sequences))
 
     binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
-    for j, motif in enumerate(Allseqs):
+    for j, motif in enumerate(sequences):
+        final_scores = np.zeros(ncl,)
         # Binomial Probability Matrix distance (p-values) between foreground and background sequences
         if distance_method == "Binomial":
             for z in range(ncl):
@@ -386,11 +395,11 @@ def e_step(ABC, distance_method, SeqWeight, gmmp, bg_pwm, cl_seqs, ncl):
         # Average distance between each sequence and any cluster based on PAM250 substitution matrix
         if distance_method == "PAM250":
             for z in range(ncl):
-                PAM250_score =0
+                PAM250_score = 0
                 for seq in cl_seqs[z]:
                     PAM250_score += pairwise_score(motif, seq) 
                 PAM250_score /= len(cl_seqs[z]) 
-                final_scores[z] = gmmp[j, z] + PAM250_score * GMMweight
+                final_scores[z] = gmmp[j, z] + PAM250_score * SeqWeight
             idx = np.argmax(final_scores)
 
         labels[j] = idx
@@ -676,11 +685,11 @@ def preprocess_seqs(X, pYTS):
     return X.iloc[Xidx, :]
 
 
-def ForegroundSeqs(Allseqs):
+def ForegroundSeqs(sequences):
     """ Build Background data set for either "Y", "S", or "T". """
     seqs = []
     yts = ["Y", "T", "S"]
-    for motif in Allseqs:
+    for motif in sequences:
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
         assert motif[5] in yts, "WRONG CENTRAL AMINO ACID" 
