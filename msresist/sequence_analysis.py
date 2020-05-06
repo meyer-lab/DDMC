@@ -4,6 +4,7 @@ import os
 import re
 import math
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -261,8 +262,6 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
             final_scores[z] = BPM_score * GMMweight + gmmp[j, z]
         scores = ScaleScores(seq_scores, data_scores, GMMweight,
                              min(seq_scores), min(data_scores), distance_method)
-        DataIdx = np.argmin(data_scores)
-        SeqIdx = np.argmin(seq_scores)
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
@@ -277,8 +276,6 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
             final_scores[z] = seq_scores[z] * GMMweight + gmmp[j, z]
         scores = ScaleScores(seq_scores, data_scores, GMMweight,
                              max(seq_scores), max(data_scores), distance_method)
-        DataIdx = np.argmax(data_scores)
-        SeqIdx = np.argmax(seq_scores)
 
     idx = np.argmax(scores)
     score = final_scores[idx]
@@ -349,7 +346,6 @@ def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n
 
 def MotifPam250Scores(seqs):
     """ Calculate all pairwise pam250 distances and generate dictionary """
-    from multiprocessing import shared_memory
     n = len(seqs)
 
     out = np.zeros((n, n), dtype=int)
@@ -371,7 +367,6 @@ def MotifPam250Scores(seqs):
 
 
 def innerloop(seqs, ii, endi, shm_name, ddtype, n):
-    from multiprocessing import shared_memory
     existing_shm = shared_memory.SharedMemory(name=shm_name)
     out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
 
@@ -526,7 +521,7 @@ def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels = [0, 0, 0]
-    a = [np.nan]
+
     while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1)
         labels = gmm.predict(d)
