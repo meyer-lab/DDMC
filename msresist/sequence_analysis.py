@@ -4,6 +4,7 @@ import os
 import re
 import math
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -438,7 +439,6 @@ def m_step(d, gmm, gmmp):
 
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
-    from multiprocessing import shared_memory
     n = len(seqs)
 
     out = np.zeros((n, n), dtype=int)
@@ -460,7 +460,6 @@ def MotifPam250Scores(seqs):
 
 
 def innerloop(seqs, ii, endi, shm_name, ddtype, n):
-    from multiprocessing import shared_memory
     existing_shm = shared_memory.SharedMemory(name=shm_name)
     out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
 
