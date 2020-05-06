@@ -368,7 +368,6 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
 def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
-    d = X.select_dtypes(include=['float64'])
     sequences = ForegroundSeqs(X["Sequence"])
     cl_seqs = [ForegroundSeqs(cl) for cl in cl_seqs]
 
@@ -382,7 +381,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     labels = np.zeros(len(sequences))
     scores = np.zeros(len(sequences))
 
-    binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+    binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(sequences):
         final_scores = np.zeros(ncl,)
         # Binomial Probability Matrix distance (p-values) between foreground and background sequences
@@ -414,7 +413,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
 def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
-    labels = [0, 0, 0]
+    labels, gmm_pred = [0, 0, 0], [np.nan]
 
     while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1, max_iterations=10)
@@ -482,7 +481,7 @@ def pairwise_score(seq1: str, seq2: str) -> float:
 
 
 ###------------ Calculating Sequence Distance using a Binomial Probability Matrix ------------------###
-""" Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146 """
+# Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
 def GenerateBPM(cl_seqs, distance_method, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
@@ -553,7 +552,7 @@ def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
-        probs += pval
+        probs += BPM[aa, i]
     return probs / len(motif)
 
 
@@ -668,7 +667,7 @@ def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
         gmm_pred[gmm_pred == 1] = 0.9999999999999
         gmmp = np.log(1 - gmm_pred)
     else:
-        "Distance method not regonized"
+        print("Distance method not regonized")
         raise SystemExit
     return gmmp
 

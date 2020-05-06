@@ -3,7 +3,7 @@
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from msresist.sequence_analysis import EM_clustering_opt
+from msresist.sequence_analysis import EM_clustering_opt, e_step
 
 
 class MassSpecClustering(BaseEstimator):
@@ -21,8 +21,12 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info,
-                                            self.ncl, self.SeqWeight, self.distance_method, self.max_n_iter, self.n_runs)
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info, 
+                                                                                               self.ncl, 
+                                                                                               self.SeqWeight, 
+                                                                                               self.distance_method, 
+                                                                                               self.max_n_iter, 
+                                                                                               self.n_runs)
         return self
 
     def transform(self, X):

@@ -205,7 +205,7 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
         poisson_for_df = np.hstack((poisson_for_df, poisson))
         r_for_df = np.hstack((r_for_df, r))
     data = np.vstack((r_for_df, poisson_for_df))
-    for idx, treatment in enumerate(treatments):
+    for treatment in treatments:
         reps = []
         for replicate in range(1, replicates + 1):
             if replicate != 1:
@@ -236,7 +236,7 @@ def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
     poisson = Kest.poisson(r)
     mutant_dfs = []
     for mutant in mutants:
-        for idx, treatment in enumerate(treatments):
+        for treatment in treatments:
             reps = []
             for replicate in range(1, replicates + 1):
                 if replicate != 1:
@@ -273,7 +273,7 @@ def PlotRipleysK_TimeCourse(folder, extensions, timepoint, ax):
     poisson = Kest.poisson(r)
     data = np.vstack((r, poisson))
     treatments = []
-    for idx, extension in enumerate(extensions):
+    for extension in extensions:
         file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + extension + '_' + str(timepoint) + ".csv")
         points = file.loc[:, "X":"Y"].values
         treatments.append(points)
