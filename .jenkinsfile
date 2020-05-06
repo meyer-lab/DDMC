@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'docker' }
+  agent { label 'aretha' }
   options {
     timeout(time: 24, unit: 'HOURS')
     parallelsAlwaysFailFast()

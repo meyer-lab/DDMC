@@ -4,6 +4,7 @@ import os
 import re
 import math
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, motifs
@@ -231,7 +232,7 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     scores, products = [], []
     for _ in range(n_runs):
 #         print("run: ", i)
-        cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight, 
+        cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight,
                                                        distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp])
@@ -414,7 +415,7 @@ def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels = [0, 0, 0]
-    a = [np.nan]
+
     while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1, max_iterations=10)
         labels = gmm.predict(d)
@@ -575,7 +576,7 @@ def BackgroundSeqs(X):
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
-    #Get porportion of psite types in foreground set
+    # Get porportion of psite types in foreground set
     forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -584,7 +585,7 @@ def BackgroundSeqs(X):
     pSf = forw_pSn / forw_tot
     pTf = forw_pTn / forw_tot
 
-    #Import backgroun sequences file
+    # Import backgroun sequences file
     PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
@@ -620,9 +621,9 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
         motif = str(seq)[7 - 5:7 + 6].upper()
         assert len(motif) == 11, \
-        "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
+            "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
         assert motif[5].lower() in pR, \
-        "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
+            "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
             y_seqs.append(Seq(motif, IUPAC.protein))
