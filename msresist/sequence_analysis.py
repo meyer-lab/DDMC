@@ -16,7 +16,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
+###------------ Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs ------------------###
 
 def pYmotifs(X, names):
     " Generate pY motifs for pre-processing. "
@@ -219,7 +219,7 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
     return ''.join(UP_seq_copy), pidx
 
 
-###------------ EM Co-Clustering method using a PAM250 or binomial probabilities ------------------###
+###------------ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix ------------------###
 # Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
 
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
@@ -277,10 +277,10 @@ def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
 
         # E step: Assignment of each peptide based on data and seq
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
-        binoM, freqs = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+        binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(Allseqs):
             score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, 
-                                    j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1], freqs)
+                                    j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -375,7 +375,7 @@ def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm,
     labels, scores = [], []
 
     SeqIdx, DataIdx, BothWin, MixWins = 0, 0, 0, 0
-    binoM, freqs = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+    binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(Allseqs):
         
         score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, 
@@ -412,7 +412,7 @@ def m_step(d, gmm, gmmp):
         gmm.distributions[i].fit(d, weights=weights)
 
 
-###------------ Calculating sequence distance using a PAM250 transition matrx ------------------###
+###------------ Calculating Sequence Distance using a PAM250 transition matrx ------------------###
 
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
@@ -460,12 +460,13 @@ def pairwise_score(seq1: str, seq2: str) -> float:
     return score
 
 
-###------------ Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005  ------------------###
+###------------ Calculating Sequence Distance using a Binomial Probability Matrix ------------------###
+""" Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146 """
 
 def GenerateBPM(cl_seqs, distance_method, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
     if distance_method == "Binomial":
-        bpm, freqs = [], []
+        bpm = []
         for seqs in cl_seqs:
             f = frequencies(seqs)
             bpm.append(BinomialMatrix(len(seqs), f, bg_pwm))
@@ -473,7 +474,7 @@ def GenerateBPM(cl_seqs, distance_method, bg_pwm):
     if distance_method == "PAM250":
         bpm = False
         freqs = False
-    return bpm, freqs
+    return bpm
 
 
 def position_weight_matrix(seqs):
@@ -529,14 +530,11 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
     return ''.join(motif)
 
 
-def MeanBinomProbs(BPM, motif, freqs):
+def MeanBinomProbs(BPM, motif):
     """ Take the mean of all pvalues corresponding to each motif residue. """
     probs = 0.0
     for i, aa in enumerate(motif):
-        occ_ = freqs[int(aa), i]
-        pval = BPM[aa, i]
-        if pval < -3 and occ_ > 2:
-            probs += pval
+        probs += pval
     return probs / len(motif)
 
 
