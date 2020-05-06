@@ -5,8 +5,8 @@ import os
 import pandas as pd
 import numpy as np
 import scipy as sp
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+# import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression

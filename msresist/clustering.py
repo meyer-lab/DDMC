@@ -103,6 +103,7 @@ class MassSpecClustering(BaseEstimator):
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_"])
 
 #         labels, _ = e_step(X, self.distance_method, self.GMMweight, self.gmmp_, self.bg_pwm_, self.cl_seqs_, self.ncl, self.Seq1Seq2ToScoreDict, self.labels_)
+# TODO: old way of PAM250 
         return self.labels_
 
     def score(self, X, _Y=None):
