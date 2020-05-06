@@ -116,10 +116,10 @@ def makeFigure():
     # R2Y/Q2Y
     distance_method = "PAM250"
     ncl = 10
-    GMMweight = 10
+    SeqWeight = 10
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=5).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=5).fit(d, y)
     centers = MSC.transform(d)
 
     plsr = PLSRegression(n_components=ncomp)
@@ -130,7 +130,7 @@ def makeFigure():
 
     # -------- Cross-validation 2 -------- #
 
-    CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
+    CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
     plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
