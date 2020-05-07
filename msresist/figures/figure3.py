@@ -5,15 +5,15 @@ import os
 import pandas as pd
 import numpy as np
 import scipy as sp
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+# import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from msresist.clustering import MassSpecClustering
-from msresist.parameter_tuning import MSclusPLSR_tuning, kmeansPLSR_tuning
+from msresist.parameter_tuning import MSclusPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components, Q2Y_across_comp_manual
 from msresist.sequence_analysis import preprocess_seqs
 from msresist.figures.figure1 import pca_dfs
@@ -116,10 +116,10 @@ def makeFigure():
     # R2Y/Q2Y
     distance_method = "PAM250"
     ncl = 10
-    GMMweight = 10
+    SeqWeight = 10
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=5).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=5).fit(d, y)
     centers = MSC.transform(d)
 
     plsr = PLSRegression(n_components=ncomp)
@@ -130,7 +130,7 @@ def makeFigure():
 
     # -------- Cross-validation 2 -------- #
 
-    CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, GMMweight=GMMweight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
+    CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ('plsr', PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
     plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
