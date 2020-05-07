@@ -164,10 +164,11 @@ def Plot_Logmean(folder, mutants, treatments, replicates, ax, vs_count=False, ce
     to_plot = pd.concat(dfs)
     if vs_count:
         sns.scatterplot(x='Cells', y='Log_Mean_Distances', hue='Condition', style='Condition', data=to_plot, ax=ax)
-        #for line in range(0, to_plot.shape[0]):
-             #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
+        # for line in range(0, to_plot.shape[0]):
+        #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
     else:
         sns.pointplot(x="Mutant", y='Log_Mean_Distances', hue='Condition', data=to_plot, ci=68, join=False, dodge=.25, ax=ax)
+
 
 def calculatedistances_logmean(file, mutant, treatment, vs_count, cells=(1, 3)):
     '''Calculates the average log distance to neighbors as defined by the cells argument and returns as a DataFrame in proper plotting format'''
@@ -275,7 +276,7 @@ def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
     treatment_dfs = []
     for idx, extension in enumerate(extensions):
         reps = []
-        file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+extension+".csv")
+        file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + extension + ".csv")
         points = file.loc[:, "X":"Y"].values
         treat_array = (Kest(data=points, radii=r, mode='ripley') / poisson)
         df = pd.DataFrame(treat_array)
@@ -301,9 +302,9 @@ def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
             reps = []
             for replicate in range(1, replicates + 1):
                 if replicate != 1:
-                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+str(replicate)+".csv")
+                    file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + str(replicate) + ".csv")
                 else:
-                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+".csv")
+                    file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + mutant + treatment + ".csv")
                 points = file.loc[:, "X":"Y"].values
                 reps.append(points)
             Kests = []
@@ -327,6 +328,7 @@ def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     return df.groupby(['Mutant', 'Treatment']).mean()
+
 
 def PlotRipleysK_TimeCourse(folder, extensions, timepoint, ax):
     '''Plots the Ripley's K Estimate for a series of images over time by condition, compared to the Poisson.'''
