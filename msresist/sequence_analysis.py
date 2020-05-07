@@ -231,9 +231,9 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
-#         print("run: ", i)
+        #         print("run: ", i)
         cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight,
-                                                       distance_method, max_n_iter)
+                                                             distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp])
 
@@ -280,13 +280,13 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(sequences):
-            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, 
-                                    j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
+            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp,
+                                                     j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx,
-                                                           SeqWins, DataWins, BothWin, MixWins)
+                                                            SeqWins, DataWins, BothWin, MixWins)
 
         print("SeqW: ", SeqWins, "DataW: ", DataWins, "BothWin: ", BothWin, "MixWins: ", MixWins)
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
@@ -326,7 +326,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
 
 
-def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, 
+def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
                cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
@@ -351,8 +351,8 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-#             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
-            seq_scores[z] /= len(cl_seqs[z]) #average score per cluster
+            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
+            seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
         DataIdx = np.argmax(data_scores)
@@ -364,6 +364,7 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
     NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
 
     return score, idx, SeqIdx, DataIdx
+
 
 def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
@@ -397,8 +398,8 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
             for z in range(ncl):
                 PAM250_score = 0
                 for seq in cl_seqs[z]:
-                    PAM250_score += pairwise_score(motif, seq) 
-                PAM250_score /= len(cl_seqs[z]) 
+                    PAM250_score += pairwise_score(motif, seq)
+                PAM250_score /= len(cl_seqs[z])
                 final_scores[z] = gmmp[j, z] + PAM250_score * SeqWeight
             idx = np.argmax(final_scores)
 
@@ -690,6 +691,6 @@ def ForegroundSeqs(sequences):
     for motif in sequences:
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
-        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID" 
+        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
