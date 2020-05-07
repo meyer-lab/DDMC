@@ -228,14 +228,14 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     ax.set_title(mutant)
 
 
-def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
+def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, replicates, r, ax):
     '''Plots a bar graph of the Ripley's K Estimate values for all mutants and conditions in comparison to the Poisson at a discrete radius.
     Note that radius needs to be input as a 1D array for the RipleysKEstimator to work'''
     Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
     poisson = Kest.poisson(r)
     mutant_dfs = []
-    for mutant in mutants:
-        for treatment in treatments:
+    for z, mutant in enumerate(mutants):
+        for j, treatment in enumerate(treatments):
             reps = []
             for replicate in range(1, replicates + 1):
                 if replicate != 1:
@@ -255,8 +255,8 @@ def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
                 treat_array = Kests[0]
             df = pd.DataFrame(treat_array)
             df.columns = ['K Estimate']
-            df['Mutant'] = mutant
-            df['Treatment'] = treatment
+            df['AXL mutants Y->F'] = xticklabels[z]
+            df['Treatment'] = legendlabels[j]
             #poisson_df = pd.DataFrame(poisson)
             #poisson_df.columns = ['K Estimate']
             #poisson_df['Mutant'] = mutant
@@ -264,8 +264,8 @@ def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
             #df = pd.concat([poisson_df, df])
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
-    sns.barplot(x='Mutant', y='K Estimate', hue='Treatment', data=df, ci=68, ax=ax)
-    ax.set_title('K Estimate at Radius of ' + str(r[0]) + ' Normalized to Poisson')
+    sns.barplot(x='AXL mutants Y->F', y='K Estimate', hue='Treatment', data=df, ci=68, ax=ax)
+    ax.set_title('Radius of ' + str(r[0]) + ' Normalized to Poisson')
 
 
 def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
