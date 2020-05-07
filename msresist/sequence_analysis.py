@@ -17,7 +17,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-###------------ Mapping to Uniprot's proteome and Extension of Phosphosite Sequences ------------------###
+###------------ Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs ------------------###
 
 def pYmotifs(X, names):
     " Generate pY motifs for pre-processing. "
@@ -60,8 +60,8 @@ def CountPsiteTypes(X, cA):
         for i in seq:
             if i.islower():
                 pp += 1
-            if pp > 1:
-                primed += 1
+        if pp > 1:
+            primed += 1
 
     return pY, pS, pT, primed
 
@@ -220,33 +220,113 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
     return ''.join(UP_seq_copy), pidx
 
 
-###------------ Motif Discovery inspired by Schwartz & Gygi, Nature Biotech 2005  ------------------###
+###------------ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix ------------------###
 # Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
 
 AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058, "E": 0.037, "G": 0.074, "H": 0.029, "I": 0.038, "L": 0.076,
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def e_step(ABC, distance_method, GMMweight, gmmp, bg_pwm,
-           cl_seqs, ncl, Seq1Seq2ToScoreDict, labels):
-    """ Expectation step of the EM algorithm. Used for predict and score in
-    clustering.py """
-    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
-    cl_seqs = [ForegroundSeqs(cluster) for cluster in cl_seqs]
-    labels, scores = [], []
-
-    binoM = BPM(cl_seqs, distance_method, bg_pwm)
-    for j, motif in enumerate(Allseqs):
-
-        score, idx = assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j,
-                                bg_pwm, cl_seqs, binoM, Seq1Seq2ToScoreDict, labels)
-        labels.append(idx)
+def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs):
+    """ Run Coclustering n times and return the best fit. """
+    scores, products = [], []
+    for _ in range(n_runs):
+#         print("run: ", i)
+        cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight,
+                                                       distance_method, max_n_iter)
         scores.append(score)
-#         SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx)
-    return np.array(labels), np.array(scores)
+        products.append([cl_seqs, labels, score, n_iter, gmmp])
+
+    if distance_method == "Binomial":
+        idx = np.argmin(scores)
+    elif distance_method == "PAM250":
+        idx = np.argmax(scores)
+
+    return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4]
 
 
-def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
+    """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
+    ABC = pd.concat([info, data.T], axis=1)
+    d = np.array(data.T)
+    sequences = ForegroundSeqs(list(ABC["Sequence"]))
+
+    # Initialize with gmm clusters and generate gmm pval matrix
+    print("start initialization...")
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
+    print("gmm initialized")
+
+    # Background sequences
+    if distance_method == "Binomial":
+        bg_seqs = BackgroundSeqs(ABC)
+        bg_pwm = position_weight_matrix(bg_seqs)
+        Seq1Seq2ToScores = False
+
+    elif distance_method == "PAM250":
+        # Compute all pairwsie distances and generate seq vs seq to score dictionary
+        seqs = [s.upper() for s in ABC["Sequence"]]
+        Seq1Seq2ToScores = MotifPam250Scores(seqs)
+        bg_pwm = False
+
+    # EM algorithm
+    store_Clseqs, store_scores, store_labels = [], [], []
+    store_labels.append(gmm.predict(d))
+    for n_iter in range(max_n_iter):
+        print("N_ITER: ", n_iter)
+        labels, scores = [], []
+        seq_reassign = [[] for i in range(ncl)]
+
+        # E step: Assignment of each peptide based on data and seq
+        SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
+        binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+        for j, motif in enumerate(sequences):
+            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, 
+                                    j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
+            labels.append(idx)
+            scores.append(score)
+            seq_reassign[idx].append(motif)
+            SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx,
+                                                           SeqWins, DataWins, BothWin, MixWins)
+
+        print("SeqW: ", SeqWins, "DataW: ", DataWins, "BothWin: ", BothWin, "MixWins: ", MixWins)
+        # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
+        if True in [len(sl) < 2 for sl in seq_reassign]:
+            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
+            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
+            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
+            store_Clseqs, store_scores = [], []
+            continue
+
+        # Store current results
+        store_Clseqs.append(cl_seqs)
+        store_scores.append(np.mean(scores))
+        store_labels.append(labels)
+        print(np.mean(scores))
+
+        # M step: Update motifs, cluster centers, and gmm probabilities
+        cl_seqs = seq_reassign
+        gmmp = HardAssignments(labels, ncl)
+        m_step(d, gmm, gmmp)
+        gmmp = gmm.predict_proba(d)
+        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
+
+        if True in np.isnan(gmmp):
+            print("bad gmm update")
+            gmmp = np.zeros((len(sequences), ncl))
+
+        if len(store_scores) > 2:
+            # Check convergence
+            if store_Clseqs[-1] == store_Clseqs[-2]:
+                cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
+                return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
+
+    print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
+    cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
+    return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
+
+
+def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, 
                cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
@@ -257,11 +337,12 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
         for z in range(ncl):
             NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
-            data_scores[z] = gmmp[j, z]
             seq_scores[z] = BPM_score
-            final_scores[z] = BPM_score * GMMweight + gmmp[j, z]
-        scores = ScaleScores(seq_scores, data_scores, GMMweight,
-                             min(seq_scores), min(data_scores), distance_method)
+            data_scores[z] = gmmp[j, z]
+            final_scores[z] = BPM_score * SeqWeight + gmmp[j, z]
+        DataIdx = np.argmin(data_scores)
+        SeqIdx = np.argmin(seq_scores)
+        idx = np.argmin(final_scores)
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
@@ -270,82 +351,93 @@ def assignSeqs(ncl, motif, distance_method, GMMweight, gmmp, j, bg_pwm,
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
-            seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
+#             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
+            seq_scores[z] /= len(cl_seqs[z]) #average score per cluster
             data_scores[z] = gmmp[j, z]
-            final_scores[z] = seq_scores[z] * GMMweight + gmmp[j, z]
-        scores = ScaleScores(seq_scores, data_scores, GMMweight,
-                             max(seq_scores), max(data_scores), distance_method)
+            final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
+        DataIdx = np.argmax(data_scores)
+        SeqIdx = np.argmax(seq_scores)
+        idx = np.argmax(final_scores)
 
-    idx = np.argmax(scores)
     score = final_scores[idx]
-
     assert math.isnan(score) == False and math.isinf(score) == False, "final score is either \
     NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s" % (motif, gmmp, np.count_nonzero(gmmp))
 
-    return score, idx
+    return score, idx, SeqIdx, DataIdx
 
-
-def ScaleScores(seq_scores, data_scores, weight, sM, dM, distance_method):
-    """ Make the best scores 1 to easily scale with GMMweight  """
-    final_scores = []
-    if sM == 0:
-        sM = 0.00000000001
-    if distance_method == "PAM250":
-        for i, data_s in enumerate(data_scores):
-            dS = data_s - dM
-            sS = (seq_scores[i] - sM) * weight
-            final_scores.append(dS + sS)
-    if distance_method == "Binomial":
-        for i, data_s in enumerate(data_scores):
-            dS = data_s / dM
-            sS = (seq_scores[i] / sM) * weight
-            final_scores.append(dS + sS)
-    return final_scores
-
-
-def BPM(cl_seqs, distance_method, bg_pwm):
-    """ Generate binomial probability matrix for each cluster of sequences """
-    if distance_method == "Binomial":
-        bpm = []
-        for seqs in cl_seqs:
-            freqs = frequencies(seqs)
-            bpm.append(BinomialMatrix(len(seqs), freqs, bg_pwm))
-    if distance_method == "PAM250":
-        bpm = False
-    return bpm
-
-
-def TranslateMotifsToIdx(motif, aa):
-    """ Convert amino acid strings into numbers. """
-    ResToNum = dict(zip(aa, np.arange(len(aa))))
-    NumMotif = []
-    for res in list(motif):
-        NumMotif.append(ResToNum[res.upper()])
-    assert len(NumMotif) == len(motif)
-    return NumMotif
-
-
-def EM_clustering_opt(data, info, ncl, GMMweight, distance_method, max_n_iter, n_runs):
-    """ Run Coclustering n times and return the best fit. """
-    scores, products = [], []
-    for _ in range(n_runs):
-        #         print("run: ", i)
-        cl_seqs, labels, score, n_iter = EM_clustering(data, info, ncl, GMMweight,
-                                                       distance_method, max_n_iter)
-        scores.append(score)
-        products.append([cl_seqs, labels, score, n_iter])
+def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
+    """ Expectation step of the EM algorithm. Used for predict and score in
+    clustering.py """
+    sequences = ForegroundSeqs(X["Sequence"])
+    cl_seqs = [ForegroundSeqs(cl) for cl in cl_seqs]
 
     if distance_method == "Binomial":
-        idx = np.argmin(scores)
+        bg_seqs = BackgroundSeqs(X)
+        bg_pwm = position_weight_matrix(bg_seqs)
+
     elif distance_method == "PAM250":
-        idx = np.argmax(scores)
+        bg_pwm = False
 
-    return products[idx][0], products[idx][1], products[idx][2], products[idx][3]
+    labels = np.zeros(len(sequences))
+    scores = np.zeros(len(sequences))
 
+    binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+    for j, motif in enumerate(sequences):
+        final_scores = np.zeros(ncl,)
+        # Binomial Probability Matrix distance (p-values) between foreground and background sequences
+        if distance_method == "Binomial":
+            for z in range(ncl):
+                NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
+                BPM_score = MeanBinomProbs(binomials[z], NumMotif)
+                final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
+            idx = np.argmin(final_scores)
+
+        # Average distance between each sequence and any cluster based on PAM250 substitution matrix
+        if distance_method == "PAM250":
+            for z in range(ncl):
+                PAM250_score = 0
+                for seq in cl_seqs[z]:
+                    PAM250_score += pairwise_score(motif, seq) 
+                PAM250_score /= len(cl_seqs[z]) 
+                final_scores[z] = gmmp[j, z] + PAM250_score * SeqWeight
+            idx = np.argmax(final_scores)
+
+        labels[j] = idx
+        scores[j] = final_scores[idx]
+
+    return np.array(labels), np.array(scores)
+
+
+###------------ Clustering Phosphorylation Levels with a Gaussian Mixture Model ------------------###
+
+def gmm_initialize(X, ncl, distance_method):
+    """ Return peptides data set including its labels and pvalues matrix. """
+    d = X.select_dtypes(include=['float64'])
+    labels, gmm_pred = [0, 0, 0], [np.nan]
+
+    while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1, max_iterations=10)
+        labels = gmm.predict(d)
+        gmm_pred = gmm.predict_proba(d)
+
+    gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
+
+    X["GMM_cluster"] = labels
+    init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
+    return gmm, init_clusters, gmmp
+
+
+def m_step(d, gmm, gmmp):
+    """ Bypass gmm fitting step by working directly with the distribution objects. """
+    for i in range(gmmp.shape[1]):
+        weights = gmmp[:, i]
+        gmm.distributions[i].fit(d, weights=weights)
+
+
+###------------ Calculating Sequence Distance using a PAM250 transition matrx ------------------###
 
 def MotifPam250Scores(seqs):
-    """ Calculate all pairwise pam250 distances and generate dictionary """
+    """ Calculate and store all pairwise pam250 distances before starting """
     n = len(seqs)
 
     out = np.zeros((n, n), dtype=int)
@@ -377,172 +469,101 @@ def innerloop(seqs, ii, endi, shm_name, ddtype, n):
     existing_shm.close()
 
 
-def EM_clustering(data, info, ncl, GMMweight, distance_method, max_n_iter):
-    """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    ABC = pd.concat([info, data.T], axis=1)
-    d = np.array(data.T)
-    Allseqs = ForegroundSeqs(list(ABC["Sequence"]))
-
-    # Initialize with gmm clusters and generate gmm pval matrix
-    print("start initialization...")
-    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-    print("gmm initialized")
-
-    # Background sequences
-    if distance_method == "Binomial":
-        bg_seqs = BackgroundSeqs(ABC)
-        bg_pwm = position_weight_matrix(bg_seqs)
-        Seq1Seq2ToScores = False
-
-    elif distance_method == "PAM250":
-        # Compute all pairwsie distances and generate seq vs seq to score dictionary
-        seqs = [s.upper() for s in ABC["Sequence"]]
-        Seq1Seq2ToScores = MotifPam250Scores(seqs)
-        bg_pwm = False
-
-    # EM algorithm
-    store_Clseqs, store_scores, store_labels = [], [], []
-    store_labels.append(gmm.predict(d))
-    for n_iter in range(max_n_iter):
-        print("N_ITER: ", n_iter)
-        labels, scores = [], []
-        seq_reassign = [[] for i in range(ncl)]
-
-        # E step: Assignment of each peptide based on data and seq
-        binoM = BPM(cl_seqs, distance_method, bg_pwm)
-        for j, motif in enumerate(Allseqs):
-            score, idx = assignSeqs(ncl, motif, distance_method,
-                                    GMMweight, gmmp, j, bg_pwm,
-                                    cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
-            labels.append(idx)
-            scores.append(score)
-            seq_reassign[idx].append(motif)
-#             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx
-#                                                            SeqWins, DataWins, BothWin, MixWins)
-
-        # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 2 for sl in seq_reassign]:
-            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
-            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
-            store_Clseqs, store_scores = [], []
-            continue
-
-        # Store current results
-        store_Clseqs.append(cl_seqs)
-        store_scores.append(np.mean(scores))
-        store_labels.append(labels)
-        print(np.mean(scores))
-
-        # M step: Update motifs, cluster centers, and gmm probabilities
-        cl_seqs = seq_reassign
-        gmmp = HardAssignments(labels, ncl)
-        m_step(d, gmm, gmmp)
-        gmmp = gmm.predict_proba(d)
-        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
-
-        if True in np.isnan(gmmp):
-            print("All peptides assigned to the same cluster... Restart.")
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
-            assert [len(sublist) > 0 for sublist in cl_seqs], \
-                "Empty cluster(s) after re-initialization"
-            store_Clseqs, store_scores = [], []
-
-        if len(store_scores) > 2:
-            # Check convergence
-            if store_Clseqs[-1] == store_Clseqs[-2]:
-                cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, np.array(labels), np.mean(scores), n_iter
-
-    print("convergence has not been reached. Clusters: %s GMMweight: %s" % (ncl, GMMweight))
-    cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), np.mean(scores), n_iter
-
-
-def m_step(d, gmm, gmmp):
-    """ Bypass gmm fitting step by working directly with the distribution objects. """
-    for i in range(gmmp.shape[1]):
-        weights = gmmp[:, i]
-        gmm.distributions[i].fit(d, weights=weights)
-
-
-def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
-    """ Assess if the finala scaled score was determined by data or sequence """
-    if SeqIdx == idx and SeqIdx != DataIdx:
-        SeqWins += 1
-    if DataIdx == idx and DataIdx != SeqIdx:
-        DataWins += 1
-    if DataIdx == idx and SeqIdx == idx:
-        BothWin += 1
-    if idx != SeqIdx and idx != DataIdx:
-        MixWins += 1
-    return SeqWins, DataWins, BothWin, MixWins
-
-
-def HardAssignments(labels, ncl):
-    """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
-    m = []
-    for idx in labels:
-        l = [0] * ncl
-        l[idx] = 1.0
-        m.append(l)
-    return np.array(m)
-
-
 def pairwise_score(seq1: str, seq2: str) -> float:
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0
     for i in range(len(seq1)):
-        if i == 5:
-            continue
-        try:
-            score += int(MatrixInfo.pam250[(seq1[i], seq2[i])])
-        except BaseException:
-            score += int(MatrixInfo.pam250[(seq2[i], seq1[i])])
+        if (seq1[i], seq2[i]) in MatrixInfo.pam250:
+            score += MatrixInfo.pam250[(seq1[i], seq2[i])]
+        else:
+            score += MatrixInfo.pam250[(seq2[i], seq1[i])]
     return score
 
 
-def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
-    """ Make data and sequencec scores as close in magnitude as possible. """
+###------------ Calculating Sequence Distance using a Binomial Probability Matrix ------------------###
+# Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
+
+def GenerateBPM(cl_seqs, distance_method, bg_pwm):
+    """ Generate binomial probability matrix for each cluster of sequences """
+    if distance_method == "Binomial":
+        bpm = []
+        for seqs in cl_seqs:
+            f = frequencies(seqs)
+            bpm.append(BinomialMatrix(len(seqs), f, bg_pwm))
     if distance_method == "PAM250":
-        gmmp = gmm_pred * 100
-    elif distance_method == "Binomial":
-        gmm_pred[gmm_pred == 1] = 0.9999999999999
-        gmmp = np.log(1 - gmm_pred)
-    else:
-        "Distance method not regonized"
-        raise SystemExit
-    return gmmp
+        bpm = False
+    return bpm
 
 
-def gmm_initialize(X, ncl, distance_method):
-    """ Return peptides data set including its labels and pvalues matrix. """
-    d = X.select_dtypes(include=['float64'])
-    labels = [0, 0, 0]
-
-    while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1)
-        labels = gmm.predict(d)
-        gmm_pred = gmm.predict_proba(d)
-
-    gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
-
-    X["GMM_cluster"] = labels
-    init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
-    return gmm, init_clusters, gmmp
+def position_weight_matrix(seqs):
+    """ Build PWM of a given set of sequences. """
+    m = motifs.create(seqs)
+    return m.counts.normalize(pseudocounts=AAfreq)
 
 
-def preprocess_seqs(X, pYTS):
-    """ Filter out any sequences with different than the specified central p-residue
-    and/or any containing gaps."""
-    X = X[~X["Sequence"].str.contains("-")]
+def InformationContent(seqs):
+    """ The mean of the PSSM is particularly important becuase its value is equal to the
+    Kullback-Leibler divergence or relative entropy, and is a measure for the information content
+    of the motif compared to the background."""
+    m = motifs.create(seqs)
+    pssm = m.counts.normalize(pseudocounts=AAfreq).log_odds(AAfreq)
+    IC = pssm.mean(AAfreq)
+    return IC
 
-    Xidx = []
-    for seq in X["Sequence"]:
-        Xidx.append(seq[5] == pYTS.lower())
-    return X.iloc[Xidx, :]
+
+def frequencies(seqs):
+    """ Build counts matrix of a given set of sequences. """
+    m = motifs.create(seqs)
+    return m.counts
+
+
+def BinomialMatrix(n, k, p):
+    """ Build binomial probability matrix. Note n is the number of sequences,
+    k is the counts matrix of the MS data set, p is the pwm of the background. """
+    assert list(k.keys()) == ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
+                              'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+    assert list(p.keys()) == list(k.keys())
+    BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
+    # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
+    BMP[BMP == - np.inf] = np.log(float(10**(-323)))
+    return BMP
+
+
+def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
+    """ Identify the most significant residue/position pairs acroos the binomial
+    probability matrix meeting a probability and a occurence threshold."""
+    motif = list("X" * 11)
+    positions = list(BMP.columns[1:])
+    AA = list(BMP.iloc[:, 0])
+    BMP = BMP.iloc[:, 1:]
+    for i in range(len(positions)):
+        DoS = BMP.iloc[:, i].min()
+        j = BMP[BMP.iloc[:, i] == DoS].index[0]
+        aa = AA[j]
+        if DoS < pvalCut or DoS == 0.0 and freqs.iloc[j, i] >= occurCut:
+            motif[i] = aa
+        else:
+            motif[i] = "x"
+
+    return ''.join(motif)
+
+
+def MeanBinomProbs(BPM, motif):
+    """ Take the mean of all pvalues corresponding to each motif residue. """
+    probs = 0.0
+    for i, aa in enumerate(motif):
+        probs += BPM[aa, i]
+    return probs / len(motif)
+
+
+def TranslateMotifsToIdx(motif, aa):
+    """ Convert amino acid strings into numbers. """
+    ResToNum = dict(zip(aa, np.arange(len(aa))))
+    NumMotif = []
+    for res in list(motif):
+        NumMotif.append(ResToNum[res.upper()])
+    assert len(NumMotif) == len(motif)
+    return NumMotif
 
 
 def BackgroundSeqs(X):
@@ -613,74 +634,62 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
     return y_seqs + s_seqs + t_seqs
 
 
-def ForegroundSeqs(Allseqs):
+###------------ Other EM-housekeeping functions  ------------------###
+
+def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
+    """ Assess if the finala scaled score was determined by data or sequence """
+    if SeqIdx == idx and SeqIdx != DataIdx:
+        SeqWins += 1
+    elif DataIdx == idx and DataIdx != SeqIdx:
+        DataWins += 1
+    elif DataIdx == idx and SeqIdx == idx:
+        BothWin += 1
+    else:
+        MixWins += 1
+    return SeqWins, DataWins, BothWin, MixWins
+
+
+def HardAssignments(labels, ncl):
+    """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
+    m = []
+    for idx in labels:
+        l = [0] * ncl
+        l[idx] = 1.0
+        m.append(l)
+    return np.array(m)
+
+
+def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
+    """ Make data and sequencec scores as close in magnitude as possible. """
+    if distance_method == "PAM250":
+        gmmp = gmm_pred * 100
+    elif distance_method == "Binomial":
+        gmm_pred[gmm_pred == 1] = 0.9999999999999
+        gmmp = np.log(1 - gmm_pred)
+    else:
+        print("Distance method not regonized")
+        raise SystemExit
+    return gmmp
+
+
+def preprocess_seqs(X, pYTS):
+    """ Filter out any sequences with different than the specified central p-residue
+    and/or any containing gaps."""
+    X = X[~X["Sequence"].str.contains("-")]
+
+    Xidx = []
+    for seq in X["Sequence"]:
+        Xidx.append(seq[5] == pYTS.lower())
+    return X.iloc[Xidx, :]
+
+
+def ForegroundSeqs(sequences):
     """ Build Background data set for either "Y", "S", or "T". """
     seqs = []
-    for motif in Allseqs:
+    yts = ["Y", "T", "S"]
+    for motif in sequences:
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
+        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID" 
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
-
-
-def position_weight_matrix(seqs):
-    """ Build PWM of a given set of sequences. """
-    m = motifs.create(seqs)
-    return m.counts.normalize(pseudocounts=AAfreq)
-
-
-def InformationContent(seqs):
-    """ The mean of the PSSM is particularly important becuase its value is equal to the
-    Kullback-Leibler divergence or relative entropy, and is a measure for the information content
-    of the motif compared to the background."""
-    m = motifs.create(seqs)
-    pssm = m.counts.normalize(pseudocounts=AAfreq).log_odds(AAfreq)
-    IC = pssm.mean(AAfreq)
-    return IC
-
-
-def frequencies(seqs):
-    """ Build counts matrix of a given set of sequences. """
-    m = motifs.create(seqs)
-    return m.counts
-
-
-def BinomialMatrix(n, k, p):
-    """ Build binomial probability matrix. Note n is the number of sequences,
-    k is the counts matrix of the MS data set, p is the pwm of the background. """
-    assert list(k.keys()) == ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
-                              'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
-    assert list(p.keys()) == list(k.keys())
-    BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
-    # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
-    BMP[BMP == - np.inf] = np.log(float(10**(-10)))
-    return BMP
-
-
-def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
-    """ Identify the most significant residue/position pairs acroos the binomial
-    probability matrix meeting a probability and a occurence threshold."""
-    motif = list("X" * 11)
-    positions = list(BMP.columns[1:])
-    AA = list(BMP.iloc[:, 0])
-    BMP = BMP.iloc[:, 1:]
-    for i in range(len(positions)):
-        DoS = BMP.iloc[:, i].min()
-        j = BMP[BMP.iloc[:, i] == DoS].index[0]
-        aa = AA[j]
-        if DoS < pvalCut or DoS == 0.0 and freqs.iloc[j, i] >= occurCut:
-            motif[i] = aa
-        else:
-            motif[i] = "x"
-
-    return ''.join(motif)
-
-
-def MeanBinomProbs(BPM, motif):
-    """ Take the mean of all pvalues corresponding to each motif residue. """
-    probs = 0.0
-    for i, aa in enumerate(motif):
-        if i == 5:  # Skip central AA
-            continue
-        probs += BPM[aa, i]
-    return probs / (len(motif) - 1)
