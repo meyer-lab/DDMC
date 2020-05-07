@@ -164,11 +164,10 @@ def Plot_Logmean(folder, mutants, treatments, replicates, ax, vs_count=False, ce
     to_plot = pd.concat(dfs)
     if vs_count:
         sns.scatterplot(x='Cells', y='Log_Mean_Distances', hue='Condition', style='Condition', data=to_plot, ax=ax)
-        # for line in range(0, to_plot.shape[0]):
-        #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
+        #for line in range(0, to_plot.shape[0]):
+             #b.text(to_plot.Cells.iloc[line], to_plot.Log_Mean_Distances.iloc[line], to_plot.Mutant.iloc[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
     else:
         sns.pointplot(x="Mutant", y='Log_Mean_Distances', hue='Condition', data=to_plot, ci=68, join=False, dodge=.25, ax=ax)
-
 
 def calculatedistances_logmean(file, mutant, treatment, vs_count, cells=(1, 3)):
     '''Calculates the average log distance to neighbors as defined by the cells argument and returns as a DataFrame in proper plotting format'''
@@ -229,14 +228,14 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     ax.set_title(mutant)
 
 
-def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
+def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, replicates, r):
     '''Plots a bar graph of the Ripley's K Estimate values for all mutants and conditions in comparison to the Poisson at a discrete radius.
     Note that radius needs to be input as a 1D array for the RipleysKEstimator to work'''
     Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
     poisson = Kest.poisson(r)
     mutant_dfs = []
-    for mutant in mutants:
-        for treatment in treatments:
+    for z, mutant in enumerate(mutants):
+        for j, treatment in enumerate(treatments):
             reps = []
             for replicate in range(1, replicates + 1):
                 if replicate != 1:
@@ -247,24 +246,87 @@ def BarPlotRipleysK(folder, mutants, treatments, replicates, r, ax):
                 reps.append(points)
             Kests = []
             for point_set in reps:
-                Kests.append(Kest(data=point_set, radii=r, mode='ripley'))
-            treat_array = np.hstack((Kests[0], Kests[1]))
-            for i in range(2, len(Kests)):
-                treat_array = np.hstack((treat_array, Kests[i]))
+                Kests.append(Kest(data=point_set, radii=r, mode='ripley') / poisson)
+            if len(Kests) > 1:
+                treat_array = np.hstack((Kests[0], Kests[1]))
+                for i in range(2, len(Kests)):
+                    treat_array = np.hstack((treat_array, Kests[i]))
+            else:
+                treat_array = Kests[0]
+            df = pd.DataFrame(treat_array)
+            df.columns = ['K Estimate']
+            df['AXL mutants Y->F'] = xticklabels[z]
+            df['Treatment'] = legendlabels[j]
+            #poisson_df = pd.DataFrame(poisson)
+            #poisson_df.columns = ['K Estimate']
+            #poisson_df['Mutant'] = mutant
+            #poisson_df['Treatment'] = 'Poisson'
+            #df = pd.concat([poisson_df, df])
+            mutant_dfs.append(df)
+    df = pd.concat(mutant_dfs)
+    b = sns.barplot(x='AXL mutants Y->F', y='K Estimate', hue='Treatment', data=df, ci=68)
+    b.set_title('Radius of ' + str(r[0]) + ' Normalized to Poisson')
+    b.legend(loc=2)
+
+
+def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
+    Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
+    poisson = Kest.poisson(r)
+    treatment_dfs = []
+    for idx, extension in enumerate(extensions):
+        reps = []
+        file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+extension+".csv")
+        points = file.loc[:, "X":"Y"].values
+        treat_array = (Kest(data=points, radii=r, mode='ripley') / poisson)
+        df = pd.DataFrame(treat_array)
+        df.columns = ['K Estimate']
+        df['Mutant'] = mutant
+        df['Treatment'] = treatments[idx]
+        #poisson_df = pd.DataFrame(poisson)
+        #poisson_df.columns = ['K Estimate']
+        #poisson_df['Mutant'] = mutant
+        #poisson_df['Treatment'] = 'Poisson'
+        #df = pd.concat([poisson_df, df])
+        treatment_dfs.append(df)
+    df = pd.concat(treatment_dfs)
+    sns.barplot(x='Mutant', y='K Estimate', hue='Treatment', data=df, ci=68, ax=ax)
+
+
+def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
+    Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
+    poisson = Kest.poisson(r)
+    mutant_dfs = []
+    for mutant in mutants:
+        for treatment in treatments:
+            reps = []
+            for replicate in range(1, replicates + 1):
+                if replicate != 1:
+                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+str(replicate)+".csv")
+                else:
+                    file = pd.read_csv("msresist/data/Distances/"+folder+"/Results_"+mutant+treatment+".csv")
+                points = file.loc[:, "X":"Y"].values
+                reps.append(points)
+            Kests = []
+            for point_set in reps:
+                Kests.append(Kest(data=point_set, radii=r, mode='ripley') / poisson)
+            if len(Kests) > 1:
+                treat_array = np.hstack((Kests[0], Kests[1]))
+                for i in range(2, len(Kests)):
+                    treat_array = np.hstack((treat_array, Kests[i]))
+            else:
+                treat_array = Kests[0]
             df = pd.DataFrame(treat_array)
             df.columns = ['K Estimate']
             df['Mutant'] = mutant
             df['Treatment'] = treatment
-            poisson_df = pd.DataFrame(poisson)
-            poisson_df.columns = ['K Estimate']
-            poisson_df['Mutant'] = mutant
-            poisson_df['Treatment'] = 'Poisson'
-            df = pd.concat([poisson_df, df])
+            #poisson_df = pd.DataFrame(poisson)
+            #poisson_df.columns = ['K Estimate']
+            #poisson_df['Mutant'] = mutant
+            #poisson_df['Treatment'] = 'Poisson'
+            #df = pd.concat([poisson_df, df])
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
-    sns.barplot(x='Mutant', y='K Estimate', hue='Treatment', data=df, ci=68, ax=ax)
-    ax.set_title('K Estimate at Radius of ' + str(r[0]))
-
+    return df.groupby(['Mutant', 'Treatment']).mean()
 
 def PlotRipleysK_TimeCourse(folder, extensions, timepoint, ax):
     '''Plots the Ripley's K Estimate for a series of images over time by condition, compared to the Poisson.'''
