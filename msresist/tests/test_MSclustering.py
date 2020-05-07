@@ -19,11 +19,11 @@ class TestClustering(unittest.TestCase):
         data = ABC.iloc[:, 7:].T
         info = ABC.iloc[:, :7]
         ncl = 2
-        GMMweight = 0.75
+        SeqWeight = 0.75
         distance_method = "PAM250"
         fooCV = np.arange(10)
 
-        MSC = MassSpecClustering(info, ncl, GMMweight=GMMweight, distance_method=distance_method).fit(data, fooCV)
+        MSC = MassSpecClustering(info, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(data, fooCV)
         Cl_seqs = MSC.cl_seqs_
 
         _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method)
