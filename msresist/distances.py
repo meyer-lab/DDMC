@@ -228,7 +228,7 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     ax.set_title(mutant)
 
 
-def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, replicates, r, ax):
+def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, replicates, r):
     '''Plots a bar graph of the Ripley's K Estimate values for all mutants and conditions in comparison to the Poisson at a discrete radius.
     Note that radius needs to be input as a 1D array for the RipleysKEstimator to work'''
     Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
@@ -264,8 +264,9 @@ def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, repl
             #df = pd.concat([poisson_df, df])
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
-    sns.barplot(x='AXL mutants Y->F', y='K Estimate', hue='Treatment', data=df, ci=68, ax=ax)
-    ax.set_title('Radius of ' + str(r[0]) + ' Normalized to Poisson')
+    b = sns.barplot(x='AXL mutants Y->F', y='K Estimate', hue='Treatment', data=df, ci=68)
+    b.set_title('Radius of ' + str(r[0]) + ' Normalized to Poisson')
+    b.legend(loc=2)
 
 
 def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
