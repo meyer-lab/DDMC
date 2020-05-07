@@ -1,9 +1,11 @@
 """PLSR analysis functions (plotting functions are located in msresist/figures/figure2)"""
 
+import scipy as sp
+import numpy as np
+import pandas as pd
 from scipy.stats import zscore
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
-from sklearn.cross_decomposition import PLSRegression
 
 ###------------ PLSR model functions ------------------###
 
@@ -40,11 +42,44 @@ def Q2Y_across_components(model, X, Y, cv, max_comps):
     return Q2Ys
 
 
-def PLSR(X, Y, nComponents):
-    """ Run PLSR. """
-    plsr = PLSRegression(n_components=nComponents)
-    X_scores, _ = plsr.fit_transform(X, Y)
-    PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-    PC1_xload, PC2_xload = plsr.x_loadings_[:, 0], plsr.x_loadings_[:, 1]
-    PC1_yload, PC2_yload = plsr.y_loadings_[:, 0], plsr.y_loadings_[:, 1]
-    return plsr, PC1_scores, PC2_scores, PC1_xload, PC2_xload, PC1_yload, PC2_yload
+def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
+    "Calculate Q2Y manually."
+    PRESS = 0
+    SS = 0
+    Q2Ys = []
+    cols = X.columns
+    Y = np.array(Y.reset_index().drop("Lines", axis=1))
+    X = np.array(X)
+    for b in range(1, max_comps):
+        # Cross-validation across fixed clusters
+        if cv == 1:
+            model.set_params(n_components=b)
+            for train_index, test_index in LeaveOneOut().split(X, Y):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = Y[train_index], Y[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                model.fit(X_train, Y_train)
+                Y_predict = model.predict(X_test)
+                PRESS_i = (Y_predict - Y_test) ** 2
+                SS_i = (Y_test) ** 2
+                PRESS = np.mean(PRESS + PRESS_i)
+                SS = np.mean(SS + SS_i)
+
+        # Chain long cross-validation
+        if cv == 2:
+            model.set_params(plsr__n_components=b)
+            for train_index, test_index in LeaveOneOut().split(X, Y):
+                X_train, X_test = X[train_index], X[test_index]
+                Y_train, Y_test = Y[train_index], Y[test_index]
+                Y_train = sp.stats.zscore(Y_train)
+                X_train = pd.DataFrame(X_train)
+                X_train.columns = cols
+                model.fit(pd.DataFrame(X_train), Y_train)
+                Y_predict = model.predict(pd.DataFrame(X_test))
+                PRESS_i = (Y_predict - Y_test) ** 2
+                SS_i = (Y_test) ** 2
+                PRESS = np.mean(PRESS + PRESS_i)
+                SS = np.mean(SS + SS_i)
+        Q2Y = 1 - (PRESS / SS)
+        Q2Ys.append(Q2Y)
+    return Q2Ys
