@@ -14,8 +14,8 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+# import plotly.graph_objects as go
 sns.set(color_codes=True)
 
 
@@ -131,25 +131,24 @@ def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, Tre
             x = d[d["Lines"] == line]
             if i < 5:
                 sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[0, i])
-                ax[0, i].set_title(line, fontsize=12)
-                ax[0, i].set_ylabel(ylabel, fontsize=11)
+                ax[0, i].set_title(line)
+                ax[0, i].set_ylabel(ylabel)
+                if i > 0:
+                    ax[0, i].legend().remove()
             else:
                 sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax[1, i - 5])
-                ax[1, i - 5].set_title(line, fontsize=12)
-                ax[1, i - 5].set_ylabel(ylabel, fontsize=11)
-            if i != 0 and i < 5:
-                ax[0, i].legend().remove
-            if i != 0 and i > 4:
-                ax[1, i - 5].legend().remove
+                ax[1, i - 5].set_title(line)
+                ax[1, i - 5].set_ylabel(ylabel)
+                ax[1, i - 5].legend().remove()
 
     if plot != "Full":
         x = d[d["Lines"] == plot]
         sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
-        ax_.set_title(plot, fontsize=12)
-        ax_.set_ylabel(ylabel, fontsize=11)
+        ax_.set_title(plot)
+        ax_.set_ylabel(ylabel)
 
     if savefig:
-        fig.savefig("TimeCourse.pdf")
+        fig.savefig("TimeCourse.pdf", bbox_inches='tight')
 
 
 def TimePointFoldChange(d, itp):
@@ -229,7 +228,7 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=Fa
     ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
 
     ax.set_title(title)
-    ax.set_xticklabels(lines, rotation=45)
+    ax.set_xticklabels(lines, rotation=90)
 
 
 '''Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot'''
