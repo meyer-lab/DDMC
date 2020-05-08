@@ -13,6 +13,7 @@ from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
 from scipy.stats import binom
 from pomegranate import GeneralMixtureModel, NormalDistribution
+from sklearn.mixture import GaussianMixture
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -227,13 +228,12 @@ AAfreq = {"A": 0.074, "R": 0.042, "N": 0.044, "D": 0.059, "C": 0.033, "Q": 0.058
           "K": 0.072, "M": 0.018, "F": 0.04, "P": 0.05, "S": 0.081, "T": 0.062, "W": 0.013, "Y": 0.033, "V": 0.068}
 
 
-def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs):
+def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter, n_runs):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
-#         print("run: ", i)
         cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight,
-                                                       distance_method, max_n_iter)
+                                                       distance_method, gmm_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp])
 
@@ -245,16 +245,14 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4]
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
     sequences = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
-    print("start initialization...")
-    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
-    print("gmm initialized")
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
 
     # Background sequences
     if distance_method == "Binomial":
@@ -272,12 +270,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     store_Clseqs, store_scores, store_labels = [], [], []
     store_labels.append(gmm.predict(d))
     for n_iter in range(max_n_iter):
-        print("N_ITER: ", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
 
         # E step: Assignment of each peptide based on data and seq
-        SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
+#         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, 
@@ -285,14 +282,14 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
-            SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx,
-                                                           SeqWins, DataWins, BothWin, MixWins)
+#             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx,
+#                                                            SeqWins, DataWins, BothWin, MixWins)
 
-        print("SeqW: ", SeqWins, "DataW: ", DataWins, "BothWin: ", BothWin, "MixWins: ", MixWins)
+#         print("SeqW: ", SeqWins, "DataW: ", DataWins, "BothWin: ", BothWin, "MixWins: ", MixWins)
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 2 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             store_Clseqs, store_scores = [], []
@@ -302,12 +299,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         store_Clseqs.append(cl_seqs)
         store_scores.append(np.mean(scores))
         store_labels.append(labels)
-        print(np.mean(scores))
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
-        gmmp = HardAssignments(labels, ncl)
-        m_step(d, gmm, gmmp)
+        gmmp_hard = HardAssignments(labels, ncl)
+        m_step(d, gmm, gmmp_hard, gmm_method)
         gmmp = gmm.predict_proba(d)
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
@@ -391,7 +387,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
                 BPM_score = MeanBinomProbs(binomials[z], NumMotif)
                 final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
             idx = np.argmin(final_scores)
-
+   
         # Average distance between each sequence and any cluster based on PAM250 substitution matrix
         if distance_method == "PAM250":
             for z in range(ncl):
@@ -410,13 +406,22 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
 
 ###------------ Clustering Phosphorylation Levels with a Gaussian Mixture Model ------------------###
 
-def gmm_initialize(X, ncl, distance_method):
+def gmm_initialize(X, ncl, distance_method, gmm_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
     labels, gmm_pred = [0, 0, 0], [np.nan]
 
-    while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, n_jobs=-1, max_iterations=10)
+    if gmm_method == "pom":
+        while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
+            gmm = GeneralMixtureModel.from_samples(NormalDistribution, 
+                                                   X=d, n_components=ncl, 
+                                                   n_jobs=-1, 
+                                                   max_iterations=1)
+            labels = gmm.predict(d)
+            gmm_pred = gmm.predict_proba(d)
+
+    if gmm_method == "sklearn":
+        gmm = GaussianMixture(n_components=ncl, max_iter=1).fit(d)
         labels = gmm.predict(d)
         gmm_pred = gmm.predict_proba(d)
 
@@ -427,11 +432,14 @@ def gmm_initialize(X, ncl, distance_method):
     return gmm, init_clusters, gmmp
 
 
-def m_step(d, gmm, gmmp):
+def m_step(d, gmm, gmmp_hard, gmm_method):
     """ Bypass gmm fitting step by working directly with the distribution objects. """
-    for i in range(gmmp.shape[1]):
-        weights = gmmp[:, i]
-        gmm.distributions[i].fit(d, weights=weights)
+    if gmm_method == "pom":
+        for i in range(gmmp_hard.shape[1]):
+            weights = gmmp_hard[:, i]
+            gmm.distributions[i].fit(d, weights=weights)
+    elif gmm_method == "sklearn":
+        gmm._m_step(d, gmmp_hard)
 
 
 ###------------ Calculating Sequence Distance using a PAM250 transition matrx ------------------###
