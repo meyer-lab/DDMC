@@ -208,7 +208,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
                 Y_train, Y_test = y_[train_index], y_[test_index]
                 Y_train = sp.stats.zscore(Y_train)
                 plsr_model.fit(X_train, Y_train)
-                Y_predict = list(plsr_model.predict(X_test).reshape(3,))
+                Y_predict = list(plsr_model.predict(X_test).reshape(y_.shape[1],))
                 Y_predictions.append(Y_predict)
         if cv == 2:
             for train_index, test_index in LeaveOneOut().split(X, y_):
@@ -218,7 +218,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
                 X_train = pd.DataFrame(X_train)
                 X_train.columns = cols
                 plsr_model.fit(pd.DataFrame(X_train), Y_train)
-                Y_predict = list(plsr_model.predict(pd.DataFrame(X_test)).reshape(3,))
+                Y_predict = list(plsr_model.predict(pd.DataFrame(X_test)).reshape(y_.shape[1],))
                 Y_predictions.append(Y_predict)
 
         Y_predictions = np.array(Y_predictions)
@@ -236,17 +236,16 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ax[i].set_title(label, fontsize=12)
 
         spacer = 1.1
-        ax[i].set_xlim(min(list(y) + list(ypred)) * spacer, max(list(y) + list(ypred)) * spacer)
-        ax[i].set_ylim(min(list(y) + list(ypred)) * spacer, max(list(y) + list(ypred)) * spacer)
+        ax[i].set_aspect('equal', 'datalim')
 
         # Add correlation coefficient
         coeff, _ = sp.stats.pearsonr(ypred, y)
         textstr = "$r$ = " + str(np.round(coeff, 4))
         props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-        ax[i].text(0.80, 0.09, textstr, transform=ax[i].transAxes, fontsize=10, verticalalignment='top', bbox=props)
+        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, fontsize=10, verticalalignment='top', bbox=props)
 
 
-def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv):
+def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):
     if cv == 1:
         X_scores, _ = model.transform(X, Y)
         PC1_xload, PC2_xload = model.x_loadings_[:, 0], model.x_loadings_[:, 1]
@@ -258,8 +257,6 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv):
         PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, 0], model.named_steps.plsr.y_loadings_[:, 1]
 
     PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
-
-    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
 
     # Scores
     ax[0].scatter(PC1_scores, PC2_scores)
@@ -276,26 +273,32 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv):
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
     # Loadings
-    numbered = []
-    list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
-    for i, txt in enumerate(numbered):
-        ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
+    if data != "clusters":
+        ncl = X.shape[1]
 
-    markers = ["x", "D", "*"]
+    colors_ = cm.rainbow(np.linspace(0, 1, ncl))
+
+    if annotate:
+        numbered = []
+        list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
+        for i, txt in enumerate(numbered):
+            ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
+
+    markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
-        ax[1].annotate(label, (PC1_yload[i] + 0.05, PC2_yload[i] - 0.05))
+        ax[1].annotate(label, (PC1_yload[i] + 0.001, PC2_yload[i] - 0.001))
         ax[1].scatter(PC1_yload[i], PC2_yload[i], color='black', marker=markers[i])
 
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
-    ax[1].set_title('PLSR Model Loadings (Averaged Clusters)', fontsize=12)
+    ax[1].set_title('PLSR Model Loadings', fontsize=12)
     ax[1].set_xlabel('Principal Component 1', fontsize=11)
     ax[1].set_ylabel('Principal Component 2', fontsize=11)
     ax[1].axhline(y=0, color='0.25', linestyle='--')
     ax[1].axvline(x=0, color='0.25', linestyle='--')
 
-    spacer = 0.5
-    ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
-    ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
+#     spacer = 0.1
+#     ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
+#     ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
 
 
 def plotScoresLoadings_plotly(X, labels, Y, ncomp, loc=False):
@@ -432,3 +435,17 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_xticklabels(flattened, fontsize=10)
     ax.set_xlabel("Number of Components per Cluster")
     ax.set_ylabel("Mean-Squared Error (MSE)")
+
+
+def plotclustersIndividually(centers, labels, nrows, ncols):
+    fig, ax = plt.subplots(nrows, ncols, figsize=(20, 10), sharex=True, sharey=True)
+    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
+    l = [0, 5, 10]
+    for i in range(centers.shape[0]):
+        ax[i // 5][i % 5].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
+        ax[i // 5][i % 5].set_xticks(np.arange(len(labels)))
+        ax[i // 5][i % 5].set_xticklabels(labels, rotation=45)
+        ax[i // 5][i % 5].set_ylabel("$log_{10}$ phospho signal")
+        ax[i // 5][i % 5].legend()
+        if i not in l:
+            ax[i // 5][i % 5].set_ylabel("")
