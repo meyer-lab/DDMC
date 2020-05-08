@@ -2,7 +2,7 @@
 This creates Figure 1.
 """
 from .common import subplotLabel, getSetup
-from ..sequence_analysis import FormatName, pYmotifs
+from ..motifs import pYmotifs
 from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
 from sklearn.decomposition import PCA
 import os

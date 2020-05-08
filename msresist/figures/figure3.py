@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from msresist.clustering import MassSpecClustering
 from msresist.parameter_tuning import MSclusPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components, Q2Y_across_comp_manual
-from msresist.sequence_analysis import preprocess_seqs
+from msresist.motifs import preprocess_seqs
 from msresist.figures.figure1 import pca_dfs
 import matplotlib.colors as colors
 import matplotlib.cm as cm
