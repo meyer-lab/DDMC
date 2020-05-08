@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from .sequence_analysis import FormatName, pYmotifs
+from .motifs import FormatName, pYmotifs
 
 
 path = os.path.dirname(os.path.abspath(__file__))

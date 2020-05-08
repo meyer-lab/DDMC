@@ -5,7 +5,8 @@ Testing file for the clustering methods by data and sequence.
 import unittest
 import numpy as np
 from ..clustering import MassSpecClustering
-from ..sequence_analysis import preprocess_seqs, gmm_initialize
+from ..gmm import gmm_initialize
+from ..motifs import preprocess_seqs
 from ..pre_processing import preprocessing
 
 
