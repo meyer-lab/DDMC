@@ -11,11 +11,12 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=100000, n_runs=5):
+    def __init__(self, info, ncl, SeqWeight, distance_method, gmm_method="sklearn", max_n_iter=100000, n_runs=1):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
+        self.gmm_method = gmm_method
         self.max_n_iter = max_n_iter
         self.n_runs = n_runs
 
@@ -24,7 +25,8 @@ class MassSpecClustering(BaseEstimator):
         self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info, 
                                                                                                self.ncl, 
                                                                                                self.SeqWeight, 
-                                                                                               self.distance_method, 
+                                                                                               self.distance_method,
+                                                                                               self.gmm_method,
                                                                                                self.max_n_iter, 
                                                                                                self.n_runs)
         return self
@@ -48,7 +50,7 @@ class MassSpecClustering(BaseEstimator):
         won't work since all sequences are passed. """
         check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
+        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.gmm_method, self.SeqWeight, self.ncl)
         return labels
 
     def score(self, X, _Y=None):
@@ -62,7 +64,7 @@ class MassSpecClustering(BaseEstimator):
         """ Returns a dict of the estimator parameters with their values. """
         return {"info": self.info, "ncl": self.ncl,
                 "SeqWeight": self.SeqWeight, "distance_method": self.distance_method,
-                "max_n_iter": self.max_n_iter}
+                "gmm_method": self.gmm_method, "max_n_iter": self.max_n_iter}
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
