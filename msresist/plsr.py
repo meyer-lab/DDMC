@@ -48,7 +48,7 @@ def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
     SS = 0
     Q2Ys = []
     cols = X.columns
-    Y = np.array(Y.reset_index().drop("Lines", axis=1))
+    Y = np.array(Y)
     X = np.array(X)
     for b in range(1, max_comps):
         # Cross-validation across fixed clusters

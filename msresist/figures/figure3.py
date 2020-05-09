@@ -199,7 +199,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     if y_pred == "cross-validation":
         #         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
         cols = X.columns
-        y_ = np.array(Y.copy().reset_index().drop("Lines", axis=1))
+        y_ = np.array(Y)
         X = np.array(X)
         Y_predictions = []
         if cv == 1:
