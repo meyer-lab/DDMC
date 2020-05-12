@@ -13,9 +13,9 @@ from msresist.clustering import MassSpecClustering
 
 def MSclusPLSR_tuning(X, info, Y, distance_method):
     """ Cross-validation: Simultaneous hyperparameter search. """
-    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info, 
-                                                               distance_method=distance_method, 
-                                                               ncl=2, 
+    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info,
+                                                               distance_method=distance_method,
+                                                               ncl=2,
                                                                SeqWeight=0,
                                                                n_runs=3)),
                            ("plsr", PLSRegression(n_components=2))])

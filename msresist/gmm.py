@@ -6,6 +6,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 from sklearn.mixture import GaussianMixture
 from msresist.motifs import ForegroundSeqs
 
+
 def gmm_initialize(X, ncl, distance_method, gmm_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=['float64'])
@@ -13,9 +14,9 @@ def gmm_initialize(X, ncl, distance_method, gmm_method):
 
     if gmm_method == "pom":
         while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
-            gmm = GeneralMixtureModel.from_samples(NormalDistribution, 
-                                                   X=d, n_components=ncl, 
-                                                   n_jobs=-1, 
+            gmm = GeneralMixtureModel.from_samples(NormalDistribution,
+                                                   X=d, n_components=ncl,
+                                                   n_jobs=-1,
                                                    max_iterations=1)
             labels = gmm.predict(d)
             gmm_pred = gmm.predict_proba(d)

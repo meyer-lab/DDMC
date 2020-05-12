@@ -22,20 +22,22 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-<<<<<<< HEAD
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info, 
-                                                                                               self.ncl, 
-                                                                                               self.SeqWeight, 
-                                                                                               self.distance_method,
-                                                                                               self.gmm_method,
-                                                                                               self.max_n_iter, 
-=======
+
+
+<< << << < HEAD
         self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info,
                                                                                                self.ncl,
                                                                                                self.SeqWeight,
                                                                                                self.distance_method,
+                                                                                               self.gmm_method,
                                                                                                self.max_n_iter,
->>>>>>> 8a59a1f12811a7d8dd73a4255c735dac4d6b6567
+== == == =
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp=EM_clustering_opt(X, self.info,
+                                                                                               self.ncl,
+                                                                                               self.SeqWeight,
+                                                                                               self.distance_method,
+                                                                                               self.max_n_iter,
+>>>>>> > 8a59a1f12811a7d8dd73a4255c735dac4d6b6567
                                                                                                self.n_runs)
         return self
 
@@ -43,14 +45,14 @@ class MassSpecClustering(BaseEstimator):
         """ calculate cluster averages. """
         check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        centers, _ = ClusterAverages(X, self.labels_)
+        centers, _=ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
         check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        _, clustermembers = ClusterAverages(X, self.labels_)
+        _, clustermembers=ClusterAverages(X, self.labels_)
         return clustermembers
 
     def predict(self, X, _Y=None):
@@ -58,14 +60,14 @@ class MassSpecClustering(BaseEstimator):
         won't work since all sequences are passed. """
         check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.gmm_method, self.SeqWeight, self.ncl)
+        labels, _=e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.gmm_method, self.SeqWeight, self.ncl)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
 
-        _, scores = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
+        _, scores=e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
         return scores
 
     def get_params(self, deep=True):
@@ -83,16 +85,16 @@ class MassSpecClustering(BaseEstimator):
 
 def ClusterAverages(X, labels):
     """ calculate cluster averages and dictionary with cluster members and sequences. """
-    X = X.T.assign(cluster=labels)
-    centers = []
-    dict_clustermembers = {}
+    X=X.T.assign(cluster=labels)
+    centers=[]
+    dict_clustermembers={}
     for i in range(0, max(labels) + 1):
         centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
         if "object" in list(X.dtypes):
-            dict_clustermembers["Protein_C" + str(i + 1)] = list(X[X["cluster"] == i]["Protein"])
-            dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
-            dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])
-            dict_clustermembers["Position_C" + str(i + 1)] = list(X[X["cluster"] == i]["Position"])
+            dict_clustermembers["Protein_C" + str(i + 1)]=list(X[X["cluster"] == i]["Protein"])
+            dict_clustermembers["Gene_C" + str(i + 1)]=list(X[X["cluster"] == i]["Gene"])
+            dict_clustermembers["Sequence_C" + str(i + 1)]=list(X[X["cluster"] == i]["Sequence"])
+            dict_clustermembers["Position_C" + str(i + 1)]=list(X[X["cluster"] == i]["Position"])
 #             dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i]["UniprotAcc"])
 #             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
 #             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
