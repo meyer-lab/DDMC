@@ -71,7 +71,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
 
 #         print("SeqW: ", SeqWins, "DataW: ", DataWins, "BothWin: ", BothWin, "MixWins: ", MixWins)
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 2 for sl in seq_reassign]:
+        if True in [len(sl) < 1 for sl in seq_reassign]:
+            if n_iter > 200:
+                print("Model could not fit with these parameters.")
+                print(ncl, SeqWeight)
+                raise SystemExit
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
@@ -145,6 +149,7 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
 
     return score, idx, SeqIdx, DataIdx
 
+
 def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     """ Expectation step of the EM algorithm. Used for predict and score in
     clustering.py """
@@ -158,8 +163,8 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     elif distance_method == "PAM250":
         bg_pwm = False
 
-    labels = np.zeros(len(sequences))
-    scores = np.zeros(len(sequences))
+    labels = np.zeros(len(sequences), dtype=int)
+    scores = np.zeros(len(sequences), dtype=float)
 
     binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(sequences):
@@ -185,7 +190,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
         labels[j] = idx
         scores[j] = final_scores[idx]
 
-    return np.array(labels), np.array(scores)
+    return np.array(labels), np.mean(scores)
 
 
 def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
