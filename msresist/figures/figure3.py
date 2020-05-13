@@ -231,9 +231,9 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ypred = Y_predictions[:, i]
         ax[i].scatter(y, ypred)
         ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-        ax[i].set_xlabel("Actual", fontsize=11)
-        ax[i].set_ylabel(ylabel, fontsize=11)
-        ax[i].set_title(label, fontsize=12)
+        ax[i].set_xlabel("Actual")
+        ax[i].set_ylabel(ylabel)
+        ax[i].set_title(label)
 
         spacer = 1.1
         ax[i].set_aspect('equal', 'datalim')
@@ -242,7 +242,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         coeff, _ = sp.stats.pearsonr(ypred, y)
         textstr = "$r$ = " + str(np.round(coeff, 4))
         props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, fontsize=10, verticalalignment='top', bbox=props)
+        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment='top', bbox=props)
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):

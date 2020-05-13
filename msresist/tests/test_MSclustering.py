@@ -21,13 +21,14 @@ class TestClustering(unittest.TestCase):
         info = ABC.iloc[:, :7]
         ncl = 2
         SeqWeight = 0.75
+        gmm_method = "sklearn"
         distance_method = "PAM250"
         fooCV = np.arange(10)
 
         MSC = MassSpecClustering(info, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(data, fooCV)
         Cl_seqs = MSC.cl_seqs_
 
-        _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method)
+        _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method, gmm_method)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
         # assert that EM clusters are different than GMM clusters
