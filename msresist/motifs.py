@@ -10,6 +10,7 @@ from Bio.Alphabet import IUPAC
 
 path = os.path.dirname(os.path.abspath(__file__))
 
+
 def pYmotifs(X, names):
     """Generate pY motifs for pre-processing."""
     names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
@@ -229,6 +230,6 @@ def ForegroundSeqs(sequences):
     for motif in sequences:
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
-        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID" 
+        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
         seqs.append(Seq(motif, IUPAC.protein))
     return seqs
