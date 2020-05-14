@@ -17,7 +17,7 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, m
     scores, products = [], []
     for _ in range(n_runs):
         cl_seqs, labels, score, n_iter, gmmp = EM_clustering(data, info, ncl, SeqWeight,
-                                                       distance_method, gmm_method, max_n_iter)
+                                                             distance_method, gmm_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp])
 
@@ -61,8 +61,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
 #         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
         for j, motif in enumerate(sequences):
-            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, 
-                                    j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
+            score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp,
+                                                     j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -110,7 +110,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
     return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp
 
 
-def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, 
+def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
                cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
@@ -135,8 +135,8 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm,
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-#             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
-            seq_scores[z] /= len(cl_seqs[z]) #average score per cluster
+            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
+            seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
         DataIdx = np.argmax(data_scores)
@@ -176,14 +176,14 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
                 BPM_score = MeanBinomProbs(binomials[z], NumMotif)
                 final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
             idx = np.argmin(final_scores)
-   
+
         # Average distance between each sequence and any cluster based on PAM250 substitution matrix
         if distance_method == "PAM250":
             for z in range(ncl):
                 PAM250_score = 0
                 for seq in cl_seqs[z]:
-                    PAM250_score += pairwise_score(motif, seq) 
-                PAM250_score /= len(cl_seqs[z]) 
+                    PAM250_score += pairwise_score(motif, seq)
+                PAM250_score /= len(cl_seqs[z])
                 final_scores[z] = gmmp[j, z] + PAM250_score * SeqWeight
             idx = np.argmax(final_scores)
 
