@@ -27,7 +27,7 @@ class MassSpecClustering(BaseEstimator):
                                                                                                self.SeqWeight, 
                                                                                                self.distance_method,
                                                                                                self.gmm_method,
-                                                                                               self.max_n_iter, 
+                                                                                               self.max_n_iter,
                                                                                                self.n_runs)
         return self
 
