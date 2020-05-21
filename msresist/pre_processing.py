@@ -46,9 +46,10 @@ def preprocessing(
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
+        display(X.head())
 
     data_headers = list(filesin[0].select_dtypes(include=['float64']).columns)
-    FCto = data_headers[0]
+    FCto = data_headers[1]
 
     if mc_row or mc_col:
         X = MeanCenter(Log2T(pd.concat(filesin), data_headers), data_headers, mc_row, mc_col)
@@ -95,6 +96,7 @@ def preprocessCPTAC():
     X = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/CPTAC3_Lung_Adeno_Carcinoma_Phosphoproteome.phosphopeptide.tmt10.csv"))
     d = X.iloc[:, 1:-3]
     X = pd.concat([X.iloc[:, 0], X.iloc[:, -3:], d.loc[:, d.columns.str.contains("CPT")]], axis=1)
+    X = filter_NaNpeptides(X)
 
     n = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/S046_BI_CPTAC3_LUAD_Discovery_Cohort_Samples_r1_May2019.csv"))
     bi_id = list(n[~n["Broad Sample.ID"].str.contains("IR")].iloc[:, 1])
@@ -103,7 +105,7 @@ def preprocessCPTAC():
     return X.drop("Organism", axis=1)
 
 
-def filter_NaNpeptides(X, cut):
+def filter_NaNpeptides(X, cut=.2):
     """ Filter peptides that have a given percentage of missingness """
     Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= cut
     return X.iloc[Xidx, :]
@@ -154,7 +156,7 @@ def VarianceFilter(X, data_headers, varCut=0.1):
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
-def FoldChangeFilter(X, data_headers, FCto, cutoff=0.2):
+def FoldChangeFilter(X, data_headers, FCto, cutoff=0.4):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy(), data_headers, FCto)
@@ -253,7 +255,7 @@ def BuildMatrix(peptides, ABC, data_headers, FCto):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.5):
+def CorrCoefFilter(X, corrCut=0.6):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, -1].values >= corrCut
     return X.iloc[Xidx, :]
@@ -276,14 +278,11 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.5):
+def FilterByStdev(X, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
-#     display(pd.DataFrame(StdMeans))
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-#     display(Stds)
-#     display(pd.DataFrame(Xidx))
     if "Position" in X.columns:
         Means = pd.concat([X.iloc[:, :6], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     else:

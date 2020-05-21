@@ -277,18 +277,15 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", an
         ncl = X.shape[1]
 
     colors_ = cm.rainbow(np.linspace(0, 1, ncl))
-
     if annotate:
         numbered = []
         list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
         for i, txt in enumerate(numbered):
-            ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
-
+            ax[1].annotate(txt, (PC1_xload[i-1], PC2_xload[i-1]))
     markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
         ax[1].annotate(label, (PC1_yload[i] + 0.001, PC2_yload[i] - 0.001))
         ax[1].scatter(PC1_yload[i], PC2_yload[i], color='black', marker=markers[i])
-
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].set_title('PLSR Model Loadings', fontsize=12)
     ax[1].set_xlabel('Principal Component 1', fontsize=11)

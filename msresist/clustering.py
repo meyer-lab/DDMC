@@ -22,8 +22,7 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        print(self.ncl, self.SeqWeight)
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp = EM_clustering_opt(X, self.info, 
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp_, self.wins_ = EM_clustering_opt(X, self.info, 
                                                                                                self.ncl, 
                                                                                                self.SeqWeight, 
                                                                                                self.distance_method,
@@ -34,14 +33,14 @@ class MassSpecClustering(BaseEstimator):
 
     def transform(self, X):
         """ calculate cluster averages. """
-        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
         centers, _ = ClusterAverages(X, self.labels_)
         return centers
 
     def clustermembers(self, X):
         """ generate dictionary containing peptide names and sequences for each cluster. """
-        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
@@ -50,7 +49,7 @@ class MassSpecClustering(BaseEstimator):
         """ Predict the cluster each sequence in ABC belongs to. If this estimator is gridsearched alone it
         won't work since all sequences are passed. """
         print("pred")
-        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
         labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
         return labels
@@ -58,7 +57,7 @@ class MassSpecClustering(BaseEstimator):
     def score(self, X, _Y=None):
         print("score")
         """ Scoring method, mean of combined p-value of all peptides"""
-        check_is_fitted(self, ["cl_seqs_", "gmmp", "labels_", "scores_", "n_iter_"])
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
         _, score = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
         return score
