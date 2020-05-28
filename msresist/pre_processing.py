@@ -80,7 +80,7 @@ def preprocessing(
     ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilter(X, data_headers, FCto)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60)
 
     if not log2T:
         if FCtoUT:
@@ -123,7 +123,7 @@ def LinearFoldChange(X, data_headers, FCto):
 
 
 def Linear(X, data_headers):
-    """ Convert to linear fold-change from log2 mean-centered. """
+    """ Convert to linear from log2 mean-centered. """
     X[data_headers] = pd.DataFrame(np.power(2, X[data_headers]))
     return X
 
@@ -156,13 +156,20 @@ def VarianceFilter(X, data_headers, varCut=0.1):
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
-def FoldChangeFilter(X, data_headers, FCto, cutoff=0.4):
+def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy(), data_headers, FCto)
     Xidx = np.any(XX[data_headers].values <= 1 - cutoff, axis=1) | np.any(XX[data_headers].values >= 1 + cutoff, axis=1)
     return X.iloc[Xidx, :]
 
+def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60):
+    """ Filter rows for those containing a 50% change of the maximum vs minimum fold-change
+    across every condition. """
+    XX = Linear(X.copy(), data_headers)
+    X_ToMin = XX[data_headers] / XX[data_headers].min(axis=0)
+    Xidx = np.any(X_ToMin[data_headers].values >= X_ToMin[data_headers].max().values*cutoff, axis=1)
+    return X.iloc[Xidx, :]
 
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
