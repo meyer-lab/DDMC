@@ -39,7 +39,7 @@ def m_step(d, gmm, gmmp_hard, gmm_method):
             weights = gmmp_hard[:, i]
             gmm.distributions[i].fit(d, weights=weights)
 
-    elif gmm_method == "sklearn":
+    if gmm_method == "sklearn":
         gmm._m_step(d, gmmp_hard)
 
 

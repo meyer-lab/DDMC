@@ -17,7 +17,8 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
                                                                distance_method=distance_method,
                                                                ncl=2,
                                                                SeqWeight=0,
-                                                               n_runs=3)),
+                                                               n_runs=3,
+                                                               max_n_iter=200)),
                            ("plsr", PLSRegression(n_components=2))])
     param_grid = set_grid()
 
@@ -47,8 +48,8 @@ def GridSearch_CV(model, parameters, cv, X, Y=None, scoring=None):
 def set_grid():
     """ Define the parameter combinations to test the model with. """
     param_grid = []
-    weights = [0.5, 15, 50, 100]
-    for nn in range(2, 11):
+    weights = [0.1, 1, 2, 3, 4, 5]
+    for nn in range(2, 15):
         #         if nn < 5:
         param_grid.append(dict(MSclustering__ncl=[nn],
                                MSclustering__SeqWeight=weights))

@@ -25,7 +25,6 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, m
         idx = np.argmin(scores)
     elif distance_method == "PAM250":
         idx = np.argmax(scores)
-
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
 
 
@@ -54,7 +53,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
     store_Clseqs, store_scores, store_labels = [], [], []
     store_labels.append(gmm.predict(d))
     for n_iter in range(max_n_iter):
-        print("N_ITER:", n_iter)
+#         print("N_ITER:", n_iter)
         labels, scores = [], []
         seq_reassign = [[] for i in range(ncl)]
 
@@ -85,7 +84,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         store_labels.append(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + \
             " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
-        print(np.mean(scores))
+#         print(np.mean(scores))
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign

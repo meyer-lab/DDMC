@@ -17,6 +17,7 @@ from msresist.parameter_tuning import MSclusPLSR_tuning
 from msresist.plsr import Q2Y_across_components, R2Y_across_components, Q2Y_across_comp_manual
 from msresist.motifs import preprocess_seqs
 from msresist.figures.figure1 import pca_dfs
+import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import seaborn as sns
@@ -437,12 +438,43 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
 def plotclustersIndividually(centers, labels, nrows, ncols):
     fig, ax = plt.subplots(nrows, ncols, figsize=(20, 10), sharex=True, sharey=True)
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
-    l = [0, 5, 10]
     for i in range(centers.shape[0]):
-        ax[i // 5][i % 5].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
-        ax[i // 5][i % 5].set_xticks(np.arange(len(labels)))
-        ax[i // 5][i % 5].set_xticklabels(labels, rotation=45)
-        ax[i // 5][i % 5].set_ylabel("$log_{10}$ phospho signal")
-        ax[i // 5][i % 5].legend()
-        if i not in l:
-            ax[i // 5][i % 5].set_ylabel("")
+        ax[i // ncols][i % ncols].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
+        ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
+        ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
+        ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
+        ax[i // ncols][i % ncols].legend()
+
+
+def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
+    """boxplot of peptides included in a dictionary with gene name / position pairs"""
+    m = selectpeptides(X.copy().set_index(["Gene", "Position"]), a).drop(["Cluster", "Position", "Protein", "Sequence", "UniprotAcc"], axis=1)
+    m = pd.melt(m, value_vars=list(m.columns)[1:], value_name="p-signal", id_vars=["Gene"], var_name="Lines")
+    m['p-signal']=m['p-signal'].astype('float64')
+    if plot == "box":
+        sns.boxplot(x="Lines", y="p-signal", data=m, ax=ax)
+    if plot == "violin":
+        sns.violinplot(x="Lines", y="p-signal", data=m, ax=ax)
+
+
+def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
+    """Boxplot of every cluster"""
+    n = max(X["Cluster"])
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=figsize)
+    colors_ = cm.rainbow(np.linspace(0, 1, n))
+    for i in range(n):
+        cl = X[X["Cluster"] == i+1]
+        m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
+        m['p-signal']=m['p-signal'].astype('float64')
+        if plot == "box":
+            sns.boxplot(x="Lines", y="p-signal", data=m, color=colors_[i], ax=ax[i // ncols][i % ncols])
+            ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
+            ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
+            ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
+            ax[i // ncols][i % ncols].legend(["cluster "+str(i+1)])
+        if plot == "violin":
+            sns.violinplot(x="Lines", y="p-signal", data=m, color=colors_[i], ax=ax[i // ncols][i % ncols])
+            ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
+            ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
+            ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
+            ax[i // ncols][i % ncols].legend(["cluster "+str(i+1)])
