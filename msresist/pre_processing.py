@@ -32,14 +32,20 @@ def preprocessing(
     filesin = list()
 
     if AXLwt:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20180817_JG_AM_TMT10plex_R1_psms_raw.csv"), header=0))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv"), header=0))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/CombinedBR3_TR1&2_raw.csv"), header=0))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/20180817_JG_AM_TMT10plex_R1_psms_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/CombinedBR3_TR1&2_raw.csv")))
     if Axlmuts_Erl:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv"), header=0))
+        filesin.append(pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv")))
     if Axlmuts_ErlAF154:
-        br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"), header=0)
-        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
+        br1 = pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
+        br2 = pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
         br2.columns = br1.columns
         filesin.append(br1)
 #         filesin.append(br2)
@@ -79,7 +85,8 @@ def preprocessing(
     ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilter(X, data_headers, FCto)
+        X = FoldChangeMinToMax(X, data_headers, cutoff=0.5)
+#         X = FoldChangeFilter(X, data_headers, FCto)
 
     if not log2T:
         if FCtoUT:
@@ -158,7 +165,15 @@ def FoldChangeFilter(X, data_headers, FCto, cutoff=0.2):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy(), data_headers, FCto)
-    Xidx = np.any(XX[data_headers].values <= 1 - cutoff, axis=1) | np.any(XX[data_headers].values >= 1 + cutoff, axis=1)
+    Xidx = np.any(XX[data_headers].values <= 1 - cutoff, axis=1) | \
+                    np.any(XX[data_headers].values >= 1 + cutoff, axis=1)
+    return X.iloc[Xidx, :]
+
+
+def FoldChangeMinToMax(X, data_headers, cutoff=0.65):
+    XX = Linear(X.copy(), data_headers)
+    x_toMin = XX[data_headers] / XX[data_headers].min()
+    Xidx = np.any(x_toMin.values >= x_toMin.max().values * cutoff, axis=1)
     return X.iloc[Xidx, :]
 
 
@@ -210,7 +225,7 @@ def MapOverlappingPeptides(ABC):
 
 
 def BuildMatrix(peptides, ABC, data_headers, FCto):
-    """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values.
+    """ Map identified recurrent peptides to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     ABC = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False)
 

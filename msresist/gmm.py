@@ -44,13 +44,10 @@ def m_step(d, gmm, gmmp_hard, gmm_method):
 
 
 def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
-    """ Make data and sequencec scores as close in magnitude as possible. """
+    """ Make data and sequence scores as close in magnitude as possible. """
     if distance_method == "PAM250":
         gmmp = gmm_pred * 100
     elif distance_method == "Binomial":
         gmm_pred[gmm_pred == 1] = 0.9999999999999
         gmmp = np.log(1 - gmm_pred)
-    else:
-        print("Distance method not regonized")
-        raise SystemExit
     return gmmp
