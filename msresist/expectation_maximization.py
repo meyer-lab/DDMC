@@ -2,14 +2,12 @@
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import math
-from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
 from msresist.gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
 from msresist.binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
 from msresist.pam250 import MotifPam250Scores, pairwise_score
-from msresist.motifs import ForegroundSeqs, CountPsiteTypes
+from msresist.motifs import ForegroundSeqs
 
 
 def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter, n_runs):

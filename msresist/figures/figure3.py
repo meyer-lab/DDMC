@@ -8,20 +8,18 @@ import scipy as sp
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
-from sklearn.model_selection import cross_val_predict, LeaveOneOut
+from sklearn.model_selection import LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from msresist.clustering import MassSpecClustering
-from msresist.parameter_tuning import MSclusPLSR_tuning
-from msresist.plsr import Q2Y_across_components, R2Y_across_components, Q2Y_across_comp_manual
-from msresist.motifs import preprocess_seqs
+from msresist.plsr import R2Y_across_components, Q2Y_across_comp_manual
 from msresist.figures.figure1 import pca_dfs
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import seaborn as sns
-from msresist.pre_processing import preprocessing, MergeDfbyMean, y_pre, FixColumnLabels
+from msresist.pre_processing import preprocessing, y_pre, FixColumnLabels
 import warnings
 from Bio import BiopythonWarning
 
