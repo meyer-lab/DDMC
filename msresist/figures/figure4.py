@@ -3,9 +3,7 @@ This creates Figure 4.
 """
 
 from .common import subplotLabel, getSetup
-from msresist.pre_processing import preprocessing
 import pandas as pd
-import numpy as np
 from msresist.figures.figure3 import plotclusteraverages
 from msresist.clustering import MassSpecClustering
 

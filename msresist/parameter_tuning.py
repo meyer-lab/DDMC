@@ -1,6 +1,5 @@
 """ Hyperparameter Tuning using GridSearch. """
 
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
@@ -24,13 +23,6 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error")
     fit = grid.fit(X, Y)
     CVresults_max = pd.DataFrame(data=fit.cv_results_)
-    std_scores = {
-        "#Clusters": CVresults_max["param_MSclustering__ncl"],
-        #         "#Components": CVresults_max["param_plsr__n_components"],
-        "SeqWeights": CVresults_max["param_MSclustering__SeqWeight"],
-        "mean_test_scores": CVresults_max["mean_test_score"],
-        "mean_train_scores": CVresults_max["mean_train_score"],
-    }
     return CVresults_max
 
 

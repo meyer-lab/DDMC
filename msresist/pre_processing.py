@@ -47,7 +47,6 @@ def preprocessing(
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
-        display(X.head())
 
     data_headers = list(filesin[0].select_dtypes(include=["float64"]).columns)
     FCto = data_headers[1]
