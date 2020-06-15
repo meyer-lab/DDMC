@@ -32,23 +32,30 @@ def preprocessing(
     filesin = list()
 
     if AXLwt:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20180817_JG_AM_TMT10plex_R1_psms_raw.csv"), header=0))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv"), header=0))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/CombinedBR3_TR1&2_raw.csv"), header=0))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/20180817_JG_AM_TMT10plex_R1_psms_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path,
+                                "./data/MS/AXL/CombinedBR3_TR1&2_raw.csv")))
     if Axlmuts_Erl:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv"), header=0))
+        filesin.append(pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv")))
     if Axlmuts_ErlAF154:
-        br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"), header=0)
-        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
+        br1 = pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
+        br2 = pd.read_csv(os.path.join(path, 
+                                "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
         br2.columns = br1.columns
         filesin.append(br1)
 #         filesin.append(br2)
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
+        display(X.head())
 
     data_headers = list(filesin[0].select_dtypes(include=['float64']).columns)
-    FCto = data_headers[0]
+    FCto = data_headers[1]
 
     if mc_row or mc_col:
         X = MeanCenter(Log2T(pd.concat(filesin), data_headers), data_headers, mc_row, mc_col)
@@ -79,7 +86,7 @@ def preprocessing(
     ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilter(X, data_headers, FCto)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.55)
 
     if not log2T:
         if FCtoUT:
@@ -95,6 +102,7 @@ def preprocessCPTAC():
     X = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/CPTAC3_Lung_Adeno_Carcinoma_Phosphoproteome.phosphopeptide.tmt10.csv"))
     d = X.iloc[:, 1:-3]
     X = pd.concat([X.iloc[:, 0], X.iloc[:, -3:], d.loc[:, d.columns.str.contains("CPT")]], axis=1)
+    X = filter_NaNpeptides(X)
 
     n = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/S046_BI_CPTAC3_LUAD_Discovery_Cohort_Samples_r1_May2019.csv"))
     bi_id = list(n[~n["Broad Sample.ID"].str.contains("IR")].iloc[:, 1])
@@ -103,7 +111,7 @@ def preprocessCPTAC():
     return X.drop("Organism", axis=1)
 
 
-def filter_NaNpeptides(X, cut):
+def filter_NaNpeptides(X, cut=.2):
     """ Filter peptides that have a given percentage of missingness """
     Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= cut
     return X.iloc[Xidx, :]
@@ -121,7 +129,7 @@ def LinearFoldChange(X, data_headers, FCto):
 
 
 def Linear(X, data_headers):
-    """ Convert to linear fold-change from log2 mean-centered. """
+    """ Convert to linear from log2 mean-centered. """
     X[data_headers] = pd.DataFrame(np.power(2, X[data_headers]))
     return X
 
@@ -154,13 +162,28 @@ def VarianceFilter(X, data_headers, varCut=0.1):
     return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
 
 
-def FoldChangeFilter(X, data_headers, FCto, cutoff=0.2):
+def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
     """ Filter rows for those containing more than a two-fold change.
     Note this should only be used with linear-scale data normalized to the control. """
     XX = LinearFoldChange(X.copy(), data_headers, FCto)
-    Xidx = np.any(XX[data_headers].values <= 1 - cutoff, axis=1) | np.any(XX[data_headers].values >= 1 + cutoff, axis=1)
+    Xidx = np.any(XX[data_headers].values <= 1 - cutoff, axis=1) | \
+                    np.any(XX[data_headers].values >= 1 + cutoff, axis=1)
     return X.iloc[Xidx, :]
 
+
+def FoldChangeMinToMax(X, data_headers, cutoff=0.65):
+    XX = Linear(X.copy(), data_headers)
+    x_toMin = XX[data_headers] / XX[data_headers].min()
+    Xidx = np.any(x_toMin.values >= x_toMin.max().values * cutoff, axis=1)
+    return X.iloc[Xidx, :]
+
+def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60):
+    """ Filter rows for those containing a 50% change of the maximum vs minimum fold-change
+    across every condition. """
+    XX = Linear(X.copy(), data_headers)
+    X_ToMin = XX[data_headers] / XX[data_headers].min(axis=0)
+    Xidx = np.any(X_ToMin[data_headers].values >= X_ToMin[data_headers].max().values*cutoff, axis=1)
+    return X.iloc[Xidx, :]
 
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
@@ -210,7 +233,7 @@ def MapOverlappingPeptides(ABC):
 
 
 def BuildMatrix(peptides, ABC, data_headers, FCto):
-    """ Map identified recurrent peptides in the concatenated data set to generate complete matrices with values.
+    """ Map identified recurrent peptides to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     ABC = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False)
 
@@ -253,7 +276,7 @@ def BuildMatrix(peptides, ABC, data_headers, FCto):
     return matrix
 
 
-def CorrCoefFilter(X, corrCut=0.5):
+def CorrCoefFilter(X, corrCut=0.6):
     """ Filter rows for those containing more than a correlation threshold. """
     Xidx = X.iloc[:, -1].values >= corrCut
     return X.iloc[Xidx, :]
@@ -276,14 +299,11 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.5):
+def FilterByStdev(X, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
-#     display(pd.DataFrame(StdMeans))
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-#     display(Stds)
-#     display(pd.DataFrame(Xidx))
     if "Position" in X.columns:
         Means = pd.concat([X.iloc[:, :6], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     else:
