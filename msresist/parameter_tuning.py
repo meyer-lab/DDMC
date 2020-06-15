@@ -13,13 +13,12 @@ from msresist.clustering import MassSpecClustering
 
 def MSclusPLSR_tuning(X, info, Y, distance_method):
     """ Cross-validation: Simultaneous hyperparameter search. """
-    MSclusPLSR = Pipeline([("MSclustering", MassSpecClustering(info=info,
-                                                               distance_method=distance_method,
-                                                               ncl=2,
-                                                               SeqWeight=0,
-                                                               n_runs=3,
-                                                               max_n_iter=200)),
-                           ("plsr", PLSRegression(n_components=2))])
+    MSclusPLSR = Pipeline(
+        [
+            ("MSclustering", MassSpecClustering(info=info, distance_method=distance_method, ncl=2, SeqWeight=0, n_runs=3, max_n_iter=200)),
+            ("plsr", PLSRegression(n_components=2)),
+        ]
+    )
     param_grid = set_grid()
 
     grid = GridSearchCV(MSclusPLSR, param_grid=param_grid, cv=X.shape[0], return_train_score=True, scoring="neg_mean_squared_error")
@@ -33,6 +32,7 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
         "mean_train_scores": CVresults_max["mean_train_score"],
     }
     return CVresults_max
+
 
 ###------------ General GridSearch Structure ------------------###
 
@@ -51,11 +51,10 @@ def set_grid():
     weights = [0.1, 1, 2, 3, 4, 5]
     for nn in range(2, 15):
         #         if nn < 5:
-        param_grid.append(dict(MSclustering__ncl=[nn],
-                               MSclustering__SeqWeight=weights))
-#                                    plsr__n_components=list(np.arange(1, nn + 1))))
-#         if nn > 5:
-#             param_grid.append(dict(MSclustering__ncl=[nn],
-#                                    MSclustering__SeqWeight=weights,
-#                                    plsr__n_components=list(np.arange(1, 5))))
+        param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__SeqWeight=weights))
+    #                                    plsr__n_components=list(np.arange(1, nn + 1))))
+    #         if nn > 5:
+    #             param_grid.append(dict(MSclustering__ncl=[nn],
+    #                                    MSclustering__SeqWeight=weights,
+    #                                    plsr__n_components=list(np.arange(1, 5))))
     return param_grid

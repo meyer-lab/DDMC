@@ -14,7 +14,7 @@ class TestEstimator(unittest.TestCase):
     def test_fitting(self):
         """ Test that ClusterAverages is working by comparing to cluster centers. """
         X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-        d = X.select_dtypes(include=['float64']).T
+        d = X.select_dtypes(include=["float64"]).T
         kmeans = KMeans(init="k-means++", n_clusters=4)
         cluster_assignments = kmeans.fit_predict(d.T)
         centers = ClusterAverages(d, cluster_assignments)

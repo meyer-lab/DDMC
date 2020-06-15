@@ -15,8 +15,8 @@ def pYmotifs(X, names):
     names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
     print(len(pXpos))
     X = X.iloc[Xidx, :]
-    X['Gene'] = names
-    X['Sequence'] = seqs
+    X["Gene"] = names
+    X["Sequence"] = seqs
     X.insert(3, "Position", pXpos)
     return X[~X["Sequence"].str.contains("-")]
 
@@ -43,9 +43,9 @@ def CountPsiteTypes(X, cA):
     for seq in X:
         if "s" in seq[cA]:
             pS += 1
-        if 'y' in seq[cA]:
+        if "y" in seq[cA]:
             pY += 1
-        if 't' in seq[cA]:
+        if "t" in seq[cA]:
             pT += 1
         pp = 0
         for i in seq:
@@ -162,7 +162,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
 def GeneratingKinaseMotifs(names, seqs):
     """ Main function to generate motifs using 'findmotif'. """
     motif_size = 5
-    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), 'r')
+    proteome = open(os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), "r")
     ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
     protnames, seqs, Xidx = MatchProtNames(ProteomeDict, names, seqs)
     MS_names, mapped_motifs, uni_pos, = [], [], []
@@ -179,7 +179,7 @@ def GeneratingKinaseMotifs(names, seqs):
 
 def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
     """ Make a motif out of the matched sequences. """
-    UP_seq_copy = list(UP_seq[max(0, ps_protein_idx - motif_size):ps_protein_idx + motif_size + 1])
+    UP_seq_copy = list(UP_seq[max(0, ps_protein_idx - motif_size) : ps_protein_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
     # If we ran off the end of the sequence at the beginning or at the end, append a gap
@@ -203,12 +203,11 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
             if abs(position) < motif_size:
                 editPos = position + motif_size
                 UP_seq_copy[editPos] = UP_seq_copy[editPos].lower()
-                assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], \
-                    UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
+                assert UP_seq_copy[editPos] == MS_seq[ppIDX.start()], UP_seq_copy[editPos] + " " + MS_seq[ppIDX.start()]
                 if position != 0:
                     pidx.append(str(UP_seq_copy[editPos]).upper() + str(ps_protein_idx + position + 1) + "-p")
 
-    return ''.join(UP_seq_copy), pidx
+    return "".join(UP_seq_copy), pidx
 
 
 def preprocess_seqs(X, pYTS):
