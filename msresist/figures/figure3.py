@@ -124,9 +124,8 @@ def makeFigure():
                              ncl, 
                              SeqWeight=SeqWeight, 
                              distance_method=distance_method, 
-                             n_runs=5)
-            .fit(d, y)
-
+                             n_runs=5
+                            ).fit(d, y)
     centers = MSC.transform(d)
 
     plsr = PLSRegression(n_components=ncomp)
