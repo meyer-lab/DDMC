@@ -85,7 +85,7 @@ def preprocessing(
     ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
-        X = FoldChangeMinToMax(X, data_headers, cutoff=0.5)
+        X = FoldChangeMinToMax(X, data_headers, cutoff=0.55)
 #         X = FoldChangeFilter(X, data_headers, FCto)
 
     if not log2T:
