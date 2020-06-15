@@ -5,7 +5,6 @@ import re
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
-# from Bio.Seq import Seq
 
 
 path = os.path.dirname(os.path.abspath(__file__))

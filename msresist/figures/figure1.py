@@ -318,6 +318,7 @@ def plotClustergram(data, title, lim=False, robust=True, figsize=(10, 10)):
         robust=robust,
         vmax=lim,
         vmin=-lim,
+        yticklabels=True,
         figsize=figsize)
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
