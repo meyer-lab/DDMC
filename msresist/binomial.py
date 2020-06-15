@@ -77,7 +77,7 @@ def BinomialMatrix(n, k, p):
     assert list(p.keys()) == list(k.keys())
     BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
-    BMP[BMP == - np.inf] = np.log(float(10**(-323)))
+    BMP[BMP == - np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
     return BMP
 
 
