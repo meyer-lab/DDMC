@@ -24,7 +24,8 @@ import seaborn as sns
 from msresist.pre_processing import preprocessing, MergeDfbyMean, y_pre, FixColumnLabels
 import warnings
 from Bio import BiopythonWarning
-warnings.simplefilter('ignore', BiopythonWarning)
+
+warnings.simplefilter("ignore", BiopythonWarning)
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,13 +36,13 @@ def makeFigure():
     ax, f = getSetup((20, 11), (3, 5))
 
     # blank out first axis for cartoon
-#     ax[0].axis('off')
+    #     ax[0].axis('off')
 
     # -------- Import and Preprocess Signaling Data -------- #
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
 
-    d = X.select_dtypes(include=['float64']).T
-    i = X.select_dtypes(include=['object'])
+    d = X.select_dtypes(include=["float64"]).T
+    i = X.select_dtypes(include=["object"])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     mut_lines = all_lines[1:]
@@ -52,9 +53,9 @@ def makeFigure():
     # -------- Cell Phenotypes -------- #
     # Cell Viability
     cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
-    cv2 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv')
-    cv3 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv')
-    cv4 = pd.read_csv('msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv')
+    cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
+    cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
+    cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
 
     itp = 24
     ftp = 96
@@ -116,16 +117,11 @@ def makeFigure():
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "Binomial"
-    ncl =6
+    ncl = 6
     SeqWeight = 2
     ncomp = 2
 
-    MSC = MassSpecClustering(i, 
-                             ncl, 
-                             SeqWeight=SeqWeight, 
-                             distance_method=distance_method, 
-                             n_runs=5
-                            ).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=5).fit(d, y)
     centers = MSC.transform(d)
 
     plsr = PLSRegression(n_components=ncomp)
@@ -136,8 +132,7 @@ def makeFigure():
 
     # -------- Cross-validation 2 -------- #
 
-    CoCl_plsr = Pipeline([('CoCl', MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)),
-                          ('plsr', PLSRegression(ncomp))])
+    CoCl_plsr = Pipeline([("CoCl", MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ("plsr", PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
     plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
@@ -162,14 +157,14 @@ def PCA_scores(ax, d, n_components):
     varExp = np.round(pp.explained_variance_ratio_, 2)
 
     # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{'linewidth': .5, 'edgecolor': "k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{"linewidth": 0.5, "edgecolor": "k"})
     ax[0].set_title("PCA Scores", fontsize=11)
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
 
     # Loadings
-    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{'linewidth': .5, 'edgecolor': "k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
@@ -178,12 +173,7 @@ def PCA_scores(ax, d, n_components):
 
 def plotGridSearch(ax, gs):
     """ Plot gridsearch results by ranking. """
-    ax = sns.barplot(x="rank_test_score", 
-                     y="mean_test_score", 
-                     data=np.abs(gs.iloc[:20, :]), 
-                     ax=ax, 
-                     **{"linewidth": .5}, 
-                     **{"edgecolor": "black"})
+    ax = sns.barplot(x="rank_test_score", y="mean_test_score", data=np.abs(gs.iloc[:20, :]), ax=ax, **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax.set_title("Hyperaparameter Search")
     ax.set_xticklabels(np.arange(1, 21))
     ax.set_ylabel("Mean Squared Error")
@@ -196,8 +186,8 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
 
     range_ = np.arange(1, b)
 
-    ax.bar(range_ + 0.15, Q2Y, width=0.3, align='center', label='Q2Y', color="darkblue")
-    ax.bar(range_ - 0.15, R2Y, width=0.3, align='center', label='R2Y', color="black")
+    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color="darkblue")
+    ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black")
     ax.set_title("R2Y/Q2Y - Cross-validation strategy: " + str(cv), fontsize=12)
     ax.set_xticks(range_)
     ax.set_xlabel("Number of Components", fontsize=11)
@@ -247,13 +237,13 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ax[i].set_title(label)
 
         spacer = 1.1
-        ax[i].set_aspect('equal', 'datalim')
+        ax[i].set_aspect("equal", "datalim")
 
         # Add correlation coefficient
         coeff, _ = sp.stats.pearsonr(ypred, y)
         textstr = "$r$ = " + str(np.round(coeff, 4))
-        props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment='top', bbox=props)
+        props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):
@@ -273,11 +263,11 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", an
     ax[0].scatter(PC1_scores, PC2_scores)
     for j, txt in enumerate(treatments):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
-    ax[0].set_title('PLSR Model Scores', fontsize=12)
-    ax[0].set_xlabel('Principal Component 1', fontsize=11)
-    ax[0].set_ylabel('Principal Component 2', fontsize=11)
-    ax[0].axhline(y=0, color='0.25', linestyle='--')
-    ax[0].axvline(x=0, color='0.25', linestyle='--')
+    ax[0].set_title("PLSR Model Scores", fontsize=12)
+    ax[0].set_xlabel("Principal Component 1", fontsize=11)
+    ax[0].set_ylabel("Principal Component 2", fontsize=11)
+    ax[0].axhline(y=0, color="0.25", linestyle="--")
+    ax[0].axvline(x=0, color="0.25", linestyle="--")
 
     spacer = 0.5
     ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
@@ -296,13 +286,14 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", an
     markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
         ax[1].annotate(label, (PC1_yload[i] + 0.001, PC2_yload[i] - 0.001))
-        ax[1].scatter(PC1_yload[i], PC2_yload[i], color='black', marker=markers[i])
+        ax[1].scatter(PC1_yload[i], PC2_yload[i], color="black", marker=markers[i])
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
-    ax[1].set_title('PLSR Model Loadings', fontsize=12)
-    ax[1].set_xlabel('Principal Component 1', fontsize=11)
-    ax[1].set_ylabel('Principal Component 2', fontsize=11)
-    ax[1].axhline(y=0, color='0.25', linestyle='--')
-    ax[1].axvline(x=0, color='0.25', linestyle='--')
+    ax[1].set_title("PLSR Model Loadings", fontsize=12)
+    ax[1].set_xlabel("Principal Component 1", fontsize=11)
+    ax[1].set_ylabel("Principal Component 2", fontsize=11)
+    ax[1].axhline(y=0, color="0.25", linestyle="--")
+    ax[1].axvline(x=0, color="0.25", linestyle="--")
+
 
 #     spacer = 0.1
 #     ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
@@ -330,7 +321,7 @@ def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
     xloads = pd.DataFrame()
     xloads["PC1"] = PC1_xload
     xloads["PC2"] = PC2_xload
-    xloads.index =  X.columns
+    xloads.index = X.columns
 
     yloads = pd.DataFrame()
     yloads["PC1"] = PC1_yload
@@ -343,50 +334,43 @@ def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PLSR Scores", "PLSR Loadings"))
     fig.add_trace(
         go.Scatter(
-            mode='markers+text',
+            mode="markers+text",
             x=scores["PC1"],
             y=scores["PC2"],
             text=scores.index,
             textposition="top center",
-            textfont=dict(
-                size=10,
-                color="black"),
-            marker=dict(
-                color='blue',
-                size=8,
-                line=dict(
-                    color='black',
-                    width=1))),
-        row=1, col=1)
+            textfont=dict(size=10, color="black"),
+            marker=dict(color="blue", size=8, line=dict(color="black", width=1)),
+        ),
+        row=1,
+        col=1,
+    )
 
     fig.add_trace(
         go.Scatter(
-            mode='markers',
+            mode="markers",
             x=xloads["PC1"],
             y=xloads["PC2"],
             opacity=0.7,
             text=["Protein: " + xloads.index[i][0] + "  Pos: " + xloads.index[i][1] for i in range(len(xloads.index))],
-            marker=dict(
-                size=8,
-                line=dict(
-                    color='black',
-                    width=1))),
-        row=1, col=2)
+            marker=dict(size=8, line=dict(color="black", width=1)),
+        ),
+        row=1,
+        col=2,
+    )
 
     fig.add_trace(
         go.Scatter(
-            mode='markers',
+            mode="markers",
             x=yloads["PC1"],
             y=yloads["PC2"],
             opacity=0.7,
             text=yloads.index,
-            marker=dict(
-                color=['green', "black", "blue", "cyan"],
-                size=10,
-                line=dict(
-                    color='black',
-                    width=1))),
-        row=1, col=2)
+            marker=dict(color=["green", "black", "blue", "cyan"], size=10, line=dict(color="black", width=1)),
+        ),
+        row=1,
+        col=2,
+    )
 
     fig.update_layout(
         height=500,
@@ -395,7 +379,8 @@ def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
         xaxis2=dict(showgrid=False),
-        yaxis2=dict(showgrid=False))
+        yaxis2=dict(showgrid=False),
+    )
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
     fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
@@ -410,7 +395,7 @@ def plotclusteraverages(ax, centers, treatments):
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
 
     for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], marker='o', label="cluster " + str(i + 1), color=colors_[i])
+        ax.plot(centers.iloc[i, :], marker="o", label="cluster " + str(i + 1), color=colors_[i])
 
     ax.set_xticks(np.arange(centers.shape[1]))
     ax.set_xticklabels(treatments, rotation=45)
@@ -435,9 +420,9 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
     x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
 
-    ax.bar(x1, twoC, width, edgecolor='black', color="g")
-    ax.bar(x2, threeC, width, edgecolor='black', color="g")
-    ax.bar(x3, fourC, width, edgecolor='black', color="g")
+    ax.bar(x1, twoC, width, edgecolor="black", color="g")
+    ax.bar(x2, threeC, width, edgecolor="black", color="g")
+    ax.bar(x3, fourC, width, edgecolor="black", color="g")
     ax.bar(x4, fiveC, width, edgecolor="black", color="g")
     ax.bar(x5, sixC, width, edgecolor="black", color="g")
 
@@ -467,7 +452,7 @@ def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
     """boxplot of peptides included in a dictionary with gene name / position pairs"""
     m = selectpeptides(X.copy().set_index(["Gene", "Position"]), a).drop(["Cluster", "Position", "Protein", "Sequence", "UniprotAcc"], axis=1)
     m = pd.melt(m, value_vars=list(m.columns)[1:], value_name="p-signal", id_vars=["Gene"], var_name="Lines")
-    m['p-signal']=m['p-signal'].astype('float64')
+    m["p-signal"] = m["p-signal"].astype("float64")
     if plot == "box":
         sns.boxplot(x="Lines", y="p-signal", data=m, ax=ax)
     if plot == "violin":
@@ -479,22 +464,22 @@ def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
     n = max(X["Cluster"])
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
     for i in range(n):
-        cl = X[X["Cluster"] == i+1]
+        cl = X[X["Cluster"] == i + 1]
         m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
-        m['p-signal']=m['p-signal'].astype('float64')
+        m["p-signal"] = m["p-signal"].astype("float64")
         if plot == "box":
             sns.boxplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
-#             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".25", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
+            #             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".25", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
             ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
             ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
             ax[i // ncols][i % ncols].set_xlabel("")
-            ax[i // ncols][i % ncols].legend(["cluster "+str(i+1)])
+            ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
         if plot == "violin":
             sns.violinplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
-#             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".95", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
+            #             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".95", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
             ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
-            ax[i // ncols][i % ncols].legend(["cluster "+str(i+1)])
+            ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])

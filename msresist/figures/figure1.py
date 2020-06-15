@@ -14,13 +14,14 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+
 # from plotly.subplots import make_subplots
 # import plotly.graph_objects as go
 sns.set(color_codes=True)
 
 
 path = os.path.dirname(os.path.abspath(__file__))
-pd.set_option('display.max_columns', 30)
+pd.set_option("display.max_columns", 30)
 
 
 def makeFigure():
@@ -48,8 +49,8 @@ def makeFigure():
 
     # A: Cell Viability
     ds = [r1, r2, r3, r4]
-    tr1 = ["-UT", '-E', '-A/E']
-    tr2 = ["Untreated", 'Erlotinib', 'Erl + AF154']
+    tr1 = ["-UT", "-E", "-A/E"]
+    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
     ylabel = "fold-change to t=" + str(itp) + "h"
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
@@ -57,8 +58,8 @@ def makeFigure():
     barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", TimePointFC=itp, colors=c)
 
     # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_AF154.png')
-    hm_erl = mpimg.imread('msresist/data/MS/AXL/CV_reducedHM_Erl.png')
+    hm_af154 = mpimg.imread("msresist/data/MS/AXL/CV_reducedHM_AF154.png")
+    hm_erl = mpimg.imread("msresist/data/MS/AXL/CV_reducedHM_Erl.png")
     ax[2].imshow(hm_af154)
     ax[2].axis("off")
     ax[3].imshow(hm_erl)
@@ -66,12 +67,12 @@ def makeFigure():
 
     # Scores and Loadings MS data
     A = A.drop(["WT"], axis=1)
-    d = A.select_dtypes(include=['float64']).T
+    d = A.select_dtypes(include=["float64"]).T
     plotpca_ScoresLoadings(ax[4:6], d, list(A["Gene"]), list(A["Position"]))
 
     # Variability across overlapping peptides in MS replicates
-#     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
-#     plotVarReplicates(ax[4:6], X)
+    #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
+    #     plotVarReplicates(ax[4:6], X)
 
     # Phosphorylation levels of selected peptides
     A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
@@ -103,7 +104,9 @@ def makeFigure():
     return f
 
 
-def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10)):
+def IndividualTimeCourses(
+    ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10)
+):
     """ Plot time course data of each cell line across treatments individually. """
     ds = FixColumnLabels(ds)
     c = []
@@ -148,7 +151,7 @@ def IndividualTimeCourses(ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, Tre
         ax_.set_ylabel(ylabel)
 
     if savefig:
-        fig.savefig("TimeCourse.pdf", bbox_inches='tight')
+        fig.savefig("TimeCourse.pdf", bbox_inches="tight")
 
 
 def TimePointFoldChange(d, itp):
@@ -225,13 +228,15 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=Fa
 
     c = pd.concat(c)
     pal = sns.xkcd_palette(colors)
-    ax = sns.barplot(x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": .5}, **{"edgecolor": "black"})
+    ax = sns.barplot(
+        x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": 0.5}, **{"edgecolor": "black"}
+    )
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=90)
 
 
-'''Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot'''
+"""Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot"""
 
 
 def FCvsUT_TimeCourse(ax, ds, itp, ftp, lines, tr1, treatment, title, FC=False):
@@ -311,15 +316,7 @@ def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
 # Plot Separately since makefigure can't add it as a subplot
 def plotClustergram(data, title, lim=False, robust=True, figsize=(10, 10)):
     """ Clustergram plot. """
-    g = sns.clustermap(
-        data,
-        method="complete",
-        cmap="bwr",
-        robust=robust,
-        vmax=lim,
-        vmin=-lim,
-        yticklabels=True,
-        figsize=figsize)
+    g = sns.clustermap(data, method="complete", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, yticklabels=True, figsize=figsize)
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
     ax.set_ylabel("")
@@ -336,7 +333,7 @@ def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
 
     for j in sIDX:
         dScor[j] = list(df[j])
-    dLoad[lIDX] = df.select_dtypes(include=['float64']).columns
+    dLoad[lIDX] = df.select_dtypes(include=["float64"]).columns
     return dScor, dLoad
 
 
@@ -368,11 +365,11 @@ def plotpca_ScoresLoadings(ax, data, pn, ps):
     ax[0].scatter(PC1_scores, PC2_scores, linewidths=0.2)
     for j, txt in enumerate(list(data.index)):
         ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
-    ax[0].set_title('PCA Scores')
-    ax[0].set_xlabel('Principal Component 1')
-    ax[0].set_ylabel('Principal Component 2')
-    ax[0].axhline(y=0, color='0.25', linestyle='--')
-    ax[0].axvline(x=0, color='0.25', linestyle='--')
+    ax[0].set_title("PCA Scores")
+    ax[0].set_xlabel("Principal Component 1")
+    ax[0].set_ylabel("Principal Component 2")
+    ax[0].axhline(y=0, color="0.25", linestyle="--")
+    ax[0].axvline(x=0, color="0.25", linestyle="--")
 
     spacer = 0.5
     ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
@@ -407,17 +404,18 @@ def plotpca_ScoresLoadings(ax, data, pn, ps):
         "ATP1A1 Y55-p",
         "YES1 Y446",
         "EPHB3 Y792-p",
-        "SLC35E1 Y403-p"]
+        "SLC35E1 Y403-p",
+    ]
     for i, name in enumerate(pn):
         p = name + " " + ps[i]
         if p in poi:
             ax[1].annotate(name, (PC1_loadings[i], PC2_loadings[i]))
     ax[1].scatter(PC1_loadings, PC2_loadings, c="darkred", linewidths=0.2, alpha=0.7)
-    ax[1].set_title('PCA Loadings')
-    ax[1].set_xlabel('Principal Component 1')
-    ax[1].set_ylabel('Principal Component 2')
-    ax[1].axhline(y=0, color='0.25', linestyle='--')
-    ax[1].axvline(x=0, color='0.25', linestyle='--')
+    ax[1].set_title("PCA Loadings")
+    ax[1].set_xlabel("Principal Component 1")
+    ax[1].set_ylabel("Principal Component 2")
+    ax[1].axhline(y=0, color="0.25", linestyle="--")
+    ax[1].axvline(x=0, color="0.25", linestyle="--")
 
     spacer = 0.05
     ax[1].set_xlim([(-1 * max(np.abs(PC1_loadings)) - spacer), (max(np.abs(PC1_loadings)) + spacer)])
@@ -443,36 +441,30 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig = make_subplots(rows=1, cols=2, subplot_titles=("PCA Scores", "PCA Loadings"))
     fig.add_trace(
         go.Scatter(
-            mode='markers+text',
+            mode="markers+text",
             x=scores["PC1"],
             y=scores["PC2"],
             text=scores.index,
             textposition="top center",
-            textfont=dict(
-                size=10,
-                color="black"),
-            marker=dict(
-                color='blue',
-                size=8,
-                line=dict(
-                    color='black',
-                    width=1))),
-        row=1, col=1)
+            textfont=dict(size=10, color="black"),
+            marker=dict(color="blue", size=8, line=dict(color="black", width=1)),
+        ),
+        row=1,
+        col=1,
+    )
 
     fig.add_trace(
         go.Scatter(
-            mode='markers',
+            mode="markers",
             x=loadings["PC1"],
             y=loadings["PC2"],
             opacity=0.7,
             text=["Protein: " + loadings.index[i][0] + "  Pos: " + loadings.index[i][1] for i in range(len(loadings.index))],
-            marker=dict(
-                color='crimson',
-                size=8,
-                line=dict(
-                    color='black',
-                    width=1))),
-        row=1, col=2)
+            marker=dict(color="crimson", size=8, line=dict(color="black", width=1)),
+        ),
+        row=1,
+        col=2,
+    )
 
     fig.update_layout(
         height=500,
@@ -482,7 +474,8 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
         yaxis=dict(showgrid=False),
         xaxis2=dict(showgrid=False),
         yaxis2=dict(showgrid=False),
-        title_text=title),
+        title_text=title,
+    ),
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
     fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
     fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
@@ -500,12 +493,12 @@ def plotVarReplicates(ax, ABC):
     DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
     # DupsTable = CorrCoefFilter(DupsTable)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
-    assert(DupsTable.shape[0] / 2 == DupsTable_drop.shape[0])
+    assert DupsTable.shape[0] / 2 == DupsTable_drop.shape[0]
 
     # Stdev of Triplicates, optionally filtering first
     StdPeptides = BuildMatrix(StdPeptides, ABC)
     TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
-    Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == 'std']
+    Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == "std"]
     # Xidx = np.all(Stds.values <= 0.4, axis=1)
     # Stds = Stds.iloc[Xidx, :]
 
@@ -514,15 +507,15 @@ def plotVarReplicates(ax, ABC):
     ax[0].set_ylabel("Number of peptides")
     ax[0].set_xlabel("Pearson Correlation Coefficients (n=" + str(DupsTable_drop.shape[0]) + ")")
     textstr = "$r2$ mean = " + str(np.round(DupsTable_drop.iloc[:, -1].mean(), 2))
-    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[0].text(.03, .96, textstr, transform=ax[0].transAxes, verticalalignment='top', bbox=props)
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax[0].text(0.03, 0.96, textstr, transform=ax[0].transAxes, verticalalignment="top", bbox=props)
 
     ax[1].hist(Stds.mean(axis=1), bins=n_bins, edgecolor="black", linewidth=1)
     ax[1].set_ylabel("Number of peptides")
     ax[1].set_xlabel("Mean of Standard Deviations (n=" + str(Stds.shape[0]) + ")")
     textstr = "$σ$ mean = " + str(np.round(np.mean(Stds.mean(axis=1)), 2))
-    props = dict(boxstyle='square', facecolor='none', alpha=0.5, edgecolor='black')
-    ax[1].text(.75, .96, textstr, transform=ax[1].transAxes, verticalalignment='top', bbox=props)
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax[1].text(0.75, 0.96, textstr, transform=ax[1].transAxes, verticalalignment="top", bbox=props)
 
 
 def plot_AllSites(ax, x, prot, title):
@@ -534,7 +527,7 @@ def plot_AllSites(ax, x, prot, title):
         peptides = peptides.T
         d = peptides.iloc[:, 4:]
     else:
-        d = peptides.select_dtypes(include=['float64'])
+        d = peptides.select_dtypes(include=["float64"])
 
     positions = x.loc[prot]["Position"]
 

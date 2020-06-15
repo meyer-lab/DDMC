@@ -32,7 +32,8 @@ AAfreq = {
     "T": 0.062,
     "W": 0.013,
     "Y": 0.033,
-    "V": 0.068}
+    "V": 0.068,
+}
 
 
 def GenerateBPM(cl_seqs, distance_method, bg_pwm):
@@ -72,16 +73,15 @@ def frequencies(seqs):
 def BinomialMatrix(n, k, p):
     """ Build binomial probability matrix. Note n is the number of sequences,
     k is the counts matrix of the MS data set, p is the pwm of the background. """
-    assert list(k.keys()) == ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
-                              'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+    assert list(k.keys()) == ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
     assert list(p.keys()) == list(k.keys())
     BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
-    BMP[BMP == - np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
+    BMP[BMP == -np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
     return BMP
 
 
-def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
+def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):
     """ Identify the most significant residue/position pairs acroos the binomial
     probability matrix meeting a probability and a occurence threshold."""
     motif = list("X" * 11)
@@ -97,7 +97,7 @@ def ExtractMotif(BMP, freqs, pvalCut=10**(-4), occurCut=7):
         else:
             motif[i] = "x"
 
-    return ''.join(motif)
+    return "".join(motif)
 
 
 def MeanBinomProbs(BPM, motif):
@@ -168,11 +168,9 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         if seq[7] not in pR:
             continue
 
-        motif = str(seq)[7 - 5:7 + 6].upper()
-        assert len(motif) == 11, \
-            "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
-        assert motif[5].lower() in pR, \
-            "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
+        motif = str(seq)[7 - 5 : 7 + 6].upper()
+        assert len(motif) == 11, "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
+        assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
             y_seqs.append(Seq(motif, IUPAC.protein))

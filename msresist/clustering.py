@@ -22,13 +22,9 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """ Compute EM clustering. """
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp_, self.wins_ = EM_clustering_opt(X, self.info, 
-                                                                                               self.ncl, 
-                                                                                               self.SeqWeight, 
-                                                                                               self.distance_method,
-                                                                                               self.gmm_method,
-                                                                                               self.max_n_iter,
-                                                                                               self.n_runs)
+        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmmp_, self.wins_ = EM_clustering_opt(
+            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.gmm_method, self.max_n_iter, self.n_runs
+        )
         return self
 
     def transform(self, X):
@@ -51,23 +47,26 @@ class MassSpecClustering(BaseEstimator):
         print("pred")
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
-        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, 
-                           self.distance_method, self.SeqWeight, self.ncl)
+        labels, _ = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
         return labels
 
     def score(self, X, _Y=None):
         """ Scoring method, mean of combined p-value of all peptides"""
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmmp_", "wins_"])
 
-        _, score = e_step(X, self.cl_seqs_, self.gmmp, 
-                          self.distance_method, self.SeqWeight, self.ncl)
+        _, score = e_step(X, self.cl_seqs_, self.gmmp, self.distance_method, self.SeqWeight, self.ncl)
         return score
 
     def get_params(self, deep=True):
         """ Returns a dict of the estimator parameters with their values. """
-        return {"info": self.info, "ncl": self.ncl,
-                "SeqWeight": self.SeqWeight, "distance_method": self.distance_method,
-                "gmm_method": self.gmm_method, "max_n_iter": self.max_n_iter}
+        return {
+            "info": self.info,
+            "ncl": self.ncl,
+            "SeqWeight": self.SeqWeight,
+            "distance_method": self.distance_method,
+            "gmm_method": self.gmm_method,
+            "max_n_iter": self.max_n_iter,
+        }
 
     def set_params(self, **parameters):
         """ Necessary to make this estimator scikit learn-compatible."""
@@ -88,9 +87,9 @@ def ClusterAverages(X, labels):
             dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
             dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])
             dict_clustermembers["Position_C" + str(i + 1)] = list(X[X["cluster"] == i]["Position"])
-#             dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i]["UniprotAcc"])
-#             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
-#             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
+    #             dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i]["UniprotAcc"])
+    #             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
+    #             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
 
-    members =  pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
+    members = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
     return pd.DataFrame(centers).T, members
