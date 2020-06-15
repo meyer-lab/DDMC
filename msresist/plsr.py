@@ -49,7 +49,7 @@ def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
     Q2Ys = []
     cols = X.columns
     Y = np.array(Y)
-    X = np.array(X)
+    X = sp.stats.zscore(X, axis=0)
     for b in range(1, max_comps):
         # Cross-validation across fixed clusters
         if cv == 1:
@@ -57,7 +57,8 @@ def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
             for train_index, test_index in LeaveOneOut().split(X, Y):
                 X_train, X_test = X[train_index], X[test_index]
                 Y_train, Y_test = Y[train_index], Y[test_index]
-                Y_train = sp.stats.zscore(Y_train)
+                Y_train = sp.stats.zscore(Y_train, axis=0)
+                X_train = sp.stats.zscore(X_train, axis=0)
                 model.fit(X_train, Y_train)
                 Y_predict = model.predict(X_test)
                 PRESS_i = (Y_predict - Y_test) ** 2

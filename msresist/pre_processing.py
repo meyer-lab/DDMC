@@ -80,7 +80,7 @@ def preprocessing(
     ).reset_index()[object_headers + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.55)
 
     if not log2T:
         if FCtoUT:

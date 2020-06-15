@@ -282,7 +282,7 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", an
         numbered = []
         list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
         for i, txt in enumerate(numbered):
-            ax[1].annotate(txt, (PC1_xload[i-1], PC2_xload[i-1]))
+            ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
     markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
         ax[1].annotate(label, (PC1_yload[i] + 0.001, PC2_yload[i] - 0.001))
@@ -460,20 +460,23 @@ def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
 def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
     """Boxplot of every cluster"""
     n = max(X["Cluster"])
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=figsize)
-    colors_ = cm.rainbow(np.linspace(0, 1, n))
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
     for i in range(n):
         cl = X[X["Cluster"] == i+1]
         m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
         m['p-signal']=m['p-signal'].astype('float64')
         if plot == "box":
-            sns.boxplot(x="Lines", y="p-signal", data=m, color=colors_[i], ax=ax[i // ncols][i % ncols])
+            sns.boxplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
+#             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".25", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
             ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
+            ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
+            ax[i // ncols][i % ncols].set_xlabel("")
             ax[i // ncols][i % ncols].legend(["cluster "+str(i+1)])
         if plot == "violin":
-            sns.violinplot(x="Lines", y="p-signal", data=m, color=colors_[i], ax=ax[i // ncols][i % ncols])
+            sns.violinplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
+#             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".95", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
             ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
