@@ -44,7 +44,7 @@ def m_step(d, gmm, gmmp_hard, gmm_method):
 
 
 def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
-    """ Make data and sequencec scores as close in magnitude as possible. """
+    """ Make data and sequence scores as close in magnitude as possible. """
     if distance_method == "PAM250":
         gmmp = gmm_pred * 100
     elif distance_method == "Binomial":

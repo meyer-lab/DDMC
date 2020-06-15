@@ -53,7 +53,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
     store_Clseqs, store_scores, store_labels = [], [], []
     store_labels.append(gmm.predict(d))
     for n_iter in range(max_n_iter):
-        labels, scores = [], []
+        labels, scores, wins = [], [], []
         seq_reassign = [[] for i in range(ncl)]
 
         # E step: Assignment of each peptide based on data and seq
@@ -61,7 +61,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp,
-                                                     j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1])
+                                                     j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores,
+                                                     store_labels[-1])
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
@@ -73,7 +74,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
-            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
+            assert [len(sublist) > 0 for sublist in cl_seqs], \
+            "Empty cluster(s) after re-initialization"
             store_Clseqs, store_scores = [], []
             continue
 
