@@ -142,7 +142,6 @@ def makeFigure():
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
     plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
     gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
-    gs[gs["#Components"] == 2].head(10)
     plotGridSearch(ax[7], gs)
     plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y, 2)
     plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
@@ -179,7 +178,12 @@ def PCA_scores(ax, d, n_components):
 
 def plotGridSearch(ax, gs):
     """ Plot gridsearch results by ranking. """
-    ax = sns.barplot(x="Ranking", y="mean_test_scores", data=np.abs(gs.iloc[:20, :]), ax=ax, **{"linewidth": .5}, **{"edgecolor": "black"})
+    ax = sns.barplot(x="rank_test_score", 
+                     y="mean_test_score", 
+                     data=np.abs(gs.iloc[:20, :]), 
+                     ax=ax, 
+                     **{"linewidth": .5}, 
+                     **{"edgecolor": "black"})
     ax.set_title("Hyperaparameter Search")
     ax.set_xticklabels(np.arange(1, 21))
     ax.set_ylabel("Mean Squared Error")
