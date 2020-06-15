@@ -8,7 +8,6 @@ from sklearn.decomposition import PCA
 import os
 import pandas as pd
 import numpy as np
-import scipy as sp
 import seaborn as sns
 import matplotlib.colors as colors
 import matplotlib.cm as cm
