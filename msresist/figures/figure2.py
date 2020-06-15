@@ -11,7 +11,7 @@ from msresist.pre_processing import preprocessing
 from msresist.figures.figure1 import plot_AllSites, IndividualTimeCourses, barplot_UtErlAF154
 import matplotlib.image as mpimg
 
-pd.set_option('display.max_columns', 30)
+pd.set_option("display.max_columns", 30)
 endpointcolors = ["light grey", "dark grey", "light navy blue", "jungle green"]
 
 
@@ -64,8 +64,8 @@ def makeFigure():
     c = ["white", "windows blue", "scarlet", "dark green"]
     barplot_UtErlAF154(ax[4], lines, ds, ftp, tr1, tr2, "RWD (%)", "Cell Migration (24h)", TimePointFC=False, TreatmentFC=False, colors=c)
 
-    tr1 = ['AF', '-E', 'A/E']
-    tr2 = ['AF154', 'Erlotinib', 'Erl + AF154']
+    tr1 = ["AF", "-E", "A/E"]
+    tr2 = ["AF154", "Erlotinib", "Erl + AF154"]
     barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "RWD fc to UT", "Cell Migration (24h)", TimePointFC=False, TreatmentFC="-UT", colors=c)
 
     # Phosphorylation levels of selected peptides
@@ -84,12 +84,12 @@ def makeFigure():
     plot_AllSites(ax[7], A.copy(), other, "Various")
 
     # Reduced Heatmaps
-#     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_AF154.png')
-#     hm_erl = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_Erl.png')
-#     ax[8].imshow(hm_af154)
-#     ax[8].axis("off")
-#     ax[9].imshow(hm_erl)
-#     ax[9].axis("off")
+    #     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_AF154.png')
+    #     hm_erl = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_Erl.png')
+    #     ax[8].imshow(hm_af154)
+    #     ax[8].axis("off")
+    #     ax[9].imshow(hm_erl)
+    #     ax[9].axis("off")
 
     # Add subplot labels
     subplotLabel(ax)
