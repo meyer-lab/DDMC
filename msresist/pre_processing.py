@@ -317,7 +317,7 @@ def peptidefinder(X, loc, Protein=False, Gene=False, Sequence=False):
 def MergeTR(data):
     """ Convenient to merge by mean all TRs of IncuCyte """
     for i in range(1, data.shape[1], 2):
-        data.iloc[:, i] = data.iloc[:, i : i + 2].mean(axis=1)
+        data.iloc[:, i] = data.iloc[:, i: i + 2].mean(axis=1)
 
     return data.drop(data.columns[[i + 1 for i in range(1, data.shape[1], 2)]], axis="columns")
 
