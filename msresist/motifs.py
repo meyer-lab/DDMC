@@ -179,7 +179,7 @@ def GeneratingKinaseMotifs(names, seqs):
 
 def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
     """ Make a motif out of the matched sequences. """
-    UP_seq_copy = list(UP_seq[max(0, ps_protein_idx - motif_size) : ps_protein_idx + motif_size + 1])
+    UP_seq_copy = list(UP_seq[max(0, ps_protein_idx - motif_size): ps_protein_idx + motif_size + 1])
     assert len(UP_seq_copy) > motif_size, "Size seems too small. " + UP_seq
 
     # If we ran off the end of the sequence at the beginning or at the end, append a gap

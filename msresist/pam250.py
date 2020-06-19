@@ -4,7 +4,6 @@
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import shared_memory
 import numpy as np
-from Bio.Alphabet import IUPAC
 from Bio.SubsMat import MatrixInfo
 
 
