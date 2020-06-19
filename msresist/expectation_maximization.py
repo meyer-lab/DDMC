@@ -12,11 +12,11 @@ from msresist.pam250 import MotifPam250Scores, pairwise_score
 from msresist.motifs import ForegroundSeqs, CountPsiteTypes
 
 
-def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter, n_runs):
+def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
-        cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter)
+        cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter)
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp, wins])
 
@@ -27,14 +27,14 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, m
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     ABC = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
     sequences = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
-    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
+    gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
 
     # Background sequences
     if distance_method == "Binomial":
@@ -49,9 +49,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         bg_pwm = False
 
     # EM algorithm
-    store_Clseqs, store_scores, store_labels = [], [], []
-    store_labels.append(gmm.predict(d))
+    store_Clseqs = []
     for n_iter in range(max_n_iter):
+        print("__________________________________________")
+        print("N_ITER:", n_iter)
         labels, scores, wins = [], [], []
         seq_reassign = [[] for i in range(ncl)]
 
@@ -60,40 +61,43 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(
-                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1]
+                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, gmmp
             )
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins)
 
+        print(len(set(labels)))
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 1 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
+            gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
-            store_Clseqs, store_scores = [], []
+            store_Clseqs = []
             continue
 
         # Store current results
         store_Clseqs.append(cl_seqs)
-        store_scores.append(np.mean(scores))
-        store_labels.append(labels)
+        new_scores = np.mean(scores)
+        new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
+        print(new_scores)
+        print(wins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
-        gmmp_hard = HardAssignments(labels, ncl)
-        m_step(d, gmm, gmmp_hard, gmm_method)
+        gmmp_hard = HardAssignments(new_labels, ncl)
+        m_step(d, gmm, gmmp_hard)
         gmmp = gmm.predict_proba(d)
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
-        if len(store_scores) > 2:
+        if len(store_Clseqs) > 2:
             # Check convergence
             if store_Clseqs[-1] == store_Clseqs[-2]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp, wins
+                return cl_seqs, new_labels, new_scores, n_iter, gmmp, wins
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
@@ -119,7 +123,7 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs,
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
-        seq_scores = np.zeros(ncl, dtype=int)
+        seq_scores = np.zeros(ncl,)
         for idx, assignments in enumerate(labels):
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
