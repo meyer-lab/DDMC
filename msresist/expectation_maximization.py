@@ -34,23 +34,31 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     sequences = ForegroundSeqs(list(ABC["Sequence"]))
 
     # Initialize with gmm clusters and generate gmm pval matrix
+    print("init")
     gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method)
+    print("initialized")
 
-    # Background sequences
     if distance_method == "Binomial":
+        # Background sequences
         bg_seqs = BackgroundSeqs(ABC)
         bg_pwm = position_weight_matrix(bg_seqs)
         Seq1Seq2ToScores = False
 
     elif distance_method == "PAM250":
-        # Compute all pairwsie distances and generate seq vs seq to score dictionary
+        # Compute all pairwise distances and generate seq vs seq to score dictionary
+        print("Compute all pairwise distances")
         seqs = [s.upper() for s in ABC["Sequence"]]
         Seq1Seq2ToScores = MotifPam250Scores(seqs)
+        print("pairwise distances matrix ready")
         bg_pwm = False
 
     # EM algorithm
+    print("start EM")
     store_Clseqs = []
+    new_labels = gmm.predict(d)
     for n_iter in range(max_n_iter):
+        print("__________________________________________")
+        print("N_ITER:", n_iter)
         labels, scores, wins = [], [], []
         seq_reassign = [[] for i in range(ncl)]
 
@@ -59,13 +67,14 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(
-                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, gmmp
+                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, new_labels
             )
             labels.append(idx)
             scores.append(score)
             seq_reassign[idx].append(motif)
             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins)
 
+        print(len(set(labels)))
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 1 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
@@ -80,6 +89,9 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         new_scores = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
+        print("Cluster sizes:", [len(c) for c in cl_seqs])
+        print(new_scores)
+        print(wins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign

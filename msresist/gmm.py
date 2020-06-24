@@ -12,7 +12,7 @@ def gmm_initialize(X, ncl, distance_method):
     labels, gmm_pred = [0, 0, 0], [np.nan]
 
     while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl)
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1, n_jobs=-1)
         labels = gmm.predict(d)
         gmm_pred = gmm.predict_proba(d)
 
