@@ -32,7 +32,7 @@ def GetTimes(folder, extension):
     filename_suffix = ".csv"
     times = []
     for file in filenames:
-        time = int(file[len(filename_prefix) : -len(filename_suffix)])
+        time = int(file[len(filename_prefix): -len(filename_suffix)])
         times.append(time)
     times = sorted(times)
     return times
@@ -65,7 +65,7 @@ def Calculate_closest(file_list, n=(1, 3)):
                 distances.append(distance)
             distances = sorted(distances)
             # shortest_n_distances_lists.append(distances[1:(n+1)])
-            shortest_n_distances.extend(distances[n[0] : (n[1] + 1)])
+            shortest_n_distances.extend(distances[n[0]: (n[1] + 1)])
         distances_df["Distances"] = shortest_n_distances
         distances_df["Time"] = idx * 3
         distances_by_time.append(distances_df)
@@ -135,7 +135,7 @@ def calculatedistances(file, mutant, treatment, replicate, cells=(1, 3)):
             distance = abs(math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2))
             distances.append(distance)
         distances = sorted(distances)
-        shortest_n_distances.extend(distances[cells[0] : (cells[1] + 1)])
+        shortest_n_distances.extend(distances[cells[0]: (cells[1] + 1)])
     distances_df["Distances"] = shortest_n_distances
     distances_df["Mutant"] = mutant
     if replicate != 1:
@@ -182,7 +182,7 @@ def calculatedistances_logmean(file, mutant, treatment, vs_count, cells=(1, 3)):
             distance = abs(math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2))
             distances.append(distance)
         distances = sorted(distances)
-        shortest_n_distances.extend(distances[cells[0] : (cells[1] + 1)])
+        shortest_n_distances.extend(distances[cells[0]: (cells[1] + 1)])
     logs = []
     for length in shortest_n_distances:
         logs.append(math.log(length))

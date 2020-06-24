@@ -168,7 +168,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         if seq[7] not in pR:
             continue
 
-        motif = str(seq)[7 - 5 : 7 + 6].upper()
+        motif = str(seq)[7 - 5: 7 + 6].upper()
         assert len(motif) == 11, "Wrong sequence length. Sliced: %s, Full: %s" % (motif, seq)
         assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
