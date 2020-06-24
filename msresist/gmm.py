@@ -3,7 +3,6 @@
 
 import numpy as np
 from pomegranate import GeneralMixtureModel, NormalDistribution
-from sklearn.mixture import GaussianMixture
 from msresist.motifs import ForegroundSeqs
 
 
