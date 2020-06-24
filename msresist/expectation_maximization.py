@@ -51,8 +51,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     # EM algorithm
     store_Clseqs = []
     for n_iter in range(max_n_iter):
-        print("__________________________________________")
-        print("N_ITER:", n_iter)
         labels, scores, wins = [], [], []
         seq_reassign = [[] for i in range(ncl)]
 
@@ -68,7 +66,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             seq_reassign[idx].append(motif)
             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins)
 
-        print(len(set(labels)))
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 1 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
@@ -83,8 +80,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         new_scores = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
-        print(new_scores)
-        print(wins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
