@@ -1,17 +1,29 @@
 ---
 title: "An immune complex binding model predicts effector cell response across diverse disease models"
 keywords:
-  - FcγR receptors
-  - immunology
-  - antibodies
-  - effector function
+  - phosphoproteomics
+  - bioinformatics
+  - clustering
+  - data analysis
+  - AXL
+  - drug resistance
 lang: en-US
 authors:
   -
-    name: Falk Nimmerjahn
-    initials: FN
+    name: Marc Creixell
+    initials: MC
     affiliations:
-      - Friedrich-Alexander-University of Erlangen-Nürnberg
+      - Department of Bioengineering, University of California, Los Angeles
+  -
+    name: Eric B. Haura
+    initials: EBH
+    affiliations:
+      - Department of Bioengineering, University of California, Los Angeles
+  -
+    name: Forest M. White
+    initials: FMW
+    affiliations:
+      - Department of Bioengineering, University of California, Los Angeles
   -
     github: aarmey
     name: Aaron S. Meyer
