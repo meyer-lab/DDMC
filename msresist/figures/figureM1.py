@@ -22,9 +22,9 @@ def makeFigure():
 
     distance_method = "PAM250"
     ncl = 5
-    GMMweight = 2000
+    SeqWeight = 2000
 
-    MSC = MassSpecClustering(ired, ncl, GMMweight=GMMweight, distance_method=distance_method, n_runs=1).fit(dred, "NA")
+    MSC = MassSpecClustering(ired, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(dred, "NA")
 
     plotclusteraverages(ax[0], MSC.transform(dred).T, dred.index)
 
