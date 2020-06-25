@@ -203,9 +203,9 @@ def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
 
 def HardAssignments(labels, ncl):
     """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
-    m = []
-    for idx in labels:
-        l = [0] * ncl
-        l[idx] = 1.0
-        m.append(l)
-    return np.array(m)
+    m = np.zeros((len(labels), ncl))
+
+    for ii, idx in enumerate(labels):
+        m[ii, idx] = 1.0
+
+    return m

@@ -34,7 +34,7 @@ testprofile: venv
 
 figprofile: venv
 	. venv/bin/activate && python3 -m cProfile -o profile genFigure.py 3
-	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+	. venv/bin/activate && python3 -m gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
