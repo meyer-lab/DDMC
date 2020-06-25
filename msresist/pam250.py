@@ -29,7 +29,7 @@ def MotifPam250Scores(seqs):
     return out
 
 
-def innerloop(seqs, ii, endi, shm_name, ddtype, n):
+def innerloop(seqs, ii, endi, shm_name, ddtype, n: int):
     existing_shm = shared_memory.SharedMemory(name=shm_name)
     out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
 
@@ -43,9 +43,9 @@ def innerloop(seqs, ii, endi, shm_name, ddtype, n):
 def pairwise_score(seq1: str, seq2: str) -> float:
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0
-    for i in range(len(seq1)):
-        if (seq1[i], seq2[i]) in MatrixInfo.pam250:
-            score += MatrixInfo.pam250[(seq1[i], seq2[i])]
+    for a, b in zip(seq1, seq2):
+        if (a, b) in MatrixInfo.pam250:
+            score += MatrixInfo.pam250[(a, b)]
         else:
-            score += MatrixInfo.pam250[(seq2[i], seq1[i])]
+            score += MatrixInfo.pam250[(b, a)]
     return score
