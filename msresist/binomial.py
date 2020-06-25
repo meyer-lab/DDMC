@@ -7,7 +7,7 @@ from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
 from scipy.stats import binom
-from msresist.motifs import CountPsiteTypes
+from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -34,46 +34,37 @@ AAfreq = {
     "Y": 0.033,
     "V": 0.068,
 }
+AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
-def GenerateBPM(cl_seqs, distance_method, bg_pwm):
+def GenerateBPM(cl_seqs, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
-    if distance_method == "Binomial":
-        bpm = []
-        for seqs in cl_seqs:
-            f = frequencies(seqs)
-            bpm.append(BinomialMatrix(len(seqs), f, bg_pwm))
-    if distance_method == "PAM250":
-        bpm = False
-    return bpm
+    return [BinomialMatrix(len(seqs), frequencies(seqs), bg_pwm) for seqs in cl_seqs]
 
 
 def position_weight_matrix(seqs):
     """ Build PWM of a given set of sequences. """
-    m = motifs.create(seqs)
-    return m.counts.normalize(pseudocounts=AAfreq)
+    return frequencies(seqs).normalize(pseudocounts=AAfreq)
 
 
 def InformationContent(seqs):
     """ The mean of the PSSM is particularly important becuase its value is equal to the
     Kullback-Leibler divergence or relative entropy, and is a measure for the information content
     of the motif compared to the background."""
-    m = motifs.create(seqs)
-    pssm = m.counts.normalize(pseudocounts=AAfreq).log_odds(AAfreq)
-    IC = pssm.mean(AAfreq)
-    return IC
+    pssm = position_weight_matrix(seqs).log_odds(AAfreq)
+    return pssm.mean(AAfreq)
 
 
 def frequencies(seqs):
     """ Build counts matrix of a given set of sequences. """
-    m = motifs.create(seqs)
-    return m.counts
+    return motifs.create(seqs).counts
 
 
 def BinomialMatrix(n, k, p):
     """ Build binomial probability matrix. Note n is the number of sequences,
     k is the counts matrix of the MS data set, p is the pwm of the background. """
-    assert list(k.keys()) == ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+    assert list(k.keys()) == AAlist
     assert list(p.keys()) == list(k.keys())
     BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
@@ -108,14 +99,9 @@ def MeanBinomProbs(BPM, motif):
     return probs / len(motif)
 
 
-def TranslateMotifsToIdx(motif, aa):
+def TranslateMotifsToIdx(motif):
     """ Convert amino acid strings into numbers. """
-    ResToNum = dict(zip(aa, np.arange(len(aa))))
-    NumMotif = []
-    for res in list(motif):
-        NumMotif.append(ResToNum[res.upper()])
-    assert len(NumMotif) == len(motif)
-    return NumMotif
+    return [AAdict[res.upper()] for res in motif]
 
 
 def BackgroundSeqs(X):
