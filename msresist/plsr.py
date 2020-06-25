@@ -7,7 +7,7 @@ from sklearn.metrics import explained_variance_score
 
 
 def R2Y_across_components(model, X, Y, cv, max_comps, crossval=False):
-    """ Calculate R2Y. """
+    """ Calculate R2Y or Q2Y, depending upon crossval. """
     R2Ys = []
 
     for b in range(1, max_comps):
@@ -23,8 +23,3 @@ def R2Y_across_components(model, X, Y, cv, max_comps, crossval=False):
         
         R2Ys.append(explained_variance_score(Y, y_pred))
     return R2Ys
-
-
-def Q2Y_across_components(model, X, Y, cv, max_comps):
-    """ Calculate Q2Y using cros_val_predct method. """
-    return R2Y_across_components(model, X, Y, cv, max_comps, crossval=True)
