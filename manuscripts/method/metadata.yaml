@@ -1,5 +1,5 @@
 ---
-title: "An immune complex binding model predicts effector cell response across diverse disease models"
+title: "Motif-based peptide clustering improves phosphoproteome analysis"
 keywords:
   - phosphoproteomics
   - bioinformatics
@@ -8,10 +8,10 @@ keywords:
 lang: en-US
 authors:
   -
-    name: Falk Nimmerjahn
-    initials: FN
+    name: Marc Creixell
+    initials: MC
     affiliations:
-      - Friedrich-Alexander-University of Erlangen-Nürnberg
+      - Department of Bioengineering, University of California, Los Angeles
   -
     github: aarmey
     name: Aaron S. Meyer
