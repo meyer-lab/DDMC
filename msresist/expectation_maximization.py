@@ -110,7 +110,7 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs,
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
         for z in range(ncl):
-            NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
+            NumMotif = TranslateMotifsToIdx(motif)
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
             seq_scores[z] = BPM_score
             data_scores[z] = gmmp[j, z]

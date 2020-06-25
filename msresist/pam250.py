@@ -15,7 +15,7 @@ def MotifPam250Scores(seqs):
     shm = shared_memory.SharedMemory(create=True, size=out.nbytes)
     out = np.ndarray(out.shape, dtype=out.dtype, buffer=shm.buf)
 
-    with ProcessPoolExecutor(max_workers=32) as e:
+    with ProcessPoolExecutor() as e:
         for ii in range(0, n, 500):
             e.submit(innerloop, seqs, ii, 500, shm.name, out.dtype, n)
 

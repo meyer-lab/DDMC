@@ -12,14 +12,14 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
-from msresist.clustering import MassSpecClustering
-from msresist.plsr import R2Y_across_components, Q2Y_across_comp_manual
-from msresist.figures.figure1 import pca_dfs
+from ..clustering import MassSpecClustering
+from ..plsr import R2Y_across_components, Q2Y_across_components
+from ..figures.figure1 import pca_dfs
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import seaborn as sns
-from msresist.pre_processing import preprocessing, y_pre, FixColumnLabels
+from ..pre_processing import preprocessing, y_pre, FixColumnLabels
 import warnings
 from Bio import BiopythonWarning
 
@@ -179,7 +179,7 @@ def plotGridSearch(ax, gs):
 
 def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     """ Plot R2Y/Q2Y variance explained by each component. """
-    Q2Y = Q2Y_across_comp_manual(model, X, Y, cv, b)
+    Q2Y = Q2Y_across_components(model, X, Y, cv, b)
     R2Y = R2Y_across_components(model, X, Y, cv, b)
 
     range_ = np.arange(1, b)
@@ -204,7 +204,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         if cv == 1:
             for train_index, test_index in LeaveOneOut().split(X, y_):
                 X_train, X_test = X[train_index], X[test_index]
-                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train, _ = y_[train_index], y_[test_index]
                 Y_train = sp.stats.zscore(Y_train)
                 plsr_model.fit(X_train, Y_train)
                 Y_predict = list(plsr_model.predict(X_test).reshape(y_.shape[1],))
@@ -212,7 +212,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         if cv == 2:
             for train_index, test_index in LeaveOneOut().split(X, y_):
                 X_train, X_test = X[train_index], X[test_index]
-                Y_train, Y_test = y_[train_index], y_[test_index]
+                Y_train, _ = y_[train_index], y_[test_index]
                 Y_train = sp.stats.zscore(Y_train)
                 X_train = pd.DataFrame(X_train)
                 X_train.columns = cols
@@ -234,7 +234,6 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ax[i].set_ylabel(ylabel)
         ax[i].set_title(label)
 
-        spacer = 1.1
         ax[i].set_aspect("equal", "datalim")
 
         # Add correlation coefficient
