@@ -13,7 +13,6 @@ path = os.path.dirname(os.path.abspath(__file__))
 def pYmotifs(X, names):
     """Generate pY motifs for pre-processing."""
     names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
-    print(len(pXpos))
     X = X.iloc[Xidx, :]
     X["Gene"] = names
     X["Sequence"] = seqs
@@ -106,7 +105,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
                 counter += 1
                 continue
 
-    print(str(counter) + "/" + str(len(MS_seqs)) + " peptides were not found in the proteome.")
+    assert counter == 0, "Proteome is missing peptides."
     assert len(matchedNames) == len(seqs)
     return matchedNames, seqs, Xidx
 
