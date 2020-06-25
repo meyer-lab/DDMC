@@ -275,7 +275,6 @@ def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
     poisson = Kest.poisson(r)
     treatment_dfs = []
     for idx, extension in enumerate(extensions):
-        reps = []
         file = pd.read_csv("msresist/data/Distances/" + folder + "/Results_" + extension + ".csv")
         points = file.loc[:, "X":"Y"].values
         treat_array = Kest(data=points, radii=r, mode="ripley") / poisson

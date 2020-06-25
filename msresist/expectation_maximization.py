@@ -4,10 +4,10 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 import math
 import numpy as np
 import pandas as pd
-from msresist.gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
-from msresist.binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
-from msresist.pam250 import MotifPam250Scores, pairwise_score
-from msresist.motifs import ForegroundSeqs
+from .gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
+from .binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
+from .pam250 import MotifPam250Scores, pairwise_score
+from .motifs import ForegroundSeqs
 
 
 def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter, n_runs):
@@ -54,11 +54,15 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         seq_reassign = [[] for i in range(ncl)]
 
         # E step: Assignment of each peptide based on data and seq
-        binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+        if distance_method == "Binomial":
+            binoM = GenerateBPM(cl_seqs, bg_pwm)
+        else:
+            binoM = None
+
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(
-                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1]
+                ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1]
             )
             labels.append(idx)
             scores.append(score)
@@ -98,15 +102,16 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
     return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp, wins
 
 
-def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binomials, Seq1Seq2ToScore, labels):
+def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
     seq_scores = np.zeros(ncl,)
     final_scores = np.zeros(ncl,)
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
+        NumMotif = TranslateMotifsToIdx(motif)
+
         for z in range(ncl):
-            NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
             seq_scores[z] = BPM_score
             data_scores[z] = gmmp[j, z]
@@ -149,6 +154,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     if distance_method == "Binomial":
         bg_seqs = BackgroundSeqs(X)
         bg_pwm = position_weight_matrix(bg_seqs)
+        binomials = GenerateBPM(cl_seqs, bg_pwm)
 
     elif distance_method == "PAM250":
         bg_pwm = False
@@ -156,13 +162,13 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     labels = np.zeros(len(sequences), dtype=int)
     scores = np.zeros(len(sequences), dtype=float)
 
-    binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(sequences):
         final_scores = np.zeros(ncl,)
         # Binomial Probability Matrix distance (p-values) between foreground and background sequences
         if distance_method == "Binomial":
+            NumMotif = TranslateMotifsToIdx(motif)
+
             for z in range(ncl):
-                NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
                 BPM_score = MeanBinomProbs(binomials[z], NumMotif)
                 final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
             idx = np.argmin(final_scores)
@@ -198,9 +204,9 @@ def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
 
 def HardAssignments(labels, ncl):
     """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
-    m = []
-    for idx in labels:
-        l = [0] * ncl
-        l[idx] = 1.0
-        m.append(l)
-    return np.array(m)
+    m = np.zeros((len(labels), ncl))
+
+    for ii, idx in enumerate(labels):
+        m[ii, idx] = 1.0
+
+    return m

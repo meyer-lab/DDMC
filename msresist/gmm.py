@@ -1,9 +1,10 @@
 """Guassian Mixture Model functions to determine cluster assignments based on phosphorylation levels."""
 
-
+import warnings
 import numpy as np
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from sklearn.mixture import GaussianMixture
+from sklearn.exceptions import ConvergenceWarning
 from msresist.motifs import ForegroundSeqs
 
 
@@ -19,7 +20,10 @@ def gmm_initialize(X, ncl, distance_method, gmm_method):
             gmm_pred = gmm.predict_proba(d)
 
     elif gmm_method == "sklearn":
-        gmm = GaussianMixture(n_components=ncl, max_iter=1).fit(d)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ConvergenceWarning)
+            gmm = GaussianMixture(n_components=ncl, max_iter=1).fit(d)
+
         labels = gmm.predict(d)
         gmm_pred = gmm.predict_proba(d)
 
