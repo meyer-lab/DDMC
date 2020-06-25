@@ -62,7 +62,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(
-                ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1]
+                ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binoM, Seq1Seq2ToScores, store_labels[-1]
             )
             labels.append(idx)
             scores.append(score)
@@ -102,15 +102,16 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
     return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp, wins
 
 
-def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binomials, Seq1Seq2ToScore, labels):
+def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binomials, Seq1Seq2ToScore, labels):
     """ Do the sequence assignment. """
     data_scores = np.zeros(ncl,)
     seq_scores = np.zeros(ncl,)
     final_scores = np.zeros(ncl,)
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
+        NumMotif = TranslateMotifsToIdx(motif)
+
         for z in range(ncl):
-            NumMotif = TranslateMotifsToIdx(motif)
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
             seq_scores[z] = BPM_score
             data_scores[z] = gmmp[j, z]

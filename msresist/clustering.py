@@ -3,7 +3,7 @@
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from msresist.expectation_maximization import EM_clustering_opt, e_step
+from .expectation_maximization import EM_clustering_opt, e_step
 
 
 # pylint: disable=W0201
