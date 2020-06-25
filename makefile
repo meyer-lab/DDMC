@@ -1,5 +1,5 @@
  
-all: figure1.svg figure2.svg figure3.svg output/method/manuscript.html output/biol/manuscript.html
+all: figure3.svg figure1.svg figure2.svg figureM1.svg figureM2.svg figureM3.svg output/method/manuscript.html output/biol/manuscript.html
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
@@ -33,8 +33,8 @@ testprofile: venv
 	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 figprofile: venv
-	. venv/bin/activate && python3 -m cProfile -o profile genFigure.py 4
-	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+	. venv/bin/activate && python3 -m cProfile -o profile genFigure.py M1
+	. venv/bin/activate && python3 -m gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
