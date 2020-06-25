@@ -165,8 +165,9 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
         final_scores = np.zeros(ncl,)
         # Binomial Probability Matrix distance (p-values) between foreground and background sequences
         if distance_method == "Binomial":
+            NumMotif = TranslateMotifsToIdx(motif)
+
             for z in range(ncl):
-                NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
                 BPM_score = MeanBinomProbs(binomials[z], NumMotif)
                 final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
             idx = np.argmin(final_scores)
