@@ -1,5 +1,5 @@
 """
-This creates Figure M1.
+This creates Figure M2.
 """
 
 from .common import subplotLabel, getSetup
