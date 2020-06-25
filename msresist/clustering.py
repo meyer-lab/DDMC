@@ -6,6 +6,9 @@ from sklearn.utils.validation import check_is_fitted
 from msresist.expectation_maximization import EM_clustering_opt, e_step
 
 
+# pylint: disable=W0201
+
+
 class MassSpecClustering(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
