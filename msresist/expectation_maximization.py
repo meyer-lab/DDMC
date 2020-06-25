@@ -153,6 +153,7 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     if distance_method == "Binomial":
         bg_seqs = BackgroundSeqs(X)
         bg_pwm = position_weight_matrix(bg_seqs)
+        binomials = GenerateBPM(cl_seqs, bg_pwm)
 
     elif distance_method == "PAM250":
         bg_pwm = False
@@ -160,7 +161,6 @@ def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
     labels = np.zeros(len(sequences), dtype=int)
     scores = np.zeros(len(sequences), dtype=float)
 
-    binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
     for j, motif in enumerate(sequences):
         final_scores = np.zeros(ncl,)
         # Binomial Probability Matrix distance (p-values) between foreground and background sequences
