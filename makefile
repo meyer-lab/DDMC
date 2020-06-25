@@ -8,7 +8,7 @@ figure%.svg: venv genFigure.py msresist/figures/figure%.py
 venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
-	test -d venv || virtualenv --system-site-packages venv
+	test -d venv || virtualenv venv
 	. venv/bin/activate && pip install Cython scipy numpy
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
