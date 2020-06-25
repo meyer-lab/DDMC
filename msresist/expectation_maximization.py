@@ -70,7 +70,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
             SeqWins, DataWins, BothWin, MixWins = TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins)
 
         # Assert there are at least two peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 1 for sl in seq_reassign]:
+        if True in [len(sl) < 2 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp = gmm_initialize(ABC, ncl, distance_method, gmm_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
@@ -89,6 +89,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         gmmp_hard = HardAssignments(labels, ncl)
         m_step(d, gmm, gmmp_hard, gmm_method)
         gmmp = gmm.predict_proba(d)
+        assert np.all(np.isfinite(gmmp))
+
         gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
         if len(store_scores) > 2:
@@ -127,7 +129,6 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binomia
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
             seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
@@ -136,11 +137,8 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, cl_seqs, binomia
         idx = np.argmax(final_scores)
 
     score = final_scores[idx]
-    assert math.isnan(score) == False and math.isinf(score) == False, (
-        "final score is either \
-    NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s"
-        % (motif, gmmp, np.count_nonzero(gmmp))
-    )
+    assert math.isnan(score) == False and math.isinf(score) == False, \
+        f"final score is either NaN or -Inf, motif = {motif}, gmmp = {gmmp}, nonzeros = {np.count_nonzero(gmmp)}"
 
     return score, idx, SeqIdx, DataIdx
 
@@ -208,5 +206,8 @@ def HardAssignments(labels, ncl):
 
     for ii, idx in enumerate(labels):
         m[ii, idx] = 1.0
+
+    assert np.all(np.sum(m, axis=0) >= 1.0)
+    assert np.all(np.sum(m, axis=1) == 1.0)
 
     return m
