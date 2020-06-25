@@ -36,16 +36,9 @@ AAfreq = {
 }
 
 
-def GenerateBPM(cl_seqs, distance_method, bg_pwm):
+def GenerateBPM(cl_seqs, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
-    if distance_method == "Binomial":
-        bpm = []
-        for seqs in cl_seqs:
-            f = frequencies(seqs)
-            bpm.append(BinomialMatrix(len(seqs), f, bg_pwm))
-    if distance_method == "PAM250":
-        bpm = False
-    return bpm
+    return [BinomialMatrix(len(seqs), frequencies(seqs), bg_pwm) for seqs in cl_seqs]
 
 
 def position_weight_matrix(seqs):

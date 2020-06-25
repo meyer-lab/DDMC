@@ -4,10 +4,10 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 import math
 import numpy as np
 import pandas as pd
-from msresist.gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
-from msresist.binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
-from msresist.pam250 import MotifPam250Scores, pairwise_score
-from msresist.motifs import ForegroundSeqs
+from .gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
+from .binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
+from .pam250 import MotifPam250Scores, pairwise_score
+from .motifs import ForegroundSeqs
 
 
 def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n_iter, n_runs):
@@ -54,7 +54,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, gmm_method, max_n
         seq_reassign = [[] for i in range(ncl)]
 
         # E step: Assignment of each peptide based on data and seq
-        binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+        if distance_method == "Binomial":
+            binoM = GenerateBPM(cl_seqs, bg_pwm)
+        else:
+            binoM = None
+
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignSeqs(

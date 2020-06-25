@@ -3,17 +3,10 @@
 import scipy as sp
 import numpy as np
 import pandas as pd
-from scipy.stats import zscore
 from sklearn.model_selection import cross_val_predict, LeaveOneOut
 from sklearn.metrics import explained_variance_score
 
 ###------------ PLSR model functions ------------------###
-
-
-def zscore_columns(matrix):
-    """ Z-score each column of the matrix. Note that
-    sklearn PLSRegression already handles scaling. """
-    return zscore(matrix, axis=0)
 
 
 def R2Y_across_components(model, X, Y, cv, max_comps):
@@ -43,7 +36,7 @@ def Q2Y_across_components(model, X, Y, cv, max_comps):
 
 
 def Q2Y_across_comp_manual(model, X, Y, cv, max_comps):
-    "Calculate Q2Y manually."
+    """ Calculate Q2Y manually. """
     PRESS = 0
     SS = 0
     Q2Ys = []
