@@ -20,7 +20,7 @@ def gmm_initialize(X, ncl, distance_method):
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
-    return gmm, init_clusters, gmmp
+    return gmm, init_clusters, gmmp, labels
 
 
 def m_step(d, gmm, gmmp_hard):
