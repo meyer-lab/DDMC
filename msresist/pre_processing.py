@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from .motifs import FormatName, pYmotifs
+from .motifs import FormatName, MapMotifs
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -65,7 +65,7 @@ def preprocessing(
     if rawdata:
         return X
 
-    X = pYmotifs(X, genes)
+    X = MapMotifs(X, genes)
     merging_indices.insert(3, "Position")
 
     if Vfilter:

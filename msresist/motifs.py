@@ -10,7 +10,7 @@ from Bio.Alphabet import IUPAC
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-def pYmotifs(X, names):
+def MapMotifs(X, names):
     """Generate pY motifs for pre-processing."""
     names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
     print(len(pXpos))

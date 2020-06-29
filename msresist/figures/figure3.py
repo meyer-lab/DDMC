@@ -435,8 +435,8 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotclustersIndividually(centers, labels, nrows, ncols):
-    fig, ax = plt.subplots(nrows, ncols, figsize=(20, 10), sharex=True, sharey=True)
+def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20,10)):
+    fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
     for i in range(centers.shape[0]):
         ax[i // ncols][i % ncols].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
