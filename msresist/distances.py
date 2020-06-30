@@ -265,12 +265,6 @@ def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
             df["Mutant"] = mutant
             df["Treatment"] = treatment
             #add_poisson(poisson, mutant, df)
-    poisson_df = pd.DataFrame(poisson_val)
-    poisson_df.columns = ['K Estimate']
-    poisson_df['Mutant'] = mutant_name
-    poisson_df['Treatment'] = 'Poisson'
-    dataframe = pd.concat([poisson_df, dataframe])
-    return dataframe
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     return df.groupby(["Mutant", "Treatment"]).mean()
