@@ -125,7 +125,7 @@ def calculatedistances(file, mutant, treatment, replicate, cells=(1, 3)):
 def Plot_Logmean(folder, mutants, treatments, replicates, ax, vs_count=False, cells=(1, 3)):
     """Plots the log mean distance to neighbors by mutant and condition as given by cells argument.
     Will plot vs number of cells in image if vs_count is True"""
-    to_plot = Distances_import(folder, mutants, treatments, replicates, cells, logbool=True, vs_count)
+    to_plot = Distances_import(folder, mutants, treatments, replicates, cells, logbool=True, count_bool=vs_count)
     if vs_count:
         sns.scatterplot(x="Cells", y="Log_Mean_Distances", hue="Condition", style="Condition", data=to_plot, ax=ax)
         # for line in range(0, to_plot.shape[0]):
