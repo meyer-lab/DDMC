@@ -1,9 +1,9 @@
 """Creates plots to visualize cell clustering data"""
-import pandas as pd
 import glob
-import seaborn as sns
-import numpy as np
 import math
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from astropy.stats import RipleysKEstimator
 
 
@@ -193,12 +193,13 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     r_for_df = r
     poisson = Kest.poisson(r)
     poisson_for_df = poisson
-    for i in range(5):
+    #Done 5 times to create total of 6 to match 6 replicates
+    for _ in range(5):
         poisson_for_df = np.hstack((poisson_for_df, poisson))
         r_for_df = np.hstack((r_for_df, r))
     data = np.vstack((r_for_df, poisson_for_df))
     for treatment in treatments:
-        reps = ripleys_import(replicates, folder, mutants, treatments)
+        reps = ripleys_import(replicates, folder, mutant, treatment)
         treat_array = treat_array_func(reps, Kest, r, poisson)
         data = np.vstack((data, treat_array))
     df = pd.DataFrame(data).T
@@ -217,7 +218,7 @@ def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, repl
     mutant_dfs = []
     for z, mutant in enumerate(mutants):
         for j, treatment in enumerate(treatments):
-            reps = ripleys_import(replicates, folder, mutants, treatments)
+            reps = ripleys_import(replicates, folder, mutant, treatment)
             treat_array = treat_array_func(reps, Kest, r, poisson, Kestbool=True)
             df = pd.DataFrame(treat_array)
             df.columns = ["K Estimate"]
@@ -258,7 +259,7 @@ def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
     mutant_dfs = []
     for mutant in mutants:
         for treatment in treatments:
-            reps = ripleys_import(replicates, folder, mutants, treatments)
+            reps = ripleys_import(replicates, folder, mutant, treatment)
             treat_array = treat_array_func(reps, Kest, r, poisson, Kestbool=True)
             df = pd.DataFrame(treat_array)
             df.columns = ["K Estimate"]
