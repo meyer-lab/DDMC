@@ -193,7 +193,7 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax):
     r_for_df = r
     poisson = Kest.poisson(r)
     poisson_for_df = poisson
-    #Done 5 times to create total of 6 to match 6 replicates
+    # Done 5 times to create total of 6 to match 6 replicates
     for _ in range(5):
         poisson_for_df = np.hstack((poisson_for_df, poisson))
         r_for_df = np.hstack((r_for_df, r))
