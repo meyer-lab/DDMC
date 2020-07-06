@@ -118,7 +118,7 @@ def TranslateMotifsToIdx(motif, aa):
     return NumMotif
 
 
-def BackgroundSeqs(X):
+def BackgroundSeqs(forseqs):
     """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
@@ -126,7 +126,6 @@ def BackgroundSeqs(X):
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
     # Get porportion of psite types in foreground set
-    forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
 

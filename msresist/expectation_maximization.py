@@ -37,17 +37,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     gmm, cl_seqs, gmmp, new_labels = gmm_initialize(ABC, ncl, distance_method)
     print("GMM initialized")
 
-    if distance_method == "Binomial":
-        # Background sequences
-        bg_seqs = BackgroundSeqs(ABC)
-        bg_pwm = position_weight_matrix(bg_seqs)
-        Seq1Seq2ToScores = False
-
-    elif distance_method == "PAM250":
-        # Compute all pairwise distances and generate seq vs seq to score dictionary
-        seqs = [s.upper() for s in ABC["Sequence"]]
-        Seq1Seq2ToScores = MotifPam250Scores(seqs)
-        bg_pwm = False
+    bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(ABC["Sequence"], distance_method)
 
     # EM algorithm
     store_Clseqs = []
@@ -101,11 +91,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             # Check convergence
             if store_Clseqs[-1] == store_Clseqs[-2]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, new_labels, new_scores, n_iter, gmmp, wins
+                return cl_seqs, new_labels, new_scores, n_iter, gmm, wins
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmmp, wins
+    return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmm, wins
 
 
 def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binomials, Seq1Seq2ToScore, labels):
@@ -150,49 +140,6 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs,
     return score, idx, SeqIdx, DataIdx
 
 
-def e_step(X, cl_seqs, gmmp, distance_method, SeqWeight, ncl):
-    """ Expectation step of the EM algorithm. Used for predict and score in
-    clustering.py """
-    sequences = ForegroundSeqs(X["Sequence"])
-    cl_seqs = [ForegroundSeqs(cl) for cl in cl_seqs]
-
-    if distance_method == "Binomial":
-        bg_seqs = BackgroundSeqs(X)
-        bg_pwm = position_weight_matrix(bg_seqs)
-
-    elif distance_method == "PAM250":
-        bg_pwm = False
-
-    labels = np.zeros(len(sequences), dtype=int)
-    scores = np.zeros(len(sequences), dtype=float)
-
-    binomials = GenerateBPM(cl_seqs, distance_method, bg_pwm)
-    for j, motif in enumerate(sequences):
-        final_scores = np.zeros(ncl,)
-        # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-        if distance_method == "Binomial":
-            for z in range(ncl):
-                NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
-                BPM_score = MeanBinomProbs(binomials[z], NumMotif)
-                final_scores[z] = gmmp[j, z] + BPM_score * SeqWeight
-            idx = np.argmin(final_scores)
-
-        # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-        if distance_method == "PAM250":
-            for z in range(ncl):
-                PAM250_score = 0
-                for seq in cl_seqs[z]:
-                    PAM250_score += pairwise_score(motif, seq)
-                PAM250_score /= len(cl_seqs[z])
-                final_scores[z] = gmmp[j, z] + PAM250_score * SeqWeight
-            idx = np.argmax(final_scores)
-
-        labels[j] = idx
-        scores[j] = final_scores[idx]
-
-    return np.array(labels), np.mean(scores)
-
-
 def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
     """ Assess if the finala scaled score was determined by data or sequence """
     if SeqIdx == idx and SeqIdx != DataIdx:
@@ -214,3 +161,18 @@ def HardAssignments(labels, ncl):
         l[idx] = 1.0
         m.append(l)
     return np.array(m)
+
+
+def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
+    if distance_method == "Binomial":
+        # Background sequences
+        bg_seqs = BackgroundSeqs(sequences)
+        bg_pwm = position_weight_matrix(bg_seqs)
+        Seq1Seq2ToScores = False
+
+    elif distance_method == "PAM250":
+        # Compute all pairwise distances and generate seq vs seq to score dictionary
+        seqs = [s.upper() for s in sequences]
+        Seq1Seq2ToScores = MotifPam250Scores(seqs)
+        bg_pwm = False
+    return bg_pwm, Seq1Seq2ToScores
