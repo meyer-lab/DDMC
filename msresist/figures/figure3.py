@@ -2,6 +2,7 @@
 This creates Figure 2.
 """
 import os
+import random
 import pandas as pd
 import numpy as np
 import scipy as sp
@@ -11,6 +12,7 @@ from .common import subplotLabel, getSetup
 from sklearn.model_selection import LeaveOneOut
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 from msresist.clustering import MassSpecClustering
 from msresist.plsr import R2Y_across_components, Q2Y_across_comp_manual
@@ -481,3 +483,78 @@ def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
             ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
+
+
+def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
+    """Incorporate different percentages of missing values and compute error between the actual 
+    versus cluster average value. Note that this works best with a complete subset of the CPTAC data set"""
+    x.index = np.arange(x.shape[0])
+    wlabels = ["Data", "Co-Clustering", "Sequence"]
+    nan_indices = []
+    errors = []
+    missing = []
+    prioritize = []
+    n = x.iloc[:, 4:].shape[1]
+    for per in nan_per:
+        md = x.copy()
+        m = int(n * per)
+        for i in range(md.shape[0]):
+            row_len = np.arange(4, md.shape[1])
+            cols = random.sample(list(row_len), m)
+            md.iloc[i, cols] = np.nan
+            nan_indices.append((i, cols))
+        for i, w in enumerate(weights):
+            prioritize.append(wlabels[i])
+            missing.append(per)
+            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method))
+
+    X = pd.DataFrame()
+    X["Prioritize"] = prioritize
+    X["Missing%"] = missing
+    X["Error"] = errors
+    return X
+
+
+def FitModelandComputeError(md, weight, x, nan_indices, distance_method):
+    """Fit model and compute error during ArtificialMissingness"""
+    i = md.select_dtypes(include=['object'])
+    d = md.select_dtypes(include=['float64']).T
+    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
+    z = x.copy()
+    z["Cluster"] = model.labels_
+    centers = model.transform(d).T  #Clusters x observations
+    errors = []
+    for idx in nan_indices:
+        v = z.iloc[idx[0], idx[1]]
+        c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
+        errors.append(mean_squared_error(v, c))
+    return np.mean(errors)
+
+
+def WinsByWeight(i, d, weigths, distance_method):
+    """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
+    wins = []
+    prioritize = []
+    W = []
+    for w in weights:
+        print(w)
+        model = MassSpecClustering(i, ncl, SeqWeight=500, distance_method="PAM250", n_runs=1).fit(d, "NA")
+        won = model.wins_
+        W.append(w)
+        wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
+        prioritize.append("Sequence")
+        W.append(w)
+        wins.append(won.split("DataWins: ")[1].split(" BothWin:")[0])
+        prioritize.append("Data")
+        W.append(w)
+        wins.append(won.split("BothWin: ")[1].split(" MixWin:")[0])
+        prioritize.append("Both")
+        W.append(w)
+        wins.append(won.split(" MixWin: ")[1])
+        prioritize.append("Mix")
+
+    X = pd.DataFrame()
+    X["Sequence_Weighting"] = W
+    X["Prioritize"] = prioritize
+    X["Wins"] = wins
+    return X
