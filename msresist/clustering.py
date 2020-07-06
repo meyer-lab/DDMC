@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from msresist.expectation_maximization import EM_clustering_opt, assignSeqs, GenerateSeqBackgroundAndPAMscores
+from msresist.expectation_maximization import EM_clustering_opt, assignPeptides, GenerateSeqBackgroundAndPAMscores
 from msresist.motifs import ForegroundSeqs
 from msresist.binomial import GenerateBPM
 
@@ -53,7 +53,7 @@ class MassSpecClustering(BaseEstimator):
         gmmp = self.gmm_.predict_proba(data.T)
         labels = []
         for j, motif in enumerate(seqs):
-            _, idx, _, _ = assignSeqs(
+            _, idx, _, _ = assignPeptides(
                 self.ncl, motif, self.distance_method, self.SeqWeight, gmmp, j, 
                 bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, self.labels_
             )
@@ -71,7 +71,7 @@ class MassSpecClustering(BaseEstimator):
         gmmp = self.gmm_.predict_proba(data.T)
         scores = []
         for j, motif in enumerate(seqs):
-            score, _, _, _ = assignSeqs(
+            score, _, _, _ = assignPeptides(
                 self.ncl, motif, self.distance_method, self.SeqWeight, gmmp, j, 
                 bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, self.labels_
             )

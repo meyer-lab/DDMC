@@ -75,7 +75,7 @@ def BinomialMatrix(n, k, p):
     k is the counts matrix of the MS data set, p is the pwm of the background. """
     assert list(k.keys()) == ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
     assert list(p.keys()) == list(k.keys())
-    BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
+    BMP = binom.pmf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     BMP[BMP == -np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
     return BMP

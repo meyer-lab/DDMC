@@ -11,12 +11,10 @@ def gmm_initialize(X, ncl, distance_method):
     d = X.select_dtypes(include=["float64"])
     labels, gmm_pred = [0, 0, 0], [np.nan]
 
-    while len(set(labels)) < ncl or True in np.isnan(gmm_pred):
+    while len(set(labels)) < ncl or True in np.isnan(gmmp):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1, n_jobs=-1)
         labels = gmm.predict(d)
-        gmm_pred = gmm.predict_proba(d)
-
-    gmmp = GmmpCompatibleWithSeqScores(gmm_pred, distance_method)
+        gmmp = gmm.predict_proba(d)
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
@@ -28,13 +26,3 @@ def m_step(d, gmm, gmmp_hard):
     for i in range(gmmp_hard.shape[1]):
         weights = gmmp_hard[:, i]
         gmm.distributions[i].fit(d, weights=weights)
-
-
-def GmmpCompatibleWithSeqScores(gmm_pred, distance_method):
-    """ Make data and sequence scores as close in magnitude as possible. """
-    if distance_method == "PAM250":
-        gmmp = gmm_pred * 100
-    elif distance_method == "Binomial":
-        gmm_pred[gmm_pred == 1] = 0.9999999999999
-        gmmp = np.log(1 - gmm_pred)
-    return gmmp

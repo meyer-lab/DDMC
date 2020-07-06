@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import shared_memory
 import numpy as np
 import pandas as pd
-from msresist.gmm import gmm_initialize, m_step, GmmpCompatibleWithSeqScores
+from msresist.gmm import gmm_initialize, m_step
 from msresist.binomial import GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
 from msresist.pam250 import MotifPam250Scores, pairwise_score
 from msresist.motifs import ForegroundSeqs, CountPsiteTypes
@@ -29,15 +29,14 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
 
 def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
-    ABC = pd.concat([info, data.T], axis=1)
+    X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    sequences = ForegroundSeqs(list(ABC["Sequence"]))
+    sequences = ForegroundSeqs(list(X["Sequence"]))
 
-    # Initialize with gmm clusters and generate gmm pval matrix
-    gmm, cl_seqs, gmmp, new_labels = gmm_initialize(ABC, ncl, distance_method)
-    print("GMM initialized")
-
-    bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(ABC["Sequence"], distance_method)
+    # Initialize model 
+    gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
+    bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
+    
 
     # EM algorithm
     store_Clseqs = []
@@ -49,7 +48,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
-            score, idx, SeqIdx, DataIdx = assignSeqs(
+            score, idx, SeqIdx, DataIdx = assignPeptides(
                 ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, new_labels
             )
             labels.append(idx)
@@ -60,7 +59,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(ABC, ncl, distance_method)
+            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             store_Clseqs = []
@@ -68,7 +67,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         # Store current results
         store_Clseqs.append(cl_seqs)
-        new_scores = np.mean(scores)
+        new_score = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
 
@@ -77,11 +76,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         gmmp_hard = HardAssignments(new_labels, ncl)
         m_step(d, gmm, gmmp_hard)
         gmmp = gmm.predict_proba(d)
-        gmmp = GmmpCompatibleWithSeqScores(gmmp, distance_method)
 
         if True in np.isnan(gmmp):
             print("Re-initialize GMM, NaN responsibilities at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(ABC, ncl, distance_method)
+            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             store_Clseqs = []
@@ -91,15 +89,15 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             # Check convergence
             if store_Clseqs[-1] == store_Clseqs[-2]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, new_labels, new_scores, n_iter, gmm, wins
+                return cl_seqs, new_labels, new_score, n_iter, gmm, wins
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
     return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmm, wins
 
 
-def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binomials, Seq1Seq2ToScore, labels):
-    """ Do the sequence assignment. """
+def assignPeptides(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs, binomials, Seq1Seq2ToScore, labels):
+    """E-step––Do the peptide assignment according to sequence and data"""
     data_scores = np.zeros(ncl,)
     seq_scores = np.zeros(ncl,)
     final_scores = np.zeros(ncl,)
@@ -111,9 +109,6 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs,
             seq_scores[z] = BPM_score
             data_scores[z] = gmmp[j, z]
             final_scores[z] = BPM_score * SeqWeight + gmmp[j, z]
-        DataIdx = np.argmin(data_scores)
-        SeqIdx = np.argmin(seq_scores)
-        idx = np.argmin(final_scores)
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
     if distance_method == "PAM250":
@@ -126,9 +121,10 @@ def assignSeqs(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_seqs,
             seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
-        DataIdx = np.argmax(data_scores)
-        SeqIdx = np.argmax(seq_scores)
-        idx = np.argmax(final_scores)
+
+    DataIdx = np.argmax(data_scores)
+    SeqIdx = np.argmax(seq_scores)
+    idx = np.argmax(final_scores)
 
     score = final_scores[idx]
     assert math.isnan(score) == False and math.isinf(score) == False, (
