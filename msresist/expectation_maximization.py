@@ -20,10 +20,7 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp, wins])
 
-    if distance_method == "Binomial":
-        idx = np.argmin(scores)
-    elif distance_method == "PAM250":
-        idx = np.argmax(scores)
+    idx = np.argmax(scores)
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
 
 

@@ -538,7 +538,7 @@ def WinsByWeight(i, d, weigths, distance_method):
     W = []
     for w in weights:
         print(w)
-        model = MassSpecClustering(i, ncl, SeqWeight=500, distance_method="PAM250", n_runs=1).fit(d, "NA")
+        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method="PAM250", n_runs=1).fit(d, "NA")
         won = model.wins_
         W.append(w)
         wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
