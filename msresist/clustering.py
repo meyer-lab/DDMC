@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from msresist.expectation_maximization import EM_clustering_opt, assignPeptides, GenerateSeqBackgroundAndPAMscores
-from msresist.motifs import ForegroundSeqs
-from msresist.binomial import GenerateBPM
+from .expectation_maximization import EM_clustering_opt, GenerateSeqBackgroundAndPAMscores
+from .motifs import ForegroundSeqs
+from .binomial import GenerateBPM
+from .binomial import assignPeptidesBN
+from .pam250 import assignPeptidesPAM
 
 
 # pylint: disable=W0201
@@ -46,22 +48,27 @@ class MassSpecClustering(BaseEstimator):
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
+    def runSeqScore(self, sequences, cl_seqs):
+        background = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
+
+        if self.distance_method == "Binomial":
+            binoM = GenerateBPM(cl_seqs, background)
+            seq_scores = assignPeptidesBN(self.ncl, sequences, cl_seqs, background, binoM, self.labels_)
+        else:
+            seq_scores = assignPeptidesPAM(self.ncl, sequences, cl_seqs, background, self.labels_)
+
+        return seq_scores
+
     def predict(self, data, sequences, _Y=None):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmm_", "wins_"])
         seqs = ForegroundSeqs(sequences)
         cl_seqs = [ForegroundSeqs(self.cl_seqs_[i]) for i in range(self.ncl)]
-        bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
-        binoM = GenerateBPM(cl_seqs, bg_pwm)
         gmmp = self.gmm_.predict_proba(data.T)
-        labels = []
-        for j, motif in enumerate(seqs):
-            _, idx, _, _ = assignPeptides(
-                self.ncl, motif, self.distance_method, self.SeqWeight, gmmp, j, 
-                bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, self.labels_
-            )
-            labels.append(idx)
-        return np.array(labels)
+        seq_scores = self.runSeqScore(seqs, cl_seqs)
+        final_scores = seq_scores * self.SeqWeight + gmmp
+
+        return np.argmax(final_scores, axis=1)
 
     def score(self, data, sequences, _Y=None):
         """Generate score of the fitting. If PAM250, the score is the averaged PAM250 score across peptides. If Binomial,
@@ -69,17 +76,11 @@ class MassSpecClustering(BaseEstimator):
         check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmm_", "wins_"])
         seqs = ForegroundSeqs(sequences)
         cl_seqs = [ForegroundSeqs(self.cl_seqs_[i]) for i in range(self.ncl)]
-        bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
-        binoM = GenerateBPM(cl_seqs, bg_pwm)
         gmmp = self.gmm_.predict_proba(data.T)
-        scores = []
-        for j, motif in enumerate(seqs):
-            score, _, _, _ = assignPeptides(
-                self.ncl, motif, self.distance_method, self.SeqWeight, gmmp, j, 
-                bg_pwm, cl_seqs, binoM, Seq1Seq2ToScores, self.labels_
-            )
-            scores.append(score)
-        return np.mean(score)
+        seq_scores = self.runSeqScore(seqs, cl_seqs)
+        final_scores = seq_scores * self.SeqWeight + gmmp
+
+        return np.mean(np.max(final_scores, axis=1))
 
     def get_params(self, deep=True):
         """Returns a dict of the estimator parameters with their values"""
