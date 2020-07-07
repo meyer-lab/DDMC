@@ -104,12 +104,15 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
 def HardAssignments(labels, ncl):
     """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
-    m = []
-    for idx in labels:
-        l = [0] * ncl
-        l[idx] = 1.0
-        m.append(l)
-    return np.array(m)
+    m = np.zeros((len(labels), ncl))
+
+    for ii, idx in enumerate(labels):
+        m[ii, idx] = 1.0
+
+    assert np.all(np.sum(m, axis=0) >= 1.0)
+    assert np.all(np.sum(m, axis=1) == 1.0)
+
+    return m
 
 
 def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):

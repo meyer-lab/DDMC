@@ -11,6 +11,9 @@ from .binomial import assignPeptidesBN
 from .pam250 import assignPeptidesPAM
 
 
+# pylint: disable=W0201
+
+
 class MassSpecClustering(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
