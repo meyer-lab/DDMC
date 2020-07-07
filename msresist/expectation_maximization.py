@@ -1,12 +1,11 @@
 """Main Expectation-Maximization functions using gmm and binomial or pam250 to determine cluster assginments.
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
-import math
 import numpy as np
 import pandas as pd
 from msresist.gmm import gmm_initialize, m_step
-from msresist.binomial import assignPeptidesBN, GenerateBPM, TranslateMotifsToIdx, MeanBinomProbs, BackgroundSeqs, position_weight_matrix
-from msresist.pam250 import assignPeptidesPAM
+from msresist.binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
+from msresist.pam250 import assignPeptidesPAM, MotifPam250Scores
 from msresist.motifs import ForegroundSeqs
 
 
@@ -57,10 +56,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         assert np.all(np.isfinite(scores)), f"Final scores not finite, motif = {motif}, gmmp = {gmmp}, nonzeros = %s"
 
         # Count wins
-        SeqWins = np.sum(SeqIdx == labels && DataIdx != labels)
-        DataWins = np.sum(DataIdx == labels && SeqIdx != labels)
-        BothWin = np.sum(DataIdx == labels && SeqIdx == labels)
-        MixWins = np.sum(DataIdx != labels && SeqIdx != labels)
+        SeqWins = np.sum(SeqIdx == labels & DataIdx != labels)
+        DataWins = np.sum(DataIdx == labels & SeqIdx != labels)
+        BothWin = np.sum(DataIdx == labels & SeqIdx == labels)
+        MixWins = np.sum(DataIdx != labels & SeqIdx != labels)
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in seq_reassign]:
