@@ -175,7 +175,7 @@ def assignPeptidesBN(ncl, sequences, cl_seqs, bg_pwm, binomials, labels):
 
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     for j, motif in enumerate(sequences):
-        NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
+        NumMotif = TranslateMotifsToIdx(motif)
 
         for z in range(ncl):
             seq_scores[j, z] = MeanBinomProbs(binomials[z], NumMotif)
