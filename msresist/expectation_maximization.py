@@ -34,7 +34,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
     # EM algorithm
     store_Clseqs = []
-    store_scores = []
     for n_iter in range(max_n_iter):
         seq_reassign = [[] for i in range(ncl)]
 
@@ -75,7 +74,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # Store current results
         store_Clseqs.append(cl_seqs)
         new_score = np.mean(scores)
-        store_scores.append(new_score)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
 
