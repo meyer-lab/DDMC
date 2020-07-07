@@ -12,17 +12,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 ###-------------------------- Pre-processing MS data --------------------------###
 def preprocessing(
-    AXLwt=False,
-    Axlmuts_Erl=False,
-    Axlmuts_ErlAF154=False,
-    CPTAC=False,
-    Vfilter=False,
-    FCfilter=False,
-    log2T=False,
-    FCtoUT=False,
-    rawdata=False,
-    mc_row=True,
-    mc_col=False,
+    AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlAF154=False, CPTAC=False, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=False, rawdata=False, mc_row=True, mc_col=False,
 ):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,

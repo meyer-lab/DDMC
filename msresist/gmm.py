@@ -1,6 +1,5 @@
 """Guassian Mixture Model functions to determine cluster assignments based on phosphorylation levels."""
 
-
 import numpy as np
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from msresist.motifs import ForegroundSeqs
@@ -12,7 +11,7 @@ def gmm_initialize(X, ncl, distance_method):
     labels, gmm_pred = [0, 0, 0], [np.nan]
 
     while len(set(labels)) < ncl or True in np.isnan(gmmp):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1, n_jobs=-1)
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1)
         labels = gmm.predict(d)
         gmmp = gmm.predict_proba(d)
 
