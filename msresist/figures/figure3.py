@@ -112,7 +112,8 @@ def makeFigure():
     PCA_scores(ax[:2], y_fc, 3)
 
     # MODEL
-    y = sp.stats.zscore(y_ae.drop("Treatment", axis=1).set_index("Lines"))
+    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
+    y.iloc[:, :] = sp.stats.zscore(y.iloc[:, :])
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
