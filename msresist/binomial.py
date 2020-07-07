@@ -167,3 +167,17 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             t_seqs.append(Seq(motif, IUPAC.protein))
 
     return y_seqs + s_seqs + t_seqs
+
+
+def assignPeptidesBN(ncl, sequences, cl_seqs, bg_pwm, binomials, labels):
+    """E-step––Do the peptide assignment according to sequence and data"""
+    seq_scores = np.zeros((len(sequences), ncl))
+
+    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
+    for j, motif in enumerate(sequences):
+        NumMotif = TranslateMotifsToIdx(motif)
+
+        for z in range(ncl):
+            seq_scores[j, z] = MeanBinomProbs(binomials[z], NumMotif)
+
+    return seq_scores

@@ -224,7 +224,7 @@ def BarPlotRipleysK(folder, mutants, xticklabels, treatments, legendlabels, repl
             df.columns = ["K Estimate"]
             df["AXL mutants Y->F"] = xticklabels[z]
             df["Treatment"] = legendlabels[j]
-            #add_poisson(poisson, mutant, df)
+            # add_poisson(poisson, mutant, df)
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     b = sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68)
@@ -246,7 +246,7 @@ def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
         df.columns = ["K Estimate"]
         df["Mutant"] = mutant
         df["Treatment"] = treatments[idx]
-        #add_poisson(poisson, mutant, df)
+        # add_poisson(poisson, mutant, df)
         treatment_dfs.append(df)
     df = pd.concat(treatment_dfs)
     sns.barplot(x="Mutant", y="K Estimate", hue="Treatment", data=df, ci=68, ax=ax)
@@ -265,7 +265,7 @@ def DataFrameRipleysK(folder, mutants, treatments, replicates, r):
             df.columns = ["K Estimate"]
             df["Mutant"] = mutant
             df["Treatment"] = treatment
-            #add_poisson(poisson, mutant, df)
+            # add_poisson(poisson, mutant, df)
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     return df.groupby(["Mutant", "Treatment"]).mean()
@@ -326,8 +326,8 @@ def treat_array_func(rep_list, Kest_func, radius, poisson_val, Kestbool=False):
 def add_poisson(poisson_val, mutant_name, dataframe):
     """Optionally adds poisson data as comparison for bar graphs"""
     poisson_df = pd.DataFrame(poisson_val)
-    poisson_df.columns = ['K Estimate']
-    poisson_df['Mutant'] = mutant_name
-    poisson_df['Treatment'] = 'Poisson'
+    poisson_df.columns = ["K Estimate"]
+    poisson_df["Mutant"] = mutant_name
+    poisson_df["Treatment"] = "Poisson"
     dataframe = pd.concat([poisson_df, dataframe])
     return dataframe

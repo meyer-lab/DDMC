@@ -93,7 +93,7 @@ def preprocessCPTAC():
 
 def filter_NaNpeptides(X, cut=0.2):
     """ Filter peptides that have a given percentage of missingness """
-    Xidx = np.count_nonzero(~np.isnan(X.select_dtypes(include=['float64'])), axis=1) / X.select_dtypes(include=['float64']).shape[1] >= cut
+    Xidx = np.count_nonzero(~np.isnan(X.select_dtypes(include=["float64"])), axis=1) / X.select_dtypes(include=["float64"]).shape[1] >= cut
     return X.iloc[Xidx, :]
 
 
