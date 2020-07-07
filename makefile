@@ -29,7 +29,7 @@ test: venv
 	. venv/bin/activate && pytest
 
 testprofile: venv
-	. venv/bin/activate && python3 -m cProfile -o profile /usr/local/bin/pytest
+	. venv/bin/activate && python3 -m cProfile -o profile /usr/local/bin/pytest -s
 	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 figprofile: venv
