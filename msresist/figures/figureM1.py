@@ -20,7 +20,7 @@ def makeFigure():
     dred = d.iloc[:, :2000]
     ired = i.iloc[:2000, :]
 
-    MSC = MassSpecClustering(ired, ncl=2, SeqWeight=2000, gmm_method="pom", distance_method="PAM250", n_runs=1).fit(dred, None)
+    MSC = MassSpecClustering(ired, ncl=2, SeqWeight=2000, distance_method="PAM250", n_runs=1).fit(dred, None)
 
     plotclusteraverages(ax[0], MSC.transform(dred).T, dred.index)
 
