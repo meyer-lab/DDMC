@@ -92,7 +92,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         if len(store_Clseqs) > 4:
             # Check convergence
-            if store_Clseqs[-1] == store_Clseqs[-2] or store_Clseqs[-1] == store_Clseqs[-3]:
+            if store_Clseqs[-1] in store_Clseqs[-2::]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
                 return cl_seqs, new_labels, new_score, n_iter, gmm, wins
 
