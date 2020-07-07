@@ -34,6 +34,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
     # EM algorithm
     store_Clseqs = []
+    store_scores = []
     for n_iter in range(max_n_iter):
         seq_reassign = [[] for i in range(ncl)]
 
@@ -45,10 +46,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             seq_scores = assignPeptidesPAM(ncl, sequences, cl_seqs, background, new_labels)
 
         final_scores = seq_scores * SeqWeight + gmmp
-        SeqIdx = np.argmax(seq_scores, axis=0)
-        labels = np.argmax(final_scores, axis=0)
-        DataIdx = np.argmax(gmmp, axis=0)
-        scores = np.max(final_scores, axis=0)
+        SeqIdx = np.argmax(seq_scores, axis=1)
+
+        labels = np.argmax(final_scores, axis=1)
+        DataIdx = np.argmax(gmmp, axis=1)
+        scores = np.max(final_scores, axis=1)
 
         for j, motif in enumerate(sequences):
             seq_reassign[labels[j]].append(motif)
@@ -56,10 +58,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         assert np.all(np.isfinite(scores)), f"Final scores not finite, motif = {motif}, gmmp = {gmmp}, nonzeros = %s"
 
         # Count wins
-        SeqWins = np.sum(SeqIdx == labels & DataIdx != labels)
-        DataWins = np.sum(DataIdx == labels & SeqIdx != labels)
-        BothWin = np.sum(DataIdx == labels & SeqIdx == labels)
-        MixWins = np.sum(DataIdx != labels & SeqIdx != labels)
+        SeqWins = np.sum((SeqIdx == labels) & (DataIdx != labels))
+        DataWins = np.sum((DataIdx == labels) & (SeqIdx != labels))
+        BothWin = np.sum((DataIdx == labels) & (SeqIdx == labels))
+        MixWins = np.sum((DataIdx != labels) & (SeqIdx != labels))
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in seq_reassign]:
@@ -73,6 +75,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # Store current results
         store_Clseqs.append(cl_seqs)
         new_score = np.mean(scores)
+        store_scores.append(new_score)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
 
@@ -90,9 +93,9 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             store_Clseqs = []
             continue
 
-        if len(store_Clseqs) > 2:
+        if len(store_Clseqs) > 4:
             # Check convergence
-            if store_Clseqs[-1] == store_Clseqs[-2]:
+            if store_Clseqs[-1] == store_Clseqs[-2] or store_Clseqs[-1] == store_Clseqs[-3]:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
                 return cl_seqs, new_labels, new_score, n_iter, gmm, wins
 
