@@ -42,7 +42,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         seq_reassign = [[] for i in range(ncl)]
 
         # E step: Assignment of each peptide based on data and seq
-        binoM = GenerateBPM(cl_seqs, distance_method, bg_pwm)
+        if distance_method == "Binomial":
+            binoM = GenerateBPM(cl_seqs, bg_pwm)
+        else:
+            binoM = None
+
         SeqWins, DataWins, BothWin, MixWins = 0, 0, 0, 0
         for j, motif in enumerate(sequences):
             score, idx, SeqIdx, DataIdx = assignPeptides(
@@ -100,8 +104,9 @@ def assignPeptides(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_s
     final_scores = np.zeros(ncl,)
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     if distance_method == "Binomial":
+        NumMotif = TranslateMotifsToIdx(motif)
+
         for z in range(ncl):
-            NumMotif = TranslateMotifsToIdx(motif, list(bg_pwm.keys()))
             BPM_score = MeanBinomProbs(binomials[z], NumMotif)
             seq_scores[z] = BPM_score
             data_scores[z] = gmmp[j, z]
@@ -114,7 +119,6 @@ def assignPeptides(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_s
             seq_scores[assignments] += Seq1Seq2ToScore[j, idx]
 
         for z in range(ncl):
-            #             seq_scores[z] = Seq1Seq2ToScore[Seq1Seq2ToScore[:, 0] == z][:, j+1].sum()
             seq_scores[z] /= len(cl_seqs[z])  # average score per cluster
             data_scores[z] = gmmp[j, z]
             final_scores[z] = seq_scores[z] * SeqWeight + gmmp[j, z]
@@ -124,11 +128,8 @@ def assignPeptides(ncl, motif, distance_method, SeqWeight, gmmp, j, bg_pwm, cl_s
     idx = np.argmax(final_scores)
 
     score = final_scores[idx]
-    assert math.isnan(score) == False and math.isinf(score) == False, (
-        "final score is either \
-    NaN or -Inf, motif = %s, gmmp = %s, nonzeros = %s"
-        % (motif, gmmp, np.count_nonzero(gmmp))
-    )
+    assert math.isnan(score) == False and math.isinf(score) == False, \
+        f"final score is either NaN or -Inf, motif = {motif}, gmmp = {gmmp}, nonzeros = {np.count_nonzero(gmmp)}"
 
     return score, idx, SeqIdx, DataIdx
 
@@ -148,12 +149,15 @@ def TrackWins(idx, SeqIdx, DataIdx, SeqWins, DataWins, BothWin, MixWins):
 
 def HardAssignments(labels, ncl):
     """ Generate a responsibility matrix with hard assignments, i.e. 1 for assignments, 0 otherwise. """
-    m = []
-    for idx in labels:
-        l = [0] * ncl
-        l[idx] = 1.0
-        m.append(l)
-    return np.array(m)
+    m = np.zeros((len(labels), ncl))
+
+    for ii, idx in enumerate(labels):
+        m[ii, idx] = 1.0
+
+    assert np.all(np.sum(m, axis=0) >= 1.0)
+    assert np.all(np.sum(m, axis=1) == 1.0)
+
+    return m
 
 
 def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
@@ -168,4 +172,5 @@ def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
         seqs = [s.upper() for s in sequences]
         Seq1Seq2ToScores = MotifPam250Scores(seqs)
         bg_pwm = False
+
     return bg_pwm, Seq1Seq2ToScores
