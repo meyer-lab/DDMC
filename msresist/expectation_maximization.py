@@ -41,7 +41,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             binoM = GenerateBPM(cl_seqs, background)
             seq_scores = assignPeptidesBN(ncl, sequences, cl_seqs, background, binoM, new_labels)
         else:
-            seq_scores = assignPeptidesPAM(ncl, sequences, cl_seqs, background, new_labels)
+            seq_scores = assignPeptidesPAM(ncl, cl_seqs, background, new_labels)
 
         final_scores = seq_scores * SeqWeight + gmmp
         SeqIdx = np.argmax(seq_scores, axis=1)
