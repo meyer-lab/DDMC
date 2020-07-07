@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from .motifs import FormatName, pYmotifs
+from .motifs import FormatName, MapMotifs
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -55,7 +55,7 @@ def preprocessing(
     if rawdata:
         return X
 
-    X = pYmotifs(X, genes)
+    X = MapMotifs(X, genes)
     merging_indices.insert(3, "Position")
 
     if Vfilter:
@@ -93,7 +93,7 @@ def preprocessCPTAC():
 
 def filter_NaNpeptides(X, cut=0.2):
     """ Filter peptides that have a given percentage of missingness """
-    Xidx = np.count_nonzero(~np.isnan(X.iloc[:, 4:]), axis=1) / X.iloc[:, 4:].shape[1] >= cut
+    Xidx = np.count_nonzero(~np.isnan(X.select_dtypes(include=['float64'])), axis=1) / X.select_dtypes(include=['float64']).shape[1] >= cut
     return X.iloc[Xidx, :]
 
 
@@ -139,7 +139,7 @@ def VarianceFilter(X, data_headers, varCut=0.1):
     """ Filter rows for those containing more than cutoff variance. Variance across conditions per peptide.
     Note this should only be used with log-scaled, mean-centered data. """
     Xidx = np.var(X[data_headers].values, axis=1) > varCut
-    return X.iloc[Xidx, :]  # .iloc keeps only those peptide labeled as "True"
+    return X.iloc[Xidx, :]
 
 
 def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
@@ -150,19 +150,12 @@ def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
     return X.iloc[Xidx, :]
 
 
-def FoldChangeMinToMax(X, data_headers, cutoff=0.65):
-    XX = Linear(X.copy(), data_headers)
-    x_toMin = XX[data_headers] / XX[data_headers].min()
-    Xidx = np.any(x_toMin.values >= x_toMin.max().values * cutoff, axis=1)
-    return X.iloc[Xidx, :]
-
-
 def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60):
     """ Filter rows for those containing a 50% change of the maximum vs minimum fold-change
     across every condition. """
     XX = Linear(X.copy(), data_headers)
     X_ToMin = XX[data_headers] / XX[data_headers].min(axis=0)
-    Xidx = np.any(X_ToMin[data_headers].values >= X_ToMin[data_headers].max().values * cutoff, axis=1)
+    Xidx = np.any(X_ToMin.values >= X_ToMin.max().values * cutoff, axis=1)
     return X.iloc[Xidx, :]
 
 

@@ -66,7 +66,7 @@ def BinomialMatrix(n, k, p):
     k is the counts matrix of the MS data set, p is the pwm of the background. """
     assert list(k.keys()) == AAlist
     assert list(p.keys()) == list(k.keys())
-    BMP = binom.logsf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
+    BMP = binom.pmf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
     BMP[BMP == -np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
     return BMP
@@ -104,7 +104,7 @@ def TranslateMotifsToIdx(motif):
     return [AAdict[res.upper()] for res in motif]
 
 
-def BackgroundSeqs(X):
+def BackgroundSeqs(forseqs):
     """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
@@ -112,7 +112,6 @@ def BackgroundSeqs(X):
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
     # Get porportion of psite types in foreground set
-    forseqs = list(X["Sequence"])
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
 

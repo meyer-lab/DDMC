@@ -15,20 +15,20 @@ class TestClustering(unittest.TestCase):
 
     def test_clusters(self):
         # """ Test that EMclustering is working by comparing with GMM clusters. """
-        ABC = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-        ABC = preprocess_seqs(ABC, "Y")
-        data = ABC.iloc[:, 7:].T
-        info = ABC.iloc[:, :7]
+        X = preprocessing(AXLwt=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+        data = X.select_dtypes(include=['float64']).T
+        info = X.select_dtypes(include=['object'])
         ncl = 2
-        SeqWeight = 0.75
-        gmm_method = "sklearn"
-        distance_method = "PAM250"
+        SeqWeights = [0, 3, 10000]
+        distance_method = "Binomial"
         fooCV = np.arange(10)
 
-        MSC = MassSpecClustering(info, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(data, fooCV)
+        for w in SeqWeights:
+            MSC = MassSpecClustering(info, ncl, SeqWeight=w, distance_method=distance_method).fit(data, fooCV)
+
         Cl_seqs = MSC.cl_seqs_
 
-        _, gmm_cl, _ = gmm_initialize(ABC, ncl, distance_method, gmm_method)
+        _, gmm_cl, _, _ = gmm_initialize(X, ncl, distance_method)
         gmm_cl = [[str(seq) for seq in cluster] for cluster in gmm_cl]
 
         # assert that EM clusters are different than GMM clusters
