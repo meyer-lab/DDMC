@@ -178,7 +178,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 def assignPeptidesBN(ncl, sequences, cl_seqs, bg_pwm, binomials, labels):
     """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros(len(sequences), ncl)
+    seq_scores = np.zeros((len(sequences), ncl))
 
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     for j, motif in enumerate(sequences):

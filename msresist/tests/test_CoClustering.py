@@ -6,7 +6,6 @@ import unittest
 import numpy as np
 from ..clustering import MassSpecClustering
 from ..gmm import gmm_initialize
-from ..motifs import preprocess_seqs
 from ..pre_processing import preprocessing
 
 
