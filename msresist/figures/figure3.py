@@ -112,7 +112,7 @@ def makeFigure():
     PCA_scores(ax[:2], y_fc, 3)
 
     # MODEL
-    y = y_fc.drop("Treatment", axis=1).set_index("Lines")
+    y = zscore(y_ae.drop("Treatment", axis=1).set_index("Lines"))
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
@@ -121,10 +121,10 @@ def makeFigure():
     SeqWeight = 0.5
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=3).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d, y)
     centers = MSC.transform(d)
 
-    plsr = PLSRegression(n_components=ncomp)
+    plsr = PLSRegression(n_components=ncomp, scale=False)
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
