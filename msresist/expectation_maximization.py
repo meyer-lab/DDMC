@@ -46,7 +46,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         final_scores = seq_scores * SeqWeight + gmmp
         SeqIdx = np.argmax(seq_scores, axis=1)
-
         labels = np.argmax(final_scores, axis=1)
         DataIdx = np.argmax(gmmp, axis=1)
         scores = np.max(final_scores, axis=1)
