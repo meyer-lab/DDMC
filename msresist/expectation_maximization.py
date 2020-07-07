@@ -3,10 +3,10 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
-from msresist.gmm import gmm_initialize, m_step
-from msresist.binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
-from msresist.pam250 import assignPeptidesPAM, MotifPam250Scores
-from msresist.motifs import ForegroundSeqs
+from .gmm import gmm_initialize, m_step
+from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
+from .pam250 import assignPeptidesPAM, MotifPam250Scores
+from .motifs import ForegroundSeqs
 
 
 def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs):
@@ -18,7 +18,6 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
         products.append([cl_seqs, labels, score, n_iter, gmmp, wins])
 
     idx = np.argmax(scores)
-
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
 
 
