@@ -2,6 +2,7 @@
 This creates Figure 2.
 """
 import os
+import random
 import pandas as pd
 import numpy as np
 import scipy as sp
@@ -10,6 +11,7 @@ import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
@@ -110,19 +112,20 @@ def makeFigure():
     PCA_scores(ax[:2], y_fc, 3)
 
     # MODEL
-    y = y_fc.drop("Treatment", axis=1).set_index("Lines")
+    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
+    y.iloc[:, :] = sp.stats.zscore(y.iloc[:, :])
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "Binomial"
     ncl = 6
-    SeqWeight = 2
+    SeqWeight = 0.5
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=3).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d, y)
     centers = MSC.transform(d)
 
-    plsr = PLSRegression(n_components=ncomp)
+    plsr = PLSRegression(n_components=ncomp, scale=False)
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
@@ -410,8 +413,8 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotclustersIndividually(centers, labels, nrows, ncols):
-    fig, ax = plt.subplots(nrows, ncols, figsize=(20, 10), sharex=True, sharey=True)
+def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20,10)):
+    fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
     for i in range(centers.shape[0]):
         ax[i // ncols][i % ncols].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
@@ -456,3 +459,81 @@ def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
             ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
+
+
+def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
+    """Incorporate different percentages of missing values and compute error between the actual 
+    versus cluster average value. Note that this works best with a complete subset of the CPTAC data set"""
+    x.index = np.arange(x.shape[0])
+    wlabels = ["Data", "Co-Clustering", "Sequence"]
+    nan_indices = []
+    errors = []
+    missing = []
+    prioritize = []
+    n = x.iloc[:, 4:].shape[1]
+    for per in nan_per:
+        print(per)
+        md = x.copy()
+        m = int(n * per)
+        for i in range(md.shape[0]):
+            row_len = np.arange(4, md.shape[1])
+            cols = random.sample(list(row_len), m)
+            md.iloc[i, cols] = np.nan
+            nan_indices.append((i, cols))
+        for i, w in enumerate(weights):
+            print(w)
+            prioritize.append(wlabels[i])
+            missing.append(per)
+            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl))
+
+    X = pd.DataFrame()
+    X["Prioritize"] = prioritize
+    X["Missing%"] = missing
+    X["Error"] = errors
+    return X
+
+
+def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
+    """Fit model and compute error during ArtificialMissingness"""
+    i = md.select_dtypes(include=['object'])
+    d = md.select_dtypes(include=['float64']).T
+    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
+    print(model.wins_)
+    z = x.copy()
+    z["Cluster"] = model.labels_
+    centers = model.transform(d).T  #Clusters x observations
+    errors = []
+    for idx in nan_indices:
+        v = z.iloc[idx[0], idx[1]]
+        c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
+        errors.append(mean_squared_error(v, c))
+    return np.mean(errors)
+
+
+def WinsByWeight(i, d, weigths, distance_method):
+    """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
+    wins = []
+    prioritize = []
+    W = []
+    for w in weigths:
+        print(w)
+        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
+        won = model.wins_
+        W.append(w)
+        wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
+        prioritize.append("Sequence")
+        W.append(w)
+        wins.append(int(won.split("DataWins: ")[1].split(" BothWin:")[0]))
+        prioritize.append("Data")
+        W.append(w)
+        wins.append(int(won.split("BothWin: ")[1].split(" MixWin:")[0]))
+        prioritize.append("Both")
+        W.append(w)
+        wins.append(int(won.split(" MixWin: ")[1]))
+        prioritize.append("Mix")
+
+    X = pd.DataFrame()
+    X["Sequence_Weighting"] = W
+    X["Prioritize"] = prioritize
+    X["Wins"] = wins
+    return X

@@ -10,7 +10,7 @@ from Bio.Alphabet import IUPAC
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-def pYmotifs(X, names):
+def MapMotifs(X, names):
     """Generate pY motifs for pre-processing."""
     names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
     X = X.iloc[Xidx, :]
@@ -102,10 +102,11 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
                 seqs.append(MS_seq)
                 matchedNames.append(newname)
             except BaseException:
+                print(MS_name, MS_seqU)
                 counter += 1
                 continue
 
-    assert counter == 0, "Proteome is missing peptides."
+    assert counter == 0, "Proteome is missing %s peptides" % (counter)
     assert len(matchedNames) == len(seqs)
     return matchedNames, seqs, Xidx
 
