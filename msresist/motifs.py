@@ -102,10 +102,11 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
                 seqs.append(MS_seq)
                 matchedNames.append(newname)
             except BaseException:
+                print(MS_name, MS_seqU)
                 counter += 1
                 continue
 
-    assert counter == 0, "Proteome is missing peptides."
+    assert counter == 0, "Proteome is missing %s peptides" % (counter)
     assert len(matchedNames) == len(seqs)
     return matchedNames, seqs, Xidx
 

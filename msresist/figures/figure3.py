@@ -112,19 +112,20 @@ def makeFigure():
     PCA_scores(ax[:2], y_fc, 3)
 
     # MODEL
-    y = y_fc.drop("Treatment", axis=1).set_index("Lines")
+    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
+    y.iloc[:, :] = sp.stats.zscore(y.iloc[:, :])
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "Binomial"
     ncl = 6
-    SeqWeight = 2
+    SeqWeight = 0.5
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=3).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d, y)
     centers = MSC.transform(d)
 
-    plsr = PLSRegression(n_components=ncomp)
+    plsr = PLSRegression(n_components=ncomp, scale=False)
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
@@ -471,6 +472,7 @@ def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
     prioritize = []
     n = x.iloc[:, 4:].shape[1]
     for per in nan_per:
+        print(per)
         md = x.copy()
         m = int(n * per)
         for i in range(md.shape[0]):
@@ -479,9 +481,10 @@ def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
             md.iloc[i, cols] = np.nan
             nan_indices.append((i, cols))
         for i, w in enumerate(weights):
+            print(w)
             prioritize.append(wlabels[i])
             missing.append(per)
-            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method))
+            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl))
 
     X = pd.DataFrame()
     X["Prioritize"] = prioritize
@@ -490,11 +493,12 @@ def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
     return X
 
 
-def FitModelandComputeError(md, weight, x, nan_indices, distance_method):
+def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     """Fit model and compute error during ArtificialMissingness"""
     i = md.select_dtypes(include=['object'])
     d = md.select_dtypes(include=['float64']).T
     model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
+    print(model.wins_)
     z = x.copy()
     z["Cluster"] = model.labels_
     centers = model.transform(d).T  #Clusters x observations
@@ -511,21 +515,21 @@ def WinsByWeight(i, d, weigths, distance_method):
     wins = []
     prioritize = []
     W = []
-    for w in weights:
+    for w in weigths:
         print(w)
-        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method="PAM250", n_runs=1).fit(d, "NA")
+        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
         won = model.wins_
         W.append(w)
         wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
         prioritize.append("Sequence")
         W.append(w)
-        wins.append(won.split("DataWins: ")[1].split(" BothWin:")[0])
+        wins.append(int(won.split("DataWins: ")[1].split(" BothWin:")[0]))
         prioritize.append("Data")
         W.append(w)
-        wins.append(won.split("BothWin: ")[1].split(" MixWin:")[0])
+        wins.append(int(won.split("BothWin: ")[1].split(" MixWin:")[0]))
         prioritize.append("Both")
         W.append(w)
-        wins.append(won.split(" MixWin: ")[1])
+        wins.append(int(won.split(" MixWin: ")[1]))
         prioritize.append("Mix")
 
     X = pd.DataFrame()
