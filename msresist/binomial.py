@@ -181,4 +181,3 @@ def assignPeptidesBN(ncl, sequences, cl_seqs, bg_pwm, binomials, labels):
             seq_scores[j, z] = MeanBinomProbs(binomials[z], NumMotif)
 
     return seq_scores
-

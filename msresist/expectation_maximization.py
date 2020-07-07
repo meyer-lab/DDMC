@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     d = np.array(data.T)
     sequences = ForegroundSeqs(list(X["Sequence"]))
 
-    # Initialize model 
+    # Initialize model
     gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
     background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 

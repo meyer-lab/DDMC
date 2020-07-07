@@ -59,7 +59,7 @@ def assignPeptidesPAM(ncl, sequences, cl_seqs, Seq1Seq2ToScore, labels):
     for j, motif in enumerate(sequences):
         for idx, assignments in enumerate(labels):
             seq_scores[j, assignments] += Seq1Seq2ToScore[j, idx]
-    
+
     for z in range(ncl):
         seq_scores[:, z] /= len(cl_seqs[z])  # average score per cluster
 
