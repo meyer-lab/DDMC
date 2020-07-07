@@ -8,7 +8,7 @@ from msresist.motifs import ForegroundSeqs
 def gmm_initialize(X, ncl, distance_method):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=["float64"])
-    labels, gmm_pred = [0, 0, 0], [np.nan]
+    labels, gmmp = [0, 0, 0], [np.nan]
 
     while len(set(labels)) < ncl or True in np.isnan(gmmp):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1)

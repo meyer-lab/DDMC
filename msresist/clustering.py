@@ -52,7 +52,7 @@ class MassSpecClustering(BaseEstimator):
         seqs = ForegroundSeqs(sequences)
         cl_seqs = [ForegroundSeqs(self.cl_seqs_[i]) for i in range(self.ncl)]
         bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
-        binoM = GenerateBPM(cl_seqs, self.distance_method, bg_pwm)
+        binoM = GenerateBPM(cl_seqs, bg_pwm)
         gmmp = self.gmm_.predict_proba(data.T)
         labels = []
         for j, motif in enumerate(seqs):
@@ -70,7 +70,7 @@ class MassSpecClustering(BaseEstimator):
         seqs = ForegroundSeqs(sequences)
         cl_seqs = [ForegroundSeqs(self.cl_seqs_[i]) for i in range(self.ncl)]
         bg_pwm, Seq1Seq2ToScores = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
-        binoM = GenerateBPM(cl_seqs, self.distance_method, bg_pwm)
+        binoM = GenerateBPM(cl_seqs, bg_pwm)
         gmmp = self.gmm_.predict_proba(data.T)
         scores = []
         for j, motif in enumerate(seqs):
