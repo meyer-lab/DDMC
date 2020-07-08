@@ -51,14 +51,14 @@ def pairwise_score(seq1: str, seq2: str) -> float:
     return score
 
 
-def assignPeptidesPAM(ncl, sequences, cl_seqs, Seq1Seq2ToScore, labels):
+def assignPeptidesPAM(ncl, cl_seqs, Seq1Seq2ToScore, labels):
     """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros((len(sequences), ncl))
+    seq_scores = np.zeros((Seq1Seq2ToScore.shape[0], ncl))
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-    for j, motif in enumerate(sequences):
-        for idx, assignments in enumerate(labels):
-            seq_scores[j, assignments] += Seq1Seq2ToScore[j, idx]
+    for j in range(Seq1Seq2ToScore.shape[0]):
+        for z in range(ncl):
+            seq_scores[j, z] = np.sum(Seq1Seq2ToScore[j, labels == z])
 
     for z in range(ncl):
         seq_scores[:, z] /= len(cl_seqs[z])  # average score per cluster

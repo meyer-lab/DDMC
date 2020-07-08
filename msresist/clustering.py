@@ -55,7 +55,7 @@ class MassSpecClustering(BaseEstimator):
             binoM = GenerateBPM(cl_seqs, background)
             seq_scores = assignPeptidesBN(self.ncl, sequences, cl_seqs, background, binoM, self.labels_)
         else:
-            seq_scores = assignPeptidesPAM(self.ncl, sequences, cl_seqs, background, self.labels_)
+            seq_scores = assignPeptidesPAM(self.ncl, cl_seqs, background, self.labels_)
 
         return seq_scores
 
