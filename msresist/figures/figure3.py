@@ -413,7 +413,7 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20,10)):
+def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20, 10)):
     fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
     for i in range(centers.shape[0]):
@@ -462,7 +462,7 @@ def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
 
 
 def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
-    """Incorporate different percentages of missing values and compute error between the actual 
+    """Incorporate different percentages of missing values and compute error between the actual
     versus cluster average value. Note that this works best with a complete subset of the CPTAC data set"""
     x.index = np.arange(x.shape[0])
     wlabels = ["Data", "Co-Clustering", "Sequence"]
@@ -501,7 +501,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     print(model.wins_)
     z = x.copy()
     z["Cluster"] = model.labels_
-    centers = model.transform(d).T  #Clusters x observations
+    centers = model.transform(d).T  # Clusters x observations
     errors = []
     for idx in nan_indices:
         v = z.iloc[idx[0], idx[1]]
