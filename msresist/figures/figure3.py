@@ -109,7 +109,7 @@ def makeFigure():
     y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
     y_fc["Treatment"] = "A fold-change to E"
 
-    PCA_scores(ax[:2], y_fc, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", hue_load="Phenotype")
+    plotPCA(ax[:2], y_fc, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", hue_load="Phenotype")
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
