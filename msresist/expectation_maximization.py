@@ -70,6 +70,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         # Store current results
         store_Clseqs.append(cl_seqs)
+        store_Clseqs = store_Clseqs[-10:]
         new_score = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
