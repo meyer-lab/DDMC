@@ -17,12 +17,6 @@ pipeline {
         cobertura coberturaReportFile: 'coverage.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
       }
     }
-    stage('Lint') {
-      steps {
-        sh 'make pylint.log'
-        recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 20, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
-      }
-    }
     stage('Build') {
       steps {
         sh 'make -j 2 all'
@@ -31,6 +25,7 @@ pipeline {
           sh 'make output/method/manuscript.html'
         }
         archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
+        recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 20, type: 'TOTAL_NORMAL', unstable: true], [threshold: 60, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
         publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/biol', reportFiles:'manuscript.html', reportName:'Biology Paper'])
         publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/method', reportFiles:'manuscript.html', reportName:'Methods Paper'])
       }
