@@ -62,7 +62,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in seq_reassign]:
-            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
@@ -74,6 +73,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         new_score = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
+#         print(n_iter, wins)
+#         print(new_score)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
@@ -82,7 +83,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         gmmp = gmm.predict_proba(d)
 
         if True in np.isnan(gmmp):
-            print("Re-initialize GMM, NaN responsibilities at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
             assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"

@@ -109,7 +109,7 @@ def makeFigure():
     y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
     y_fc["Treatment"] = "A fold-change to E"
 
-    PCA_scores(ax[:2], y_fc, 3)
+    PCA_scores(ax[:2], y_fc, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", hue_load="Phenotype")
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -148,29 +148,30 @@ def makeFigure():
 
     return f
 
-
-def PCA_scores(ax, d, n_components):
-    """ Plot PCA scores. """
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, hue_load=None, style_load=None, legendOut=False):
+    """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.iloc[:, 2:].values)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
     dLoad_ = pp.components_
-    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, ["Lines", "Treatment"], "Phenotype")
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
     varExp = np.round(pp.explained_variance_ratio_, 2)
 
     # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{"linewidth": 0.5, "edgecolor": "k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[0].set_title("PCA Scores", fontsize=11)
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    if legendOut:
+        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
 
     # Loadings
-    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{"linewidth": 0.5, "edgecolor": "k"})
-    ax[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-
+    ax[1].get_legend().remove()
+    for j, txt in enumerate(dLoad_[hue_load]):
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 def plotGridSearch(ax, gs):
     """ Plot gridsearch results by ranking. """
@@ -178,7 +179,6 @@ def plotGridSearch(ax, gs):
     ax.set_title("Hyperaparameter Search")
     ax.set_xticklabels(np.arange(1, 21))
     ax.set_ylabel("Mean Squared Error")
-
 
 def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     """ Plot R2Y/Q2Y variance explained by each component. """
@@ -194,7 +194,6 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
     ax.set_xlabel("Number of Components", fontsize=11)
     ax.set_ylabel("Variance", fontsize=11)
     ax.legend(loc=0)
-
 
 def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
@@ -269,12 +268,6 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", an
     ax[1].set_ylabel("Principal Component 2", fontsize=11)
     ax[1].axhline(y=0, color="0.25", linestyle="--")
     ax[1].axvline(x=0, color="0.25", linestyle="--")
-
-
-#     spacer = 0.1
-#     ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
-#     ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
-
 
 def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
     """ Interactive PLSR plot. Note that this works best by pre-defining the dataframe's
@@ -365,7 +358,6 @@ def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
     fig.show()
     return fig
 
-
 def plotclusteraverages(ax, centers, treatments):
 
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
@@ -412,7 +404,6 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_xlabel("Number of Components per Cluster")
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
-
 def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20,10)):
     fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
     colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
@@ -423,7 +414,6 @@ def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20,10)):
         ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
         ax[i // ncols][i % ncols].legend()
 
-
 def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
     """boxplot of peptides included in a dictionary with gene name / position pairs"""
     m = selectpeptides(X.copy().set_index(["Gene", "Position"]), a).drop(["Cluster", "Position", "Protein", "Sequence", "UniprotAcc"], axis=1)
@@ -433,7 +423,6 @@ def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
         sns.boxplot(x="Lines", y="p-signal", data=m, ax=ax)
     if plot == "violin":
         sns.violinplot(x="Lines", y="p-signal", data=m, ax=ax)
-
 
 def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
     """Boxplot of every cluster"""
@@ -459,81 +448,3 @@ def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
             ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
             ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
             ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
-
-
-def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
-    """Incorporate different percentages of missing values and compute error between the actual 
-    versus cluster average value. Note that this works best with a complete subset of the CPTAC data set"""
-    x.index = np.arange(x.shape[0])
-    wlabels = ["Data", "Co-Clustering", "Sequence"]
-    nan_indices = []
-    errors = []
-    missing = []
-    prioritize = []
-    n = x.iloc[:, 4:].shape[1]
-    for per in nan_per:
-        print(per)
-        md = x.copy()
-        m = int(n * per)
-        for i in range(md.shape[0]):
-            row_len = np.arange(4, md.shape[1])
-            cols = random.sample(list(row_len), m)
-            md.iloc[i, cols] = np.nan
-            nan_indices.append((i, cols))
-        for i, w in enumerate(weights):
-            print(w)
-            prioritize.append(wlabels[i])
-            missing.append(per)
-            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl))
-
-    X = pd.DataFrame()
-    X["Prioritize"] = prioritize
-    X["Missing%"] = missing
-    X["Error"] = errors
-    return X
-
-
-def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
-    """Fit model and compute error during ArtificialMissingness"""
-    i = md.select_dtypes(include=['object'])
-    d = md.select_dtypes(include=['float64']).T
-    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
-    print(model.wins_)
-    z = x.copy()
-    z["Cluster"] = model.labels_
-    centers = model.transform(d).T  #Clusters x observations
-    errors = []
-    for idx in nan_indices:
-        v = z.iloc[idx[0], idx[1]]
-        c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
-        errors.append(mean_squared_error(v, c))
-    return np.mean(errors)
-
-
-def WinsByWeight(i, d, weigths, distance_method):
-    """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
-    wins = []
-    prioritize = []
-    W = []
-    for w in weigths:
-        print(w)
-        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
-        won = model.wins_
-        W.append(w)
-        wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
-        prioritize.append("Sequence")
-        W.append(w)
-        wins.append(int(won.split("DataWins: ")[1].split(" BothWin:")[0]))
-        prioritize.append("Data")
-        W.append(w)
-        wins.append(int(won.split("BothWin: ")[1].split(" MixWin:")[0]))
-        prioritize.append("Both")
-        W.append(w)
-        wins.append(int(won.split(" MixWin: ")[1]))
-        prioritize.append("Mix")
-
-    X = pd.DataFrame()
-    X["Sequence_Weighting"] = W
-    X["Prioritize"] = prioritize
-    X["Wins"] = wins
-    return X
