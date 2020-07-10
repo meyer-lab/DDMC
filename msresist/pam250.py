@@ -11,9 +11,10 @@ def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
     n = len(seqs)
 
-    out = np.zeros((n, n), dtype=int)
-    shm = shared_memory.SharedMemory(create=True, size=out.nbytes)
-    out = np.ndarray(out.shape, dtype=out.dtype, buffer=shm.buf)
+    # WARNING this type can only hold -128 to 127
+    dtype = np.dtype(np.int8)
+    shm = shared_memory.SharedMemory(create=True, size=dtype.itemsize*n*n)
+    out = np.ndarray((n, n), dtype=dtype, buffer=shm.buf)
 
     with ProcessPoolExecutor() as e:
         for ii in range(0, n, 500):
@@ -21,6 +22,7 @@ def MotifPam250Scores(seqs):
 
     out = out.copy()
     shm.unlink()
+    shm.close()
 
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
