@@ -36,8 +36,6 @@ def makeFigure():
     W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
     PlotAMwins(ax[2:6], W, weights)
 
-    ax[7].axis('off')
-
     # Add subplot labels
     subplotLabel(ax)
 
