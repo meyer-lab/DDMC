@@ -19,7 +19,7 @@ pipeline {
     }
     stage('Build') {
       steps {
-        sh 'make -j 2 all'
+        sh 'make all'
         lock ('manubot') {
           sh 'make output/biol/manuscript.html'
           sh 'make output/method/manuscript.html'
