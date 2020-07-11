@@ -43,6 +43,17 @@ def makeFigure():
     weights = np.arange(0, 1.1, 0.1)
     PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
 
+    #Run model
+    X_f = filter_NaNpeptides(X, cut=0.1)
+    d_f = X_f.select_dtypes(include=['float64']).T
+    i_f = X_f.select_dtypes(include=['object'])
+    distance_method = "PAM250"
+    ncl = 15
+    SeqWeight = 0.20
+    MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d_f, "NA")
+    centers = MSC.transform(d_f)
+    centers["Patient_ID"] = X.columns[4:]
+
     # Add subplot labels
     subplotLabel(ax)
 
