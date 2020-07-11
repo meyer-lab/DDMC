@@ -24,24 +24,24 @@ def makeFigure():
     distance_method = "PAM250"
 
     #Distribution of missingness per petide
-    PlotMissingnessDensity(ax[0], d)
+#     PlotMissingnessDensity(ax[0], d)
 
-    #Artificial missingness plot
-    cd = filter_NaNpeptides(X, cut=1)
-    assert True not in np.isnan(cd.iloc[:, 4:]), "There are still NaNs."
-    nan_per = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
-    weights = [0, 0.3, 0.5, 1000]
-    ncl = 5
+#     #Artificial missingness plot
+#     cd = filter_NaNpeptides(X, cut=1)
+#     assert True not in np.isnan(cd.iloc[:, 4:]), "There are still NaNs."
+#     nan_per = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
+#     weights = [0, 0.3, 0.5, 1000]
+#     ncl = 5
 
-    W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
-    PlotAMwins(ax[2:6], W, weights)
+#     W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
+#     PlotAMwins(ax[2:6], W, weights)
 
-    #Wins across different weights with 0.5% missingness
-    X_w = filter_NaNpeptides(X, cut=0.5)
-    d_w = X_w.select_dtypes(include=['float64']).T
-    i_w = X_w.select_dtypes(include=['object'])
-    weights = np.arange(0, 1.1, 0.1)
-    PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
+#     #Wins across different weights with 0.5% missingness
+#     X_w = filter_NaNpeptides(X, cut=0.5)
+#     d_w = X_w.select_dtypes(include=['float64']).T
+#     i_w = X_w.select_dtypes(include=['object'])
+#     weights = np.arange(0, 1.1, 0.1)
+#     PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
 
     #Run model
     X_f = filter_NaNpeptides(X, cut=0.1)
