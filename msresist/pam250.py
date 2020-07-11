@@ -13,7 +13,7 @@ def MotifPam250Scores(seqs):
 
     # WARNING this type can only hold -128 to 127
     dtype = np.dtype(np.int8)
-    shm = shared_memory.SharedMemory(create=True, size=dtype.itemsize*n*n)
+    shm = shared_memory.SharedMemory(create=True, size=dtype.itemsize * n * n)
     out = np.ndarray((n, n), dtype=dtype, buffer=shm.buf)
 
     with ProcessPoolExecutor() as e:
