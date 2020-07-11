@@ -15,7 +15,7 @@ from msresist.pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 8), (2, 3))
+    ax, f = getSetup((10, 8), (2, 4))
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
     d = X.select_dtypes(include=["float64"]).T
@@ -35,6 +35,13 @@ def makeFigure():
 
     W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
     PlotAMwins(ax[2:6], W, weights)
+
+    #Wins across different weights with 0.5% missingness
+    X_w = filter_NaNpeptides(X, cut=0.5)
+    d_w = X_w.select_dtypes(include=['float64']).T
+    i_w = X_w.select_dtypes(include=['object'])
+    weights = np.arange(0, 1.1, 0.1)
+    PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -139,3 +146,31 @@ def FindWinIntegers(won):
     bothWin = int(won.split("BothWin: ")[1].split(" MixWin:")[0])
     mixWin = int(won.split(" MixWin: ")[1])
     return seqWin, dataWin, bothWin, mixWin
+
+def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
+    """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
+    wins = []
+    prioritize = []
+    W = []
+    for w in weigths:
+        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
+        won = model.wins_
+        wi = FindWinIntegers(won)
+        W.append(w)
+        wins.append(wi[0])
+        prioritize.append("Sequence")
+        W.append(w)
+        wins.append(wi[1])
+        prioritize.append("Data")
+        W.append(w)
+        wins.append(wi[2])
+        prioritize.append("Both")
+        W.append(w)
+        wins.append(wi[3])
+        prioritize.append("Mix")
+
+    X = pd.DataFrame()
+    X["Sequence_Weighting"] = W
+    X["Prioritize"] = prioritize
+    X["Wins"] = wins
+    sns.lineplot(x="Sequence_Weighting", y="Wins", data=X, hue="Prioritize", ax=ax)
