@@ -109,7 +109,7 @@ def makeFigure():
     y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
     y_fc["Treatment"] = "A fold-change to E"
 
-    PCA_scores(ax[:2], y_fc, 3)
+    plotPCA(ax[:2], y_fc, 3)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -149,7 +149,7 @@ def makeFigure():
     return f
 
 
-def PCA_scores(ax, d, n_components):
+def plotPCA(ax, d, n_components):
     """ Plot PCA scores. """
     pp = PCA(n_components=n_components)
     dScor_ = pp.fit_transform(d.iloc[:, 2:].values)
