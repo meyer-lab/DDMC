@@ -47,7 +47,7 @@ def makeFigure():
     X_f = filter_NaNpeptides(X, cut=0.1)
     d_f = X_f.select_dtypes(include=['float64']).T
     i_f = X_f.select_dtypes(include=['object'])
-    distance_method = "PAM250"
+    distance_method = "Binomial"
     ncl = 15
     SeqWeight = 0.20
     MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d_f, "NA")
