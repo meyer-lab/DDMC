@@ -206,3 +206,14 @@ def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
     X["Prioritize"] = prioritize
     X["Wins"] = wins
     sns.lineplot(x="Sequence_Weighting", y="Wins", data=X, hue="Prioritize", ax=ax)
+
+def TumorType(centers):
+    """Add Normal vs Tumor column."""
+    tumortype = []
+    for i in range(centers.shape[0]):
+        if ".N" in centers["Patient_ID"][i]:
+            tumortype.append("Normal")
+        else:
+            tumortype.append("Tumor")
+    centers["Type"] = tumortype
+    return centers
