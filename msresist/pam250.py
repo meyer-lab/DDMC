@@ -23,8 +23,8 @@ def MotifPam250Scores(seqs):
         e.shutdown()
 
     out = out.copy()
-    shm.unlink()
     shm.close()
+    shm.unlink()
 
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
