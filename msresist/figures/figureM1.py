@@ -9,13 +9,15 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import zscore
 from sklearn.metrics import mean_squared_error
+from sklearn.cross_decomposition import PLSRegression
+from msresist.figures.figure3 import plotR2YQ2Y, plotPCA
 from msresist.clustering import MassSpecClustering
 from msresist.pre_processing import filter_NaNpeptides
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 8), (2, 4))
+    ax, f = getSetup((12.5, 12), (4, 3))
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
     d = X.select_dtypes(include=["float64"]).T
@@ -24,24 +26,24 @@ def makeFigure():
     distance_method = "PAM250"
 
     #Distribution of missingness per petide
-#     PlotMissingnessDensity(ax[0], d)
+    PlotMissingnessDensity(ax[0], d)
 
-#     #Artificial missingness plot
-#     cd = filter_NaNpeptides(X, cut=1)
-#     assert True not in np.isnan(cd.iloc[:, 4:]), "There are still NaNs."
-#     nan_per = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
-#     weights = [0, 0.3, 0.5, 1000]
-#     ncl = 5
+    #Artificial missingness plot
+    cd = filter_NaNpeptides(X, cut=1)
+    assert True not in np.isnan(cd.iloc[:, 4:]), "There are still NaNs."
+    nan_per = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
+    weights = [0, 0.3, 0.5, 1000]
+    ncl = 5
 
-#     W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
-#     PlotAMwins(ax[2:6], W, weights)
+    W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
+    PlotAMwins(ax[2:6], W, weights)
 
-#     #Wins across different weights with 0.5% missingness
-#     X_w = filter_NaNpeptides(X, cut=0.5)
-#     d_w = X_w.select_dtypes(include=['float64']).T
-#     i_w = X_w.select_dtypes(include=['object'])
-#     weights = np.arange(0, 1.1, 0.1)
-#     PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
+    #Wins across different weights with 0.5% missingness
+    X_w = filter_NaNpeptides(X, cut=0.5)
+    d_w = X_w.select_dtypes(include=['float64']).T
+    i_w = X_w.select_dtypes(include=['object'])
+    weights = np.arange(0, 1.1, 0.1)
+    PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
 
     #Run model
     X_f = filter_NaNpeptides(X, cut=0.1)
@@ -53,6 +55,25 @@ def makeFigure():
     MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d_f, "NA")
     centers = MSC.transform(d_f)
     centers["Patient_ID"] = X.columns[4:]
+
+    #PCA of model
+    centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
+    centers = TumorType(centers)
+    c = 2
+    plotPCA(
+        ax[7:11], centers, c, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", hue_load="Cluster"
+    )
+
+    #Regress against survival
+    centers, y = TransformCPTACdataForRegression(MSC, d_f, list(X.columns[4:]))
+
+    centers_T = centers[~centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+    centers_N = centers[centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+    y_T = y[~y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+    y_N = y[y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+
+    plsr = PLSRegression(n_components=2, scale=True)
+    plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
 
     # Add subplot labels
     subplotLabel(ax)
