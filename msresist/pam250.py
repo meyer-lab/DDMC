@@ -20,6 +20,9 @@ def MotifPam250Scores(seqs):
         for ii in range(0, n, 500):
             e.submit(innerloop, seqs, ii, 500, shm.name, out.dtype, n)
 
+        e.terminate()
+        e.join()
+
     out = out.copy()
     shm.unlink()
     shm.close()
