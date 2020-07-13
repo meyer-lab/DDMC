@@ -157,19 +157,19 @@ def makeFigure():
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:6], plsr, centers, y, 1)
+    plotActualVsPredicted(ax[3:7], plsr, centers, y, 1)
 
     # -------- Cross-validation 2 -------- #
 
     CoCl_plsr = Pipeline([("CoCl", MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ("plsr", PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
-    plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
+    plotR2YQ2Y(ax[7], CoCl_plsr, d, y, cv=2, b=ncl + 1)
     gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
-    plotGridSearch(ax[7], gs)
-    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y, 2)
-    plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
-    plotclusteraverages(ax[13], centers.T, all_lines)
+    plotGridSearch(ax[8], gs)
+    plotActualVsPredicted(ax[9:12], CoCl_plsr, d, y, 2)
+    plotScoresLoadings(ax[12:14], fit, centers, y, ncl, all_lines, 2)
+    plotclusteraverages(ax[14], centers.T, all_lines)
 
     # Add subplot labels
     subplotLabel(ax)
