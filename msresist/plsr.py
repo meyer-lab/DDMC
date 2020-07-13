@@ -17,7 +17,7 @@ def R2Y_across_components(model, X, Y, cv, max_comps, crossval=False):
             model.set_params(plsr__n_components=b)
 
         if crossval is True:
-            y_pred = cross_val_predict(model, X, Y, cv=Y.shape[0], n_jobs=-1)
+            y_pred = cross_val_predict(model, X, Y, cv=Y.shape[0])
         else:
             y_pred = model.fit(X, Y).predict(X)
 

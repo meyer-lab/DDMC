@@ -145,7 +145,7 @@ def makeFigure():
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
-    distance_method = "Binomial"
+    distance_method = "PAM250"
     ncl = 6
     SeqWeight = 0.5
     ncomp = 2
