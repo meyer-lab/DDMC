@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 from ..clustering import MassSpecClustering
