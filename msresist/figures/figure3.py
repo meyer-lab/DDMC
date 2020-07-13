@@ -11,11 +11,13 @@ import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from ..figures.figure1 import pca_dfs
+from ..distances import DataFrameRipleysK
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
@@ -33,7 +35,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 11), (3, 5))
+    ax, f = getSetup((15, 15), (4, 4))
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -100,24 +102,49 @@ def makeFigure():
     m_e.index = v_e.index
     m_ae.index = v_ae.index
 
+    # Clustering Effect
+    mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
+    treatments = ['ut', 'e', 'ae']
+    replicates = 6
+    radius = np.linspace(1, 14.67, 1)
+    folder = '48hrs'
+    c = DataFrameRipleysK(folder, mutants, treatments, replicates, radius).reset_index().set_index("Mutant")
+    c.columns = ["Treatment", "Island"]
+    c_ut = c[c["Treatment"] == "ut"]
+    c_ut = c_ut.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_ut.index = all_lines
+    c_ut = c_ut.reset_index()
+    c_ut["Treatment"] = "UT"
+
+    c_e = c[c["Treatment"] == "e"]
+    c_e = c_e.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_e.index = all_lines
+    c_e = c_e.reset_index()
+    c_e["Treatment"] = "E"
+
+    c_ae = c[c["Treatment"] == "ae"]
+    c_ae = c_ae.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_ae.index = all_lines
+    c_ae = c_ae.reset_index()
+    c_ae["Treatment"] = "A/E"
+
     # -------- PLOTS -------- #
     # PCA analysis of phenotypes
-    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"]], axis=1)
+    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
+    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_ae["Island"]], axis=1)
+    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ae["Island"]], axis=1)
 
-    y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
-    y_fc["Treatment"] = "A fold-change to E"
+    y_c = pd.concat([y_ut, y_e, y_ae])
+    y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    PCA_scores(ax[:2], y_fc, 3)
+    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", hue_load="Phenotype", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
-    y.iloc[:, :] = sp.stats.zscore(y.iloc[:, :])
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
-    distance_method = "Binomial"
+    distance_method = "PAM250"
     ncl = 6
     SeqWeight = 0.5
     ncomp = 2
@@ -129,19 +156,19 @@ def makeFigure():
     plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
 
     # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:6], plsr, centers, y, 1)
+    plotActualVsPredicted(ax[3:7], plsr, centers, y, 1)
 
     # -------- Cross-validation 2 -------- #
 
     CoCl_plsr = Pipeline([("CoCl", MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ("plsr", PLSRegression(ncomp))])
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
-    plotR2YQ2Y(ax[6], CoCl_plsr, d, y, cv=2, b=ncl + 1)
+    plotR2YQ2Y(ax[7], CoCl_plsr, d, y, cv=2, b=ncl + 1)
     gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
-    plotGridSearch(ax[7], gs)
-    plotActualVsPredicted(ax[8:11], CoCl_plsr, d, y, 2)
-    plotScoresLoadings(ax[11:13], fit, centers, y, ncl, all_lines, 2)
-    plotclusteraverages(ax[13], centers.T, all_lines)
+    plotGridSearch(ax[8], gs)
+    plotActualVsPredicted(ax[9:13], CoCl_plsr, d, y, 2)
+    plotScoresLoadings(ax[13:15], fit, centers, y, ncl, all_lines, 2)
+    plotclusteraverages(ax[15], centers.T, all_lines)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -149,27 +176,30 @@ def makeFigure():
     return f
 
 
-def PCA_scores(ax, d, n_components):
-    """ Plot PCA scores. """
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, hue_load=None, style_load=None, legendOut=False):
+    """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.iloc[:, 2:].values)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
     dLoad_ = pp.components_
-    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, ["Lines", "Treatment"], "Phenotype")
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
     varExp = np.round(pp.explained_variance_ratio_, 2)
 
     # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{"linewidth": 0.5, "edgecolor": "k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[0].set_title("PCA Scores", fontsize=11)
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    if legendOut:
+        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
     # Loadings
-    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{"linewidth": 0.5, "edgecolor": "k"})
-    ax[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    ax[1].get_legend().remove()
+    for j, txt in enumerate(dLoad_[hue_load]):
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 
 def plotGridSearch(ax, gs):
@@ -199,27 +229,44 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
 def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
-        Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0], n_jobs=-1)
+        Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
         ylabel = "Predicted"
     if y_pred == "fit":
         Y_predictions = plsr_model.fit(X, Y).predict(X)
         ylabel = "Fit"
-    for i, label in enumerate(Y.columns):
-        y = Y.iloc[:, i]
-        ypred = Y_predictions[:, i]
-        ax[i].scatter(y, ypred)
-        ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-        ax[i].set_xlabel("Actual")
-        ax[i].set_ylabel(ylabel)
-        ax[i].set_title(label)
 
-        ax[i].set_aspect("equal", "datalim")
+    if len(Y.columns) > 1:
+        for i, label in enumerate(Y.columns):
+            y = Y.iloc[:, i]
+            ypred = Y_predictions[:, i]
+            ax[i].scatter(y, ypred)
+            ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+            ax[i].set_xlabel("Actual")
+            ax[i].set_ylabel(ylabel)
+            ax[i].set_title(label)
+
+            ax[i].set_aspect("equal", "datalim")
+
+            # Add correlation coefficient
+            coeff, _ = sp.stats.pearsonr(ypred, y)
+            textstr = "$r$ = " + str(np.round(coeff, 4))
+            props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+            ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+
+    elif len(Y.columns) == 1:
+        y = Y.iloc[:, 0]
+        ypred = Y_predictions[:, 0]
+        ax.scatter(y, ypred)
+        ax.plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+        ax.set_xlabel("Actual")
+        ax.set_ylabel(ylabel)
+        ax.set_title(Y.columns[0])
 
         # Add correlation coefficient
         coeff, _ = sp.stats.pearsonr(ypred, y)
         textstr = "$r$ = " + str(np.round(coeff, 4))
         props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+        ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):

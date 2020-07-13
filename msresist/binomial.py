@@ -66,9 +66,7 @@ def BinomialMatrix(n, k, p):
     k is the counts matrix of the MS data set, p is the pwm of the background. """
     assert list(k.keys()) == AAlist
     assert list(p.keys()) == list(k.keys())
-    BMP = binom.pmf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
-    # make the p-value of Y at pos 0 close to 0 to avoid log(0) = -inf
-    BMP[BMP == -np.inf] = np.amin(np.array(BMP)[BMP != -np.inf])
+    BMP = binom.cdf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
     return BMP
 
 
@@ -172,7 +170,6 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 def assignPeptidesBN(ncl, sequences, cl_seqs, bg_pwm, binomials, labels):
     """E-step––Do the peptide assignment according to sequence and data"""
     seq_scores = np.zeros((len(sequences), ncl))
-
     # Binomial Probability Matrix distance (p-values) between foreground and background sequences
     for j, motif in enumerate(sequences):
         NumMotif = TranslateMotifsToIdx(motif)

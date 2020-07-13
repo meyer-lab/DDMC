@@ -20,9 +20,11 @@ def MotifPam250Scores(seqs):
         for ii in range(0, n, 500):
             e.submit(innerloop, seqs, ii, 500, shm.name, out.dtype, n)
 
+        e.shutdown()
+
     out = out.copy()
-    shm.unlink()
     shm.close()
+    shm.unlink()
 
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
