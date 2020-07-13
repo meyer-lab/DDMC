@@ -74,6 +74,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         new_score = np.mean(scores)
         new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
+        print("n_iter:", n_iter)
+        print(new_score)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign

@@ -229,7 +229,7 @@ def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
 def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
-        Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0], n_jobs=-1)
+        Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
         ylabel = "Predicted"
     if y_pred == "fit":
         Y_predictions = plsr_model.fit(X, Y).predict(X)
