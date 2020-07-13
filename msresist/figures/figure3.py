@@ -149,27 +149,30 @@ def makeFigure():
     return f
 
 
-def plotPCA(ax, d, n_components):
-    """ Plot PCA scores. """
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, hue_load=None, style_load=None, legendOut=False):
+    """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.iloc[:, 2:].values)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
     dLoad_ = pp.components_
-    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, ["Lines", "Treatment"], "Phenotype")
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
     varExp = np.round(pp.explained_variance_ratio_, 2)
 
     # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue="Lines", ax=ax[0], s=80, **{"linewidth": 0.5, "edgecolor": "k"})
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[0].set_title("PCA Scores", fontsize=11)
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    if legendOut:
+        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
 
     # Loadings
-    sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="Phenotype", ax=ax[1], s=80, markers=["o", "X", "d"], **{"linewidth": 0.5, "edgecolor": "k"})
-    ax[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+    g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    ax[1].get_legend().remove()
+    for j, txt in enumerate(dLoad_[hue_load]):
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 
 def plotGridSearch(ax, gs):
