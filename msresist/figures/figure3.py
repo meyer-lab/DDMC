@@ -100,16 +100,42 @@ def makeFigure():
     m_e.index = v_e.index
     m_ae.index = v_ae.index
 
+    # Clustering Effect
+    mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
+    treatments = ['ut', 'e', 'ae']
+    replicates = 6
+    radius = np.linspace(1, 14.67, 1)
+    folder = '48hrs'
+    c = DataFrameRipleysK(folder, mutants, treatments, replicates, radius).reset_index().set_index("Mutant")
+    c.columns = ["Treatment", "Island"]
+    c_ut = c[c["Treatment"] == "ut"]
+    c_ut = c_ut.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_ut.index = all_lines
+    c_ut = c_ut.reset_index()
+    c_ut["Treatment"] = "UT"
+
+    c_e = c[c["Treatment"] == "e"]
+    c_e = c_e.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_e.index = all_lines
+    c_e = c_e.reset_index()
+    c_e["Treatment"] = "E"
+
+    c_ae = c[c["Treatment"] == "ae"]
+    c_ae = c_ae.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    c_ae.index = all_lines
+    c_ae = c_ae.reset_index()
+    c_ae["Treatment"] = "A/E"
+
     # -------- PLOTS -------- #
     # PCA analysis of phenotypes
-    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"]], axis=1)
+    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
+    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_ae["Island"]], axis=1)
+    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ae["Island"]], axis=1)
 
-    y_fc = pd.concat([y_ae.iloc[:, :2], y_ae.iloc[:, 2:] / y_e.iloc[:, 2:]], axis=1)
-    y_fc["Treatment"] = "A fold-change to E"
+    y_c = pd.concat([y_ut, y_e, y_ae])
+    y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    plotPCA(ax[:2], y_fc, 3)
+    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", hue_load="Phenotype", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -163,7 +189,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     if legendOut:
-        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, fontsize=7)
+        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
     # Loadings
     g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
