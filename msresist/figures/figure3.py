@@ -35,7 +35,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 11), (3, 5))
+    ax, f = getSetup((15, 15), (4, 4))
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -141,7 +141,6 @@ def makeFigure():
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
-    y.iloc[:, :] = sp.stats.zscore(y.iloc[:, :])
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
@@ -168,8 +167,8 @@ def makeFigure():
     gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
     plotGridSearch(ax[8], gs)
     plotActualVsPredicted(ax[9:12], CoCl_plsr, d, y, 2)
-    plotScoresLoadings(ax[12:14], fit, centers, y, ncl, all_lines, 2)
-    plotclusteraverages(ax[14], centers.T, all_lines)
+    plotScoresLoadings(ax[12:15], fit, centers, y, ncl, all_lines, 2)
+    plotclusteraverages(ax[15], centers.T, all_lines)
 
     # Add subplot labels
     subplotLabel(ax)
