@@ -16,6 +16,7 @@ from sklearn.pipeline import Pipeline
 from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from ..figures.figure1 import pca_dfs
+from ..distances import DataFrameRipleysK
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
@@ -233,22 +234,39 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
     if y_pred == "fit":
         Y_predictions = plsr_model.fit(X, Y).predict(X)
         ylabel = "Fit"
-    for i, label in enumerate(Y.columns):
-        y = Y.iloc[:, i]
-        ypred = Y_predictions[:, i]
-        ax[i].scatter(y, ypred)
-        ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-        ax[i].set_xlabel("Actual")
-        ax[i].set_ylabel(ylabel)
-        ax[i].set_title(label)
 
-        ax[i].set_aspect("equal", "datalim")
+    if len(Y.columns) > 1:
+        for i, label in enumerate(Y.columns):
+            y = Y.iloc[:, i]
+            ypred = Y_predictions[:, i]
+            ax[i].scatter(y, ypred)
+            ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+            ax[i].set_xlabel("Actual")
+            ax[i].set_ylabel(ylabel)
+            ax[i].set_title(label)
+
+            ax[i].set_aspect("equal", "datalim")
+
+            # Add correlation coefficient
+            coeff, _ = sp.stats.pearsonr(ypred, y)
+            textstr = "$r$ = " + str(np.round(coeff, 4))
+            props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+            ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+
+    elif len(Y.columns) == 1:
+        y = Y.iloc[:, 0]
+        ypred = Y_predictions[:, 0]
+        ax.scatter(y, ypred)
+        ax.plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+        ax.set_xlabel("Actual")
+        ax.set_ylabel(ylabel)
+        ax.set_title(Y.columns[0])
 
         # Add correlation coefficient
         coeff, _ = sp.stats.pearsonr(ypred, y)
         textstr = "$r$ = " + str(np.round(coeff, 4))
         props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-        ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+        ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):
