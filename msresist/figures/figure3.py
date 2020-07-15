@@ -131,8 +131,8 @@ def makeFigure():
     # -------- PLOTS -------- #
     # PCA analysis of phenotypes
     y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_ae["Island"]], axis=1)
-    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ae["Island"]], axis=1)
+    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_ae["Island"]], axis=1)
+    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ae["Island"]], axis=1)
 
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
