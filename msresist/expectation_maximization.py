@@ -61,7 +61,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         MixWins = np.sum((DataIdx != labels) & (SeqIdx != labels))
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 2 for sl in cl_seqs]:
+        if True in [len(sl) < 3 for sl in cl_seqs]:
             print(f"Re-initialize GMM clusters, empty cluster(s) at iteration {n_iter}")
             gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
             store_labels = []
