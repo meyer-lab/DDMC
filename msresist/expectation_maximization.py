@@ -68,7 +68,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         # Store current results
         store_labels.append(labels)
-        wins = f"SeqWins: {SeqWins}, DataWins: {DataWins}, BothWin: {BothWin}, MixWin: {MixWins}"
+        wins = (SeqWins, DataWins, BothWin, MixWins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         m_step(d, gmm, HardAssignments(labels, ncl))
