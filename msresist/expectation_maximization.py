@@ -35,8 +35,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     # EM algorithm
     store_labels = []
     for n_iter in range(max_n_iter):
-        seq_reassign = [[] for i in range(ncl)]
-
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
             binoM = GenerateBPM(cl_seqs, background)
@@ -50,10 +48,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         DataIdx = np.argmax(gmmp, axis=1)
         scores = np.max(final_scores, axis=1)
 
-        for j, motif in enumerate(sequences):
-            seq_reassign[labels[j]].append(motif)
+        assert np.all(np.isfinite(scores)), f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
-        assert np.all(np.isfinite(scores)), f"Final scores not finite, motif = {motif}, gmmp = {gmmp}, nonzeros = %s"
+        cl_seqs = [[] for i in range(ncl)]
+        for j, motif in enumerate(sequences):
+            cl_seqs[labels[j]].append(motif)
 
         # Count wins
         SeqWins = np.sum((SeqIdx == labels) & (DataIdx != labels))
@@ -62,7 +61,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         MixWins = np.sum((DataIdx != labels) & (SeqIdx != labels))
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 3 for sl in seq_reassign]:
+        if True in [len(sl) < 3 for sl in cl_seqs]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
             gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
@@ -75,7 +74,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
-        cl_seqs = seq_reassign
         gmmp_hard = HardAssignments(labels, ncl)
         m_step(d, gmm, gmmp_hard)
         gmmp = gmm.predict_proba(d)
