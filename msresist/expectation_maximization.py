@@ -3,6 +3,7 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
 from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
@@ -28,11 +29,11 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
-    gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
+    gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
     background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
-    store_Clseqs = []
+    store_labels = []
     for n_iter in range(max_n_iter):
         seq_reassign = [[] for i in range(ncl)]
 
@@ -41,7 +42,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
             binoM = GenerateBPM(cl_seqs, background)
             seq_scores = assignPeptidesBN(ncl, sequences, binoM)
         else:
-            seq_scores = assignPeptidesPAM(ncl, cl_seqs, background, new_labels)
+            seq_scores = assignPeptidesPAM(ncl, cl_seqs, background, labels)
 
         final_scores = seq_scores * SeqWeight + gmmp
         SeqIdx = np.argmax(seq_scores, axis=1)
@@ -63,37 +64,40 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in seq_reassign]:
             print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
-            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
+            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
-            store_Clseqs = []
+            store_labels = []
             continue
 
         # Store current results
-        store_Clseqs.append(cl_seqs)
+        store_labels.append(labels)
         new_score = np.mean(scores)
-        new_labels = np.array(labels)
         wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
 
         # M step: Update motifs, cluster centers, and gmm probabilities
         cl_seqs = seq_reassign
-        gmmp_hard = HardAssignments(new_labels, ncl)
+        gmmp_hard = HardAssignments(labels, ncl)
         m_step(d, gmm, gmmp_hard)
         gmmp = gmm.predict_proba(d)
 
         if True in np.isnan(gmmp):
             print("Re-initialize GMM, NaN responsibilities at iteration %s" % (n_iter))
-            gmm, cl_seqs, gmmp, new_labels = gmm_initialize(X, ncl, distance_method)
-            assert cl_seqs != seq_reassign, "Same cluster assignments after re-initialization"
+            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
             assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
-            store_Clseqs = []
+            store_labels = []
             continue
 
-        if len(store_Clseqs) > 4:
+        if len(store_labels) > 4:
             # Check convergence
-            if store_Clseqs[-1] in store_Clseqs[-2::]:
+            converge = False
+            for i in range(4):
+                if adjusted_rand_score(store_labels[-1], store_labels[-i]) == 1:
+                    converge = True
+                    break
+
+            if converge:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, new_labels, new_score, n_iter, gmm, wins
+                return cl_seqs, labels, new_score, n_iter, gmm, wins
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
