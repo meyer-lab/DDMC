@@ -2,7 +2,6 @@
 This creates Figure M1.
 """
 
-from .common import subplotLabel, getSetup
 import random
 import numpy as np
 import pandas as pd
@@ -10,9 +9,10 @@ import seaborn as sns
 from scipy.stats import zscore
 from sklearn.metrics import mean_squared_error
 from sklearn.cross_decomposition import PLSRegression
-from msresist.figures.figure3 import plotR2YQ2Y, plotPCA
-from msresist.clustering import MassSpecClustering
-from msresist.pre_processing import filter_NaNpeptides
+from .common import subplotLabel, getSetup
+from .figure3 import plotR2YQ2Y, plotPCA
+from ..clustering import MassSpecClustering
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():
