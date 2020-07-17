@@ -29,7 +29,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
     sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
-    gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
+    gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
     background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
@@ -63,7 +63,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in cl_seqs]:
             print(f"Re-initialize GMM clusters, empty cluster(s) at iteration {n_iter}")
-            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
+            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
             store_labels = []
 
         # Store current results
@@ -76,7 +76,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
         if True in np.isnan(gmmp):
             print(f"Re-initialize GMM, NaN responsibilities at iteration {n_iter}")
-            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
+            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
             store_labels = []
 
         if len(store_labels) > 4:

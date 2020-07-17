@@ -5,7 +5,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 from msresist.motifs import ForegroundSeqs
 
 
-def gmm_initialize(X, ncl, distance_method):
+def gmm_initialize(X, ncl):
     """ Return peptides data set including its labels and pvalues matrix. """
     d = X.select_dtypes(include=["float64"])
     labels, gmmp = [0, 0, 0], [np.nan]
