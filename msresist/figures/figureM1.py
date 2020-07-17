@@ -35,8 +35,8 @@ def makeFigure():
     weights = [0, 0.3, 0.5, 1000]
     ncl = 5
 
-    W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
-    PlotAMwins(ax[2:6], W, weights)
+    #W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
+    #PlotAMwins(ax[2:6], W, weights)
 
     # Wins across different weights with 0.5% missingness
     X_w = filter_NaNpeptides(X, cut=0.5)
