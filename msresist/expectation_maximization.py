@@ -61,29 +61,23 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         MixWins = np.sum((DataIdx != labels) & (SeqIdx != labels))
 
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 3 for sl in cl_seqs]:
-            print("Re-initialize GMM clusters, empty cluster(s) at iteration %s" % (n_iter))
+        if True in [len(sl) < 2 for sl in cl_seqs]:
+            print(f"Re-initialize GMM clusters, empty cluster(s) at iteration {n_iter}")
             gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
-            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             store_labels = []
-            continue
 
         # Store current results
         store_labels.append(labels)
-        new_score = np.mean(scores)
-        wins = "SeqWins: " + str(SeqWins) + " DataWins: " + str(DataWins) + " BothWin: " + str(BothWin) + " MixWin: " + str(MixWins)
+        wins = f"SeqWins: {SeqWins}, DataWins: {DataWins}, BothWin: {BothWin}, MixWin: {MixWins}"
 
         # M step: Update motifs, cluster centers, and gmm probabilities
-        gmmp_hard = HardAssignments(labels, ncl)
-        m_step(d, gmm, gmmp_hard)
+        m_step(d, gmm, HardAssignments(labels, ncl))
         gmmp = gmm.predict_proba(d)
 
         if True in np.isnan(gmmp):
-            print("Re-initialize GMM, NaN responsibilities at iteration %s" % (n_iter))
+            print(f"Re-initialize GMM, NaN responsibilities at iteration {n_iter}")
             gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl, distance_method)
-            assert [len(sublist) > 0 for sublist in cl_seqs], "Empty cluster(s) after re-initialization"
             store_labels = []
-            continue
 
         if len(store_labels) > 4:
             # Check convergence
@@ -95,7 +89,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
             if converge:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, labels, new_score, n_iter, gmm, wins
+                return cl_seqs, labels, np.mean(scores), n_iter, gmm, wins
 
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]

@@ -17,6 +17,8 @@ def gmm_initialize(X, ncl, distance_method):
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
+
+    assert [len(sublist) > 0 for sublist in init_clusters], "Empty cluster(s) on initialization"
     return gmm, init_clusters, gmmp, labels
 
 
