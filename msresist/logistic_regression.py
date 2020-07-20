@@ -23,6 +23,7 @@ def plotPredictionProbabilities(ax, lr, y_pred, dd, yy):
     res_["Patients"] = np.arange(res_.shape[0]) + 1
     sns.scatterplot(x="Patients", y="Prediction", data=res_, hue="Correct_Prediction")
     sns.lineplot(x="Patients", y="y, p(x)", data=res_, marker="s", color="gray")
+    ax.axhline(0.5, ls='--', color='r')
     return res_
 
 def plotConfusionMatrix(ax, lr, dd, yy):
