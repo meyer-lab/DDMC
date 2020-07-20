@@ -53,7 +53,7 @@ class MassSpecClustering(BaseEstimator):
 
         if self.distance_method == "Binomial":
             binoM = GenerateBPM(cl_seqs, background)
-            seq_scores = assignPeptidesBN(self.ncl, sequences, cl_seqs, background, binoM, self.labels_)
+            seq_scores = assignPeptidesBN(self.ncl, sequences, binoM)
         else:
             seq_scores = assignPeptidesPAM(self.ncl, cl_seqs, background, self.labels_)
 
