@@ -115,5 +115,5 @@ def ClusterAverages(X, labels):
     #             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
     #             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
 
-    members = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
+    members = pd.DataFrame({k:pd.Series(v) for (k, v) in dict_clustermembers.items()})
     return pd.DataFrame(centers).T, members

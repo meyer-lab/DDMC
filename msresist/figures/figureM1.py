@@ -2,7 +2,6 @@
 This creates Figure M1.
 """
 
-from .common import subplotLabel, getSetup
 import random
 import numpy as np
 import pandas as pd
@@ -10,9 +9,10 @@ import seaborn as sns
 from scipy.stats import zscore
 from sklearn.metrics import mean_squared_error
 from sklearn.cross_decomposition import PLSRegression
-from msresist.figures.figure3 import plotR2YQ2Y, plotPCA
-from msresist.clustering import MassSpecClustering
-from msresist.pre_processing import filter_NaNpeptides
+from .common import subplotLabel, getSetup
+from .figure3 import plotR2YQ2Y, plotPCA
+from ..clustering import MassSpecClustering
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():
@@ -22,7 +22,6 @@ def makeFigure():
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
     d = X.select_dtypes(include=["float64"]).T
-    i = X.select_dtypes(include=["object"])
 
     distance_method = "PAM250"
 
@@ -36,8 +35,8 @@ def makeFigure():
     weights = [0, 0.3, 0.5, 1000]
     ncl = 5
 
-    W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
-    PlotAMwins(ax[2:6], W, weights)
+    #W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
+    #PlotAMwins(ax[2:6], W, weights)
 
     # Wins across different weights with 0.5% missingness
     X_w = filter_NaNpeptides(X, cut=0.5)
@@ -72,9 +71,7 @@ def makeFigure():
     centers, y = TransformCPTACdataForRegression(MSC, d_f, list(X.columns[4:]))
 
     centers_T = centers[~centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
-    centers_N = centers[centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
     y_T = y[~y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
-    y_N = y[y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
 
     plsr = PLSRegression(n_components=2, scale=True)
     plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
@@ -149,7 +146,7 @@ def PlotArtificialMissingness(ax, x, weights, nan_per, distance_method, ncl):
     errors = []
     missing, m_ = [], []
     n_weights, w_ = [], []
-    winner, winner_ = [], []
+    winner_ = []
     wins = []
     p = ["Sequence", "Data", "Both", "Mix"]
     n = x.iloc[:, 4:].shape[1]
@@ -196,7 +193,6 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     i = md.select_dtypes(include=['object'])
     d = md.select_dtypes(include=['float64']).T
     model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
-    wins = FindWinIntegers(model.wins_)
     z = x.copy()
     z["Cluster"] = model.labels_
     centers = model.transform(d).T  # Clusters x observations
@@ -205,7 +201,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
         v = z.iloc[idx[0], idx[1]]
         c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
         errors.append(mean_squared_error(v, c))
-    return np.mean(errors), wins
+    return np.mean(errors), model.wins_
 
 
 def PlotAMwins(ax, X, weights):
@@ -225,8 +221,7 @@ def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
     W = []
     for w in weigths:
         model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
-        won = model.wins_
-        wi = FindWinIntegers(won)
+        wi = model.wins_
         W.append(w)
         wins.append(wi[0])
         prioritize.append("Sequence")
@@ -245,15 +240,6 @@ def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
     X["Prioritize"] = prioritize
     X["Wins"] = wins
     sns.lineplot(x="Sequence_Weighting", y="Wins", data=X, hue="Prioritize", ax=ax)
-
-
-def FindWinIntegers(won):
-    """Convert wins to integers"""
-    seqWin = int(won.split("SeqWins: ")[1].split(" DataWins:")[0])
-    dataWin = int(won.split("DataWins: ")[1].split(" BothWin:")[0])
-    bothWin = int(won.split("BothWin: ")[1].split(" MixWin:")[0])
-    mixWin = int(won.split(" MixWin: ")[1])
-    return seqWin, dataWin, bothWin, mixWin
 
 
 def TumorType(centers):
