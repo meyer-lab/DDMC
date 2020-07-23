@@ -58,7 +58,7 @@ def GridSearchCPTAC(x, distance_method, missingness):
         print("n_clusters:", ncl)
         for w in weights:
             print("weight:", w)
-            error, wi = FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl)
+            error, wi = FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl, max_n_iter)
             weights_.append(w)
             n_clusters.append(ncl)
             errors.append(error)

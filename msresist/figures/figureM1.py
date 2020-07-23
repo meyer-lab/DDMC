@@ -138,7 +138,7 @@ def PlotMissingnessDensity(ax, d):
 
 def PlotArtificialMissingnessError(ax, x, weights, nan_per, distance_method, ncl):
     """Plot artificial missingness error."""
-    X = ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl)
+    X = ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl, max_n_iter=500)
     sns.lineplot(x="Missing%", y="Error", data=X, hue="Weight", palette="muted", ax=ax)
     return X
 
@@ -157,7 +157,7 @@ def PlotArtificialMissingnessWins(ax, X, weights):
     ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
 
-def ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl):
+def ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl, max_n_iter):
     """Incorporate different percentages of missing values and compute error between the actual
     versus cluster average value. Note that this expects a complete subset––without missing values––of 
     the CPTAC data set. Also note that the wins for all fitted models are returned to be used in PlotAMwins."""
@@ -171,7 +171,7 @@ def ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_metho
         md, nan_indices = IncorporateMissingValues(x, per)
         # Compute Error for each weight
         for j in range(len(weights)):
-            error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl)
+            error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl, max_n_iter)
             weights_.append(weights[j])
             missing.append(per)
             errors.append(error)
@@ -215,7 +215,7 @@ def MissingnessPattern(per, cd):
     return list(batches), m
 
 
-def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
+def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl, max_n_iter):
     """Fit model and compute error during ArtificialMissingness"""
     i = md.select_dtypes(include=['object'])
     d = md.select_dtypes(include=['float64']).T
