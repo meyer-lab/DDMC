@@ -30,9 +30,8 @@ def makeFigure():
 
     # Artificial missingness plot
     cd = filter_NaNpeptides(X, cut=1)
-    assert True not in np.isnan(cd.iloc[:, 4:]), "There are still NaNs."
-    nan_per = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9]
-    weights = [0, 0.3, 0.5, 1000]
+    nan_per = [0.1, 0.25, 0.5, 0.75, 0.9]
+    weights = [0, 0.17, 1]
     ncl = 5
 
     #W = PlotArtificialMissingness(ax[1], cd, weights, nan_per, distance_method, ncl)
@@ -137,81 +136,104 @@ def PlotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def PlotArtificialMissingness(ax, x, weights, nan_per, distance_method, ncl):
-    """Incorporate different percentages of missing values and compute error between the actual
-    versus cluster average value. Note that this works best with a complete subset of the CPTAC data set.
-    Also note that the wins for all fitted models are returned to be plotting in PlotAMwins"""
-    x.index = np.arange(x.shape[0])
-    nan_indices = []
-    errors = []
-    missing, m_ = [], []
-    n_weights, w_ = [], []
-    winner_ = []
-    wins = []
-    p = ["Sequence", "Data", "Both", "Mix"]
-    n = x.iloc[:, 4:].shape[1]
-    for per in nan_per:
-        md = x.copy()
-        m = int(n * per)
-        # Generate data set with a given % of missingness
-        for i in range(md.shape[0]):
-            row_len = np.arange(4, md.shape[1])
-            cols = random.sample(list(row_len), m)
-            md.iloc[i, cols] = np.nan
-            nan_indices.append((i, cols))
-        # Fit model, compute error, and store wins
-        for j in range(len(weights)):
-            n_weights.append(weights[j])
-            missing.append(per)
-            error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl)
-            errors.append(error)
-            for z in range(len(p)):
-                w_.append(weights[j])
-                m_.append(per)
-                winner_.append(p[z])
-                wins.append(wi[z])
+def PlotArtificialMissingnessError(ax, x, weights, nan_per, distance_method, ncl):
+    """Plot artificial missingness error."""
+    X = ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl)
+    sns.lineplot(x="Missing%", y="Error", data=X, hue="Weight", palette="muted", ax=ax)
+    return X
 
-    # Plot Error
+
+def PlotArtificialMissingnessWins(ax, X, weights):
+    """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
+    x = pd.melt(
+        X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'], 
+        var_name="Winner", value_name='Wins'
+    )
+    for i in range(len(ax)):
+        d = x[x["Weight"] == weights[i]]
+        sns.lineplot(x="Missing%", y="Wins", hue="Winner", data=d, ax=ax[i])
+        ax[i].set_title("Weight: " + str(weights[i]))
+        ax[i].get_legend().remove()
+    ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
+
+
+def ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl):
+    """Incorporate different percentages of missing values and compute error between the actual
+    versus cluster average value. Note that this expects a complete subset––without missing values––of 
+    the CPTAC data set. Also note that the wins for all fitted models are returned to be used in PlotAMwins."""
+    assert True not in np.isnan(x.iloc[:, 4:]), "There are still NaNs."
+    x.index = np.arange(x.shape[0])
+    errors = []
+    missing = []
+    weights_ = []
+    SeqW, DatW, BothW, MixW = [], [], [], []
+    for per in nan_per:
+        md, nan_indices = IncorporateMissingValues(x, per)
+        # Compute Error for each weight
+        for j in range(len(weights)):
+            error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl)
+            weights_.append(weights[j])
+            missing.append(per)
+            errors.append(error)
+            SeqW.append(wi[0])
+            DatW.append(wi[1])
+            BothW.append(wi[2])
+            MixW.append(wi[3])
+
     X = pd.DataFrame()
-    X["Weight"] = n_weights
+    X["Weight"] = weights_
     X["Missing%"] = missing
     X["Error"] = errors
+    X["SeqWins"] = SeqW
+    X["DataWins"] = DatW
+    X["BothWin"] = BothW
+    X["MixWin"] = MixW
+    return X
 
-    # Store Wins
-    Y = pd.DataFrame()
-    Y["Weight"] = w_
-    Y["Missing%"] = m_
-    Y["Winner"] = winner_
-    Y["Wins"] = wins
 
-    sns.lineplot(x="Missing%", y="Error", data=X, hue="Weight", palette="muted", ax=ax)
-    return Y
+def IncorporateMissingValues(x, per):
+    """Take complete CPTAC data and incorporate given % of missingness."""
+    md = x.copy()
+    nan_indices = []
+    batches, m = MissingnessPattern(per, x)
+    for i in range(md.shape[0]):
+        cols = np.squeeze(random.sample(batches, m)).reshape(batches[0].size * m)
+        md.iloc[i, cols] = np.nan
+        nan_indices.append((i, cols))
+    return md, nan_indices
+
+def MissingnessPattern(per, cd):
+    """Find number of missingness 'chunks' should be generated according to the giving missingness percentage."""
+    batches = np.zeros((27, 8), dtype=int)
+    for ii, idx in enumerate(np.arange(4, cd.shape[1], 8)):
+        batches[ii, :] = (np.arange(idx, idx+8))
+    batches[-1] = np.where(batches[-1]==219, -1, batches[-1])
+    BatchToMissingness = {}
+    for i in range(1, len(batches)):
+        BatchToMissingness[i] = np.round(batches[i][0] / cd.shape[1], 2)
+    m = min(BatchToMissingness.items(), key=lambda x: abs(per - x[1]))[0]
+    return list(batches), m
 
 
 def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     """Fit model and compute error during ArtificialMissingness"""
     i = md.select_dtypes(include=['object'])
     d = md.select_dtypes(include=['float64']).T
-    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
-    z = x.copy()
-    z["Cluster"] = model.labels_
-    centers = model.transform(d).T  # Clusters x observations
+    centers = md.iloc[:, 4:]
+
+    #Centers can have NaN values if all peptides in a cluster are missing for a given patient
+    while True in np.isnan(centers.values):
+        model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
+        z = x.copy()
+        z["Cluster"] = model.labels_
+        centers = model.transform(d).T
+
     errors = []
     for idx in nan_indices:
-        v = z.iloc[idx[0], idx[1]]
+        v = z.iloc[idx[0], idx[1]].astype("float64")
         c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
         errors.append(mean_squared_error(v, c))
     return np.mean(errors), model.wins_
-
-
-def PlotAMwins(ax, X, weights):
-    """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingness."""
-    for i in range(len(ax)):
-        d = X[X["Weight"] == weights[i]]
-        sns.lineplot(x="Missing%", y="Wins", hue="Winner", data=d, ax=ax[i])
-        ax[i].set_title("Weight: " + str(weights[i]))
-        ax[i].get_legend().remove()
-    ax[3].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
 
 def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
