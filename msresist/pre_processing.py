@@ -31,9 +31,12 @@ def preprocessing(
     if Axlmuts_ErlAF154:
         br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
         br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
-        br2.columns = br1.columns
+#         br2.columns = br1.columns
+        br3 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw.csv"))
+        br4 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw.csv"))
         filesin.append(br1)
-    #         filesin.append(br2)
+        filesin.append(br3)
+        filesin.append(br4)
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
@@ -46,11 +49,11 @@ def preprocessing(
         fullnames, genes = FormatName(X)
         X["Protein"] = fullnames
         X.insert(3, "Gene", genes)
-        merging_indices = list(X.columns[:4])
+        merging_indices = list(X.select_dtypes(include=["object"]).columns)
     else:
         X = pd.concat(filesin)
         genes = list(X["Gene"])
-        merging_indices = list(X.columns[:3])
+        merging_indices = list(X.select_dtypes(include=["object"]).columns)
 
     if rawdata:
         return X
@@ -61,9 +64,7 @@ def preprocessing(
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, FCto)
 
-    object_headers = list(X.select_dtypes(include=["object"]).columns)
-
-    X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[object_headers + data_headers]
+    X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
         X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.55)
@@ -181,8 +182,15 @@ def VFilter(ABC, merging_indices, data_headers, FCto):
 
     merging_indices.insert(4, "BioReps")
     merging_indices.insert(5, "r2_Std")
+    
+    print(merging_indices)
+    display(NonRecTable)
+    display(DupsTable)
+    display(TripsTable)
 
-    ABC = pd.concat([NonRecTable, DupsTable, TripsTable]).reset_index()[merging_indices[:3] + list(ABC[data_headers].columns) + merging_indices[3:]]
+    ABC = pd.concat(
+        [NonRecTable, DupsTable, TripsTable]
+    ).reset_index()[merging_indices[:2] + list(ABC[data_headers].columns) + merging_indices[2:]]
 
     # Including non-overlapping peptides
     return ABC
