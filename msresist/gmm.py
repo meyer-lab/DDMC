@@ -16,7 +16,7 @@ def gmm_initialize(X, ncl):
         labels = gmm.predict(d)
         gmmp = gmm.predict_proba(d)
         tries += 1
-        assert tries <= 75, "GMM can't fit, try a smaller number of clusters."
+        assert tries <= 100, "GMM can't fit, try a smaller number of clusters."
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
