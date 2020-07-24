@@ -136,9 +136,9 @@ def PlotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def PlotArtificialMissingnessError(ax, x, weights, nan_per, distance_method, ncl):
+def PlotArtificialMissingnessError(ax, x, weights, nan_per, distance_method, ncl, max_n_iter=200):
     """Plot artificial missingness error."""
-    X = ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl, max_n_iter=500)
+    X = ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_method, ncl, max_n_iter=max_n_iter)
     sns.lineplot(x="Missing%", y="Error", data=X, hue="Weight", palette="muted", ax=ax)
     return X
 
@@ -168,9 +168,11 @@ def ComputeArtificialMissingnessErrorAndWins(x, weights, nan_per, distance_metho
     weights_ = []
     SeqW, DatW, BothW, MixW = [], [], [], []
     for per in nan_per:
+        print("missing: ", per)
         md, nan_indices = IncorporateMissingValues(x, per)
         # Compute Error for each weight
         for j in range(len(weights)):
+            print("weight: ", weights[j])
             error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl, max_n_iter)
             weights_.append(weights[j])
             missing.append(per)
@@ -222,7 +224,10 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl, ma
     centers = md.iloc[:, 4:]
 
     #Centers can have NaN values if all peptides in a cluster are missing for a given patient
+    counter = 0
     while True in np.isnan(centers.values):
+        counter += 1
+        print("try:", counter)
         model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
         z = x.copy()
         z["Cluster"] = model.labels_

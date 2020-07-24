@@ -43,7 +43,7 @@ def set_ClusterPLSRgrid():
     return param_grid
 
 
-def GridSearchCPTAC(x, distance_method, missingness):
+def GridSearchCPTAC(x, distance_method, missingness, max_n_iter):
     """Generate table with artifical missingness error across different hyperparameter combinations. Note
     that input is the portion of CPTAC data set without missing values."""
     assert True not in np.isnan(x.iloc[:, 4:]), "There are still NaNs."
