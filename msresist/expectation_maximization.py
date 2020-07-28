@@ -47,7 +47,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         labels = np.argmax(final_scores, axis=1)
         DataIdx = np.argmax(gmmp, axis=1)
         scores = np.max(final_scores, axis=1)
-        print(n_iter, np.mean(scores))
+#         print(n_iter, np.mean(scores))
 
         assert np.all(np.isfinite(scores)), f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
