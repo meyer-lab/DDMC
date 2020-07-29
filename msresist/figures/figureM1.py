@@ -6,7 +6,6 @@ import random
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from collections import defaultdict
 from scipy.stats import zscore
 from sklearn.metrics import mean_squared_error
 from sklearn.cross_decomposition import PLSRegression
@@ -166,18 +165,22 @@ def ComputeArtificialMissingnessErrorAndWins(x, weights, distance_method, ncl, m
     missing = []
     weights_ = []
     SeqW, DatW, BothW, MixW = [], [], [], []
+    nan_per = [0, 10, 25, 50, 75]
     vals = FindIdxValues(md)
-    missingP = CalculateMissingPercentage(md)
-    while missingP < 0.6:
-        md, nan_indices = IncorporateMissingValues(md, vals)
-        missingP = CalculateMissingPercentage(md)
-        print("Missing %:", missingP)
-        # Compute Error for each weight
-        for j in range(len(weights)):
-            print("weight: ", weights[j])
-            error, wi = FitModelandComputeError(md, weights[j], x, nan_indices, distance_method, ncl, max_n_iter)
-            weights_.append(weights[j])
-            missing.append(missingP)
+    md, nan_indices = IncorporateMissingValues(md, vals)
+    groups = MissingnessGroups(md)
+    md["MissingnessGroups"] = groups
+    # Compute Error for each missingness group and each weight
+    for ii in range(len(nan_per)):
+        print("missingnes:", nan_per[ii])
+        data = md[md["MissingnessGroups"] == nan_per[ii]]
+        d = md.select_dtypes(include=['float64'])
+        i = md.select_dtypes(include=['object'])
+        for jj in range(len(weights)):
+            print("weight: ", weights[jj])
+            error, wi = FitModelandComputeError(d.T, i, weights[jj], x, nan_indices, distance_method, ncl, max_n_iter)
+            weights_.append(weights[jj])
+            missing.append(nan_per[ii])
             errors.append(error)
             SeqW.append(wi[0])
             DatW.append(wi[1])
@@ -195,13 +198,10 @@ def ComputeArtificialMissingnessErrorAndWins(x, weights, distance_method, ncl, m
     return X
 
 
-def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl, max_n_iter):
+def FitModelandComputeError(d, i, weight, x, nan_indices, distance_method, ncl, max_n_iter):
     """Fit model and compute error during ArtificialMissingness"""
-    i = md.select_dtypes(include=['object'])
-    d = md.select_dtypes(include=['float64']).T
-    centers = md.iloc[:, 4:]
-
     #Centers can have NaN values if all peptides in a cluster are missing for a given patient
+    centers = d
     tries = 0
     while True in np.isnan(centers.values):
         tries += 1
@@ -219,22 +219,29 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl, ma
     return np.mean(errors), model.wins_
 
 
+def MissingnessGroups(X):
+    """Assign each peptide to the closest missingness group."""
+    d = X.select_dtypes(include=["float64"])
+    pept_NaN_per = (np.count_nonzero(np.isnan(d), axis=1) / d.shape[1] * 100).astype(int)
+    l = [0, 10, 25, 50, 75, 90]
+    l_index = []
+    for per in pept_NaN_per:
+        l_index.append(l.index(min(l, key=lambda group: abs(group - per))))
+    return l_index
+
+
 def IncorporateMissingValues(X, vals):
     """Remove a random TMT experiment for each peptide. If a peptide already has the maximum amount of
     missingness allowed, don't remove."""
-    x = X.copy()
-    d = x.select_dtypes(include=["float64"])
+    d = X.select_dtypes(include=["float64"])
     tmt_idx = []
-    max_nan_rows = FindRowsWithMaxMissingnessAllowed(d)
     for ii in range(d.shape[0]):
-        if ii in max_nan_rows:
-            continue
         tmt = random.sample(list(set(vals[vals[:, 0] == ii][:, -1])), 1)[0]
         a = vals[vals[:, -1] == tmt]
         a = a[a[:, 0] == ii]
         tmt_idx.append((a[0, 0], a[:, 1]))
-        x.iloc[a[0, 0], a[:, 1]] = np.nan
-    return x, tmt_idx
+        X.iloc[a[0, 0], a[:, 1]] = np.nan
+    return X, tmt_idx
 
 
 def FindIdxValues(X):
@@ -255,12 +262,6 @@ def CalculateMissingPercentage(X):
     d = X.select_dtypes(include=["float64"])
     obs = np.count_nonzero(~np.isnan(d), axis=1)
     return (d.size - obs.sum()) / d.size
-
-
-def FindRowsWithMaxMissingnessAllowed(X, min_nan=20):
-    """Find peptides that already have the maximum amount of missingnes allowed."""
-    obs = np.count_nonzero(~np.isnan(X), axis=1)
-    return [i for i, o in  enumerate(obs) if o < min_nan]
 
 
 def PlotWinsByWeight(ax, i, d, weigths, distance_method, ncl):
