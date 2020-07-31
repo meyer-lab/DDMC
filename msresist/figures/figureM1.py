@@ -34,7 +34,7 @@ def makeFigure():
 
     # Missingness error across number of clusters or different weights
     plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
-    plotErrorAcrossWeights(ax, X[6], [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
+    plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
     # Run model
     X_f = filter_NaNpeptides(X, cut=0.1)
