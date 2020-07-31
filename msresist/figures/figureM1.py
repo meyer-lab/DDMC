@@ -44,8 +44,8 @@ def makeFigure():
     ncl = 19
     SeqWeight = 0.75
     MSC = MassSpecClustering(
-        i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1)
-    .fit(d_f, "NA")
+        i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1
+    ).fit(d_f, "NA")
     centers = MSC.transform(d_f)
     centers["Patient_ID"] = X.columns[4:]
 
