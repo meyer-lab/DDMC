@@ -43,7 +43,9 @@ def makeFigure():
     distance_method = "PAM250"
     ncl = 19
     SeqWeight = 0.75
-    MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d_f, "NA")
+    MSC = MassSpecClustering(
+        i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1)
+    .fit(d_f, "NA")
     centers = MSC.transform(d_f)
     centers["Patient_ID"] = X.columns[4:]
 
@@ -68,44 +70,6 @@ def makeFigure():
     subplotLabel(ax)
 
     return f
-
-
-def FormatWhiteNames(X):
-    """Keep only the gene name."""
-    genes = []
-    counter = 0
-    for v in X.iloc[:, 0]:
-        if "GN" not in v:
-            counter += 1
-            continue
-        genes.append(v.split("GN=")[1].split(" PE")[0].strip())
-    print("number of proteins without gene name:", counter)
-    return genes
-
-
-def FindMatchingPeptides(X, Y, cols=False):
-    """Return peptides within the entire CPTAC LUAD data set also present in the White data or vice versa. Note
-    that if the white lab data set is used as X, the patient labels should be passed."""
-    if cols:
-        X = X[cols]
-    X = X.dropna().sort_values(by="Sequence")
-    X = X.set_index(["Gene", "Sequence"])
-    rows = []
-    counter = 0
-    for idx in range(Y.shape[0]):
-        try:
-            r = X.loc[Y["Gene"][idx], Y["Sequence"][idx]].reset_index()
-            if len(r) > 1:
-                rows.append(pd.DataFrame(r.iloc[0, :]).T)
-            else:
-                rows.append(r)
-        except BaseException:
-            counter += 1
-            continue
-    print("Number of mismatches: ", counter)
-
-    y = pd.concat(rows)
-    return y.drop_duplicates(list(y.columns), keep="first")
 
 
 def plotMissingnessDensity(ax, d):
