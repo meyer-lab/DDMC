@@ -6,7 +6,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.cross_decomposition import PLSRegression
 from msresist.clustering import MassSpecClustering
-# from msresist.figures.figureM1 import IncorporateMissingValues, FitModelandComputeError
 
 
 ###------------ Building clustering method + PLSR pipeline and Tunning Hyperparameters ------------------###
