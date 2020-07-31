@@ -28,23 +28,13 @@ def makeFigure():
     # Distribution of missingness per petide
     PlotMissingnessDensity(ax[0], d)
 
-    # Artificial missingness plot
-    cd = filter_NaNpeptides(X, cut=1)
-    weights = [0, 0.17, 1]
-    ncl = 5
+    # Artificial missingness error across missingness percentages and corresponding wins
+    m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
+    plotWinsAcrossMissingnessLevels(ax[2:5], m_, [0, 0.35, 2])
 
-    #W = PlotArtificialMissingness(ax[1], cd, weights, distance_method, ncl)
-    #PlotAMwins(ax[2:6], W, weights)
-
-    # Wins across different weights with 0.5% missingness
-    X_w = filter_NaNpeptides(X, cut=0.5)
-    d_w = X_w.select_dtypes(include=['float64']).T
-    i_w = X_w.select_dtypes(include=['object'])
-    weights = np.arange(0, 1.1, 0.1)
-    PlotWinsByWeight(ax[6], i_w, d_w, weights, distance_method, ncl)
-
-    # Leave blank for heatmap of cluster centers across patients
-    ax[8].axis('off')
+    # Missingness error across number of clusters or different weights
+    plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
+    plotErrorAcrossWeights(ax, X[6], [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
     # Run model
     X_f = filter_NaNpeptides(X, cut=0.1)
@@ -118,7 +108,7 @@ def FindMatchingPeptides(X, Y, cols=False):
     return y.drop_duplicates(list(y.columns), keep="first")
 
 
-def PlotMissingnessDensity(ax, d):
+def plotMissingnessDensity(ax, d):
     """Plot amount of missingness per peptide."""
     p_nan_counts = []
     for i in range(d.shape[1]):
@@ -135,7 +125,7 @@ def PlotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def PlotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n_iter=200, baseline=False):
+def plotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n_iter=200, baseline=False):
     """Plot artificial missingness error."""
     m, b = ErrorAcrossMissingnessLevels(x, weights, distance_method, ncl, max_n_iter=max_n_iter)
     m = pd.DataFrame(m)
@@ -149,7 +139,7 @@ def PlotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n
     return m
 
 
-def PlotWinsAcrossMissingnessLevels(ax, X, weights):
+def plotWinsAcrossMissingnessLevels(ax, X, weights):
     """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
     x = pd.melt(
         X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'], 
@@ -305,20 +295,20 @@ def plotErrorAcrossNumberOfClusters(ax, X, weight, distance_method, clusters, ma
     sns.lineplot(x="n_clusters", y="Error", data=res, palette="muted", ax=ax)
 
 
-def ErrorAcrossWeights(X, weights, distance_method, ncl, max_):
+def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
     """Calculate missing error across different weights."""
     x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
     d = md.select_dtypes(include=['float64'])
     i = md.select_dtypes(include=['object'])
 
-    res = np.zeros((len(clusters), 2))
-    for idx, w in enumerate(clusters):
-        print(idx)
+    res = np.zeros((len(weights), 2))
+    for idx, w in enumerate(weights):
         model = MassSpecClustering(
                 i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter
             ).fit(d.T, "NA")
         res[idx, 0] = w
         res[idx, 1] = ComputeModelError(x, model, d, nan_indices)
+    return res
 
 
 def plotErrorAcrossWeights(ax, X, weights, distance_method, ncl, max_n_iter):
