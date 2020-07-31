@@ -41,8 +41,8 @@ def makeFigure():
     d_f = X_f.select_dtypes(include=['float64']).T
     i_f = X_f.select_dtypes(include=['object'])
     distance_method = "PAM250"
-    ncl = 15
-    SeqWeight = 0.20
+    ncl = 19
+    SeqWeight = 0.75
     MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d_f, "NA")
     centers = MSC.transform(d_f)
     centers["Patient_ID"] = X.columns[4:]
