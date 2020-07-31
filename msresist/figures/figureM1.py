@@ -26,7 +26,7 @@ def makeFigure():
     distance_method = "PAM250"
 
     # Distribution of missingness per petide
-    PlotMissingnessDensity(ax[0], d)
+    plotMissingnessDensity(ax[0], d)
 
     # Artificial missingness error across missingness percentages and corresponding wins
     m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
