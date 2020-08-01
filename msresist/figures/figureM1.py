@@ -104,7 +104,7 @@ def plotErrorAcrossMissingnessLevels(ax, x, NaNfilter, weights, distance_method,
     return m
 
 
-def plotWinsAcrossMissingnessLevels(ax, X weights):
+def plotWinsAcrossMissingnessLevels(ax, X, weights):
     """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
     for r in range(X.shape[0]):
         X.iloc[r, 2:6] = X.iloc[r, 2:6].div(X.iloc[r, 2:6].sum())
