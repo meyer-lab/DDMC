@@ -24,17 +24,18 @@ def makeFigure():
     d = X.select_dtypes(include=["float64"]).T
 
     distance_method = "PAM250"
+    NaNfilter = 0.1
 
     # Distribution of missingness per petide
     plotMissingnessDensity(ax[0], d)
 
     # Artificial missingness error across missingness percentages and corresponding wins
-    m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
+    m_ = plotErrorAcrossMissingnessLevels(ax[1], X, NaNfilter, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
     plotWinsAcrossMissingnessLevels(ax[2:5], m_, [0, 0.35, 2])
 
     # Missingness error across number of clusters or different weights
-    plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
-    plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
+    plotErrorAcrossNumberOfClusters(ax[5], X, NaNfilter, 0.45, "PAM250", np.arange(2, 21), 200)
+    plotErrorAcrossWeights(ax[6], X, NaNfilter, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
     # Run model
     X_f = filter_NaNpeptides(X, cut=0.1)
@@ -103,7 +104,7 @@ def plotErrorAcrossMissingnessLevels(ax, x, NaNfilter, weights, distance_method,
     return m
 
 
-def plotWinsAcrossMissingnessLevels(ax, X, weights):
+def plotWinsAcrossMissingnessLevels(ax, X weights):
     """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
     for r in range(X.shape[0]):
         X.iloc[r, 2:6] = X.iloc[r, 2:6].div(X.iloc[r, 2:6].sum())
@@ -236,9 +237,9 @@ def FindIdxValues(X):
     return np.append(idx, tmt, axis=1)
 
 
-def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter):
+def ErrorAcrossNumberOfClusters(X, NaNfilter, weight, distance_method, clusters, max_n_iter):
     """Calculate missingness error across different number of clusters."""
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
+    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X, NaNfilter)
     d = md.select_dtypes(include=['float64'])
     i = md.select_dtypes(include=['object'])
 
@@ -253,17 +254,17 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
     return res
 
 
-def plotErrorAcrossNumberOfClusters(ax, X, weight, distance_method, clusters, max_n_iter):
+def plotErrorAcrossNumberOfClusters(ax, X, NaNfilter, weight, distance_method, clusters, max_n_iter):
     """Plot missingness error across different number of clusters."""
-    res = ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter)
+    res = ErrorAcrossNumberOfClusters(X, NaNfilter, weight, distance_method, clusters, max_n_iter)
     res = pd.DataFrame(res)
     res.columns = ["n_clusters", "Error"]
     sns.lineplot(x="n_clusters", y="Error", data=res, palette="muted", ax=ax)
 
 
-def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
+def ErrorAcrossWeights(X, NaNfilter, weights, distance_method, ncl, max_n_iter):
     """Calculate missing error across different weights."""
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
+    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X, NaNfilter)
     d = md.select_dtypes(include=['float64'])
     i = md.select_dtypes(include=['object'])
 
@@ -277,9 +278,9 @@ def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
     return res
 
 
-def plotErrorAcrossWeights(ax, X, weights, distance_method, ncl, max_n_iter):
+def plotErrorAcrossWeights(ax, X, NaNfilter, weights, distance_method, ncl, max_n_iter):
     """Plot missingness error across different number of clusters."""
-    res = ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter)
+    res = ErrorAcrossWeights(X, NaNfilter, weights, distance_method, ncl, max_n_iter)
     res = pd.DataFrame(res)
     res.columns = ["Weights", "Error"]
     sns.lineplot(x="Weights", y="Error", data=res, palette="muted", ax=ax)
