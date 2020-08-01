@@ -89,9 +89,9 @@ def plotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n_iter=200, baseline=False):
+def plotErrorAcrossMissingnessLevels(ax, x, NaNfilter, weights, distance_method, ncl, max_n_iter=200, baseline=False):
     """Plot artificial missingness error."""
-    m, b = ErrorAcrossMissingnessLevels(x, weights, distance_method, ncl, max_n_iter=max_n_iter)
+    m, b = ErrorAcrossMissingnessLevels(x, NaNfilter, weights, distance_method, ncl, max_n_iter=max_n_iter)
     m = pd.DataFrame(m)
     m.columns = ["Missing%", "Weight", "SeqWins", "DataWins", "BothWin", "MixWin", "Error"]
     sns.lineplot(x="Missing%", y="Error", data=m, hue="Weight", palette="muted", ax=ax)
@@ -105,24 +105,26 @@ def plotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n
 
 def plotWinsAcrossMissingnessLevels(ax, X, weights):
     """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
+    for r in range(X.shape[0]):
+        X.iloc[r, 2:6] = X.iloc[r, 2:6].div(X.iloc[r, 2:6].sum())
     x = pd.melt(
         X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'], 
         var_name="Winner", value_name='Wins'
     )
     for i in range(len(ax)):
         d = x[x["Weight"] == weights[i]]
-        sns.lineplot(x="Missing%", y="Wins", hue="Winner", data=d, ax=ax[i])
+        sns.barplot(x="Missing%", y="Wins", hue="Winner", data=d, ax=ax[i])
         ax[i].set_title("Weight: " + str(weights[i]))
         ax[i].get_legend().remove()
     ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
 
-def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
+def ErrorAcrossMissingnessLevels(X, NaNfilter, weights, distance_method, ncl, max_n_iter):
     """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error between the actual
     versus cluster average value. Note that the wins for all fitted models are returned to be used in PlotAMwins."""
     sc = [0, 2, 4, 6, 8]
     nan_per = [0, 10, 25, 50, 75]
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
+    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X, NaNfilter)
     assert md.equals(x) == False, "NaNs were not added."
     groups = MissingnessGroups(md, nan_per)
     md["MissingnessGroups"] = groups
@@ -142,7 +144,7 @@ def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
             model = MassSpecClustering(
                 i, ncl, SeqWeight=weights[jj], distance_method=distance_method, max_n_iter=max_n_iter
             ).fit(d.T, "NA")
-            model_res[ii + sc[ii] + jj, 0] = nan_per[ii]
+            model_res[ii + sc[ii] + jj, 0] = int(nan_per[ii])
             model_res[ii + sc[ii] + jj, 1] = weights[jj]
             model_res[ii + sc[ii] + jj, 2] = model.wins_[0]
             model_res[ii + sc[ii] + jj, 3] = model.wins_[1]
@@ -153,9 +155,9 @@ def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
     return model_res, base_res
 
 
-def GenerateReferenceAndMissingnessDataSet(X):
+def GenerateReferenceAndMissingnessDataSet(X, NaNfilter):
     """Generate data set with the incorporated missing values"""
-    x = filter_NaNpeptides(X, cut=0.1)
+    x = filter_NaNpeptides(X, cut=NaNfilter)
     x.index = np.arange(x.shape[0])
     md = x.copy()
     x = x.iloc[:, 4:].values
