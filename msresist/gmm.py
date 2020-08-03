@@ -10,10 +10,13 @@ def gmm_initialize(X, ncl):
     d = X.select_dtypes(include=["float64"])
     labels, gmmp = [0, 0, 0], [np.nan]
 
+    tries = 0
     while len(set(labels)) < ncl or True in np.isnan(gmmp):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d, n_components=ncl, max_iterations=1)
         labels = gmm.predict(d)
         gmmp = gmm.predict_proba(d)
+        tries += 1
+        assert tries <= 300, "GMM can't fit, try a smaller number of clusters."
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
