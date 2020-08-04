@@ -109,7 +109,7 @@ def plotWinsAcrossMissingnessLevels(ax, X, weights):
     for r in range(X.shape[0]):
         X.iloc[r, 2:6] = X.iloc[r, 2:6].div(X.iloc[r, 2:6].sum())
     x = pd.melt(
-        X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'], 
+        X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'],
         var_name="Winner", value_name='Wins'
     )
     for i in range(len(ax)):
@@ -229,7 +229,7 @@ def FindIdxValues(X):
     value variables should be passed."""
     data = X.select_dtypes(include=["float64"])
     idx = np.argwhere(~np.isnan(data.values))
-    idx[:, 1] += 4 #add ID variable columns
+    idx[:, 1] += 4  # add ID variable columns
     StoE = pd.read_csv("msresist/data/MS/CPTAC/IDtoExperiment.csv")
     assert all(StoE.iloc[:, 0] == data.columns), "Sample labels don't match."
     StoE = StoE.iloc[:, 1].values
@@ -246,8 +246,8 @@ def ErrorAcrossNumberOfClusters(X, NaNfilter, weight, distance_method, clusters,
     res = np.zeros((len(clusters), 2))
     for idx, cluster in enumerate(clusters):
         model = MassSpecClustering(
-                i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter
-            ).fit(d.T, "NA")
+            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter
+        ).fit(d.T, "NA")
         res[idx, 0] = int(cluster)
         res[idx, 1] = ComputeModelError(x, model, d, nan_indices)
 
@@ -271,8 +271,8 @@ def ErrorAcrossWeights(X, NaNfilter, weights, distance_method, ncl, max_n_iter):
     res = np.zeros((len(weights), 2))
     for idx, w in enumerate(weights):
         model = MassSpecClustering(
-                i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter
-            ).fit(d.T, "NA")
+            i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter
+        ).fit(d.T, "NA")
         res[idx, 0] = w
         res[idx, 1] = ComputeModelError(x, model, d, nan_indices)
     return res
