@@ -67,7 +67,7 @@ def preprocessing(
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.55)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.50)
 
     if not log2T:
         if FCtoUT:
@@ -151,8 +151,8 @@ def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
     return X.iloc[Xidx, :]
 
 
-def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60):
-    """ Filter rows for those containing a 50% change of the maximum vs minimum fold-change
+def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
+    """ Filter rows for those containing an cutoff% change of the maximum vs minimum fold-change
     across every condition. """
     XX = Linear(X.copy(), data_headers)
     X_ToMin = XX[data_headers] / XX[data_headers].min(axis=0)
@@ -172,13 +172,13 @@ def VFilter(ABC, merging_indices, data_headers, FCto):
     NonRecTable = NonRecTable.assign(r2_Std=list(["N/A"] * NonRecTable.shape[0]))
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
-    DupsTable = CorrCoefFilter(CorrCoefPeptides)
+    DupsTable = CorrCoefFilter(CorrCoefPeptides, corrCut=0.6)
     DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices + ["r2_Std"])
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
-    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"])
+    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"], stdCut=0.4)
 
     merging_indices.insert(4, "BioReps")
     merging_indices.insert(5, "r2_Std")
