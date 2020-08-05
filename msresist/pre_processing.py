@@ -173,20 +173,15 @@ def VFilter(ABC, merging_indices, data_headers, FCto):
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
     DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices)
+    DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices + ["r2_Std"])
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
-    TripsTable = FilterByStdev(TripsTable)
+    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"])
 
     merging_indices.insert(4, "BioReps")
     merging_indices.insert(5, "r2_Std")
-    
-    print(merging_indices)
-    display(NonRecTable)
-    display(DupsTable)
-    display(TripsTable)
 
     ABC = pd.concat(
         [NonRecTable, DupsTable, TripsTable]
@@ -276,15 +271,12 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.4):
+def FilterByStdev(X, merging_indices, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-    if "Position" in X.columns:
-        Means = pd.concat([X.iloc[:, :6], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
-    else:
-        Means = pd.concat([X.iloc[:, :5], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    Means = pd.concat([X[merging_indices], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     Means = Means.iloc[Xidx, :]
     Means.columns = Means.columns.droplevel(1)
     StdMeans = pd.DataFrame(StdMeans).iloc[Xidx, :]
