@@ -32,7 +32,7 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
 def set_grid():
     """ Define the parameter combinations to test the model with. """
     param_grid = []
-    weights = [0.1, 1, 2, 3, 4, 5]
+    weights = [0.1, 0.15, 0.2, 0.3, 0.5, 1]
     for nn in range(2, 15):
         #         if nn < 5:
         param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__SeqWeight=weights))

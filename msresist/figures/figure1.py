@@ -483,23 +483,28 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig.show()
 
 
-def plotVarReplicates(ax, ABC):
+def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     """ Plot variability of overlapping peptides across MS biological replicates. """
-    ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
+    ABC = MapMotifs(ABC, list(ABC.iloc[:, 0]))
+    data_headers = list(ABC.select_dtypes(include=["float64"]).columns)
+    merging_indices = list(ABC.select_dtypes(include=["object"]).columns)
+    FCto = data_headers[0]
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     # Correlation of Duplicates, optionally filtering first
-    DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
-    # DupsTable = CorrCoefFilter(DupsTable)
+    DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
+    if CorrCoefFilter:
+        DupsTable = CorrCoefFilter(DupsTable)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert DupsTable.shape[0] / 2 == DupsTable_drop.shape[0]
 
     # Stdev of Triplicates, optionally filtering first
-    StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
+    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
+    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == "std"]
-    # Xidx = np.all(Stds.values <= 0.4, axis=1)
-    # Stds = Stds.iloc[Xidx, :]
+    if StdFilter:
+        Xidx = np.all(Stds.values <= 0.4, axis=1)
+        Stds = Stds.iloc[Xidx, :]
 
     n_bins = 10
     ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins, edgecolor="black", linewidth=1)

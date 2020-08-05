@@ -30,11 +30,12 @@ def preprocessing(
         filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv")))
     if Axlmuts_ErlAF154:
         br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
-        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
-#         br2.columns = br1.columns
+        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv")).drop("UniprotAcc", axis=1)
+        br2.columns = br1.columns
         br3 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw.csv"))
         br4 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw.csv"))
         filesin.append(br1)
+#         filesin.append(br2)
         filesin.append(br3)
         filesin.append(br4)
     if CPTAC:
@@ -67,7 +68,8 @@ def preprocessing(
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.50)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.40)
+#         X = FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4)
 
     if not log2T:
         if FCtoUT:
@@ -224,7 +226,7 @@ def BuildMatrix(peptides, ABC, data_headers, FCto):
         if len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
-            fc = LinearFoldChange(pepts[data_headers].copy(), data_headers, FCto)
+            fc = Linear(pepts[data_headers].copy(), data_headers)
             corrcoef, _ = stats.pearsonr(fc.iloc[0, :], fc.iloc[1, :])
             for i in range(len(pepts)):
                 corrcoefs.append(np.round(corrcoef, decimals=2))
