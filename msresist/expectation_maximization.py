@@ -51,7 +51,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
         scores = np.max(final_scores, axis=1)
 
         assert np.all(np.isfinite(scores)), \
-        f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
+            f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
         cl_seqs = [[] for i in range(ncl)]
         for j, motif in enumerate(sequences):
@@ -100,7 +100,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
 
 def HardAssignments(labels, ncl):
-    """ Generate a responsibility matrix with hard assignments, 
+    """ Generate a responsibility matrix with hard assignments,
     i.e. 1 for assignments, 0 otherwise. """
     m = np.zeros((len(labels), ncl))
 
