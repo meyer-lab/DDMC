@@ -19,7 +19,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=1000, n_runs=1):
+    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=500, n_runs=1):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
@@ -53,7 +53,7 @@ class MassSpecClustering(BaseEstimator):
 
         if self.distance_method == "Binomial":
             binoM = GenerateBPM(cl_seqs, background)
-            seq_scores = assignPeptidesBN(self.ncl, sequences, cl_seqs, background, binoM, self.labels_)
+            seq_scores = assignPeptidesBN(self.ncl, sequences, binoM)
         else:
             seq_scores = assignPeptidesPAM(self.ncl, cl_seqs, background, self.labels_)
 
@@ -115,5 +115,5 @@ def ClusterAverages(X, labels):
     #             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
     #             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
 
-    members = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in dict_clustermembers.items()]))
+    members = pd.DataFrame({k: pd.Series(v) for (k, v) in dict_clustermembers.items()})
     return pd.DataFrame(centers).T, members
