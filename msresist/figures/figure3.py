@@ -164,8 +164,6 @@ def makeFigure():
     fit = CoCl_plsr.fit(d, y)
     centers = CoCl_plsr.named_steps.CoCl.transform(d)
     plotR2YQ2Y(ax[7], CoCl_plsr, d, y, cv=2, b=ncl + 1)
-    gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
-    plotGridSearch(ax[8], gs)
     plotActualVsPredicted(ax[9:13], CoCl_plsr, d, y, 2)
     plotScoresLoadings(ax[13:15], fit, centers, y, ncl, all_lines, 2)
     plotclusteraverages(ax[15], centers.T, all_lines)
