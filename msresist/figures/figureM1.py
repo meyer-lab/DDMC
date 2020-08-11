@@ -176,9 +176,6 @@ def ComputeBaselineError(X, d, nan_indices):
         v = X[idx[0], idx[1] - 4]
         b = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
         errors[ii] = (mean_squared_error(v, b))
-    if np.isnan(np.mean(errors)):
-        display(pd.DataFrame(errors).T)
-        raise SystemExit
     return np.mean(errors)
 
 
@@ -194,9 +191,6 @@ def ComputeModelError(X, model, d, nan_indices):
         c = centers[labels[ii], idx[1] - 4]
         mse = mean_squared_error(v, c)
         errors[ii] = mse
-    if np.isnan(np.mean(errors)):
-        display(pd.DataFrame(errors).T)
-        raise SystemExit
     return np.mean(errors)
 
 
