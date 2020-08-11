@@ -145,7 +145,7 @@ def ErrorAcrossMissingnessLevels(X, NaNfilter, weights, distance_method, ncl, ma
             model = MassSpecClustering(
                 i, ncl, SeqWeight=weights[jj], distance_method=distance_method, max_n_iter=max_n_iter
             ).fit(d.T, "NA")
-            model_res[ii + sc[ii] + jj, 0] = int(nan_per[ii])
+            model_res[ii + sc[ii] + jj, 0] = nan_per[ii]
             model_res[ii + sc[ii] + jj, 1] = weights[jj]
             model_res[ii + sc[ii] + jj, 2] = model.wins_[0]
             model_res[ii + sc[ii] + jj, 3] = model.wins_[1]
