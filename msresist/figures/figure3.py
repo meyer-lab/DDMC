@@ -35,7 +35,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (4, 4))
+    ax, f = getSetup((14, 9), (2, 4))
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -47,8 +47,6 @@ def makeFigure():
     i = X.select_dtypes(include=["object"])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    mut_lines = all_lines[1:]
-    g_lines = all_lines[2:]
 
     d.index = all_lines
 
@@ -157,16 +155,6 @@ def makeFigure():
 
     # Plot Measured vs Predicted
     plotActualVsPredicted(ax[3:7], plsr, centers, y, 1)
-
-    # -------- Cross-validation 2 -------- #
-
-    CoCl_plsr = Pipeline([("CoCl", MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ("plsr", PLSRegression(ncomp))])
-    fit = CoCl_plsr.fit(d, y)
-    centers = CoCl_plsr.named_steps.CoCl.transform(d)
-    plotR2YQ2Y(ax[7], CoCl_plsr, d, y, cv=2, b=ncl + 1)
-    plotActualVsPredicted(ax[9:13], CoCl_plsr, d, y, 2)
-    plotScoresLoadings(ax[13:15], fit, centers, y, ncl, all_lines, 2)
-    plotclusteraverages(ax[15], centers.T, all_lines)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -462,7 +450,7 @@ def plotClusters(X, cl_labels, nrows, ncols, xlabels, figsize=(15, 15)):
     """Boxplot of every cluster"""
     X["Cluster"] = cl_labels
     n = max(X["Cluster"])
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
+    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
     for i in range(n):
         cl = X[X["Cluster"] == i + 1]
         m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
