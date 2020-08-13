@@ -14,7 +14,7 @@ endpointcolors = ["light grey", "dark grey", "light navy blue", "jungle green"]
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (3, 3), multz={8: 1, 10: 1})
+    ax, f = getSetup((12, 9), (2, 3), multz={8: 1, 10: 1})
 
     # blank out first axis for cartoon
 
@@ -62,22 +62,21 @@ def makeFigure():
 
     tr1 = ["AF", "-E", "A/E"]
     tr2 = ["AF154", "Erlotinib", "Erl + AF154"]
-    barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "RWD fc to UT", "Cell Migration (24h)", TimePointFC=False, TreatmentFC="-UT", colors=c)
+    barplot_UtErlAF154(ax[5], lines, ds, ftp, tr1, tr2, "RWD fc to UT", "Cell Migration (24h)", TimePointFC=False, TreatmentFC="-UT", colors=c)
 
     # Phosphorylation levels of selected peptides
-    A = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
-    A.columns = list(A.columns[:5]) + ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-    A = A[list(A.columns[:5]) + lines]
-    A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
+    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    d = X.select_dtypes(include=['float64']).T
+    i = X.select_dtypes(include=['object'])
 
-    set1 = {"BCAR1": ["Y128-p", "Y410-p"], "BCAR3": "Y212-p", "NEDD9": ["189-p", "S182-p"]}
-    plot_AllSites(ax[6], A.copy(), set1, "BCAR & NEDD")
+    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    mut_lines = all_lines[1:]
+    g_lines = all_lines[2:]
 
-    CRK = {"CRK": "Y136-p", "CRKL": "Y251-p", "DOCK1": "Y1811-p", "ELMO2": "Y48-p"}
-    plot_AllSites(ax[7], A.copy(), CRK, "CRK-DOCK1-ELMO2 axis")
+    d.index = all_lines
 
-    other = {"TNS1": "Y1326-p", "TNS3": ["Y354-p", "Y855-p"], "CTTN": ["Y421-p"], "PTPN11": ["Y542-p", "Y584-p"], "PTK2": "Y397-p"}
-    plot_AllSites(ax[7], A.copy(), other, "Various")
+    # set1 = {"BCAR1": "Y234-p", "BCAR3": "Y212-p", "NEDD9": ["189-p", "Y166-p"]}
+    # plot_AllSites(ax[6], X.copy(), set1, "BCAR & NEDD")
 
     # Reduced Heatmaps
     #     hm_af154 = mpimg.imread('msresist/data/MS/AXL/CM_reducedHM_AF154.png')
