@@ -30,10 +30,14 @@ def preprocessing(
         filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv")))
     if Axlmuts_ErlAF154:
         br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
-        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv"))
+        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv")).drop("UniprotAcc", axis=1)
         br2.columns = br1.columns
+        br3 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw.csv"))
+        br4 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw.csv"))
         filesin.append(br1)
-    #         filesin.append(br2)
+#         filesin.append(br2)
+        filesin.append(br3)
+        filesin.append(br4)
     if CPTAC:
         X = preprocessCPTAC()
         filesin.append(X)
@@ -46,11 +50,11 @@ def preprocessing(
         fullnames, genes = FormatName(X)
         X["Protein"] = fullnames
         X.insert(3, "Gene", genes)
-        merging_indices = list(X.columns[:4])
+        merging_indices = list(X.select_dtypes(include=["object"]).columns)
     else:
         X = pd.concat(filesin)
         genes = list(X["Gene"])
-        merging_indices = list(X.columns[:3])
+        merging_indices = list(X.select_dtypes(include=["object"]).columns)
 
     if rawdata:
         return X
@@ -61,12 +65,11 @@ def preprocessing(
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, FCto)
 
-    object_headers = list(X.select_dtypes(include=["object"]).columns)
-
-    X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[object_headers + data_headers]
+    X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.55)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.40)
+#         X = FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4)
 
     if not log2T:
         if FCtoUT:
@@ -151,8 +154,8 @@ def FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4):
     return X.iloc[Xidx, :]
 
 
-def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.60):
-    """ Filter rows for those containing a 50% change of the maximum vs minimum fold-change
+def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
+    """ Filter rows for those containing an cutoff% change of the maximum vs minimum fold-change
     across every condition. """
     XX = Linear(X.copy(), data_headers)
     X_ToMin = XX[data_headers] / XX[data_headers].min(axis=0)
@@ -172,18 +175,20 @@ def VFilter(ABC, merging_indices, data_headers, FCto):
     NonRecTable = NonRecTable.assign(r2_Std=list(["N/A"] * NonRecTable.shape[0]))
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
-    DupsTable = CorrCoefFilter(CorrCoefPeptides)
-    DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices)
+    DupsTable = CorrCoefFilter(CorrCoefPeptides, corrCut=0.6)
+    DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices + ["r2_Std"])
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
-    TripsTable = FilterByStdev(TripsTable)
+    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"], stdCut=0.4)
 
     merging_indices.insert(4, "BioReps")
     merging_indices.insert(5, "r2_Std")
 
-    ABC = pd.concat([NonRecTable, DupsTable, TripsTable]).reset_index()[merging_indices[:3] + list(ABC[data_headers].columns) + merging_indices[3:]]
+    ABC = pd.concat(
+        [NonRecTable, DupsTable, TripsTable]
+    ).reset_index()[merging_indices[:2] + list(ABC[data_headers].columns) + merging_indices[2:]]
 
     # Including non-overlapping peptides
     return ABC
@@ -222,7 +227,7 @@ def BuildMatrix(peptides, ABC, data_headers, FCto):
         if len(pepts) == 1:
             peptideslist.append(pepts.iloc[0, :])
         elif len(pepts) == 2 and len(set(names)) == 1:
-            fc = LinearFoldChange(pepts[data_headers].copy(), data_headers, FCto)
+            fc = Linear(pepts[data_headers].copy(), data_headers)
             corrcoef, _ = stats.pearsonr(fc.iloc[0, :], fc.iloc[1, :])
             for i in range(len(pepts)):
                 corrcoefs.append(np.round(corrcoef, decimals=2))
@@ -269,15 +274,12 @@ def FilterByRange(X, rangeCut=0.4):
     return X.iloc[Xidx, :]
 
 
-def FilterByStdev(X, stdCut=0.4):
+def FilterByStdev(X, merging_indices, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
     Xidx = np.all(Stds.values <= stdCut, axis=1)
-    if "Position" in X.columns:
-        Means = pd.concat([X.iloc[:, :6], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
-    else:
-        Means = pd.concat([X.iloc[:, :5], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
+    Means = pd.concat([X[merging_indices], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     Means = Means.iloc[Xidx, :]
     Means.columns = Means.columns.droplevel(1)
     StdMeans = pd.DataFrame(StdMeans).iloc[Xidx, :]
