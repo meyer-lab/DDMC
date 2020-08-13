@@ -10,12 +10,12 @@ from .pam250 import assignPeptidesPAM, MotifPam250Scores
 from .motifs import ForegroundSeqs
 
 
-def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs):
+def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs, background):
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
         cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(
-            data, info, ncl, SeqWeight, distance_method, max_n_iter
+            data, info, ncl, SeqWeight, distance_method, max_n_iter, background
         )
         scores.append(score)
         products.append([cl_seqs, labels, score, n_iter, gmmp, wins])
@@ -24,7 +24,7 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, background):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
@@ -32,7 +32,8 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter):
 
     # Initialize model
     gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-    background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
+    if  type(background) == bool:
+        background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
     store_labels = []

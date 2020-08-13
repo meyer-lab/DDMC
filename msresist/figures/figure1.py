@@ -26,7 +26,7 @@ pd.set_option("display.max_columns", 30)
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 13), (4, 3))
+    ax, f = getSetup((12, 9), (2, 3))
 
     # blank out first axis for cartoon
     # ax[0].axis('off')
@@ -42,9 +42,15 @@ def makeFigure():
     lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
     # Read in Mass Spec data
-    A = preprocessing(Axlmuts_ErlAF154=True, Vfilter=False, FCfilter=False, log2T=True, FCtoUT=False, mc_row=True)
-    A.columns = list(A.columns[:5]) + ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-    A = A[list(A.columns[:5]) + lines]
+    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    d = X.select_dtypes(include=['float64']).T
+    i = X.select_dtypes(include=['object'])
+
+    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    mut_lines = all_lines[1:]
+    g_lines = all_lines[2:]
+
+    d.index = all_lines
 
     # A: Cell Viability
     ds = [r1, r2, r3, r4]
@@ -54,48 +60,25 @@ def makeFigure():
     title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
     IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
-    barplot_UtErlAF154(ax[1], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", TimePointFC=itp, colors=c)
-
-    # blank out first two axis of the third column for reduced Viability-specific signaling ClusterMap
-    hm_af154 = mpimg.imread("msresist/data/MS/AXL/CV_reducedHM_AF154.png")
-    hm_erl = mpimg.imread("msresist/data/MS/AXL/CV_reducedHM_Erl.png")
-    ax[2].imshow(hm_af154)
-    ax[2].axis("off")
-    ax[3].imshow(hm_erl)
-    ax[3].axis("off")
+    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", TimePointFC=itp, colors=c)
 
     # Scores and Loadings MS data
-    A = A.drop(["WT"], axis=1)
-    d = A.select_dtypes(include=["float64"]).T
-    plotpca_ScoresLoadings(ax[4:6], d, list(A["Gene"]), list(A["Position"]))
+    d = X.select_dtypes(include=["float64"]).T
+    plotpca_ScoresLoadings(ax[1:3], d, list(X["Gene"]), list(X["Position"]))
 
     # Variability across overlapping peptides in MS replicates
     #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
     #     plotVarReplicates(ax[4:6], X)
 
     # Phosphorylation levels of selected peptides
-    A = A[list(A.columns[:5]) + ["KI", "KO", "KD"] + lines[4:]]
 
-    plot_AllSites(ax[6], A.copy(), "AXL", "AXL p-sites")
+    plot_AllSites(ax[3], X.copy(), "AXL", "AXL p-sites")
 
-    RTKs = {"EGFR": "Y1197-p", "MET": "Y1003-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "T791-p"}
-    plot_IdSites(ax[7], A.copy(), RTKs, "RTKs")
+    RTKs = {"EGFR": "Y1172-p", "MET": "S988-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "T791-p"}
+    plot_IdSites(ax[4], X.copy(), RTKs, "RTKs")
 
-    adapters = {"GAB1": "Y659-p", "GAB2": "T265-p", "CRK": "Y136-p", "CRKL": "Y251-p", "SHC1": "S426-p"}
-    plot_IdSites(ax[8], A.copy(), adapters, "Adapters")
-
-    erks = {"MAPK3": "Y204-p;T202-p", "MAPK1": "Y187-p;T185-p", "MAPK7": "Y221-p"}
-    erks_rn = {"MAPK3": "ERK1", "MAPK1": "ERK2", "MAPK7": "ERK5"}
-
-    plot_IdSites(ax[9], A.copy(), erks, "ERK", erks_rn)
-
-    jnks = {"MAPK9": "Y185-p", "MAPK10": "Y223-p"}
-    jnks_rn = {"MAPK9": "JNK2", "MAPK10": "JNK3"}
-    plot_IdSites(ax[10], A.copy(), jnks, "JNK", jnks_rn)
-
-    p38s = {"MAPK12": "Y185-p", "MAPK13": "Y182-p", "MAPK14": "Y182-p"}
-    p38s_rn = {"MAPK12": "P38G", "MAPK13": "P38D", "MAPK14": "P38A"}
-    plot_IdSites(ax[11], A.copy(), p38s, "P38", p38s_rn)
+    adapters = {"GAB1": "Y659-p", "GAB2": "Y266-p", "CRK": "Y251-p", "SHC1": "S426-p"}
+    plot_IdSites(ax[5], X.copy(), adapters, "Adapters")
 
     # Add subplot labels
     subplotLabel(ax)
@@ -483,23 +466,28 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig.show()
 
 
-def plotVarReplicates(ax, ABC):
+def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     """ Plot variability of overlapping peptides across MS biological replicates. """
-    ABC = pYmotifs(ABC, list(ABC.iloc[:, 0]))
+    ABC = MapMotifs(ABC, list(ABC.iloc[:, 0]))
+    data_headers = list(ABC.select_dtypes(include=["float64"]).columns)
+    merging_indices = list(ABC.select_dtypes(include=["object"]).columns)
+    FCto = data_headers[0]
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     # Correlation of Duplicates, optionally filtering first
-    DupsTable = BuildMatrix(CorrCoefPeptides, ABC)
-    # DupsTable = CorrCoefFilter(DupsTable)
+    DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
+    if CorrCoefFilter:
+        DupsTable = CorrCoefFilter(DupsTable)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert DupsTable.shape[0] / 2 == DupsTable_drop.shape[0]
 
     # Stdev of Triplicates, optionally filtering first
-    StdPeptides = BuildMatrix(StdPeptides, ABC)
-    TripsTable = TripsMeanAndStd(StdPeptides, list(ABC.columns[:3]))
+    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
+    TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == "std"]
-    # Xidx = np.all(Stds.values <= 0.4, axis=1)
-    # Stds = Stds.iloc[Xidx, :]
+    if StdFilter:
+        Xidx = np.all(Stds.values <= 0.4, axis=1)
+        Stds = Stds.iloc[Xidx, :]
 
     n_bins = 10
     ax[0].hist(DupsTable_drop.iloc[:, -1], bins=n_bins, edgecolor="black", linewidth=1)
