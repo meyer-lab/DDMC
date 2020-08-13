@@ -35,7 +35,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (4, 4))
+    ax, f = getSetup((14, 9), (2, 4))
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -47,8 +47,6 @@ def makeFigure():
     i = X.select_dtypes(include=["object"])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    mut_lines = all_lines[1:]
-    g_lines = all_lines[2:]
 
     d.index = all_lines
 
@@ -158,18 +156,6 @@ def makeFigure():
     # Plot Measured vs Predicted
     plotActualVsPredicted(ax[3:7], plsr, centers, y, 1)
 
-    # -------- Cross-validation 2 -------- #
-
-    CoCl_plsr = Pipeline([("CoCl", MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method)), ("plsr", PLSRegression(ncomp))])
-    fit = CoCl_plsr.fit(d, y)
-    centers = CoCl_plsr.named_steps.CoCl.transform(d)
-    plotR2YQ2Y(ax[7], CoCl_plsr, d, y, cv=2, b=ncl + 1)
-    gs = pd.read_csv("msresist/data/Performance/20200527-GS_AXL1BR_Binomial_2Components.csv")
-    plotGridSearch(ax[8], gs)
-    plotActualVsPredicted(ax[9:13], CoCl_plsr, d, y, 2)
-    plotScoresLoadings(ax[13:15], fit, centers, y, ncl, all_lines, 2)
-    plotclusteraverages(ax[15], centers.T, all_lines)
-
     # Add subplot labels
     subplotLabel(ax)
 
@@ -269,18 +255,18 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, data="clusters", annotate=True):
+def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, pcX=1, pcY=2, data="clusters", annotate=True):
     if cv == 1:
         X_scores, _ = model.transform(X, Y)
-        PC1_xload, PC2_xload = model.x_loadings_[:, 0], model.x_loadings_[:, 1]
-        PC1_yload, PC2_yload = model.y_loadings_[:, 0], model.y_loadings_[:, 1]
+        PC1_xload, PC2_xload = model.x_loadings_[:, pcX - 1], model.x_loadings_[:, pcY - 1]
+        PC1_yload, PC2_yload = model.y_loadings_[:, pcX - 1], model.y_loadings_[:, pcY - 1]
 
     if cv == 2:
         X_scores, _ = model.named_steps.plsr.transform(X, Y)
-        PC1_xload, PC2_xload = model.named_steps.plsr.x_loadings_[:, 0], model.named_steps.plsr.x_loadings_[:, 1]
-        PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, 0], model.named_steps.plsr.y_loadings_[:, 1]
+        PC1_xload, PC2_xload = model.named_steps.plsr.x_loadings_[:, pcX - 1], model.named_steps.plsr.x_loadings_[:, pcY - 1]
+        PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, pcX - 1], model.named_steps.plsr.y_loadings_[:, pcY - 1]
 
-    PC1_scores, PC2_scores = X_scores[:, 0], X_scores[:, 1]
+    PC1_scores, PC2_scores = X_scores[:, pcX - 1], X_scores[:, pcY - 1]
 
     # Scores
     ax[0].scatter(PC1_scores, PC2_scores)
@@ -460,52 +446,22 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotclustersIndividually(centers, labels, nrows, ncols, figsize=(20, 10)):
-    fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
-    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
-    for i in range(centers.shape[0]):
-        ax[i // ncols][i % ncols].plot(centers.iloc[i, :], label="cluster " + str(i + 1), color=colors_[i], linewidth=3)
-        ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
-        ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
-        ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
-        ax[i // ncols][i % ncols].legend()
-
-
-def ClusterBoxplotsFromDictionary(X, a, ax, plot="box"):
-    """boxplot of peptides included in a dictionary with gene name / position pairs"""
-    m = selectpeptides(X.copy().set_index(["Gene", "Position"]), a).drop(["Cluster", "Position", "Protein", "Sequence", "UniprotAcc"], axis=1)
-    m = pd.melt(m, value_vars=list(m.columns)[1:], value_name="p-signal", id_vars=["Gene"], var_name="Lines")
-    m["p-signal"] = m["p-signal"].astype("float64")
-    if plot == "box":
-        sns.boxplot(x="Lines", y="p-signal", data=m, ax=ax)
-    if plot == "violin":
-        sns.violinplot(x="Lines", y="p-signal", data=m, ax=ax)
-
-
-def ClusterBoxplots(X, nrows, ncols, labels, plot="box", figsize=(15, 15)):
+def plotClusters(X, cl_labels, nrows, ncols, xlabels, figsize=(15, 15)):
     """Boxplot of every cluster"""
+    X["Cluster"] = cl_labels
     n = max(X["Cluster"])
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
+    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
     for i in range(n):
         cl = X[X["Cluster"] == i + 1]
         m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
-        if plot == "box":
-            sns.boxplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
-            #             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".25", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
-            ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
-            ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
-            ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
-            ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
-            ax[i // ncols][i % ncols].set_xlabel("")
-            ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
-        if plot == "violin":
-            sns.violinplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
-            #             sns.swarmplot(x="Lines", y="p-signal", data=m, color=".95", ax=ax[i // ncols][i % ncols], **{"alpha": .15})
-            ax[i // ncols][i % ncols].set_xticks(np.arange(len(labels)))
-            ax[i // ncols][i % ncols].set_xticklabels(labels, rotation=45)
-            ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
-            ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
+        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
+        ax[i // ncols][i % ncols].set_xticks(np.arange(len(xlabels)))
+        ax[i // ncols][i % ncols].set_xticklabels(xlabels, rotation=45)
+        ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
+        ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
+        ax[i // ncols][i % ncols].set_xlabel("")
+        ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
 def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
