@@ -34,7 +34,7 @@ def set_ClusterPLSRgrid():
     for nn in range(2, 15):
         #         if nn < 5:
         param_grid.append(dict(MSclustering__ncl=[nn], MSclustering__SeqWeight=weights,
-                                       plsr__n_components=list(np.arange(1, nn + 1))))
+                               plsr__n_components=list(np.arange(1, nn + 1))))
         if nn > 5:
             param_grid.append(dict(MSclustering__ncl=[nn],
                                    MSclustering__SeqWeight=weights,
