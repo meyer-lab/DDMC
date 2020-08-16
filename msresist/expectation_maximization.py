@@ -32,7 +32,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
 
     # Initialize model
     gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-    if  type(background) == bool:
+    if isinstance(background, bool):
         background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
