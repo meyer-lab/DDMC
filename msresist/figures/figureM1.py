@@ -123,6 +123,7 @@ def plotWinsAcrossMissingnessLevels(ax, X):
     ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
 
+#TO DO: Figure out why when it doesn't converge the error is lower than when it fits...
 def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
     """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error between the actual
     versus cluster average value. Note that the wins for all fitted models are returned to be used in PlotAMwins."""
@@ -260,16 +261,24 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
     i = md.select_dtypes(include=['object'])
     background = GenerateSeqBackgroundAndPAMscores(md["Sequence"], distance_method)
 
-    model_res = np.zeros((len(clusters), 2))
+    model_res = np.zeros((len(clusters), 3))
     base_res = np.zeros((len(clusters), 2))
     for idx, cluster in enumerate(clusters):
         print(cluster)
+        base_res[idx, 0] = int(cluster)
+        model_res[idx, 0] = int(cluster)
         model = MassSpecClustering(
             i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, background=background
         ).fit(d.T, "NA")
-        base_res[idx, 0] = int(cluster)
-        model_res[idx, 0] = int(cluster)
-        model_res[idx, 1] = ComputeModelError(x, model, d, nan_indices)
+        if all(model.converge_) == True:
+                model_res[idx, 1] = 0
+                model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        elif len(set(model.converge_)) == 2:
+            model_res[idx, 1] = 1
+            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        else:
+            model_res[idx, 1] = 2
+            model_res[idx, 2] = np.nan
 
     base_res[:, 1] = [ComputeBaselineError(x, d, nan_indices)] * len(clusters)
     return model_res, base_res
@@ -279,7 +288,7 @@ def plotErrorAcrossNumberOfClusters(ax, X, weight, distance_method, clusters, ma
     """Plot missingness error across different number of clusters."""
     m, b = ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter)
     m = pd.DataFrame(m)
-    m.columns = ["n_clusters", "Error"]
+    m.columns = ["n_clusters", "Fit", "Error"]
     sns.lineplot(x="n_clusters", y="Error", data=m, palette="muted", ax=ax)
     b = pd.DataFrame(b)
     b.columns = ["Clusters", "Error"]
@@ -294,15 +303,24 @@ def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
     i = md.select_dtypes(include=['object'])
     bg = GenerateSeqBackgroundAndPAMscores(md["Sequence"], distance_method)
 
-    model_res = np.zeros((len(weights), 2))
+    model_res = np.zeros((len(weights), 3))
     base_res = np.zeros((len(weights), 2))
     for idx, w in enumerate(weights):
+        print(w)
+        base_res[idx, 0] = w
+        model_res[idx, 0] = w
         model = MassSpecClustering(
             i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter, background=bg
         ).fit(d.T, "NA")
-        base_res[idx, 0] = w
-        model_res[idx, 0] = w
-        model_res[idx, 1] = ComputeModelError(x, model, d, nan_indices)
+        if all(model.converge_) == True:
+                model_res[idx, 1] = 0
+                model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        elif len(set(model.converge_)) == 2:
+            model_res[idx, 1] = 1
+            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        else:
+            model_res[idx, 1] = 2
+            model_res[idx, 2] = np.nan
 
     base_res[:, 1] = [ComputeBaselineError(x, d, nan_indices)] * len(weights)
     return model_res, base_res
