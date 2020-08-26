@@ -49,6 +49,13 @@ class MassSpecClustering(BaseEstimator):
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
 
+    def computePSSMs(self):
+        """Compute position-specific scoring matrix of each cluster."""
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmm_", "wins_"])
+        for i in range(self.ncl):
+            seqs = ForegroundSeqs(self.cl_seqs_[i])
+            pssm = motifs.create(seqs).
+
     def runSeqScore(self, sequences, cl_seqs):
         background = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
 
