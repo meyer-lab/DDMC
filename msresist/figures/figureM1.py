@@ -347,6 +347,7 @@ def TumorType(centers):
         else:
             tumortype.append("Tumor")
     centers["Type"] = tumortype
+    centers.columns = ["Patient_ID"] + list(np.arange(15) + 1) + ["Type"]
     return centers
 
 

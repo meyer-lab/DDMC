@@ -446,11 +446,10 @@ def plotKmeansPLSR_GridSearch(ax, X, Y):
     ax.set_ylabel("Mean-Squared Error (MSE)")
 
 
-def plotClusters(X, cl_labels, nrows, ncols, xlabels, figsize=(15, 15)):
+def plotClusters(ax, X, cl_labels, ncols, xlabels, figsize=(15, 15)):
     """Boxplot of every cluster"""
     X["Cluster"] = cl_labels
     n = max(X["Cluster"])
-    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
     for i in range(n):
         cl = X[X["Cluster"] == i + 1]
         m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
