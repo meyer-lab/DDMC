@@ -57,7 +57,7 @@ class MassSpecClustering(BaseEstimator):
         bg_freqs = motifs.create(bg_seqs).counts
 
         AAfreq_IS = {}
-        for i in range(self.ncl):
+        for i in range(20):
             AAfreq_IS[list(bg_freqs.keys())[i]] = np.sum(bg_freqs[i]) / (len(bg_seqs) * len(bg_seqs[0]))
 
         pssms = []

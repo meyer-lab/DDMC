@@ -80,9 +80,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
         m_step(d, gmm, HardAssignments(labels, ncl))
         gmmp = gmm.predict_proba(d)
 
-        print(n_iter, np.mean(scores))
-        print(wins)
-
         if True in np.isnan(gmmp):
             print(f"Re-initialize GMM, NaN responsibilities at iteration {n_iter}")
             gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
