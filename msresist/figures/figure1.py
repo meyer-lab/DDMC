@@ -46,7 +46,7 @@ def makeFigure():
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
 
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     mut_lines = all_lines[1:]
     g_lines = all_lines[2:]
 
