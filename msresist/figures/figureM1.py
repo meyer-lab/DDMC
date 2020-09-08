@@ -154,25 +154,15 @@ def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
             model_res[ii + sc[ii] + jj, 1] = weights[jj]
             if all(model.converge_) == True:
                 model_res[ii + sc[ii] + jj, 2] = 0
-                model_res[ii + sc[ii] + jj, 3] = model.wins_[0]
-                model_res[ii + sc[ii] + jj, 4] = model.wins_[1]
-                model_res[ii + sc[ii] + jj, 5] = model.wins_[2]
-                model_res[ii + sc[ii] + jj, 6] = model.wins_[3]
+                model_res[ii + sc[ii] + jj, 3:7] = model.wins_[0:4]
                 model_res[ii + sc[ii] + jj, 7] = ComputeModelError(x, model, d, nan_indices)
             elif len(set(model.converge_)) == 2:
                 model_res[ii + sc[ii] + jj, 2] = 1
-                model_res[ii + sc[ii] + jj, 3] = np.nan
-                model_res[ii + sc[ii] + jj, 4] = np.nan
-                model_res[ii + sc[ii] + jj, 5] = np.nan
-                model_res[ii + sc[ii] + jj, 6] = np.nan
+                model_res[ii + sc[ii] + jj, 3:7] = model.wins_[0:4]
                 model_res[ii + sc[ii] + jj, 7] = ComputeModelError(x, model, d, nan_indices)
             else:
                 model_res[ii + sc[ii] + jj, 2] = 2
-                model_res[ii + sc[ii] + jj, 3] = np.nan
-                model_res[ii + sc[ii] + jj, 4] = np.nan
-                model_res[ii + sc[ii] + jj, 5] = np.nan
-                model_res[ii + sc[ii] + jj, 6] = np.nan
-                model_res[ii + sc[ii] + jj, 7] = np.nan
+                model_res[ii + sc[ii] + jj, 3:7] = np.nan
 
     return model_res, base_res
 
