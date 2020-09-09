@@ -123,7 +123,7 @@ def plotWinsAcrossMissingnessLevels(ax, X):
     ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
 
-#TO DO: Figure out why when it doesn't converge the error is lower than when it fits...
+# TO DO: Figure out why when it doesn't converge the error is lower than when it fits...
 def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
     """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error between the actual
     versus cluster average value. Note that the wins for all fitted models are returned to be used in PlotAMwins."""
@@ -152,7 +152,7 @@ def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
             ).fit(d.T, "NA")
             model_res[ii + sc[ii] + jj, 0] = int(nan_per[ii])
             model_res[ii + sc[ii] + jj, 1] = weights[jj]
-            if all(model.converge_) == True:
+            if all(model.converge_):
                 model_res[ii + sc[ii] + jj, 2] = 0
                 model_res[ii + sc[ii] + jj, 3:7] = model.wins_[0:4]
                 model_res[ii + sc[ii] + jj, 7] = ComputeModelError(x, model, d, nan_indices)
@@ -201,7 +201,7 @@ def ComputeModelError(X, model, d, nan_indices):
         idx = nan_indices[d.index[ii]]
         v = X[idx[0], idx[1] - 4]
         c = centers[labels[ii], idx[1] - 4]
-        assert all(~np.isnan(v)) == True and all(~np.isnan(c)) == True, (v, c) 
+        assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
         mse = mean_squared_error(v, c)
         errors.append(mse)
     return np.mean(errors)
@@ -260,9 +260,9 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
         model = MassSpecClustering(
             i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, background=background
         ).fit(d.T, "NA")
-        if all(model.converge_) == True:
-                model_res[idx, 1] = 0
-                model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        if all(model.converge_):
+            model_res[idx, 1] = 0
+            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
         elif len(set(model.converge_)) == 2:
             model_res[idx, 1] = 1
             model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
@@ -302,9 +302,9 @@ def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
         model = MassSpecClustering(
             i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter, background=bg
         ).fit(d.T, "NA")
-        if all(model.converge_) == True:
-                model_res[idx, 1] = 0
-                model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
+        if all(model.converge_):
+            model_res[idx, 1] = 0
+            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
         elif len(set(model.converge_)) == 2:
             model_res[idx, 1] = 1
             model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
