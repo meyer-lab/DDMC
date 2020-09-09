@@ -30,7 +30,7 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, _):
         """Compute EM clustering"""
-        self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmm_, self.wins_ = EM_clustering_opt(
+        self.converge_, self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmm_, self.wins_ = EM_clustering_opt(
             X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.max_n_iter, self.n_runs, self.background
         )
         return self
