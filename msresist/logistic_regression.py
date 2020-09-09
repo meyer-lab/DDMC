@@ -45,7 +45,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha='center', va='center', color='white')
 
 
-def plotROC(ax, classifier, d, y, cv_fold=4):
+def plotROC(ax, classifier, d, y, cv_folds=4):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model. 
     Note that it doesn't need to be a logistic regression."""
     d = d.values
