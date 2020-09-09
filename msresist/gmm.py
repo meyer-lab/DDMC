@@ -16,13 +16,16 @@ def gmm_initialize(X, ncl):
         labels = gmm.predict(d)
         gmmp = gmm.predict_proba(d)
         tries += 1
-        assert tries <= 300, "GMM can't fit, try a smaller number of clusters."
+        if tries == 300:
+            print("GMM can't fit, try a smaller number of clusters.")
+            converge = False
+            return converge, np.nan, np.nan, np.nan, np.nan
 
     X["GMM_cluster"] = labels
     init_clusters = [ForegroundSeqs(list(X[X["GMM_cluster"] == i]["Sequence"])) for i in range(ncl)]
-
+    converge = True
     assert [len(sublist) > 0 for sublist in init_clusters], "Empty cluster(s) on initialization"
-    return gmm, init_clusters, gmmp, labels
+    return converge, gmm, init_clusters, gmmp, labels
 
 
 def m_step(d, gmm, gmmp_hard):
