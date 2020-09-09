@@ -34,7 +34,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
     gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
     if not gmm_converge:
         return (gmm_converge, False), np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
-    if  type(background) == bool:
+    if isinstance(background, bool):
         background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
