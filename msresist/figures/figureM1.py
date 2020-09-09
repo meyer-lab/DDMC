@@ -20,52 +20,52 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((12.5, 12), (4, 3))
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    # X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
-    d = X.select_dtypes(include=["float64"]).T
+    # d = X.select_dtypes(include=["float64"]).T
 
-    distance_method = "PAM250"
+    # distance_method = "PAM250"
 
-    # Distribution of missingness per petide
-    plotMissingnessDensity(ax[0], d)
+    # # Distribution of missingness per petide
+    # plotMissingnessDensity(ax[0], d)
 
-    # Artificial missingness error across missingness percentages and corresponding wins
-    m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
-    plotWinsAcrossMissingnessLevels(ax[2:5], m_)
+    # # Artificial missingness error across missingness percentages and corresponding wins
+    # m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
+    # plotWinsAcrossMissingnessLevels(ax[2:5], m_)
 
-    # Missingness error across number of clusters or different weights
-    plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
-    plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
+    # # Missingness error across number of clusters or different weights
+    # plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
+    # plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
-    # Run model
-    X_f = filter_NaNpeptides(X, cut=0.1)
-    d_f = X_f.select_dtypes(include=['float64']).T
-    i_f = X_f.select_dtypes(include=['object'])
-    distance_method = "PAM250"
-    ncl = 19
-    SeqWeight = 0.75
-    MSC = MassSpecClustering(
-        i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1
-    ).fit(d_f, "NA")
-    centers = MSC.transform(d_f)
-    centers["Patient_ID"] = X.columns[4:]
+    # # Run model
+    # X_f = filter_NaNpeptides(X, cut=0.1)
+    # d_f = X_f.select_dtypes(include=['float64']).T
+    # i_f = X_f.select_dtypes(include=['object'])
+    # distance_method = "PAM250"
+    # ncl = 19
+    # SeqWeight = 0.75
+    # MSC = MassSpecClustering(
+    #     i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1
+    # ).fit(d_f, "NA")
+    # centers = MSC.transform(d_f)
+    # centers["Patient_ID"] = X.columns[4:]
 
-    # PCA of model
-    centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
-    centers = TumorType(centers)
-    c = 2
-    plotPCA(
-        ax[7:11], centers, c, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", hue_load="Cluster"
-    )
+    # # PCA of model
+    # centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
+    # centers = TumorType(centers)
+    # c = 2
+    # plotPCA(
+    #     ax[7:11], centers, c, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", hue_load="Cluster"
+    # )
 
-    # Regress against survival
-    centers, y = TransformCPTACdataForRegression(MSC, d_f, list(X.columns[4:]))
+    # # Regress against survival
+    # centers, y = TransformCPTACdataForRegression(MSC, d_f, list(X.columns[4:]))
 
-    centers_T = centers[~centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
-    y_T = y[~y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+    # centers_T = centers[~centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
+    # y_T = y[~y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
 
-    plsr = PLSRegression(n_components=2, scale=True)
-    plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
+    # plsr = PLSRegression(n_components=2, scale=True)
+    # plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
 
     # Add subplot labels
     subplotLabel(ax)
