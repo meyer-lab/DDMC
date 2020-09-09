@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_opt, GenerateSeqBackgroundAndPAMscores
+from Bio import motifs
 from .motifs import ForegroundSeqs
 from .binomial import GenerateBPM
 from .binomial import assignPeptidesBN
@@ -48,6 +49,22 @@ class MassSpecClustering(BaseEstimator):
 
         _, clustermembers = ClusterAverages(X, self.labels_)
         return clustermembers
+
+    def pssms(self, bg_sequences):
+        """Compute position-specific scoring matrix of each cluster."""
+        check_is_fitted(self, ["cl_seqs_", "labels_", "scores_", "n_iter_", "gmm_", "wins_"])
+        bg_seqs = ForegroundSeqs(bg_sequences)
+        bg_freqs = motifs.create(bg_seqs).counts
+
+        AAfreq_IS = {}
+        for i in range(self.ncl):
+            AAfreq_IS[list(bg_freqs.keys())[i]] = np.sum(bg_freqs[i]) / (len(bg_seqs) * len(bg_seqs[0]))
+
+        pssms = []
+        for j in range(self.ncl):
+            pssms.append(motifs.create(ForegroundSeqs(self.cl_seqs_[j])).counts.normalize(pseudocounts=AAfreq_IS).log_odds(AAfreq_IS))
+
+        return pssms
 
     def runSeqScore(self, sequences, cl_seqs):
         background = GenerateSeqBackgroundAndPAMscores(sequences, self.distance_method)
