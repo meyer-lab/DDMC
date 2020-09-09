@@ -14,14 +14,14 @@ def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n
     """ Run Coclustering n times and return the best fit. """
     scores, products = [], []
     for _ in range(n_runs):
-        cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(
+        converge, cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(
             data, info, ncl, SeqWeight, distance_method, max_n_iter, background
         )
         scores.append(score)
-        products.append([cl_seqs, labels, score, n_iter, gmmp, wins])
+        products.append([converge, cl_seqs, labels, score, n_iter, gmmp, wins])
 
     idx = np.argmax(scores)
-    return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5]
+    return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5], products[idx][6]
 
 
 def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, background):
@@ -31,8 +31,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
     sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
-    gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-    if isinstance(background, bool):
+    gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
+    if not gmm_converge:
+        return (gmm_converge, False), np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+    if  type(background) == bool:
         background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
 
     # EM algorithm
@@ -67,7 +69,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
         # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
         if True in [len(sl) < 3 for sl in cl_seqs]:
             print(f"Re-initialize GMM clusters, empty cluster(s) at iteration {n_iter}")
-            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
+            gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
             store_labels = []
 
         # Store current results
@@ -80,10 +82,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
 
         if True in np.isnan(gmmp):
             print(f"Re-initialize GMM, NaN responsibilities at iteration {n_iter}")
-            gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
+            gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
             store_labels = []
 
-        if len(store_labels) > 4:
+        if len(store_labels) > 9:
             # Check convergence
             converge = False
             for i in range(4):
@@ -93,11 +95,12 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
 
             if converge:
                 cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return cl_seqs, labels, np.mean(scores), n_iter, gmm, wins
+                return (gmm_converge, converge), cl_seqs, labels, np.mean(scores), n_iter, gmm, wins
 
+    converge = False
     print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
     cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return cl_seqs, np.array(labels), np.mean(scores), n_iter, gmm, wins
+    return (gmm_converge, converge), cl_seqs, np.array(labels), np.mean(scores), n_iter, gmm, wins
 
 
 def HardAssignments(labels, ncl):
