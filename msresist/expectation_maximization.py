@@ -10,19 +10,7 @@ from .pam250 import assignPeptidesPAM, MotifPam250Scores
 from .motifs import ForegroundSeqs
 
 
-def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs, background):
-    """ Run Coclustering n times and return the best fit. """
-    scores, products = [], []
-    for _ in range(n_runs):
-        score = EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, background)
-        scores.append(score)
-        #products.append([converge, cl_seqs, labels, score, n_iter, gmmp, wins])
-
-    idx = np.argmax(scores)
-    return scores
-
-
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, background):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n_iter=2000):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
@@ -40,11 +28,14 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
             binoM = GenerateBPM(scores, background)
-            seq_scores = assignPeptidesBN(ncl, sequences, binoM)
+            seq_scores = np.log(assignPeptidesBN(ncl, sequences, binoM))
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
 
-        scores = seq_scores * SeqWeight + gmmp
+        # seq_scores is log-likelihood, logaddexp to avoid roundoff error
+        scores = np.logaddexp(seq_scores * SeqWeight, np.log(gmmp))
+        scores = np.exp(scores)
+
         # Probabilities should sum to one across clusters
         scores /= np.sum(scores, axis=1)[:, np.newaxis]
 
@@ -58,9 +49,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, backg
         assert np.all(np.isfinite(gmmp)), \
             f"gmmp not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
-        if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 0.0001:
-            print("Converged.")
-            print(scores)
+        if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 1e-8:
             return scores
 
         final_scores_last = np.copy(scores)

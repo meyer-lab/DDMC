@@ -6,7 +6,7 @@ import pandas as pd
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
-from scipy.stats import binom
+from scipy.special import betainc
 from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
@@ -38,7 +38,7 @@ AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", 
 AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
-def GenerateBPM(cl_seqs, bg_pwm):
+def GenerateBPM(scores, bg_pwm):
     """ Generate binomial probability matrix for each cluster of sequences """
     return [BinomialMatrix(len(seqs), frequencies(seqs), bg_pwm) for seqs in cl_seqs]
 
@@ -66,8 +66,9 @@ def BinomialMatrix(n, k, p):
     k is the counts matrix of the MS data set, p is the pwm of the background. """
     assert list(k.keys()) == AAlist
     assert list(p.keys()) == list(k.keys())
-    BMP = binom.cdf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
-    return BMP
+    k = np.array(k.values())
+    p = np.array(p.values())
+    return betainc(n - k, k + 1, 1 - p)
 
 
 def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):

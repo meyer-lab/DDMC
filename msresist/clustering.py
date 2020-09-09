@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from .expectation_maximization import EM_clustering_opt, GenerateSeqBackgroundAndPAMscores
+from .expectation_maximization import EM_clustering, GenerateSeqBackgroundAndPAMscores
 from .motifs import ForegroundSeqs
 from .binomial import GenerateBPM
 from .binomial import assignPeptidesBN
@@ -19,19 +19,18 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=500, n_runs=1, background=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=500, background=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
         self.max_n_iter = max_n_iter
-        self.n_runs = n_runs
         self.background = background
 
-    def fit(self, X, _):
+    def fit(self, X, y=None):
         """Compute EM clustering"""
-        self.converge_, self.cl_seqs_, self.labels_, self.scores_, self.n_iter_, self.gmm_, self.wins_ = EM_clustering_opt(
-            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.max_n_iter, self.n_runs, self.background
+        self.scores_ = EM_clustering(
+            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.max_n_iter
         )
         return self
 
