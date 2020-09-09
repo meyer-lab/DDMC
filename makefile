@@ -26,7 +26,7 @@ output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg fi
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
 test: venv
-	. venv/bin/activate && pytest
+	. venv/bin/activate && pytest -s -v
 
 testprofile: venv
 	. venv/bin/activate && python3 -m cProfile -o profile /usr/local/bin/pytest -s
