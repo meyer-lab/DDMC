@@ -27,7 +27,10 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
     for n_iter in range(max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            binoM = GenerateBPM(scores, background)
+            seq_score_label = pd.DataFrame(scores)
+            seq_score_label["Sequence"] = list(X["Sequence"])
+            seq_score_label = pd.melt(seq_score_label, value_vars=seq_score_label.columns[:-1], value_name="Score", id_vars="Sequence", var_name=["Cluster"])
+            binoM = GenerateBPM(seq_score_label, background)
             seq_scores = np.log(assignPeptidesBN(ncl, sequences, binoM))
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
@@ -49,6 +52,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
         assert np.all(np.isfinite(gmmp)), \
             f"gmmp not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
+        print(n_iter, scores)
         if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 1e-8:
             return scores
 

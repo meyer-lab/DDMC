@@ -38,13 +38,13 @@ AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", 
 AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
-def GenerateBPM(scores, bg_pwm):
-    """ Generate binomial probability matrix for each cluster of sequences """
-    return [BinomialMatrix(len(seqs), frequencies(seqs), bg_pwm) for seqs in cl_seqs]
+def GenerateBPM(X, bg_pwm):
+    """Generate binomial probability matrix for each cluster of sequences."""
+    return [BinomialMatrix(X[X["Cluster"] == i].shape[0], res_probabilities(X[X["Cluster"] == i]), bg_pwm) for i in range(max(X["Cluster"]) + 1)]
 
 
 def position_weight_matrix(seqs):
-    """ Build PWM of a given set of sequences. """
+    """Build PWM of a given set of sequences."""
     return frequencies(seqs).normalize(pseudocounts=AAfreq)
 
 
@@ -56,24 +56,31 @@ def InformationContent(seqs):
     return pssm.mean(AAfreq)
 
 
+def res_probabilities(X):
+    """Build probabilities of membership matrix."""
+    res = np.zeros((len(AAlist), 11), dtype=float)
+    for i, aa in enumerate(AAlist):
+        for pos in range(11):
+            res[i, pos] = X[X["Sequence"].str[pos] == aa]["Score"].sum()
+    return res
+
+
 def frequencies(seqs):
-    """ Build counts matrix of a given set of sequences. """
+    """Build counts matrix of a given set of sequences."""
     return motifs.create(seqs).counts
 
 
 def BinomialMatrix(n, k, p):
-    """ Build binomial probability matrix. Note n is the number of sequences,
-    k is the counts matrix of the MS data set, p is the pwm of the background. """
-    assert list(k.keys()) == AAlist
-    assert list(p.keys()) == list(k.keys())
-    k = np.array(k.values())
-    p = np.array(p.values())
+    """Build binomial probability matrix. Note n is the number of sequences,
+    k is the counts matrix of the MS data set, p is the pwm of the background."""
+    assert list(p.keys()) == AAlist
+    p = np.array(list(p.values()))
     return betainc(n - k, k + 1, 1 - p)
 
 
 def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):
-    """ Identify the most significant residue/position pairs acroos the binomial
-    probability matrix meeting a probability and a occurence threshold."""
+    """Identify the most significant residue/position pairs acroos the binomial
+    probability matrix meeting a probability and a occurence threshold"""
     motif = list("X" * 11)
     positions = list(BMP.columns[1:])
     AA = list(BMP.iloc[:, 0])
@@ -91,7 +98,7 @@ def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):
 
 
 def MeanBinomProbs(BPM, motif):
-    """ Take the mean of all pvalues corresponding to each motif residue. """
+    """Take the mean of all pvalues corresponding to each motif residue."""
     probs = 0.0
     for i, aa in enumerate(motif):
         probs += BPM[aa, i]
@@ -99,17 +106,17 @@ def MeanBinomProbs(BPM, motif):
 
 
 def TranslateMotifsToIdx(motif):
-    """ Convert amino acid strings into numbers. """
+    """Convert amino acid strings into numbers."""
     return [AAdict[res.upper()] for res in motif]
 
 
 def BackgroundSeqs(forseqs):
-    """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
+    """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
-    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
+    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926"""
     # Get porportion of psite types in foreground set
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -145,7 +152,7 @@ def BackgroundSeqs(forseqs):
 
 
 def BackgProportions(refseqs, pYn, pSn, pTn):
-    """ Provided the proportions, add peptides to background set. """
+    """Provided the proportions, add peptides to background set."""
     y_seqs, s_seqs, t_seqs = [], [], []
     pR = ["y", "t", "s"]
     for seq in refseqs:
