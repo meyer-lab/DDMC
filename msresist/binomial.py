@@ -56,6 +56,19 @@ def InformationContent(seqs):
     return pssm.mean(AAfreq)
 
 
+def GenerateBinarySeqID(seqs):
+    """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
+    res = np.zeros((len(seqs), len(AAlist), 11))
+    for ii, seq in enumerate(seqs):
+        num_motif = np.array(TranslateMotifsToIdx(seq))
+        for jj in range(len(AAlist)):
+            idx = np.squeeze(np.argwhere(num_motif==jj))
+            bin_seq = np.zeros(11, dtype=np.float64)
+            bin_seq[idx] = 1
+            res[ii, jj, :] = bin_seq
+    return res
+
+
 def res_probabilities(X):
     """Build probabilities of membership matrix."""
     res = np.zeros((len(AAlist), 11), dtype=float)
