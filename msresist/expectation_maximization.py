@@ -10,7 +10,7 @@ from .pam250 import assignPeptidesPAM, MotifPam250Scores
 from .motifs import ForegroundSeqs
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n_iter=2000):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_mat, dataTensor, max_n_iter=2000):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
