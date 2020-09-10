@@ -45,7 +45,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
         scores = np.exp(scores)
 
         # Probabilities should sum to one across clusters
-        scores /= np.su8uz m(scores, axis=1)[:, np.newaxis]
+        scores /= np.sum(scores, axis=1)[:, np.newaxis]
 
         assert np.all(np.isfinite(scores)), \
             f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
