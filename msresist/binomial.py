@@ -63,9 +63,7 @@ def GenerateBinarySeqID(seqs):
         num_motif = np.array(TranslateMotifsToIdx(seq))
         for jj in range(len(AAlist)):
             idx = np.squeeze(np.argwhere(num_motif==jj))
-            bin_seq = np.zeros(11, dtype=np.float64)
-            bin_seq[idx] = 1
-            res[ii, jj, :] = bin_seq
+            res[ii, jj, idx] = 1
     return res
 
 
