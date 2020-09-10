@@ -15,7 +15,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
     gmm, gmmp = gmm_initialize(X, ncl)
