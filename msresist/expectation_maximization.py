@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
-from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
+from .binomial import assignPeptidesBN, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
 from .motifs import ForegroundSeqs
 
