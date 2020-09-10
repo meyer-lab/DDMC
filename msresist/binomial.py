@@ -36,7 +36,6 @@ AAfreq = {
     "V": 0.068,
 }
 AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
-AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
 def assignPeptidesBN(dataTensor, gmmp, bg_mat):
@@ -75,16 +74,9 @@ def GenerateBinarySeqID(seqs):
     """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
     res = np.zeros((len(seqs), len(AAlist), 11))
     for ii, seq in enumerate(seqs):
-        num_motif = np.array(TranslateMotifsToIdx(seq))
-        for jj in range(len(AAlist)):
-            idx = np.squeeze(np.argwhere(num_motif==jj))
-            res[ii, jj, idx] = 1
+        for pos, aa in enumerate(seq):
+            res[ii, AAlist.index(aa.upper()), pos] = 1
     return res
-
-
-def TranslateMotifsToIdx(motif):
-    """Convert amino acid strings into numbers."""
-    return [AAdict[res.upper()] for res in motif]
 
 
 def BackgroundSeqs(forseqs):
