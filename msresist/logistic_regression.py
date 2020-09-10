@@ -46,7 +46,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 
 
 def plotROC(ax, classifier, d, y, cv_folds=4):
-    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model. 
+    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model.
     Note that it doesn't need to be a logistic regression."""
     d = d.values
     y = y.values
@@ -58,8 +58,8 @@ def plotROC(ax, classifier, d, y, cv_folds=4):
     for i, (train, test) in enumerate(cv.split(d, y)):
         classifier.fit(d[train], y[train])
         viz = plot_roc_curve(classifier, d[test], y[test],
-                         name='ROC fold {}'.format(i),
-                         alpha=0.3, lw=1, ax=ax)
+                             name='ROC fold {}'.format(i),
+                             alpha=0.3, lw=1, ax=ax)
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
@@ -81,5 +81,5 @@ def plotROC(ax, classifier, d, y, cv_folds=4):
                     label=r'$\pm$ 1 std. dev.')
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-        title="Receiver Operating Characteristic")
+           title="Receiver Operating Characteristic")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
