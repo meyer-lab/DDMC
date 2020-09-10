@@ -36,7 +36,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
     for n_iter in range(max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            seq_scores = assignPeptidesBN(dataTensor, gmmp, bg_mat)
+            seq_scores = assignPeptidesBN(dataTensor, scores, bg_mat)
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
 
