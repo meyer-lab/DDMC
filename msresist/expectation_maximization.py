@@ -37,6 +37,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
             seq_scores = assignPeptidesBN(dataTensor, scores, bg_mat)
+            print(seq_scores)
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
 
@@ -45,7 +46,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
         scores = np.exp(scores)
 
         # Probabilities should sum to one across clusters
-        scores /= np.sum(scores, axis=1)[:, np.newaxis]
+        scores /= np.su8uz m(scores, axis=1)[:, np.newaxis]
 
         assert np.all(np.isfinite(scores)), \
             f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
