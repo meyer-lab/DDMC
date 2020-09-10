@@ -3,6 +3,7 @@
 
 import numpy as np
 import pandas as pd
+from scipy.special import betainc
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -38,14 +39,28 @@ AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", 
 AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
-def GenerateBPM(X, bg_pwm):
-    """Generate binomial probability matrix for each cluster of sequences."""
-    return [BinomialMatrix(X[X["Cluster"] == i].shape[0], res_probabilities(X[X["Cluster"] == i]), bg_pwm) for i in range(max(X["Cluster"]) + 1)]
+def assignPeptidesBN(dataTensor, gmmp, bg_mat):
+    """E-step––Do the peptide assignment according to sequence and data"""
+    cluster_foreground = np.tensordot(gmmp.T, dataTensor, axes=1)
+
+    n = dataTensor.shape[0]
+    k = cluster_foreground
+    p = bg_mat
+    probmat = betainc(n - k, k + 1, 1 - p)
+    probmat = np.moveaxis(probmat, 0, 2)
+
+    outP = np.tensordot(dataTensor, probmat, axes=2)
+    return np.log(outP)
 
 
 def position_weight_matrix(seqs):
     """Build PWM of a given set of sequences."""
     return frequencies(seqs).normalize(pseudocounts=AAfreq)
+
+
+def frequencies(seqs):
+    """Build counts matrix of a given set of sequences."""
+    return motifs.create(seqs).counts
 
 
 def InformationContent(seqs):
@@ -65,55 +80,6 @@ def GenerateBinarySeqID(seqs):
             idx = np.squeeze(np.argwhere(num_motif==jj))
             res[ii, jj, idx] = 1
     return res
-
-
-def res_probabilities(X):
-    """Build probabilities of membership matrix."""
-    res = np.zeros((len(AAlist), 11), dtype=float)
-    for i, aa in enumerate(AAlist):
-        for pos in range(11):
-            res[i, pos] = X[X["Sequence"].str[pos] == aa]["Score"].sum()
-    return res
-
-
-def frequencies(seqs):
-    """Build counts matrix of a given set of sequences."""
-    return motifs.create(seqs).counts
-
-
-def BinomialMatrix(n, k, p):
-    """Build binomial probability matrix. Note n is the number of sequences,
-    k is the counts matrix of the MS data set, p is the pwm of the background."""
-    assert list(p.keys()) == AAlist
-    p = np.array(list(p.values()))
-    return betainc(n - k, k + 1, 1 - p)
-
-
-def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):
-    """Identify the most significant residue/position pairs acroos the binomial
-    probability matrix meeting a probability and a occurence threshold"""
-    motif = list("X" * 11)
-    positions = list(BMP.columns[1:])
-    AA = list(BMP.iloc[:, 0])
-    BMP = BMP.iloc[:, 1:]
-    for i in range(len(positions)):
-        DoS = BMP.iloc[:, i].min()
-        j = BMP[BMP.iloc[:, i] == DoS].index[0]
-        aa = AA[j]
-        if DoS < pvalCut or DoS == 0.0 and freqs.iloc[j, i] >= occurCut:
-            motif[i] = aa
-        else:
-            motif[i] = "x"
-
-    return "".join(motif)
-
-
-def MeanBinomProbs(BPM, motif):
-    """Take the mean of all pvalues corresponding to each motif residue."""
-    probs = 0.0
-    for i, aa in enumerate(motif):
-        probs += BPM[aa, i]
-    return probs / len(motif)
 
 
 def TranslateMotifsToIdx(motif):
@@ -184,16 +150,3 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             t_seqs.append(Seq(motif, IUPAC.protein))
 
     return y_seqs + s_seqs + t_seqs
-
-
-def assignPeptidesBN(ncl, sequences, binomials):
-    """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros((len(sequences), ncl))
-    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-    for j, motif in enumerate(sequences):
-        NumMotif = TranslateMotifsToIdx(motif)
-
-        for z in range(ncl):
-            seq_scores[j, z] = MeanBinomProbs(binomials[z], NumMotif)
-
-    return seq_scores

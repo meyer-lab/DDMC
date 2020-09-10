@@ -3,7 +3,6 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
-from scipy.special import betainc
 from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
 from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
@@ -37,17 +36,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
     for n_iter in range(max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            cluster_foreground = np.tensordot(gmmp.T, dataTensor, axes=1)
-
-            # n, k, p should be defined as though we used a binomial distribution
-            n = dataTensor.shape[0]
-            k = cluster_foreground
-            p = bg_mat
-            probmat = betainc(n - k, k + 1, 1 - p)
-            probmat = np.moveaxis(probmat, 0, 2)
-
-            outP = np.tensordot(dataTensor, probmat, axes=2)
-            seq_scores = np.log(outP)
+            seq_scores = assignPeptidesBN(dataTensor, gmmp, bg_mat)
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
 
