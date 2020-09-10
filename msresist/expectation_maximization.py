@@ -52,14 +52,13 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
         assert np.all(np.isfinite(gmmp)), \
             f"gmmp not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
-        print(n_iter, scores)
         if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 1e-8:
-            return scores
+            return scores, seq_scores, gmm
 
         final_scores_last = np.copy(scores)
 
     print(f"convergence has not been reached. Clusters: {ncl} SeqWeight: {SeqWeight}")
-    return scores
+    return scores, seq_scores, gmm
 
 
 def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
