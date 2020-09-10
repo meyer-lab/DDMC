@@ -3,9 +3,10 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
+from scipy.special import betainc
 from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
-from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
+from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
 from .motifs import ForegroundSeqs
 
@@ -14,21 +15,39 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
     gmm, gmmp = gmm_initialize(X, ncl)
     scores = gmmp
 
     if type(background) == bool:
-        background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
+        seqs = [s.upper() for s in X["Sequence"]]
+
+        if distance_method == "Binomial":
+            # Background sequences
+            background = position_weight_matrix(BackgroundSeqs(X["Sequence"]))
+            bg_mat = np.array([background[AA] for AA in AAlist])
+            dataTensor = GenerateBinarySeqID(seqs)
+
+        elif distance_method == "PAM250":
+            # Compute all pairwise distances and generate seq vs seq to score dictionary
+            background = MotifPam250Scores(seqs)
 
     # EM algorithm
     for n_iter in range(max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            binoM = GenerateBPM(scores, background)
-            seq_scores = np.log(assignPeptidesBN(ncl, sequences, binoM))
+            cluster_foreground = np.tensordot(gmmp.T, dataTensor, axes=1)
+
+            # n, k, p should be defined as though we used a binomial distribution
+            n = dataTensor.shape[0]
+            k = cluster_foreground
+            p = bg_mat
+            probmat = betainc(n - k, k + 1, 1 - p)
+            probmat = np.moveaxis(probmat, 0, 2)
+
+            outP = np.tensordot(dataTensor, probmat, axes=2)
+            seq_scores = np.log(outP)
         else:
             seq_scores = assignPeptidesPAM(ncl, scores, background)
 
@@ -50,22 +69,9 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, max_n
             f"gmmp not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
         if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 1e-8:
-            return scores
+            return scores, seq_scores, gmm
 
         final_scores_last = np.copy(scores)
 
     print(f"convergence has not been reached. Clusters: {ncl} SeqWeight: {SeqWeight}")
-    return scores
-
-
-def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
-    if distance_method == "Binomial":
-        # Background sequences
-        bg_seqs = BackgroundSeqs(sequences)
-        bg_pwm = position_weight_matrix(bg_seqs)
-
-    elif distance_method == "PAM250":
-        # Compute all pairwise distances and generate seq vs seq to score dictionary
-        seqs = [s.upper() for s in sequences]
-        bg_pwm = MotifPam250Scores(seqs)
-    return bg_pwm
+    return scores, seq_scores, gmm

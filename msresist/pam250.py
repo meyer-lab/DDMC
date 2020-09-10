@@ -60,8 +60,7 @@ def assignPeptidesPAM(ncl, scores, Seq1Seq2ToScore):
     seq_scores = np.zeros((Seq1Seq2ToScore.shape[0], ncl))
 
     # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-    for j in range(Seq1Seq2ToScore.shape[0]):
-        for z in range(ncl):
-            seq_scores[j, z] = np.average(Seq1Seq2ToScore[j, :], weights=scores[:, z])
+    for z in range(ncl):
+        seq_scores[:, z] = np.average(Seq1Seq2ToScore, weights=scores[:, z], axis=0)
 
     return seq_scores
