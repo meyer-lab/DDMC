@@ -4,7 +4,7 @@ import os
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
+from .binomial import AAlist
 
 
 
@@ -31,30 +31,6 @@ def FormatName(X):
 def FormatSeq(X):
     """ Deleting -1/-2 for mapping to uniprot's proteome"""
     return [v.split("-")[0] for v in X["Sequence"]]
-
-
-def CountPsiteTypes(X, cA):
-    """ Count number of different phosphorylation types in a MS data set."""
-    pS = 0
-    pT = 0
-    pY = 0
-    primed = 0
-
-    for seq in X:
-        if "s" in seq[cA]:
-            pS += 1
-        if "y" in seq[cA]:
-            pY += 1
-        if "t" in seq[cA]:
-            pT += 1
-        pp = 0
-        for i in seq:
-            if i.islower():
-                pp += 1
-        if pp > 1:
-            primed += 1
-
-    return pY, pS, pT, primed
 
 
 def DictProteomeNameToSeq(X, n):
@@ -230,5 +206,5 @@ def ForegroundSeqs(sequences):
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
         assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
-        seqs.append(Seq(motif, IUPAC.protein))
+        seqs.append(Seq(motif, alphabet=AAlist))
     return seqs

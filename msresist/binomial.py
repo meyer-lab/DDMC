@@ -6,7 +6,6 @@ import pandas as pd
 import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
-from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -140,3 +139,27 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             t_seqs.append(Seq(motif))
 
     return y_seqs + s_seqs + t_seqs
+
+
+def CountPsiteTypes(X, cA):
+    """ Count number of different phosphorylation types in a MS data set."""
+    pS = 0
+    pT = 0
+    pY = 0
+    primed = 0
+
+    for seq in X:
+        if "s" in seq[cA]:
+            pS += 1
+        if "y" in seq[cA]:
+            pY += 1
+        if "t" in seq[cA]:
+            pT += 1
+        pp = 0
+        for i in seq:
+            if i.islower():
+                pp += 1
+        if pp > 1:
+            primed += 1
+
+    return pY, pS, pT, primed
