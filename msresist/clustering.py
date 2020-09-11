@@ -10,7 +10,6 @@ from Bio import motifs
 from .motifs import ForegroundSeqs
 from .binomial import assignPeptidesBN, position_weight_matrix, AAlist, BackgroundSeqs, GenerateBinarySeqID
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
-from .gmm import gmm_initialize
 
 
 # pylint: disable=W0201
