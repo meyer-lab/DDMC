@@ -63,7 +63,7 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, FCto)
+        X = VFilter(X, merging_indices, data_headers)
 
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
@@ -166,20 +166,20 @@ def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
 
-def VFilter(ABC, merging_indices, data_headers, FCto):
+def VFilter(ABC, merging_indices, data_headers):
     """ Filter based on variability across recurrent peptides in MS biological replicates """
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
-    NonRecTable = BuildMatrix(NonRecPeptides, ABC, data_headers, FCto)
+    NonRecTable = BuildMatrix(NonRecPeptides, ABC, data_headers)
     NonRecTable = NonRecTable.assign(BioReps=list("1" * NonRecTable.shape[0]))
     NonRecTable = NonRecTable.assign(r2_Std=list(["N/A"] * NonRecTable.shape[0]))
 
-    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
+    CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers)
     DupsTable = CorrCoefFilter(CorrCoefPeptides, corrCut=0.6)
     DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices + ["r2_Std"])
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
-    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
+    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"], stdCut=0.4)
 
@@ -207,7 +207,7 @@ def MapOverlappingPeptides(ABC):
     return NonRecPeptides, RangePeptides, StdPeptides
 
 
-def BuildMatrix(peptides, ABC, data_headers, FCto):
+def BuildMatrix(peptides, ABC, data_headers):
     """ Map identified recurrent peptides to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     ABC = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False)

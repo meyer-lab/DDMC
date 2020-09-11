@@ -13,7 +13,8 @@ from .common import subplotLabel, getSetup
 from .figure3 import plotR2YQ2Y, plotPCA
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
-from ..expectation_maximization import GenerateSeqBackgroundAndPAMscores
+from ..binomial import position_weight_matrix, GenerateBinarySeqID, AAlist, BackgroundSeqs
+from ..pam250 import MotifPam250Scores
 
 
 def makeFigure():
@@ -249,7 +250,20 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
     x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
     d = md.select_dtypes(include=['float64'])
     i = md.select_dtypes(include=['object'])
-    background = GenerateSeqBackgroundAndPAMscores(md["Sequence"], distance_method)
+
+    # Pre-compute background
+    seqs = [s.upper() for s in X["Sequence"]]
+    if distance_method == "Binomial":
+        # Background sequences
+        bg = position_weight_matrix(BackgroundSeqs(md["Sequence"]))
+        bg_mat = np.array([bg[AA] for AA in AAlist])
+        dataTensor = GenerateBinarySeqID(seqs)
+        background = False
+    elif distance_method == "PAM250":
+        # Compute all pairwise distances and generate seq vs seq to score dictionary
+        background = MotifPam250Scores(seqs)
+        bg_mat = False
+        dataTensor = False
 
     model_res = np.zeros((len(clusters), 3))
     base_res = np.zeros((len(clusters), 2))
@@ -258,7 +272,8 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
         base_res[idx, 0] = int(cluster)
         model_res[idx, 0] = int(cluster)
         model = MassSpecClustering(
-            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, background=background
+            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, 
+            background=background, bg_mat=bg_mat, dataTensor=dataTensor
         ).fit(d.T, "NA")
         if all(model.converge_):
             model_res[idx, 1] = 0
