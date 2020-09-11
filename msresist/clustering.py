@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import glob
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering
@@ -10,7 +9,6 @@ from Bio import motifs
 from .motifs import ForegroundSeqs
 from .binomial import assignPeptidesBN, position_weight_matrix, AAlist, BackgroundSeqs, GenerateBinarySeqID
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
-from .gmm import gmm_initialize
 
 
 # pylint: disable=W0201
@@ -97,14 +95,14 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    def runSeqScore(self, sequences, seqs):
+    def runSeqScore(self, sequences):
         if self.distance_method == "Binomial":
-            background = position_weight_matrix(BackgroundSeqs(X["Sequence"]))
+            background = position_weight_matrix(BackgroundSeqs(sequences))
             bg_mat = np.array([background[AA] for AA in AAlist])
-            dataTensor = GenerateBinarySeqID(seqs)
+            dataTensor = GenerateBinarySeqID(sequences)
             seq_scores = assignPeptidesBN(dataTensor, self.scores_, bg_mat)
         else:
-            background = MotifPam250Scores(seqs)
+            background = MotifPam250Scores(sequences)
             seq_scores = assignPeptidesPAM(self.ncl, self.scores_, background)
 
         return seq_scores

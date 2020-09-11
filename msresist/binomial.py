@@ -7,7 +7,6 @@ from scipy.special import betainc
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
-from scipy.special import betainc
 from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146

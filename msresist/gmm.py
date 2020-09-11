@@ -2,7 +2,6 @@
 
 import numpy as np
 from pomegranate import GeneralMixtureModel, NormalDistribution
-from msresist.motifs import ForegroundSeqs
 
 
 def gmm_initialize(X, ncl):

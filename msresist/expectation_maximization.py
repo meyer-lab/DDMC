@@ -3,11 +3,9 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
 from .binomial import assignPeptidesBN, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
-from .motifs import ForegroundSeqs
 
 
 def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_mat, dataTensor, max_n_iter=2000):
