@@ -110,11 +110,8 @@ class MassSpecClustering(BaseEstimator):
     def predict(self, data, sequences, _Y=None):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-        seqs = ForegroundSeqs(sequences)
-        cl_seqs_ = self.cl_seqs(sequences)
-        cl_seqs_ = [ForegroundSeqs(cl_seqs_[i]) for i in range(self.ncl)]
         gmmp = self.gmm_.predict_proba(data.T)
-        seq_scores = self.runSeqScore(seqs, cl_seqs_)
+        seq_scores = self.runSeqScore(sequences)
         final_scores = seq_scores * self.SeqWeight + gmmp
 
         return np.argmax(final_scores, axis=1)
@@ -123,9 +120,6 @@ class MassSpecClustering(BaseEstimator):
         """Generate score of the fitting. If PAM250, the score is the averaged PAM250 score across peptides. If Binomial,
         the score is the mean binomial p-value across peptides"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-        seqs = ForegroundSeqs(sequences)
-        cl_seqs_ = self.cl_seqs(sequences)
-        cl_seqs_ = [ForegroundSeqs(cl_seqs_[i]) for i in range(self.ncl)]
         gmmp = self.gmm_.predict_proba(data.T)
         seq_scores = self.runSeqScore(seqs, cl_seqs_)
         final_scores = seq_scores * self.SeqWeight + gmmp
