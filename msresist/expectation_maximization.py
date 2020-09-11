@@ -3,128 +3,62 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import adjusted_rand_score
 from .gmm import gmm_initialize, m_step
-from .binomial import assignPeptidesBN, GenerateBPM, BackgroundSeqs, position_weight_matrix
+from .binomial import assignPeptidesBN, BackgroundSeqs, position_weight_matrix, GenerateBinarySeqID, AAlist
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
-from .motifs import ForegroundSeqs
 
 
-def EM_clustering_opt(data, info, ncl, SeqWeight, distance_method, max_n_iter, n_runs, background):
-    """ Run Coclustering n times and return the best fit. """
-    scores, products = [], []
-    for _ in range(n_runs):
-        converge, cl_seqs, labels, score, n_iter, gmmp, wins = EM_clustering(
-            data, info, ncl, SeqWeight, distance_method, max_n_iter, background
-        )
-        scores.append(score)
-        products.append([converge, cl_seqs, labels, score, n_iter, gmmp, wins])
-
-    idx = np.argmax(scores)
-    return products[idx][0], products[idx][1], products[idx][2], products[idx][3], products[idx][4], products[idx][5], products[idx][6]
-
-
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, max_n_iter, background):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_mat, dataTensor, max_n_iter=2000):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     X = pd.concat([info, data.T], axis=1)
     d = np.array(data.T)
-    sequences = ForegroundSeqs(list(X["Sequence"]))
 
     # Initialize model
-    gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-    if not gmm_converge:
-        return (gmm_converge, False), np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
-    if isinstance(background, bool):
-        background = GenerateSeqBackgroundAndPAMscores(X["Sequence"], distance_method)
+    gmm, gmmp = gmm_initialize(X, ncl)
+    scores = gmmp
+
+    if type(background) == bool:
+        seqs = [s.upper() for s in X["Sequence"]]
+
+        if distance_method == "Binomial":
+            # Background sequences
+            background = position_weight_matrix(BackgroundSeqs(X["Sequence"]))
+            bg_mat = np.array([background[AA] for AA in AAlist])
+            dataTensor = GenerateBinarySeqID(seqs)
+
+        elif distance_method == "PAM250":
+            # Compute all pairwise distances and generate seq vs seq to score dictionary
+            background = MotifPam250Scores(seqs)
 
     # EM algorithm
-    store_labels = []
     for n_iter in range(max_n_iter):
         # E step: Assignment of each peptide based on data and seq
         if distance_method == "Binomial":
-            binoM = GenerateBPM(cl_seqs, background)
-            seq_scores = assignPeptidesBN(ncl, sequences, binoM)
+            seq_scores = assignPeptidesBN(dataTensor, scores, bg_mat)
         else:
-            seq_scores = assignPeptidesPAM(ncl, cl_seqs, background, labels)
+            seq_scores = assignPeptidesPAM(ncl, scores, background)
 
-        final_scores = seq_scores * SeqWeight + gmmp
-        SeqIdx = np.argmax(seq_scores, axis=1)
-        labels = np.argmax(final_scores, axis=1)
-        DataIdx = np.argmax(gmmp, axis=1)
-        scores = np.max(final_scores, axis=1)
+        # seq_scores is log-likelihood, logaddexp to avoid roundoff error
+        scores = np.logaddexp(seq_scores * SeqWeight, np.log(gmmp))
+        scores = np.exp(scores)
+
+        # Probabilities should sum to one across clusters
+        scores /= np.sum(scores, axis=1)[:, np.newaxis]
 
         assert np.all(np.isfinite(scores)), \
             f"Final scores not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
-        cl_seqs = [[] for i in range(ncl)]
-        for j, motif in enumerate(sequences):
-            cl_seqs[labels[j]].append(motif)
-
-        # Count wins
-        SeqWins = np.sum((SeqIdx == labels) & (DataIdx != labels))
-        DataWins = np.sum((DataIdx == labels) & (SeqIdx != labels))
-        BothWin = np.sum((DataIdx == labels) & (SeqIdx == labels))
-        MixWins = np.sum((DataIdx != labels) & (SeqIdx != labels))
-
-        # Assert there are at least three peptides per cluster, otherwise re-initialize algorithm
-        if True in [len(sl) < 3 for sl in cl_seqs]:
-            print(f"Re-initialize GMM clusters, empty cluster(s) at iteration {n_iter}")
-            gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-            store_labels = []
-
-        # Store current results
-        store_labels.append(labels)
-        wins = (SeqWins, DataWins, BothWin, MixWins)
-
         # M step: Update motifs, cluster centers, and gmm probabilities
-        m_step(d, gmm, HardAssignments(labels, ncl))
+        m_step(d, gmm, scores)
         gmmp = gmm.predict_proba(d)
 
-        if True in np.isnan(gmmp):
-            print(f"Re-initialize GMM, NaN responsibilities at iteration {n_iter}")
-            gmm_converge, gmm, cl_seqs, gmmp, labels = gmm_initialize(X, ncl)
-            store_labels = []
+        assert np.all(np.isfinite(gmmp)), \
+            f"gmmp not finite, seq_scores = {seq_scores}, gmmp = {gmmp}"
 
-        if len(store_labels) > 9:
-            # Check convergence
-            converge = False
-            for i in range(4):
-                if adjusted_rand_score(store_labels[-1], store_labels[-i]) == 1:
-                    converge = True
-                    break
+        if n_iter > 3 and np.linalg.norm(final_scores_last - scores) < 1e-8:
+            return scores, seq_scores, gmm
 
-            if converge:
-                cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-                return (gmm_converge, converge), cl_seqs, labels, np.mean(scores), n_iter, gmm, wins
+        final_scores_last = np.copy(scores)
 
-    converge = False
-    print("convergence has not been reached. Clusters: %s SeqWeight: %s" % (ncl, SeqWeight))
-    cl_seqs = [[str(seq) for seq in cluster] for cluster in cl_seqs]
-    return (gmm_converge, converge), cl_seqs, np.array(labels), np.mean(scores), n_iter, gmm, wins
-
-
-def HardAssignments(labels, ncl):
-    """ Generate a responsibility matrix with hard assignments,
-    i.e. 1 for assignments, 0 otherwise. """
-    m = np.zeros((len(labels), ncl))
-
-    for ii, idx in enumerate(labels):
-        m[ii, idx] = 1.0
-
-    assert np.all(np.sum(m, axis=0) >= 1.0)
-    assert np.all(np.sum(m, axis=1) == 1.0)
-
-    return m
-
-
-def GenerateSeqBackgroundAndPAMscores(sequences, distance_method):
-    if distance_method == "Binomial":
-        # Background sequences
-        bg_seqs = BackgroundSeqs(sequences)
-        bg_pwm = position_weight_matrix(bg_seqs)
-
-    elif distance_method == "PAM250":
-        # Compute all pairwise distances and generate seq vs seq to score dictionary
-        seqs = [s.upper() for s in sequences]
-        bg_pwm = MotifPam250Scores(seqs)
-    return bg_pwm
+    print(f"convergence has not been reached. Clusters: {ncl} SeqWeight: {SeqWeight}")
+    return scores, seq_scores, gmm

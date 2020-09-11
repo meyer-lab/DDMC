@@ -147,7 +147,7 @@ def makeFigure():
     SeqWeight = 0.5
     ncomp = 2
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(d, y)
     centers = MSC.transform(d)
 
     plsr = PLSRegression(n_components=ncomp, scale=False)
@@ -500,7 +500,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     """Fit model and compute error during ArtificialMissingness"""
     i = md.select_dtypes(include=['object'])
     d = md.select_dtypes(include=['float64']).T
-    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method, n_runs=1).fit(d, "NA")
+    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method).fit(d, "NA")
     print(model.wins_)
     z = x.copy()
     z["Cluster"] = model.labels_
@@ -520,7 +520,7 @@ def WinsByWeight(i, d, weigths, distance_method):
     W = []
     for w in weigths:
         print(w)
-        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method, n_runs=1).fit(d, "NA")
+        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method).fit(d, "NA")
         won = model.wins_
         W.append(w)
         wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))

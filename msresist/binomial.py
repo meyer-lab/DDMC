@@ -3,10 +3,10 @@
 
 import numpy as np
 import pandas as pd
+import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
-from scipy.stats import binom
 from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
@@ -35,17 +35,30 @@ AAfreq = {
     "V": 0.068,
 }
 AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
-AAdict = dict(zip(AAlist, np.arange(len(AAlist))))
 
 
-def GenerateBPM(cl_seqs, bg_pwm):
-    """ Generate binomial probability matrix for each cluster of sequences """
-    return [BinomialMatrix(len(seqs), frequencies(seqs), bg_pwm) for seqs in cl_seqs]
+def assignPeptidesBN(dataTensor, gmmp, bg_mat):
+    """E-step––Do the peptide assignment according to sequence and data"""
+    cluster_foreground = np.tensordot(gmmp.T, dataTensor, axes=1)
+
+    n = dataTensor.shape[0]
+    k = cluster_foreground
+    p = bg_mat
+    probmat = sc.betainc(n - k, k + 1, 1 - p)
+    probmat = np.moveaxis(probmat, 0, 2)
+
+    outP = np.tensordot(dataTensor, probmat, axes=2)
+    return np.log(outP)
 
 
 def position_weight_matrix(seqs):
-    """ Build PWM of a given set of sequences. """
+    """Build PWM of a given set of sequences."""
     return frequencies(seqs).normalize(pseudocounts=AAfreq)
+
+
+def frequencies(seqs):
+    """Build counts matrix of a given set of sequences."""
+    return motifs.create(seqs).counts
 
 
 def InformationContent(seqs):
@@ -56,59 +69,22 @@ def InformationContent(seqs):
     return pssm.mean(AAfreq)
 
 
-def frequencies(seqs):
-    """ Build counts matrix of a given set of sequences. """
-    return motifs.create(seqs).counts
-
-
-def BinomialMatrix(n, k, p):
-    """ Build binomial probability matrix. Note n is the number of sequences,
-    k is the counts matrix of the MS data set, p is the pwm of the background. """
-    assert list(k.keys()) == AAlist
-    assert list(p.keys()) == list(k.keys())
-    BMP = binom.cdf(k=list(k.values()), n=n, p=list(p.values()), loc=0)
-    return BMP
-
-
-def ExtractMotif(BMP, freqs, pvalCut=10 ** (-4), occurCut=7):
-    """ Identify the most significant residue/position pairs acroos the binomial
-    probability matrix meeting a probability and a occurence threshold."""
-    motif = list("X" * 11)
-    positions = list(BMP.columns[1:])
-    AA = list(BMP.iloc[:, 0])
-    BMP = BMP.iloc[:, 1:]
-    for i in range(len(positions)):
-        DoS = BMP.iloc[:, i].min()
-        j = BMP[BMP.iloc[:, i] == DoS].index[0]
-        aa = AA[j]
-        if DoS < pvalCut or DoS == 0.0 and freqs.iloc[j, i] >= occurCut:
-            motif[i] = aa
-        else:
-            motif[i] = "x"
-
-    return "".join(motif)
-
-
-def MeanBinomProbs(BPM, motif):
-    """ Take the mean of all pvalues corresponding to each motif residue. """
-    probs = 0.0
-    for i, aa in enumerate(motif):
-        probs += BPM[aa, i]
-    return probs / len(motif)
-
-
-def TranslateMotifsToIdx(motif):
-    """ Convert amino acid strings into numbers. """
-    return [AAdict[res.upper()] for res in motif]
+def GenerateBinarySeqID(seqs):
+    """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
+    res = np.zeros((len(seqs), len(AAlist), 11))
+    for ii, seq in enumerate(seqs):
+        for pos, aa in enumerate(seq):
+            res[ii, AAlist.index(aa.upper()), pos] = 1
+    return res
 
 
 def BackgroundSeqs(forseqs):
-    """ Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
+    """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
-    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926 """
+    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926"""
     # Get porportion of psite types in foreground set
     forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -144,7 +120,7 @@ def BackgroundSeqs(forseqs):
 
 
 def BackgProportions(refseqs, pYn, pSn, pTn):
-    """ Provided the proportions, add peptides to background set. """
+    """Provided the proportions, add peptides to background set."""
     y_seqs, s_seqs, t_seqs = [], [], []
     pR = ["y", "t", "s"]
     for seq in refseqs:
@@ -165,16 +141,3 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             t_seqs.append(Seq(motif, IUPAC.protein))
 
     return y_seqs + s_seqs + t_seqs
-
-
-def assignPeptidesBN(ncl, sequences, binomials):
-    """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros((len(sequences), ncl))
-    # Binomial Probability Matrix distance (p-values) between foreground and background sequences
-    for j, motif in enumerate(sequences):
-        NumMotif = TranslateMotifsToIdx(motif)
-
-        for z in range(ncl):
-            seq_scores[j, z] = MeanBinomProbs(binomials[z], NumMotif)
-
-    return seq_scores
