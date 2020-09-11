@@ -3,7 +3,7 @@
 
 import numpy as np
 import pandas as pd
-from scipy.special import betainc
+import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -44,7 +44,7 @@ def assignPeptidesBN(dataTensor, gmmp, bg_mat):
     n = dataTensor.shape[0]
     k = cluster_foreground
     p = bg_mat
-    probmat = betainc(n - k, k + 1, 1 - p)
+    probmat = sc.betainc(n - k, k + 1, 1 - p)
     probmat = np.moveaxis(probmat, 0, 2)
 
     outP = np.tensordot(dataTensor, probmat, axes=2)
