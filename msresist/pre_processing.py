@@ -211,6 +211,7 @@ def BuildMatrix(peptides, ABC, data_headers):
     """ Map identified recurrent peptides to generate complete matrices with values.
     If recurrent peptides = 2, the correlation coefficient is included in a new column. """
     ABC = ABC.reset_index().set_index(["Sequence", "Protein"], drop=False)
+    ABC = ABC.sort_index()
 
     corrcoefs, peptideslist, bioReps = [], [], []
     for idx, seq in enumerate(peptides.iloc[:, 1]):
