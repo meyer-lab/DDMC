@@ -6,7 +6,6 @@ import pandas as pd
 import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
 from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
@@ -58,7 +57,7 @@ def position_weight_matrix(seqs):
 
 def frequencies(seqs):
     """Build counts matrix of a given set of sequences."""
-    return motifs.create(seqs).counts
+    return motifs.create(seqs, alphabet=AAlist).counts
 
 
 def InformationContent(seqs):
@@ -132,12 +131,12 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
-            y_seqs.append(Seq(motif, IUPAC.protein))
+            y_seqs.append(Seq(motif))
 
         if motif[5] == "S" and len(s_seqs) < pSn:
-            s_seqs.append(Seq(motif, IUPAC.protein))
+            s_seqs.append(Seq(motif))
 
         if motif[5] == "T" and len(t_seqs) < pTn:
-            t_seqs.append(Seq(motif, IUPAC.protein))
+            t_seqs.append(Seq(motif))
 
     return y_seqs + s_seqs + t_seqs

@@ -4,7 +4,6 @@ import os
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -229,5 +228,5 @@ def ForegroundSeqs(sequences):
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
         assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
-        seqs.append(Seq(motif, IUPAC.protein))
+        seqs.append(Seq(motif))
     return seqs
