@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from .expectation_maximization import EM_clustering
 from Bio import motifs
+from .expectation_maximization import EM_clustering
 from .motifs import ForegroundSeqs
 from .binomial import assignPeptidesBN, position_weight_matrix, AAlist, BackgroundSeqs, GenerateBinarySeqID
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
