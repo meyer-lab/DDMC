@@ -57,7 +57,7 @@ def position_weight_matrix(seqs):
 
 def frequencies(seqs):
     """Build counts matrix of a given set of sequences."""
-    return motifs.create(seqs).counts
+    return motifs.create(seqs, alphabet=AAlist).counts
 
 
 def InformationContent(seqs):
