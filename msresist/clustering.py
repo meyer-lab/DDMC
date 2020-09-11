@@ -28,11 +28,13 @@ class MassSpecClustering(BaseEstimator):
         self.distance_method = distance_method
         self.max_n_iter = max_n_iter
         self.background = background
+        self.bg_mat = bg_mat
+        self.dataTensor = dataTensor
 
     def fit(self, X, y=None):
         """Compute EM clustering"""
         self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(
-            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.max_n_iter
+            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor, self.max_n_iter
         )
         return self
 
