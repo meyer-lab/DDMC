@@ -121,7 +121,7 @@ class MassSpecClustering(BaseEstimator):
         the score is the mean binomial p-value across peptides"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
         gmmp = self.gmm_.predict_proba(data.T)
-        seq_scores = self.runSeqScore(seqs, cl_seqs_)
+        seq_scores = self.runSeqScore(sequences)
         final_scores = seq_scores * self.SeqWeight + gmmp
 
         return np.mean(np.max(final_scores, axis=1))
