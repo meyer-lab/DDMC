@@ -63,7 +63,7 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, FCto)
+        X = VFilter(X, merging_indices, data_headers)
 
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
@@ -166,7 +166,7 @@ def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
 
-def VFilter(ABC, merging_indices, data_headers, FCto):
+def VFilter(ABC, merging_indices, data_headers):
     """ Filter based on variability across recurrent peptides in MS biological replicates """
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
