@@ -7,6 +7,17 @@ import numpy as np
 from Bio.SubsMat import MatrixInfo
 
 
+def assignPeptidesPAM(ncl, scores, Seq1Seq2ToScore):
+    """E-step––Do the peptide assignment according to sequence and data"""
+    seq_scores = np.zeros((Seq1Seq2ToScore.shape[0], ncl))
+
+    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
+    for z in range(ncl):
+        seq_scores[:, z] = np.average(Seq1Seq2ToScore, weights=scores[:, z], axis=0)
+
+    return seq_scores
+
+
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
     n = len(seqs)
@@ -53,18 +64,3 @@ def pairwise_score(seq1: str, seq2: str) -> float:
         else:
             score += MatrixInfo.pam250[(b, a)]
     return score
-
-
-def assignPeptidesPAM(ncl, cl_seqs, Seq1Seq2ToScore, labels):
-    """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros((Seq1Seq2ToScore.shape[0], ncl))
-
-    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-    for j in range(Seq1Seq2ToScore.shape[0]):
-        for z in range(ncl):
-            seq_scores[j, z] = np.sum(Seq1Seq2ToScore[j, labels == z])
-
-    for z in range(ncl):
-        seq_scores[:, z] /= len(cl_seqs[z])  # average score per cluster
-
-    return seq_scores
