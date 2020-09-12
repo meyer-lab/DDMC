@@ -29,11 +29,19 @@ class MassSpecClustering(BaseEstimator):
         self.bg_mat = bg_mat
         self.dataTensor = dataTensor
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(
-            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor, self.max_n_iter
-        )
+        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor, self.max_n_iter)
+
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(*params)
+
+        for _ in range(nRepeats):
+            out = EM_clustering(*params)
+
+            # Use the new result if it's better
+            if out[0] > self.avgScores_:
+                self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = out
+
         return self
 
     def wins(self, d):
