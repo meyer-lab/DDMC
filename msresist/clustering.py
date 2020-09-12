@@ -19,19 +19,18 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=500, background=False, bg_mat=False, dataTensor=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, bg_mat=False, dataTensor=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.max_n_iter = max_n_iter
         self.background = background
         self.bg_mat = bg_mat
         self.dataTensor = dataTensor
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor, self.max_n_iter)
+        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor)
 
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(*params)
 
@@ -140,8 +139,7 @@ class MassSpecClustering(BaseEstimator):
             "info": self.info,
             "ncl": self.ncl,
             "SeqWeight": self.SeqWeight,
-            "distance_method": self.distance_method,
-            "max_n_iter": self.max_n_iter,
+            "distance_method": self.distance_method
         }
 
     def set_params(self, **parameters):

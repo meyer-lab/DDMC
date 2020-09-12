@@ -3,7 +3,8 @@
 
 import numpy as np
 import pandas as pd
-import scipy.special as sc
+import scipy.stats as sp
+from scipy.special import betainc
 from Bio import motifs
 from Bio.Seq import Seq
 from .motifs import CountPsiteTypes
@@ -43,7 +44,7 @@ def assignPeptidesBN(dataTensor, gmmp, bg_mat):
     n = dataTensor.shape[0]
     k = cluster_foreground
     p = bg_mat
-    probmat = sc.betainc(n - k, k + 1, 1 - p)
+    probmat = betainc(n - k, k + 1, 1 - p)
     probmat = np.moveaxis(probmat, 0, 2)
 
     outP = np.tensordot(dataTensor, probmat, axes=2)
@@ -140,3 +141,39 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
             t_seqs.append(Seq(motif))
 
     return y_seqs + s_seqs + t_seqs
+
+
+class Binomial():
+    def __init__(self, info, background, SeqWeight):
+        self.d = 1
+        self.name = "Binomial"
+        self.SeqWeight = SeqWeight
+
+        if type(background) == bool:
+            seqs = [s.upper() for s in info["Sequence"]]
+
+            # Background sequences
+            background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
+            self.bg_mat = np.array([background[AA] for AA in AAlist])
+            self.dataTensor = GenerateBinarySeqID(seqs)
+
+        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+        self.from_summaries()
+
+    def summarize(self, X, weights):
+        self.weights = weights
+
+    def log_probability(self, X):
+        return self.SeqWeight * self.weights[int(np.squeeze(X))]
+
+    def from_summaries(self, inertia=0.0):
+        """ Update the underlying distribution. """
+        ps = np.exp(np.atleast_2d(self.weights).T)
+        ps /= np.sum(ps)
+
+        newW = np.squeeze(assignPeptidesBN(self.dataTensor, ps, self.bg_mat))
+        self.weights = self.weights * inertia + newW * (1.0 - inertia)
+    
+    def clear_summaries(self):
+        """ Clear the summary statistics stored in the object. Not needed here. """
+        return
