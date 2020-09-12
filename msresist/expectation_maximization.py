@@ -30,6 +30,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_ma
     gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
     scores = gmm.predict_proba(d)
 
+    seq_scores = np.exp([dd[-1].weights for dd in gmm.distributions])
     avgScore = np.sum(gmm.log_probability(d))
 
-    return avgScore, scores, None, gmm
+    return avgScore, scores, seq_scores, gmm
