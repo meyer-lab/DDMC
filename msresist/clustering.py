@@ -51,7 +51,6 @@ class MassSpecClustering(BaseEstimator):
 
         return (SeqWins, DataWins, BothWin, MixWins)
 
-
     def labels(self):
         """Find cluster assignments"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
@@ -141,6 +140,7 @@ class MassSpecClustering(BaseEstimator):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         return self
+
 
 def ClusterAverages(X, labels):
     """Calculate cluster averages and dictionary with cluster members and sequences"""
