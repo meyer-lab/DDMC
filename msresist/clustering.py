@@ -156,6 +156,7 @@ class MassSpecClustering(BaseEstimator):
             setattr(self, parameter, value)
         return self
 
+
 def ClusterAverages(X, labels):
     """Calculate cluster averages and dictionary with cluster members and sequences"""
     X = X.T.assign(cluster=labels)

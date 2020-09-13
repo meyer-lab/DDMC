@@ -272,7 +272,7 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
         base_res[idx, 0] = int(cluster)
         model_res[idx, 0] = int(cluster)
         model = MassSpecClustering(
-            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, 
+            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter,
             background=background, bg_mat=bg_mat, dataTensor=dataTensor
         ).fit(d.T, "NA")
         if all(model.converge_):
