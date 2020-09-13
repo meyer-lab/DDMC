@@ -100,7 +100,6 @@ class MassSpecClustering(BaseEstimator):
 
         for ii, spec_profile in enumerate(PSPLs.values()):
             sp = np.log10(np.power(2, spec_profile) / bg_prob)
-
             for jj, pssm in enumerate(PSSMs):
                 a[ii, jj] = np.linalg.norm(pssm-sp)
 
