@@ -17,7 +17,7 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_ma
     gmm, gmmp = gmm_initialize(X, ncl)
     scores = gmmp
 
-    if type(background) == bool:
+    if isinstance(background, bool):
         seqs = [s.upper() for s in X["Sequence"]]
 
         if distance_method == "Binomial":
