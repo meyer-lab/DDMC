@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import glob
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from Bio import motifs
@@ -83,16 +84,30 @@ class MassSpecClustering(BaseEstimator):
         bg_seqs = ForegroundSeqs(bg_sequences)
         bg_freqs = motifs.create(bg_seqs).counts
         cl_seqs_ = self.cl_seqs(bg_sequences)
-
         AAfreq_IS = {}
         for i in range(20):
             AAfreq_IS[list(bg_freqs.keys())[i]] = np.sum(bg_freqs[i]) / (len(bg_seqs) * len(bg_seqs[0]))
-
         pssms = []
         for j in range(self.ncl):
             pssms.append(motifs.create(ForegroundSeqs(cl_seqs_[j])).counts.normalize(pseudocounts=AAfreq_IS).log_odds(AAfreq_IS))
-
         return pssms
+
+    def predict_UpstreamKinases(self, bg_sequences):
+        """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
+        PSPLs = PSPSLdict()
+        bg_prob, PSSMs = TransformKinasePredictionMats(self.pssms(bg_sequences), bg_sequences)
+        a = np.zeros((len(PSPLs), len(PSSMs)))
+
+        for ii, spec_profile in enumerate(PSPLs.values()):
+            sp = np.log10(np.power(2, spec_profile) / bg_prob)
+            sp -= np.mean(sp)
+            for jj, pssm in enumerate(PSSMs):
+                pssm -= np.mean(pssm)
+                a[ii, jj] = np.linalg.norm(pssm-sp)
+
+        table = pd.DataFrame(a)
+        table.insert(0, "Kinase", list(PSPSLdict().keys()))
+        return table
 
     def runSeqScore(self, sequences):
         if self.distance_method == "Binomial":
@@ -160,3 +175,25 @@ def ClusterAverages(X, labels):
 
     members = pd.DataFrame({k: pd.Series(v) for (k, v) in dict_clustermembers.items()})
     return pd.DataFrame(centers).T, members
+
+def PSPSLdict():
+    """Generate dictionary with kinase name-specificity profile pairs"""
+    pspl_dict = {}
+    PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
+    for sp in PSPLs:
+        sp_mat = pd.read_csv(sp)
+
+        if sp_mat.shape[0] > 20: #Remove profiling of fixed pY and pT, include only natural AA
+            sp_mat = sp_mat.iloc[:-2, 1:].values
+        else:
+            sp_mat = sp_mat.iloc[:, 1:].values
+
+        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
+    return pspl_dict
+
+def TransformKinasePredictionMats(PSSMs, bg_sequences):
+    """Transform PSSMs and PSPLs to perform matrix math."""
+    bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
+    bg_prob = np.delete(bg_prob, [5, -1], 1) #Remove P0 and P+5 from background
+    PSSMs = [np.delete(np.array(list(mat.values())), [5, -1], 1) for mat in PSSMs] #Remove P0 and P+5 from pssms
+    return bg_prob, PSSMs
