@@ -74,10 +74,15 @@ class MassSpecClustering(BaseEstimator):
 
     def transform(self, X):
         """Calculate cluster averages"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
+        check_is_fitted(self, ["gmm_"])
 
-        centers, _ = ClusterAverages(X, self.labels())
-        return centers
+        centers = np.zeros((self.ncl, self.gmm_.distributions[0].d - 1))
+
+        for ii, distClust in enumerate(self.gmm_.distributions):
+            for jj, dist in enumerate(distClust[:-1]):
+                centers[ii, jj] = dist.parameters[0]
+
+        return centers.T
 
     def clustermembers(self, X):
         """Generate dictionary containing peptide names and sequences for each cluster"""
