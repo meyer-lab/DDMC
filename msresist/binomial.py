@@ -7,7 +7,6 @@ import scipy.stats as sp
 from scipy.special import betainc
 from Bio import motifs
 from Bio.Seq import Seq
-from .motifs import CountPsiteTypes
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -177,3 +176,26 @@ class Binomial():
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
         return
+=======
+def CountPsiteTypes(X, cA):
+    """ Count number of different phosphorylation types in a MS data set."""
+    pS = 0
+    pT = 0
+    pY = 0
+    primed = 0
+
+    for seq in X:
+        if "s" in seq[cA]:
+            pS += 1
+        if "y" in seq[cA]:
+            pY += 1
+        if "t" in seq[cA]:
+            pT += 1
+        pp = 0
+        for i in seq:
+            if i.islower():
+                pp += 1
+        if pp > 1:
+            primed += 1
+
+    return pY, pS, pT, primed
