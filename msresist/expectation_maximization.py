@@ -16,16 +16,18 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_ma
     idxx = np.atleast_2d(np.arange(d.shape[0]))
     d = np.hstack((d, idxx.T))
 
-    # Initialize model
-    dist = NormalDistribution(sp.norm.rvs(), 1.0)
-
     if distance_method == "PAM250":
         seqDist = PAM250(info, background, SeqWeight)
     elif distance_method == "Binomial":
         seqDist = Binomial(info, background, SeqWeight)
 
-    idist = IndependentComponentsDistribution([dist] * (d.shape[1] - 1)  +  [seqDist])
-    gmm = GeneralMixtureModel([idist] * ncl)
+    # Initialize model
+    dists = list()
+    for _ in range(ncl):
+        nDist = [NormalDistribution(sp.norm.rvs(), 0.1) for _ in range(d.shape[1] - 1)]
+        dists.append(IndependentComponentsDistribution(nDist + [seqDist]))
+
+    gmm = GeneralMixtureModel(dists)
 
     gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
     scores = gmm.predict_proba(d)
