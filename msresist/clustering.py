@@ -103,7 +103,7 @@ class MassSpecClustering(BaseEstimator):
             sp -= np.mean(sp)
             for jj, pssm in enumerate(PSSMs):
                 pssm -= np.mean(pssm)
-                a[ii, jj] = np.linalg.norm(pssm-sp)
+                a[ii, jj] = np.linalg.norm(pssm - sp)
 
         table = pd.DataFrame(a)
         table.insert(0, "Kinase", list(PSPSLdict().keys()))
@@ -176,6 +176,7 @@ def ClusterAverages(X, labels):
     members = pd.DataFrame({k: pd.Series(v) for (k, v) in dict_clustermembers.items()})
     return pd.DataFrame(centers).T, members
 
+
 def PSPSLdict():
     """Generate dictionary with kinase name-specificity profile pairs"""
     pspl_dict = {}
@@ -183,7 +184,7 @@ def PSPSLdict():
     for sp in PSPLs:
         sp_mat = pd.read_csv(sp)
 
-        if sp_mat.shape[0] > 20: #Remove profiling of fixed pY and pT, include only natural AA
+        if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
             sp_mat = sp_mat.iloc[:-2, 1:].values
         else:
             sp_mat = sp_mat.iloc[:, 1:].values
@@ -191,9 +192,10 @@ def PSPSLdict():
         pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
     return pspl_dict
 
+
 def TransformKinasePredictionMats(PSSMs, bg_sequences):
     """Transform PSSMs and PSPLs to perform matrix math."""
     bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-    bg_prob = np.delete(bg_prob, [5, -1], 1) #Remove P0 and P+5 from background
-    PSSMs = [np.delete(np.array(list(mat.values())), [5, -1], 1) for mat in PSSMs] #Remove P0 and P+5 from pssms
+    bg_prob = np.delete(bg_prob, [5, -1], 1)  # Remove P0 and P+5 from background
+    PSSMs = [np.delete(np.array(list(mat.values())), [5, -1], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
     return bg_prob, PSSMs
