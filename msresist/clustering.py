@@ -48,9 +48,13 @@ class MassSpecClustering(BaseEstimator):
         """Find the sequence, data, both, and mix wins of the fitted model"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
+        d = np.array(d.T)
+        idxx = np.atleast_2d(np.arange(d.shape[0]))
+        d = np.hstack((d, idxx.T))
+
         labels_ = self.labels()
         SeqIdx = np.argmax(self.seq_scores_, axis=1)
-        DataIdx = self.gmm_.predict(d.T)
+        DataIdx = self.gmm_.predict(d)
 
         SeqWins = np.sum((SeqIdx == labels_) & (DataIdx != labels_))
         DataWins = np.sum((DataIdx == labels_) & (SeqIdx != labels_))
