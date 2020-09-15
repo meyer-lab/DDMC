@@ -184,6 +184,7 @@ class Binomial():
         """ Clear the summary statistics stored in the object. Not needed here. """
         return
 
+
 def CountPsiteTypes(X, cA):
     """ Count number of different phosphorylation types in a MS data set."""
     pS = 0
