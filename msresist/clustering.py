@@ -44,24 +44,14 @@ class MassSpecClustering(BaseEstimator):
 
         return self
 
-    def wins(self, d):
+    def wins(self, X):
         """Find the sequence, data, both, and mix wins of the fitted model"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        d = np.array(d.T)
-        idxx = np.atleast_2d(np.arange(d.shape[0]))
-        d = np.hstack((d, idxx.T))
+        data_model = EM_clustering(X, self.info, self.ncl, 0, self.distance_method, self.background)
+        seq_model = EM_clustering(X, self.info, self.ncl, 100, self.distance_method, self.background)
 
-        labels_ = self.labels()
-        SeqIdx = np.argmax(self.seq_scores_, axis=1)
-        DataIdx = self.gmm_.predict(d)
-
-        SeqWins = np.sum((SeqIdx == labels_) & (DataIdx != labels_))
-        DataWins = np.sum((DataIdx == labels_) & (SeqIdx != labels_))
-        BothWin = np.sum((DataIdx == labels_) & (SeqIdx == labels_))
-        MixWins = np.sum((DataIdx != labels_) & (SeqIdx != labels_))
-
-        return (SeqWins, DataWins, BothWin, MixWins)
+        return (self.scores_ - data_model.scores_, self.scores_ - seq_model.scores_)
 
     def labels(self):
         """Find cluster assignments"""

@@ -1,0 +1,81 @@
+************* Module msresist.clustering
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+************* Module msresist.distances
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+************* Module msresist.pam250
+msresist/pam250.py:54: [R0201(no-self-use), PAM250.clear_summaries] Method could be a function
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+************* Module msresist.binomial
+msresist/binomial.py:167: [W0613(unused-argument), Binomial.summarize] Unused argument 'X'
+msresist/binomial.py:183: [R0201(no-self-use), Binomial.clear_summaries] Method could be a function
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+msresist/binomial.py:167: [W0613(unused-argument), Binomial.summarize] Unused argument 'X'
+msresist/binomial.py:183: [R0201(no-self-use), Binomial.clear_summaries] Method could be a function
+************* Module msresist.tests.test_CoClustering
+msresist/tests/test_CoClustering.py:20: [W0612(unused-variable), test_clusters] Unused variable 'MSC'
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+msresist/binomial.py:167: [W0613(unused-argument), Binomial.summarize] Unused argument 'X'
+msresist/binomial.py:183: [R0201(no-self-use), Binomial.clear_summaries] Method could be a function
+msresist/tests/test_CoClustering.py:20: [W0612(unused-variable), test_clusters] Unused variable 'MSC'
+msresist/distances.py:94: [R0913(too-many-arguments), PlotNhrsdistances] Too many arguments (8/6)
+msresist/distances.py:125: [R0913(too-many-arguments), Plot_Logmean] Too many arguments (7/6)
+msresist/distances.py:151: [R0913(too-many-arguments), Distances_import] Too many arguments (7/6)
+msresist/distances.py:213: [R0913(too-many-arguments), BarPlotRipleysK] Too many arguments (7/6)
+msresist/binomial.py:167: [W0613(unused-argument), Binomial.summarize] Unused argument 'X'
+msresist/binomial.py:183: [R0201(no-self-use), Binomial.clear_summaries] Method could be a function
+msresist/tests/test_CoClustering.py:20: [W0612(unused-variable), test_clusters] Unused variable 'MSC'
+msresist/clustering.py:18: [R0902(too-many-instance-attributes), MassSpecClustering] Too many instance attributes (11/7)
+msresist/clustering.py:29: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'bg_mat'
+msresist/clustering.py:30: [E0602(undefined-variable), MassSpecClustering.__init__] Undefined variable 'dataTensor'
+msresist/clustering.py:32: [W0613(unused-argument), MassSpecClustering.fit] Unused argument 'y'
+msresist/pam250.py:54: [R0201(no-self-use), PAM250.clear_summaries] Method could be a function
+************* Module msresist.pre_processing
+msresist/pre_processing.py:14: [R0913(too-many-arguments), preprocessing] Too many arguments (11/6)
+msresist/pre_processing.py:14: [R0914(too-many-locals), preprocessing] Too many local variables (22/20)
+
+------------------------------------------------------------------
+Your code has been rated at 9.80/10 (previous run: 9.69/10, +0.10)
+
