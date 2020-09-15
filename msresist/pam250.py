@@ -25,7 +25,7 @@ class PAM250():
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
 
-        if type(background) == bool:
+        if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
             # Compute all pairwise distances and generate seq vs seq to score dictionary
@@ -47,7 +47,7 @@ class PAM250():
 
         newW = np.average(self.background, weights=ps, axis=0)
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
-    
+
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
         return
