@@ -20,30 +20,41 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, max_n_iter=500, background=False, bg_mat=False, dataTensor=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, bg_mat=False, dataTensor=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.max_n_iter = max_n_iter
         self.background = background
         self.bg_mat = bg_mat
         self.dataTensor = dataTensor
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(
-            X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor, self.max_n_iter
-        )
+        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor)
+
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(*params)
+
+        for _ in range(nRepeats):
+            out = EM_clustering(*params)
+
+            # Use the new result if it's better
+            if out[0] > self.avgScores_:
+                self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = out
+
         return self
 
     def wins(self, d):
         """Find the sequence, data, both, and mix wins of the fitted model"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
+        d = np.array(d.T)
+        idxx = np.atleast_2d(np.arange(d.shape[0]))
+        d = np.hstack((d, idxx.T))
+
         labels_ = self.labels()
         SeqIdx = np.argmax(self.seq_scores_, axis=1)
-        DataIdx = self.gmm_.predict(d.T)
+        DataIdx = self.gmm_.predict(d)
 
         SeqWins = np.sum((SeqIdx == labels_) & (DataIdx != labels_))
         DataWins = np.sum((DataIdx == labels_) & (SeqIdx != labels_))
@@ -67,10 +78,15 @@ class MassSpecClustering(BaseEstimator):
 
     def transform(self, X):
         """Calculate cluster averages"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
+        check_is_fitted(self, ["gmm_"])
 
-        centers, _ = ClusterAverages(X, self.labels())
-        return centers
+        centers = np.zeros((self.ncl, self.gmm_.distributions[0].d - 1))
+
+        for ii, distClust in enumerate(self.gmm_.distributions):
+            for jj, dist in enumerate(distClust[:-1]):
+                centers[ii, jj] = dist.parameters[0]
+
+        return centers.T
 
     def clustermembers(self, X):
         """Generate dictionary containing peptide names and sequences for each cluster"""
@@ -146,8 +162,7 @@ class MassSpecClustering(BaseEstimator):
             "info": self.info,
             "ncl": self.ncl,
             "SeqWeight": self.SeqWeight,
-            "distance_method": self.distance_method,
-            "max_n_iter": self.max_n_iter,
+            "distance_method": self.distance_method
         }
 
     def set_params(self, **parameters):

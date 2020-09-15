@@ -15,7 +15,7 @@ def MSclusPLSR_tuning(X, info, Y, distance_method):
     """ Cross-validation: Simultaneous hyperparameter search. """
     MSclusPLSR = Pipeline(
         [
-            ("MSclustering", MassSpecClustering(info=info, distance_method=distance_method, ncl=2, SeqWeight=0, max_n_iter=200)),
+            ("MSclustering", MassSpecClustering(info=info, distance_method=distance_method, ncl=2, SeqWeight=0)),
             ("plsr", PLSRegression(n_components=2)),
         ]
     )
