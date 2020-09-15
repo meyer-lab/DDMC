@@ -148,7 +148,7 @@ class Binomial():
         self.name = "Binomial"
         self.SeqWeight = SeqWeight
 
-        if type(background) == bool:
+        if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
             # Background sequences
@@ -172,10 +172,11 @@ class Binomial():
 
         newW = np.squeeze(assignPeptidesBN(self.dataTensor, ps, self.bg_mat))
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
-    
+
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
         return
+
 
 def CountPsiteTypes(X, cA):
     """ Count number of different phosphorylation types in a MS data set."""
