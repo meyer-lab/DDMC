@@ -149,7 +149,7 @@ class Binomial():
         self.name = "Binomial"
         self.SeqWeight = SeqWeight
 
-        if isinstance(background) == bool:
+        if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
             # Background sequences

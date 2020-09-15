@@ -26,7 +26,7 @@ class PAM250():
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
 
-        if isinstance(background) == bool:
+        if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
             # Compute all pairwise distances and generate seq vs seq to score dictionary

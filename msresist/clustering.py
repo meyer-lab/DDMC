@@ -26,8 +26,6 @@ class MassSpecClustering(BaseEstimator):
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
         self.background = background
-        self.bg_mat = bg_mat
-        self.dataTensor = dataTensor
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
@@ -45,11 +43,15 @@ class MassSpecClustering(BaseEstimator):
         return self
 
     def wins(self, X):
-        """Find the sequence, data, both, and mix wins of the fitted model"""
+        """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
         data_model = EM_clustering(X, self.info, self.ncl, 0, self.distance_method, self.background)
         seq_model = EM_clustering(X, self.info, self.ncl, 100, self.distance_method, self.background)
+
+        assert True not in np.isnan(data_model[1]), data_model[1]
+        assert True not in np.isnan(seq_model[1]), seq_model[1]
+        assert True not in np.isnan(self.scores_), self.scores_
 
         return (self.scores_ - data_model[1], self.scores_ - seq_model[1])
 
@@ -87,15 +89,20 @@ class MassSpecClustering(BaseEstimator):
 
     def pssms(self, bg_sequences):
         """Compute position-specific scoring matrix of each cluster."""
-        bg_seqs = ForegroundSeqs(bg_sequences)
-        bg_freqs = motifs.create(bg_seqs).counts
-        cl_seqs_ = self.cl_seqs(bg_sequences)
-        AAfreq_IS = {}
-        for i in range(20):
-            AAfreq_IS[list(bg_freqs.keys())[i]] = np.sum(bg_freqs[i]) / (len(bg_seqs) * len(bg_seqs[0]))
+        bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
+        clSeqs = self.cl_seqs(bg_sequences)
+        bg_sequences = pd.DataFrame(bg_sequences)
         pssms = []
-        for j in range(self.ncl):
-            pssms.append(motifs.create(ForegroundSeqs(cl_seqs_[j])).counts.normalize(pseudocounts=AAfreq_IS).log_odds(AAfreq_IS))
+        for ii, cl_seqs in enumerate(clSeqs):
+            if len(cl_seqs) == 0:
+                pssms.append(list()) #save empty list if the cluster is empty
+                continue
+            bg_sequences["Score"] = self.scores_[:, ii]
+            pssm = np.zeros((len(AAlist), 11), dtype=float)
+            for jj, aa in enumerate(AAlist):
+                for pos in range(11):
+                    pssm[jj, pos] = bg_sequences[bg_sequences["Sequence"].str[pos] == aa]["Score"].sum()
+            pssms.append(pssm / bg_prob)
         return pssms
 
     def predict_UpstreamKinases(self, bg_sequences):
