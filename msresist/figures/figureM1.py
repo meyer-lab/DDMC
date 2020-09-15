@@ -256,14 +256,10 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
     if distance_method == "Binomial":
         # Background sequences
         bg = position_weight_matrix(BackgroundSeqs(md["Sequence"]))
-        bg_mat = np.array([bg[AA] for AA in AAlist])
-        dataTensor = GenerateBinarySeqID(seqs)
-        background = False
+        background = [np.array([bg[AA] for AA in AAlist]), GenerateBinarySeqID(seqs)]
     elif distance_method == "PAM250":
         # Compute all pairwise distances and generate seq vs seq to score dictionary
         background = MotifPam250Scores(seqs)
-        bg_mat = False
-        dataTensor = False
 
     model_res = np.zeros((len(clusters), 3))
     base_res = np.zeros((len(clusters), 2))
@@ -272,8 +268,7 @@ def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter
         base_res[idx, 0] = int(cluster)
         model_res[idx, 0] = int(cluster)
         model = MassSpecClustering(
-            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter,
-            background=background, bg_mat=bg_mat, dataTensor=dataTensor
+            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, background=background
         ).fit(d.T, "NA")
         if all(model.converge_):
             model_res[idx, 1] = 0
@@ -306,7 +301,16 @@ def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
     x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
     d = md.select_dtypes(include=['float64'])
     i = md.select_dtypes(include=['object'])
-    bg = GenerateSeqBackgroundAndPAMscores(md["Sequence"], distance_method)
+
+    # Pre-compute background
+    seqs = [s.upper() for s in X["Sequence"]]
+    if distance_method == "Binomial":
+        # Background sequences
+        bg = position_weight_matrix(BackgroundSeqs(md["Sequence"]))
+        background = [np.array([bg[AA] for AA in AAlist]), GenerateBinarySeqID(seqs)]
+    elif distance_method == "PAM250":
+        # Compute all pairwise distances and generate seq vs seq to score dictionary
+        background = MotifPam250Scores(seqs)
 
     model_res = np.zeros((len(weights), 3))
     base_res = np.zeros((len(weights), 2))
@@ -315,7 +319,7 @@ def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
         base_res[idx, 0] = w
         model_res[idx, 0] = w
         model = MassSpecClustering(
-            i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter, background=bg
+            i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter, background=background
         ).fit(d.T, "NA")
         if all(model.converge_):
             model_res[idx, 1] = 0

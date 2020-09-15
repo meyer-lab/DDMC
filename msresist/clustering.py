@@ -1,8 +1,8 @@
 """ Clustering functions. """
 
+import glob
 import numpy as np
 import pandas as pd
-import glob
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from Bio import motifs
@@ -20,7 +20,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, bg_mat=False, dataTensor=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, background=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
@@ -31,7 +31,7 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background, self.bg_mat, self.dataTensor)
+        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background)
 
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(*params)
 
@@ -76,7 +76,7 @@ class MassSpecClustering(BaseEstimator):
         labels_ = self.labels()
         return [list(sequences.iloc[np.squeeze(np.argwhere(labels_ == i))]) for i in range(self.ncl)]
 
-    def transform(self, X):
+    def transform(self):
         """Calculate cluster averages"""
         check_is_fitted(self, ["gmm_"])
 
@@ -126,6 +126,7 @@ class MassSpecClustering(BaseEstimator):
         return table
 
     def runSeqScore(self, sequences):
+        """Find current model sequence scores for each peptide"""
         if self.distance_method == "Binomial":
             background = position_weight_matrix(BackgroundSeqs(sequences))
             bg_mat = np.array([background[AA] for AA in AAlist])

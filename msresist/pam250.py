@@ -20,12 +20,13 @@ def assignPeptidesPAM(ncl, scores, Seq1Seq2ToScore):
 
 
 class PAM250():
+    """Create a PAM250 distance distribution compatible with the package pomegranate"""
     def __init__(self, info, background, SeqWeight):
         self.d = 1
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
 
-        if type(background) == bool:
+        if isinstance(background) == bool:
             seqs = [s.upper() for s in info["Sequence"]]
 
             # Compute all pairwise distances and generate seq vs seq to score dictionary
@@ -35,9 +36,11 @@ class PAM250():
         self.from_summaries()
 
     def summarize(self, _, weights):
+        """ Weights. """
         self.weights = weights
 
     def log_probability(self, X):
+        """ Log Probability. """
         return self.SeqWeight * self.weights[int(np.squeeze(X))]
 
     def from_summaries(self, inertia=0.0):
@@ -47,7 +50,7 @@ class PAM250():
 
         newW = np.average(self.background, weights=ps, axis=0)
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
-    
+
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
         return
@@ -80,6 +83,7 @@ def MotifPam250Scores(seqs):
 
 
 def innerloop(seqs, ii, endi, shm_name, ddtype, n: int):
+    """Calculate pairwise distances between two sequences to be used in pool executor."""
     existing_shm = shared_memory.SharedMemory(name=shm_name)
     out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
 
