@@ -4,7 +4,6 @@ import os
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
-from .binomial import AAlist
 
 
 path = os.path.dirname(os.path.abspath(__file__))

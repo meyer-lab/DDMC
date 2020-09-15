@@ -479,7 +479,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     return np.mean(errors)
 
 
-def WinsByWeight(i, d, weigths, distance_method):
+def WinsByWeight(i, d, weigths, distance_method, ncl):
     """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
     wins = []
     prioritize = []
