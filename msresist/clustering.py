@@ -51,7 +51,7 @@ class MassSpecClustering(BaseEstimator):
         data_model = EM_clustering(X, self.info, self.ncl, 0, self.distance_method, self.background)
         seq_model = EM_clustering(X, self.info, self.ncl, 100, self.distance_method, self.background)
 
-        return (self.scores_ - data_model.scores_, self.scores_ - seq_model.scores_)
+        return (self.scores_ - data_model[1], self.scores_ - seq_model[1])
 
     def labels(self):
         """Find cluster assignments"""
