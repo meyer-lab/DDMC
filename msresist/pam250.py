@@ -4,6 +4,7 @@
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import shared_memory
 import numpy as np
+import scipy.stats as sp
 from Bio.SubsMat import MatrixInfo
 
 
@@ -16,6 +17,40 @@ def assignPeptidesPAM(ncl, scores, Seq1Seq2ToScore):
         seq_scores[:, z] = np.average(Seq1Seq2ToScore, weights=scores[:, z], axis=0)
 
     return seq_scores
+
+
+class PAM250():
+    def __init__(self, info, background, SeqWeight):
+        self.d = 1
+        self.name = "PAM250"
+        self.SeqWeight = SeqWeight
+
+        if type(background) == bool:
+            seqs = [s.upper() for s in info["Sequence"]]
+
+            # Compute all pairwise distances and generate seq vs seq to score dictionary
+            self.background = MotifPam250Scores(seqs)
+
+        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+        self.from_summaries()
+
+    def summarize(self, _, weights):
+        self.weights = weights
+
+    def log_probability(self, X):
+        return self.SeqWeight * self.weights[int(np.squeeze(X))]
+
+    def from_summaries(self, inertia=0.0):
+        """ Update the underlying distribution. """
+        ps = np.exp(self.weights)
+        ps /= np.sum(ps)
+
+        newW = np.average(self.background, weights=ps, axis=0)
+        self.weights = self.weights * inertia + newW * (1.0 - inertia)
+    
+    def clear_summaries(self):
+        """ Clear the summary statistics stored in the object. Not needed here. """
+        return
 
 
 def MotifPam250Scores(seqs):
