@@ -48,9 +48,9 @@ class MassSpecClustering(BaseEstimator):
         data_model = EM_clustering(X, self.info, self.ncl, 0, self.distance_method, self.background)
         seq_model = EM_clustering(X, self.info, self.ncl, 100, self.distance_method, self.background)
 
-        assert True not in np.isnan(data_model[1]), data_model[1]
-        assert True not in np.isnan(seq_model[1]), seq_model[1]
-        assert True not in np.isnan(self.scores_), self.scores_
+        assert np.all(np.isfinite(data_model[1]))
+        assert np.all(np.isfinite(seq_model[1]))
+        assert np.all(np.isfinite(self.scores_))
 
         return (self.scores_ - data_model[1], self.scores_ - seq_model[1])
 
