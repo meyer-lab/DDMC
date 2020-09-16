@@ -144,6 +144,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 class Binomial():
     """Create a binomial distance distribution compatible with pomegranate. """
+
     def __init__(self, info, background, SeqWeight):
         self.d = 1
         self.name = "Binomial"
