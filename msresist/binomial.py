@@ -36,20 +36,6 @@ AAfreq = {
 AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
 
 
-def assignPeptidesBN(dataTensor, gmmp, bg_mat):
-    """E-step––Do the peptide assignment according to sequence and data"""
-    cluster_foreground = np.tensordot(gmmp.T, dataTensor, axes=1)
-
-    n = dataTensor.shape[0]
-    k = cluster_foreground
-    p = bg_mat
-    probmat = sc.betainc(n - k, k + 1, 1 - p)
-    probmat = np.moveaxis(probmat, 0, 2)
-
-    outP = np.tensordot(dataTensor, probmat, axes=2)
-    return np.log(outP)
-
-
 def position_weight_matrix(seqs):
     """Build PWM of a given set of sequences."""
     return frequencies(seqs).normalize(pseudocounts=AAfreq)
@@ -157,7 +143,6 @@ class Binomial():
             background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
             self.bg_mat = np.array([background[AA] for AA in AAlist])
             self.dataTensor = GenerateBinarySeqID(seqs)
-
         else:
             self.bg_mat = background[0]
             self.dataTensor = background[1]
@@ -175,10 +160,13 @@ class Binomial():
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. """
-        ps = np.exp(np.atleast_2d(self.weights).T)
+        ps = np.exp(self.weights)
         ps /= np.sum(ps)
 
-        newW = np.squeeze(assignPeptidesBN(self.dataTensor, ps, self.bg_mat))
+        k = np.dot(self.dataTensor.T, ps).T
+        probmat = sc.betainc(self.dataTensor.shape[0] - k, k + 1, 1 - self.bg_mat)
+
+        newW = np.log(np.tensordot(self.dataTensor, probmat, axes=2))
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
 
     def clear_summaries(self):
