@@ -23,7 +23,6 @@ def test_wins(distance_method):
     assert distances[0] < 1.0
 
 
-
 @pytest.mark.parametrize("w", [0, 0.1, 0.3, 1])
 @pytest.mark.parametrize("ncl", [2, 3, 4])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
