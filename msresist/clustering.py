@@ -97,7 +97,7 @@ class MassSpecClustering(BaseEstimator):
         table.insert(0, "Kinase", list(PSPSLdict().keys()))
         return table
 
-    def predict(self, data, sequences, _Y=None):
+    def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
