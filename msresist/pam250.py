@@ -5,17 +5,6 @@ import scipy.stats as sp
 from Bio.Align import substitution_matrices
 
 
-def assignPeptidesPAM(ncl, scores, Seq1Seq2ToScore):
-    """E-step––Do the peptide assignment according to sequence and data"""
-    seq_scores = np.zeros((Seq1Seq2ToScore.shape[0], ncl))
-
-    # Average distance between each sequence and any cluster based on PAM250 substitution matrix
-    for z in range(ncl):
-        seq_scores[:, z] = np.average(Seq1Seq2ToScore, weights=scores[:, z], axis=0)
-
-    return seq_scores
-
-
 class PAM250():
     def __init__(self, info, background, SeqWeight):
         self.d = 1
@@ -54,7 +43,7 @@ def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
     n = len(seqs)
     pam250 = substitution_matrices.load("PAM250")
-    seqs = NumSeqs(seqs)
+    seqs = NumSeqs(seqs, pam250.alphabet)
 
     # WARNING this type can only hold -128 to 127
     dtype = np.dtype(np.int8)
@@ -73,8 +62,6 @@ def MotifPam250Scores(seqs):
 
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
-
-    assert out[5, 5] == pairwise_score(seqs[5], seqs[5], pam250), "PAM250 scores array is wrong."
     return out
 
 
@@ -93,41 +80,10 @@ def pairwise_score(seq1, seq2, pam250):
     """ Compute distance between two kinase motifs. Note this does not account for gaps. """
     score = 0
     for a, b in zip(seq1, seq2):
-        score += int(pam250[a, b])
-    return score
+        score += pam250[a, b]
+    return int(score)
 
 
-def NumSeqs(seqs):
+def NumSeqs(seqs, alphabet):
     """Transform sequences to numeric lists to access PAM250 more efficiently."""
-    numSeqs = []
-    for seq in seqs:        
-        numS = [pam250_idx[aa] for aa in seq]
-        numSeqs.append(numS)
-    return numSeqs
-
-
-pam250_idx = {
-    "A": 0,
-    "R": 1,
-    "N": 2,
-    "D": 3,
-    "C": 4,
-    "Q": 5,
-    "E": 6,
-    "G": 7,
-    "H": 8,
-    "I": 9,
-    "L": 10,
-    "K": 11,
-    "M": 12,
-    "F": 13,
-    "P": 14,
-    "S": 15,
-    "T": 16,
-    "W": 17,
-    "Y": 18,
-    "V": 19,
-    "B": 20,
-    "Z": 21,
-    "X": 22
-}
+    return [np.array([alphabet.find(aa) for aa in seq], dtype=np.intp) for seq in seqs]
