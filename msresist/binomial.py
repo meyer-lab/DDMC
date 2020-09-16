@@ -164,7 +164,7 @@ class Binomial():
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
         self.from_summaries()
 
-    def summarize(self, X, weights):
+    def summarize(self, _, weights):
         """ Weights """
         self.weights = weights
 

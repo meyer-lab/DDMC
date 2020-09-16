@@ -7,8 +7,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering
 from .motifs import ForegroundSeqs
-from .binomial import assignPeptidesBN, position_weight_matrix, AAlist, BackgroundSeqs, GenerateBinarySeqID
-from .pam250 import assignPeptidesPAM, MotifPam250Scores
+from .binomial import position_weight_matrix, AAlist
 
 
 # pylint: disable=W0201
@@ -54,19 +53,6 @@ class MassSpecClustering(BaseEstimator):
 
         return (np.linalg.norm(self.scores_ - data_model[1]), np.linalg.norm(self.scores_ - seq_model[1]))
 
-    def labels(self):
-        """Find cluster assignments"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-
-        return np.argmax(self.scores_, axis=1)
-
-    def cl_seqs(self, sequences):
-        """Return cluster sequences"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-
-        labels_ = self.labels()
-        return [list(sequences.iloc[np.squeeze(np.argwhere(labels_ == i))]) for i in range(self.ncl)]
-
     def transform(self):
         """Calculate cluster averages"""
         check_is_fitted(self, ["gmm_"])
@@ -79,29 +65,19 @@ class MassSpecClustering(BaseEstimator):
 
         return centers.T
 
-    def clustermembers(self, X):
-        """Generate dictionary containing peptide names and sequences for each cluster"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-
-        _, clustermembers = ClusterAverages(X, self.labels())
-        return clustermembers
-
     def pssms(self, bg_sequences):
         """Compute position-specific scoring matrix of each cluster."""
         bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-        clSeqs = self.cl_seqs(bg_sequences)
-        bg_sequences = pd.DataFrame(bg_sequences)
+
         pssms = []
-        for ii, cl_seqs in enumerate(clSeqs):
-            if len(cl_seqs) == 0:
-                pssms.append(list()) #save empty list if the cluster is empty
-                continue
-            bg_sequences["Score"] = self.scores_[:, ii]
+        for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
-            for jj, aa in enumerate(AAlist):
-                for pos in range(11):
-                    pssm[jj, pos] = bg_sequences[bg_sequences["Sequence"].str[pos] == aa]["Score"].sum()
+            for jj, seq in enumerate(self.info["Sequences"]):
+                for kk, aa in seq:
+                    pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
+
             pssms.append(pssm / bg_prob)
+
         return pssms
 
     def predict_UpstreamKinases(self, bg_sequences):
@@ -121,37 +97,15 @@ class MassSpecClustering(BaseEstimator):
         table.insert(0, "Kinase", list(PSPSLdict().keys()))
         return table
 
-    def runSeqScore(self, sequences):
-        """Find current model sequence scores for each peptide"""
-        if self.distance_method == "Binomial":
-            background = position_weight_matrix(BackgroundSeqs(sequences))
-            bg_mat = np.array([background[AA] for AA in AAlist])
-            dataTensor = GenerateBinarySeqID(sequences)
-            seq_scores = assignPeptidesBN(dataTensor, self.scores_, bg_mat)
-        else:
-            background = MotifPam250Scores(sequences)
-            seq_scores = assignPeptidesPAM(self.ncl, self.scores_, background)
-
-        return seq_scores
-
-    def predict(self, data, sequences, _Y=None):
+    def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-        gmmp = self.gmm_.predict_proba(data.T)
-        seq_scores = self.runSeqScore(sequences)
-        final_scores = seq_scores * self.SeqWeight + gmmp
+        check_is_fitted(self, ["scores_"])
+        return np.argmax(self.scores_, axis=1)
 
-        return np.argmax(final_scores, axis=1)
-
-    def score(self, data, sequences, _Y=None):
-        """Generate score of the fitting. If PAM250, the score is the averaged PAM250 score across peptides. If Binomial,
-        the score is the mean binomial p-value across peptides"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
-        gmmp = self.gmm_.predict_proba(data.T)
-        seq_scores = self.runSeqScore(sequences)
-        final_scores = seq_scores * self.SeqWeight + gmmp
-
-        return np.mean(np.max(final_scores, axis=1))
+    def score(self):
+        """ Generate score of the fitting. """
+        check_is_fitted(self, ["avgScores_"])
+        return self.avgScores_
 
     def get_params(self, deep=True):
         """Returns a dict of the estimator parameters with their values"""
