@@ -74,8 +74,6 @@ def MotifPam250Scores(seqs):
     i_upper = np.triu_indices(n, k=1)
     out[i_upper] = out.T[i_upper]
 
-    print(out)
-
     assert out[5, 5] == pairwise_score(seqs[5], seqs[5], pam250), "PAM250 scores array is wrong."
     return out
 
