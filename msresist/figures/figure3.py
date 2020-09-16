@@ -150,7 +150,7 @@ def makeFigure():
     centers = MSC.transform()
 
     plsr = PLSRegression(n_components=2, scale=False)
-    plotR2YQ2Y(ax[2], plsr, centers, y, ncl+1)
+    plotR2YQ2Y(ax[2], plsr, centers, y, ncl + 1)
 
     # Plot Measured vs Predicted
     plotActualVsPredicted(ax[3:7], plsr, centers, y)
