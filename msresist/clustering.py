@@ -52,7 +52,7 @@ class MassSpecClustering(BaseEstimator):
         assert np.all(np.isfinite(seq_model[1]))
         assert np.all(np.isfinite(self.scores_))
 
-        return (self.scores_ - data_model[1], self.scores_ - seq_model[1])
+        return (np.linalg.norm(self.scores_ - data_model[1]), np.linalg.norm(self.scores_ - seq_model[1]))
 
     def labels(self):
         """Find cluster assignments"""
