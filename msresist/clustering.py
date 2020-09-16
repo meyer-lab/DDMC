@@ -1,13 +1,15 @@
 """ Clustering functions. """
 
 import glob
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import position_weight_matrix, AAlist
+from .binomial import Binomial, position_weight_matrix, AAlist
+from .pam250 import PAM250
 
 
 # pylint: disable=W0201
@@ -23,23 +25,15 @@ class MassSpecClustering(BaseEstimator):
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.background = background
 
-        if isinstance(self.background, bool):
-            seqs = [s.upper() for s in info["Sequence"]]
-            if distance_method == "PAM250":
-                # Compute all pairwise distances and generate seq vs seq to score dictionary
-                self.background = MotifPam250Scores(seqs)
-            elif distance_method == "Binomial":
-                # Background sequences
-                background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
-                self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
+        if distance_method == "PAM250":
+            self.dist = PAM250(info, background, SeqWeight)
+        elif distance_method == "Binomial":
+            self.dist = Binomial(info, background, SeqWeight)
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background)
-
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, *params)
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
 
         return self
 
@@ -47,8 +41,11 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, 0, self.distance_method, self.background)[1]
-        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, 100, self.distance_method, self.background)[1]
+        wDist = deepcopy(self.dist)
+        wDist.SeqWeight = 0.0
+        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        wDist.SeqWeight = 10.0
+        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
@@ -147,9 +144,6 @@ def ClusterAverages(X, labels):
             dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
             dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])
             dict_clustermembers["Position_C" + str(i + 1)] = list(X[X["cluster"] == i]["Position"])
-    #             dict_clustermembers["UniprotAcc_C" + str(i + 1)] = list(X[X["cluster"] == i]["UniprotAcc"])
-    #             dict_clustermembers["r2/Std_C" + str(i + 1)] = list(X[X["cluster"] == i]["r2_Std"])
-    #             dict_clustermembers["BioReps_C" + str(i + 1)] = list(X[X["cluster"] == i]["BioReps"])
 
     members = pd.DataFrame({k: pd.Series(v) for (k, v) in dict_clustermembers.items()})
     return pd.DataFrame(centers).T, members

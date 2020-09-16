@@ -1,12 +1,10 @@
 """Main Expectation-Maximization functions using gmm and binomial or pam250 to determine cluster assginments.
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
+from copy import deepcopy
 import numpy as np
 import scipy.stats as sp
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
-from .binomial import Binomial
-from .pam250 import PAM250, MotifPam250Scores
-
 
 
 def EM_clustering_repeat(nRepeats=3, *params):
@@ -22,7 +20,7 @@ def EM_clustering_repeat(nRepeats=3, *params):
     return output
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
+def EM_clustering(data, info, ncl, seqDist):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
@@ -30,17 +28,12 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
     d = np.hstack((d, idxx.T))
 
-    if distance_method == "PAM250":
-        seqDist = PAM250(info, background, SeqWeight)
-    elif distance_method == "Binomial":
-        seqDist = Binomial(info, background, SeqWeight)
-
     for _ in range(2):
         # Initialize model
         dists = list()
         for _ in range(ncl):
             nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-            dists.append(IndependentComponentsDistribution(nDist + [seqDist]))
+            dists.append(IndependentComponentsDistribution(nDist + [deepcopy(seqDist)]))
 
         gmm = GeneralMixtureModel(dists)
         gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
@@ -48,7 +41,6 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
 
         if np.all(np.isfinite(scores)):
             break
-        print(scores)
 
     seq_scores = np.exp([dd[-1].weights for dd in gmm.distributions])
     avgScore = np.sum(gmm.log_probability(d))

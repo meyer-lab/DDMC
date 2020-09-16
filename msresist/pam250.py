@@ -10,8 +10,15 @@ class PAM250():
         self.d = 1
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
-        self.background = background
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+
+        if isinstance(background, bool):
+            seqs = [s.upper() for s in info["Sequence"]]
+            # Compute all pairwise distances and generate seq vs seq to score dictionary
+            self.background = MotifPam250Scores(seqs)
+        else:
+            self.background = background
+
         self.from_summaries()
 
     def summarize(self, _, weights):
@@ -55,7 +62,7 @@ def MotifPam250Scores(seqs):
     shm.unlink()
 
     i_upper = np.triu_indices(n, k=1)
-    out[i_upper] = out.T[i_upper]
+    out[i_upper] = out.T[i_upper]  # pylint: disable=unsubscriptable-object
     return out
 
 

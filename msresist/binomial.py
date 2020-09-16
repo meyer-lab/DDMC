@@ -135,9 +135,17 @@ class Binomial():
         self.d = 1
         self.name = "Binomial"
         self.SeqWeight = SeqWeight
-        self.bg_mat = background[0]
-        self.dataTensor = background[1]
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+
+        if isinstance(background, bool):
+            # Background sequences
+            background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
+            self.bg_mat = np.array([background[AA] for AA in AAlist])
+            self.dataTensor = GenerateBinarySeqID(info["Sequence"])
+        else:
+            self.bg_mat = background[0]
+            self.dataTensor = background[1]
+
         self.from_summaries()
 
     def summarize(self, _, weights):
