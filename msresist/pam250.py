@@ -10,7 +10,6 @@ class PAM250():
         self.d = 1
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
-        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
 
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
@@ -19,6 +18,7 @@ class PAM250():
         else:
             self.background = background
 
+        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
         self.from_summaries()
 
     def summarize(self, _, weights):
