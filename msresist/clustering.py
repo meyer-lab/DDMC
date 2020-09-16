@@ -94,7 +94,7 @@ class MassSpecClustering(BaseEstimator):
         pssms = []
         for ii, cl_seqs in enumerate(clSeqs):
             if len(cl_seqs) == 0:
-                pssms.append(list()) #save empty list if the cluster is empty
+                pssms.append(list())  # save empty list if the cluster is empty
                 continue
             bg_sequences["Score"] = self.scores_[:, ii]
             pssm = np.zeros((len(AAlist), 11), dtype=float)

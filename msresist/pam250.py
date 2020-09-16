@@ -100,7 +100,7 @@ def pairwise_score(seq1, seq2, pam250):
 def NumSeqs(seqs):
     """Transform sequences to numeric lists to access PAM250 more efficiently."""
     numSeqs = []
-    for seq in seqs:        
+    for seq in seqs:
         numS = [pam250_idx[aa] for aa in seq]
         numSeqs.append(numS)
     return numSeqs
