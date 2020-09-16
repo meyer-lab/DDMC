@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sp
 import scipy.special as sc
+import scipy.misc as sm
 from Bio import motifs
 from Bio.Seq import Seq
 
@@ -160,9 +161,7 @@ class Binomial():
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. """
-        ps = np.exp(self.weights)
-        ps /= np.sum(ps)
-
+        ps = np.exp(self.weights - sm.logsumexp(self.weights))
         k = np.dot(self.dataTensor.T, ps).T
         probmat = sc.betainc(self.dataTensor.shape[0] - k, k + 1, 1 - self.bg_mat)
 

@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import shared_memory
 import numpy as np
 import scipy.stats as sp
+import scipy.misc as sm
 from Bio.Align import substitution_matrices
 
 
@@ -29,9 +30,7 @@ class PAM250():
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. """
-        ps = np.exp(self.weights)
-        ps /= np.sum(ps)
-
+        ps = np.exp(self.weights - sm.logsumexp(self.weights))
         newW = np.average(self.background, weights=ps, axis=0)
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
 
