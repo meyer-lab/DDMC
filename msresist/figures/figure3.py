@@ -143,18 +143,17 @@ def makeFigure():
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
     distance_method = "PAM250"
-    ncl = 6
-    SeqWeight = 0.5
-    ncomp = 2
+    ncl = 3
+    SeqWeight = 5
 
     MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(d, y)
-    centers = MSC.transform(d)
+    centers = MSC.transform()
 
-    plsr = PLSRegression(n_components=ncomp, scale=False)
-    plotR2YQ2Y(ax[2], plsr, centers, y, 1, 5)
+    plsr = PLSRegression(n_components=2, scale=False)
+    plotR2YQ2Y(ax[2], plsr, centers, y, ncl+1)
 
     # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:7], plsr, centers, y, 1)
+    plotActualVsPredicted(ax[3:7], plsr, centers, y)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -196,23 +195,23 @@ def plotGridSearch(ax, gs):
     ax.set_ylabel("Mean Squared Error")
 
 
-def plotR2YQ2Y(ax, model, X, Y, cv, b=3):
+def plotR2YQ2Y(ax, model, X, Y, b=3):
     """ Plot R2Y/Q2Y variance explained by each component. """
-    Q2Y = R2Y_across_components(model, X, Y, cv, b, crossval=True)
-    R2Y = R2Y_across_components(model, X, Y, cv, b)
+    Q2Y = R2Y_across_components(model, X, Y, b, crossval=True)
+    R2Y = R2Y_across_components(model, X, Y, b)
 
     range_ = np.arange(1, b)
 
     ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color="darkblue")
     ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black")
-    ax.set_title("R2Y/Q2Y - Cross-validation strategy: " + str(cv), fontsize=12)
+    ax.set_title("R2Y/Q2Y - Cross-validation", fontsize=12)
     ax.set_xticks(range_)
     ax.set_xlabel("Number of Components", fontsize=11)
     ax.set_ylabel("Variance", fontsize=11)
     ax.legend(loc=0)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
@@ -255,16 +254,11 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, cv, y_pred="cross-validation"):
         ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, pcX=1, pcY=2, data="clusters", annotate=True):
-    if cv == 1:
-        X_scores, _ = model.transform(X, Y)
-        PC1_xload, PC2_xload = model.x_loadings_[:, pcX - 1], model.x_loadings_[:, pcY - 1]
-        PC1_yload, PC2_yload = model.y_loadings_[:, pcX - 1], model.y_loadings_[:, pcY - 1]
-
-    if cv == 2:
-        X_scores, _ = model.named_steps.plsr.transform(X, Y)
-        PC1_xload, PC2_xload = model.named_steps.plsr.x_loadings_[:, pcX - 1], model.named_steps.plsr.x_loadings_[:, pcY - 1]
-        PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, pcX - 1], model.named_steps.plsr.y_loadings_[:, pcY - 1]
+def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True):
+    """Plot Scores and Loadings of PLSR model"""
+    X_scores, _ = model.transform(X, Y)
+    PC1_xload, PC2_xload = model.x_loadings_[:, pcX - 1], model.x_loadings_[:, pcY - 1]
+    PC1_yload, PC2_yload = model.y_loadings_[:, pcX - 1], model.y_loadings_[:, pcY - 1]
 
     PC1_scores, PC2_scores = X_scores[:, pcX - 1], X_scores[:, pcY - 1]
 
@@ -309,7 +303,7 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, cv, pcX=1, pcY=2, data=
 #     ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
 
 
-def plotScoresLoadings_plotly(model, X, Y, cv, loc=False):
+def plotScoresLoadings_plotly(model, X, Y, loc=False):
     """ Interactive PLSR plot. Note that this works best by pre-defining the dataframe's
     indices which will serve as labels for each dot in the plot. """
     if cv == 1:
@@ -412,40 +406,6 @@ def plotclusteraverages(ax, centers, treatments):
     ax.legend()
 
 
-def plotKmeansPLSR_GridSearch(ax, X, Y):
-    CVresults_max, CVresults_min, best_params = kmeansPLSR_tuning(X, Y)
-    twoC = np.abs(CVresults_min.iloc[:2, 3])
-    threeC = np.abs(CVresults_min.iloc[2:5, 3])
-    fourC = np.abs(CVresults_min.iloc[5:9, 3])
-    fiveC = np.abs(CVresults_min.iloc[9:14, 3])
-    sixC = np.abs(CVresults_min.iloc[14:20, 3])
-
-    width = 1
-    groupgap = 1
-
-    x1 = np.arange(len(twoC))
-    x2 = np.arange(len(threeC)) + groupgap + len(twoC)
-    x3 = np.arange(len(fourC)) + groupgap * 2 + len(twoC) + len(threeC)
-    x4 = np.arange(len(fiveC)) + groupgap * 3 + len(twoC) + len(threeC) + len(fourC)
-    x5 = np.arange(len(sixC)) + groupgap * 4 + len(twoC) + len(threeC) + len(fourC) + len(fiveC)
-
-    ax.bar(x1, twoC, width, edgecolor="black", color="g")
-    ax.bar(x2, threeC, width, edgecolor="black", color="g")
-    ax.bar(x3, fourC, width, edgecolor="black", color="g")
-    ax.bar(x4, fiveC, width, edgecolor="black", color="g")
-    ax.bar(x5, sixC, width, edgecolor="black", color="g")
-
-    comps = []
-    for ii in range(2, 7):
-        comps.append(list(np.arange(1, ii + 1)))
-    flattened = [nr for cluster in comps for nr in cluster]
-
-    ax.set_xticks(np.concatenate((x1, x2, x3, x4, x5)))
-    ax.set_xticklabels(flattened, fontsize=10)
-    ax.set_xlabel("Number of Components per Cluster")
-    ax.set_ylabel("Mean-Squared Error (MSE)")
-
-
 def plotClusters(X, cl_labels, nrows, ncols, xlabels, figsize=(15, 15)):
     """Boxplot of every cluster"""
     X["Cluster"] = cl_labels
@@ -504,7 +464,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     print(model.wins_)
     z = x.copy()
     z["Cluster"] = model.labels_
-    centers = model.transform(d).T  # Clusters x observations
+    centers = model.transform().T  # Clusters x observations
     errors = []
     for idx in nan_indices:
         v = z.iloc[idx[0], idx[1]]
@@ -513,7 +473,7 @@ def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
     return np.mean(errors)
 
 
-def WinsByWeight(i, d, weigths, distance_method):
+def WinsByWeight(i, d, weigths, distance_method, ncl):
     """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
     wins = []
     prioritize = []

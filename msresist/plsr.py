@@ -6,16 +6,12 @@ from sklearn.metrics import explained_variance_score
 ###------------ PLSR model functions ------------------###
 
 
-def R2Y_across_components(model, X, Y, cv, max_comps, crossval=False):
+def R2Y_across_components(model, X, Y, max_comps, crossval=False):
     """ Calculate R2Y or Q2Y, depending upon crossval. """
     R2Ys = []
 
     for b in range(1, max_comps):
-        if cv == 1:
-            model.set_params(n_components=b)
-        if cv == 2:
-            model.set_params(plsr__n_components=b)
-
+        model.set_params(n_components=b)
         if crossval is True:
             y_pred = cross_val_predict(model, X, Y, cv=Y.shape[0])
         else:
