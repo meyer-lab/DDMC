@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from .expectation_maximization import EM_clustering
+from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import assignPeptidesBN, position_weight_matrix, AAlist, BackgroundSeqs, GenerateBinarySeqID
 from .pam250 import assignPeptidesPAM, MotifPam250Scores
@@ -26,18 +26,21 @@ class MassSpecClustering(BaseEstimator):
         self.distance_method = distance_method
         self.background = background
 
+        if isinstance(self.background, bool):
+            seqs = [s.upper() for s in info["Sequence"]]
+            if distance_method == "PAM250":
+                # Compute all pairwise distances and generate seq vs seq to score dictionary
+                self.background = MotifPam250Scores(seqs)
+            elif distance_method == "Binomial":
+                # Background sequences
+                background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
+                self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
+
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
         params = (X, self.info, self.ncl, self.SeqWeight, self.distance_method, self.background)
 
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(*params)
-
-        for _ in range(nRepeats):
-            out = EM_clustering(*params)
-
-            # Use the new result if it's better
-            if out[0] > self.avgScores_:
-                self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = out
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, *params)
 
         return self
 
@@ -45,14 +48,23 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        data_model = EM_clustering(X, self.info, self.ncl, 0, self.distance_method, self.background)
-        seq_model = EM_clustering(X, self.info, self.ncl, 100, self.distance_method, self.background)
+        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, 0, self.distance_method, self.background)[1]
+        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, 100, self.distance_method, self.background)[1]
 
-        assert np.all(np.isfinite(data_model[1]))
-        assert np.all(np.isfinite(seq_model[1]))
-        assert np.all(np.isfinite(self.scores_))
+        dataDist = np.linalg.norm(self.scores_ - data_model)
+        seqDist = np.linalg.norm(self.scores_ - seq_model)
 
-        return (np.linalg.norm(self.scores_ - data_model[1]), np.linalg.norm(self.scores_ - seq_model[1]))
+        for _ in range(self.ncl - 1):
+            data_model = np.roll(data_model, 1, axis=1)
+            seq_model = np.roll(seq_model, 1, axis=1)
+
+            dataDistTemp = np.linalg.norm(self.scores_ - data_model)
+            seqDistTemp = np.linalg.norm(self.scores_ - seq_model)
+
+            dataDist = np.minimum(dataDist, dataDistTemp)
+            seqDist = np.minimum(seqDist, seqDistTemp)
+
+        return (dataDist, seqDist)
 
     def labels(self):
         """Find cluster assignments"""

@@ -5,7 +5,21 @@ import numpy as np
 import scipy.stats as sp
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
 from .binomial import Binomial
-from .pam250 import PAM250
+from .pam250 import PAM250, MotifPam250Scores
+
+
+
+def EM_clustering_repeat(nRepeats=3, *params):
+    output = EM_clustering(*params)
+
+    for _ in range(nRepeats):
+        output_temp = EM_clustering(*params)
+
+        # Use the new result if it's better
+        if output_temp[0] > output[0]:
+            output = output_temp
+
+    return output
 
 
 def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
@@ -21,18 +35,25 @@ def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
     elif distance_method == "Binomial":
         seqDist = Binomial(info, background, SeqWeight)
 
-    # Initialize model
-    dists = list()
-    for _ in range(ncl):
-        nDist = [NormalDistribution(sp.norm.rvs(), 0.1) for _ in range(d.shape[1] - 1)]
-        dists.append(IndependentComponentsDistribution(nDist + [seqDist]))
+    for _ in range(2):
+        # Initialize model
+        dists = list()
+        for _ in range(ncl):
+            nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
+            dists.append(IndependentComponentsDistribution(nDist + [seqDist]))
 
-    gmm = GeneralMixtureModel(dists)
+        gmm = GeneralMixtureModel(dists)
+        gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
+        scores = gmm.predict_proba(d)
 
-    gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
-    scores = gmm.predict_proba(d)
+        if np.all(np.isfinite(scores)):
+            break
+        print(scores)
 
     seq_scores = np.exp([dd[-1].weights for dd in gmm.distributions])
     avgScore = np.sum(gmm.log_probability(d))
+
+    assert np.all(np.isfinite(scores))
+    assert np.all(np.isfinite(seq_scores))
 
     return avgScore, scores, seq_scores, gmm

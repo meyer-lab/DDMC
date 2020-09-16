@@ -21,13 +21,7 @@ class PAM250():
         self.d = 1
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
-
-        if isinstance(background, bool):
-            seqs = [s.upper() for s in info["Sequence"]]
-
-            # Compute all pairwise distances and generate seq vs seq to score dictionary
-            self.background = MotifPam250Scores(seqs)
-
+        self.background = background
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
         self.from_summaries()
 
