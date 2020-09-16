@@ -8,7 +8,7 @@ from .binomial import Binomial
 from .pam250 import PAM250
 
 
-def EM_clustering(data, info, ncl, SeqWeight, distance_method, background, bg_mat, dataTensor):
+def EM_clustering(data, info, ncl, SeqWeight, distance_method, background):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 

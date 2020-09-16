@@ -143,6 +143,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 
 class Binomial():
+    """Create a binomial distance distribution compatible with pomegranate. """
     def __init__(self, info, background, SeqWeight):
         self.d = 1
         self.name = "Binomial"
@@ -156,13 +157,19 @@ class Binomial():
             self.bg_mat = np.array([background[AA] for AA in AAlist])
             self.dataTensor = GenerateBinarySeqID(seqs)
 
+        else:
+            self.bg_mat = background[0]
+            self.dataTensor = background[1]
+
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
         self.from_summaries()
 
     def summarize(self, X, weights):
+        """ Weights """
         self.weights = weights
 
     def log_probability(self, X):
+        """ Log probability """
         return self.SeqWeight * self.weights[int(np.squeeze(X))]
 
     def from_summaries(self, inertia=0.0):
