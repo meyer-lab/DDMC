@@ -147,25 +147,23 @@ class Binomial():
             self.bg_mat = background[0]
             self.dataTensor = background[1]
 
-        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
+        self.weightsIn = self.weights
         self.from_summaries()
 
-    def summarize(self, _, weights):
+    def summarize(self, _, w):
         """ Weights """
-        self.weights = weights
+        self.weightsIn = w
 
     def log_probability(self, X):
         """ Log probability """
-        return self.SeqWeight * self.weights[int(np.squeeze(X))]
+        return self.SeqWeight * np.log(self.weights[int(np.squeeze(X))])
 
     def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. """
-        ps = np.exp(self.weights - sc.logsumexp(self.weights))
-        k = np.dot(self.dataTensor.T, ps).T
-        probmat = sc.betainc(self.dataTensor.shape[0] - k, k + 1, 1 - self.bg_mat)
-
-        newW = np.log(np.tensordot(self.dataTensor, probmat, axes=2))
-        self.weights = self.weights * inertia + newW * (1.0 - inertia)
+        """ Update the underlying distribution. No inertia used. """
+        k = np.dot(self.dataTensor.T, self.weightsIn).T
+        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.bg_mat)
+        self.weights = np.tensordot(self.dataTensor, probmat, axes=2)
 
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
