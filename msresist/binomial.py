@@ -161,9 +161,8 @@ class Binomial():
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        w = self.weightsIn / np.sum(self.weightsIn)
-        k = np.dot(self.dataTensor.T, w).T
-        probmat = sc.betainc(1.0 - k, k + 1, 1 - self.bg_mat)
+        k = np.dot(self.dataTensor.T, self.weightsIn).T
+        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.bg_mat)
         self.weights = np.tensordot(self.dataTensor, probmat, axes=2)
 
     def clear_summaries(self):
