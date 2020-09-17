@@ -25,7 +25,6 @@ pipeline {
           sh 'make output/method/manuscript.html'
         }
         archiveArtifacts artifacts: 'figure*.svg, *.pdf', onlyIfSuccessful: true
-        recordIssues qualityGates: [[threshold: 1, type: 'TOTAL_HIGH', unstable: true], [threshold: 5, type: 'TOTAL_NORMAL', unstable: true], [threshold: 25, type: 'TOTAL_LOW', unstable: true]], tools: [pyLint(pattern: 'pylint.log')]
         publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/biol', reportFiles:'manuscript.html', reportName:'Biology Paper'])
         publishHTML([allowMissing:false, alwaysLinkToLastBuild:false, keepAll:true, reportDir:'output/method', reportFiles:'manuscript.html', reportName:'Methods Paper'])
       }
