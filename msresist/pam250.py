@@ -19,20 +19,24 @@ class PAM250():
         else:
             self.background = background
 
-        self.weights = sp.norm.rvs(size=len(info["Sequence"]))
+        self.background = np.array(self.background, dtype=np.float)
+        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
+        self.logWeights = np.log(self.weights)
         self.from_summaries()
 
-    def summarize(self, _, weights):
-        self.weights = weights
+    def summarize(self, _, w):
+        self.weights = w
 
     def log_probability(self, X):
-        return self.SeqWeight * self.weights[int(np.squeeze(X))]
+        return self.SeqWeight * self.logWeights[int(np.squeeze(X))]
 
     def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. """
-        ps = np.exp(self.weights - sc.logsumexp(self.weights))
-        newW = np.average(self.background, weights=ps, axis=0)
-        self.weights = self.weights * inertia + newW * (1.0 - inertia)
+        """ Update the underlying distribution. No inertia used. """
+        if np.sum(self.weights) == 0.0:
+            newW = np.average(self.background, axis=0)
+        else:
+            newW = np.average(self.background, weights=self.weights, axis=0)
+        self.logWeights = newW
 
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
