@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import shared_memory
 import numpy as np
 import scipy.stats as sp
+import scipy.special as sc
 from Bio.Align import substitution_matrices
 
 
@@ -13,9 +14,10 @@ class PAM250():
 
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
-
             # Compute all pairwise distances and generate seq vs seq to score dictionary
             self.background = MotifPam250Scores(seqs)
+        else:
+            self.background = background
 
         self.weights = sp.norm.rvs(size=len(info["Sequence"]))
         self.from_summaries()
@@ -28,9 +30,7 @@ class PAM250():
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. """
-        ps = np.exp(self.weights)
-        ps /= np.sum(ps)
-
+        ps = np.exp(self.weights - sc.logsumexp(self.weights))
         newW = np.average(self.background, weights=ps, axis=0)
         self.weights = self.weights * inertia + newW * (1.0 - inertia)
 
@@ -61,7 +61,7 @@ def MotifPam250Scores(seqs):
     shm.unlink()
 
     i_upper = np.triu_indices(n, k=1)
-    out[i_upper] = out.T[i_upper]
+    out[i_upper] = out.T[i_upper]  # pylint: disable=unsubscriptable-object
     return out
 
 
