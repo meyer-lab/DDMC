@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, seqDist):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
     d = np.hstack((d, idxx.T))
 
-    for _ in range(2):
+    for _ in range(5):
         # Initialize model
         dists = list()
         for _ in range(ncl):
