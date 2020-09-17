@@ -1,5 +1,5 @@
  
-all: figure3.svg figure1.svg figure2.svg figureM1.svg figureM2.svg figureM3.svg pylint.log
+all: figure3.svg figure1.svg figure2.svg figureM1.svg figureM2.svg figureM3.svg
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
@@ -38,9 +38,6 @@ figprofile: venv
 
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
-
-pylint.log: venv
-	. venv/bin/activate && (pylint --rcfile=./common/pylintrc msresist > pylint.log || echo "pylint exited with $?")
 
 %.pdf: %.ipynb
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
