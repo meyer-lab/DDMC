@@ -33,10 +33,9 @@ class PAM250():
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
         if np.sum(self.weights) == 0.0:
-            newW = np.average(self.background, axis=0)
+            self.logWeights = np.average(self.background, axis=0)
         else:
-            newW = np.average(self.background, weights=self.weights, axis=0)
-        self.logWeights = newW
+            self.logWeights = np.average(self.background, weights=self.weights, axis=0)
 
     def clear_summaries(self):
         """ Clear the summary statistics stored in the object. Not needed here. """
