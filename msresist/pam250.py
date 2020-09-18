@@ -66,7 +66,7 @@ def MotifPam250Scores(seqs):
 @njit(parallel=True)
 def distanceCalc(out, seqs, pam250m):
     """ Perform all the pairwise distances, with Numba JIT. """
-    for ii in prange(seqs.shape[0]):
+    for ii in prange(seqs.shape[0]):  # pylint: disable=not-an-iterable
         for jj in range(ii + 1):
             for zz in range(seqs.shape[1]):
                 out[ii, jj] += pam250m[seqs[ii, zz], seqs[jj, zz]]
