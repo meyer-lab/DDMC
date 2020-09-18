@@ -56,11 +56,9 @@ def MotifPam250Scores(seqs):
         for jj in range(pam250m.shape[1]):
             pam250m[ii, jj] = pam250[ii, jj]
 
-    start = time()
     out = distanceCalc(out, seqs, pam250m)
-    print(time() - start)
 
-    i_upper = np.triu_indices(out.shape[0], k=1)
+    i_upper = np.triu_indices_from(out, k=1)
     out[i_upper] = out.T[i_upper]  # pylint: disable=unsubscriptable-object
     return out
 
