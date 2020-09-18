@@ -1,9 +1,8 @@
-from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import shared_memory
 import numpy as np
 import scipy.stats as sp
 import scipy.special as sc
 from Bio.Align import substitution_matrices
+from numba import njit, prange
 
 
 class PAM250():
@@ -44,49 +43,31 @@ class PAM250():
 
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting """
-    n = len(seqs)
     pam250 = substitution_matrices.load("PAM250")
-    seqs = NumSeqs(seqs, pam250.alphabet)
+    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
 
     # WARNING this type can only hold -128 to 127
-    dtype = np.dtype(np.int8)
-    shm = shared_memory.SharedMemory(create=True, size=dtype.itemsize * n * n)
-    out = np.ndarray((n, n), dtype=dtype, buffer=shm.buf)
+    out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)
+    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
 
-    with ProcessPoolExecutor() as e:
-        for ii in range(0, n, 500):
-            e.submit(innerloop, seqs, ii, 500, shm.name, out.dtype, pam250, n)
+    # Move to a standard Numpy array
+    for ii in range(pam250m.shape[0]):
+        for jj in range(pam250m.shape[1]):
+            pam250m[ii, jj] = pam250[ii, jj]
 
-        e.shutdown()
+    out = distanceCalc(out, seqs, pam250m)
 
-    out = out.copy()
-    shm.close()
-    shm.unlink()
-
-    i_upper = np.triu_indices(n, k=1)
+    i_upper = np.triu_indices_from(out, k=1)
     out[i_upper] = out.T[i_upper]  # pylint: disable=unsubscriptable-object
     return out
 
 
-def innerloop(seqs, ii, endi, shm_name, ddtype, pam250, n: int):
-    existing_shm = shared_memory.SharedMemory(name=shm_name)
-    out = np.ndarray((n, n), dtype=ddtype, buffer=existing_shm.buf)
+@njit(parallel=True)
+def distanceCalc(out, seqs, pam250m):
+    """ Perform all the pairwise distances, with Numba JIT. """
+    for ii in prange(seqs.shape[0]):  # pylint: disable=not-an-iterable
+        for jj in range(ii + 1):
+            for zz in range(seqs.shape[1]):
+                out[ii, jj] += pam250m[seqs[ii, zz], seqs[jj, zz]]
 
-    for idxx in range(ii, ii + endi):
-        for jj in range(idxx + 1):
-            out[idxx, jj] = pairwise_score(seqs[idxx], seqs[jj], pam250)
-
-    existing_shm.close()
-
-
-def pairwise_score(seq1, seq2, pam250):
-    """ Compute distance between two kinase motifs. Note this does not account for gaps. """
-    score = 0
-    for a, b in zip(seq1, seq2):
-        score += pam250[a, b]
-    return int(score)
-
-
-def NumSeqs(seqs, alphabet):
-    """Transform sequences to numeric lists to access PAM250 more efficiently."""
-    return [np.array([alphabet.find(aa) for aa in seq], dtype=np.intp) for seq in seqs]
+    return out
