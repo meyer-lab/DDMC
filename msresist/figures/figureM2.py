@@ -29,8 +29,8 @@ def makeFigure():
     i_f = X_f.select_dtypes(include=['object'])
 
     # Run model
-    ncl = 15
-    MSC = MassSpecClustering(i_f, ncl=ncl, SeqWeight=1, distance_method="PAM250").fit(d_f, "NA")
+    ncl = 4
+    MSC = MassSpecClustering(i_f, ncl=ncl, SeqWeight=1, distance_method="Binomial").fit(d_f, "NA")
     centers = MSC.transform()
     centers["Patient_ID"] = X.columns[4:]
     centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
