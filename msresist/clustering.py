@@ -25,6 +25,7 @@ class MassSpecClustering(BaseEstimator):
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
+        self.background = background
 
         if distance_method == "PAM250":
             self.dist = PAM250(info, background, SeqWeight)
@@ -130,6 +131,18 @@ class MassSpecClustering(BaseEstimator):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         return self
+
+    def __getstate__(self):
+        """When pickling the model, remove the background data to optimize the file size."""
+        del self.background
+        state = self.__dict__.copy()
+        return state
+
+    def __setstate__(self, newstate):
+        newP = PAM250(newstate["scores_"], None, newstate['SeqWeight'])
+        newP.weights = newstate['weights']
+        newP.logWeights = newstate['logWeights']
+        return newP
 
 
 def ClusterAverages(X, labels):

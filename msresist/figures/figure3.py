@@ -142,12 +142,14 @@ def makeFigure():
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
-    distance_method = "PAM250"
     ncl = 3
-    SeqWeight = 5
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=1, distance_method="PAM250").fit(d, y)
     centers = MSC.transform()
+
+    import pickle
+    with open('AXLmodel_PAM250_W1_15CL', 'wb') as f:
+        pickle.dump([MSC], f)
 
     plsr = PLSRegression(n_components=2, scale=False)
     plotR2YQ2Y(ax[2], plsr, centers, y, ncl + 1)

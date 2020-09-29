@@ -15,11 +15,12 @@ class PAM250():
             seqs = [s.upper() for s in info["Sequence"]]
             # Compute all pairwise distances and generate seq vs seq to score dictionary
             self.background = MotifPam250Scores(seqs)
+        elif background == None:
+            self.background = None
         else:
             self.background = background
 
-        self.background = np.array(self.background, dtype=np.float)
-        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
+        self.weights = sp.beta.rvs(a=10, b=10, size=info.shape[0])
         self.logWeights = np.log(self.weights)
         self.from_summaries()
 
