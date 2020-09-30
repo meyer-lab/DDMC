@@ -147,7 +147,7 @@ class Binomial():
             self.bg_mat = background[0]
             self.dataTensor = background[1]
 
-        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
+        self.weights = sp.beta.rvs(a=10, b=10, size=self.dataTensor.shape[0])
         self.weightsIn = self.weights
         self.from_summaries()
 
