@@ -15,14 +15,24 @@ class PAM250():
             seqs = [s.upper() for s in info["Sequence"]]
             # Compute all pairwise distances and generate seq vs seq to score dictionary
             self.background = MotifPam250Scores(seqs)
-        elif background == None:
-            self.background = None
         else:
             self.background = background
 
-        self.weights = sp.beta.rvs(a=10, b=10, size=info.shape[0])
-        self.logWeights = np.log(self.weights)
-        self.from_summaries()
+        if background is not None:
+            self.weights = sp.beta.rvs(a=10, b=10, size=info.shape[0])
+            self.logWeights = np.log(self.weights)
+            self.from_summaries()
+
+    def __getstate__(self):
+        """When pickling the model, remove the background data to optimize the file size."""
+        del self.background
+        return self.__dict__.copy()
+
+    def __setstate__(self, newstate):
+        newP = PAM250(None, None, newstate['SeqWeight'])
+        newP.weights = newstate['weights']
+        newP.logWeights = newstate['logWeights']
+        return newP
 
     def summarize(self, _, w):
         self.weights = w
