@@ -85,8 +85,9 @@ class MassSpecClustering(BaseEstimator):
         pssms = []
         for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
-            for jj, seq in enumerate(self.info["Sequences"]):
-                for kk, aa in seq:
+            for jj, seq in enumerate(self.info["Sequence"]):
+                seq = seq.upper()
+                for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
 
             pssms.append(pssm / bg_prob)
@@ -172,6 +173,6 @@ def PSPSLdict():
 def TransformKinasePredictionMats(PSSMs, bg_sequences):
     """Transform PSSMs and PSPLs to perform matrix math."""
     bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-    bg_prob = np.delete(bg_prob, [5, -1], 1)  # Remove P0 and P+5 from background
-    PSSMs = [np.delete(np.array(list(mat.values())), [5, -1], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
+    bg_prob = np.delete(bg_prob, [5, 10], 1)  # Remove P0 and P+5 from background
+    PSSMs = [np.delete(np.array(list(mat)), [5, 10], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
     return bg_prob, PSSMs
