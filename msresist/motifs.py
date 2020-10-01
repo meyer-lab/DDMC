@@ -4,6 +4,7 @@ import os
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
+from .binomial import AAlist
 
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -204,5 +205,5 @@ def ForegroundSeqs(sequences):
         motif = motif.upper()
         assert "-" not in motif, "gap in motif"
         assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
-        seqs.append(Seq(motif))
+        seqs.append(Seq(motif, alphabet=AAlist))
     return seqs

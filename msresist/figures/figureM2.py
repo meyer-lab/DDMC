@@ -30,10 +30,10 @@ def makeFigure():
     i_f = X_f.select_dtypes(include=['object'])
 
     # Run model
-    ncl = 4
-    MSC = MassSpecClustering(i_f, ncl=ncl, SeqWeight=1, distance_method="PAM250").fit(d_f, "NA")
+    ncl = 15
+    MSC = MassSpecClustering(i_f, ncl=ncl, SeqWeight=1, distance_method="Binomial").fit(d_f, "NA")
 
-    with open('CPTACmodel_PAM250_W1_15CL', 'wb') as f:
+    with open('CPTACmodel_BINOMIAL_W1_15CL', 'wb') as f:
         pickle.dump([MSC], f)
 
     centers = MSC.transform()
