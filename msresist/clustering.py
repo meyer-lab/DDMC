@@ -39,6 +39,7 @@ class MassSpecClustering(BaseEstimator):
         if self.distance_method == "PAM250":
             for ii in range(self.ncl):
                 self.gmm_.distributions[ii][-1].background = None
+            self.dist.background = None
 
         return self
 
