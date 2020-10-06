@@ -1,7 +1,7 @@
 """ Clustering functions. """
 
 import glob
-from copy import deepcopy
+from copy import copy
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -45,7 +45,7 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = deepcopy(self.dist)
+        wDist = copy(self.dist)
         wDist.SeqWeight = 0.0
         data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
         wDist.SeqWeight = 10.0
@@ -80,8 +80,6 @@ class MassSpecClustering(BaseEstimator):
 
     def pssms(self, bg_sequences):
         """Compute position-specific scoring matrix of each cluster."""
-        bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-
         pssms = []
         for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
@@ -90,7 +88,16 @@ class MassSpecClustering(BaseEstimator):
                 for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
 
-            pssms.append(pssm / bg_prob)
+            # Normalize by position across residues and remove negative outliers
+            # TODO: May be required to normalize by AAfreq within MS data motifs ––background sequences.
+            for pos in range(pssm.shape[1]):
+                pssm[:, pos] /= np.mean(pssm[:, pos])
+            pssm = np.log2(pssm)
+            pssm[pssm == -np.inf] = 0 #-np.inf only in non-phosphorylatable aa in the central p-Site. 
+            pssm[pssm < -4] = -4
+            pssm = pd.DataFrame(pssm)
+            pssm.index = AAlist
+            pssms.append(pssm)
 
         return pssms
 
