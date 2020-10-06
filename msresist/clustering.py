@@ -1,7 +1,7 @@
 """ Clustering functions. """
 
 import glob
-from copy import deepcopy
+from copy import copy
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -45,7 +45,7 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = deepcopy(self.dist)
+        wDist = copy(self.dist)
         wDist.SeqWeight = 0.0
         data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
         wDist.SeqWeight = 10.0
@@ -80,16 +80,31 @@ class MassSpecClustering(BaseEstimator):
 
     def pssms(self, bg_sequences):
         """Compute position-specific scoring matrix of each cluster."""
-        bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-
         pssms = []
+        back_pssm = np.zeros((len(AAlist), 11), dtype=float)
         for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
-            for jj, seq in enumerate(self.info["Sequences"]):
-                for kk, aa in seq:
+            for jj, seq in enumerate(self.info["Sequence"]):
+                seq = seq.upper()
+                for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
+                    if ii == 0:
+                        back_pssm[AAlist.index(aa), kk] += 1.0
 
-            pssms.append(pssm / bg_prob)
+            # Normalize by position across residues and remove negative outliers
+            for pos in range(pssm.shape[1]):
+                pssm[:, pos] /= np.mean(pssm[:, pos])
+                if ii == 0:
+                    back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+            pssm = np.log2(pssm)
+            if ii == 0:
+                back_pssm = np.log2(back_pssm)
+            pssm -= back_pssm.copy()
+            pssm = np.nan_to_num(pssm)
+            pssm[pssm < -4] = -4
+            pssm = pd.DataFrame(pssm)
+            pssm.index = AAlist
+            pssms.append(pssm)
 
         return pssms
 
@@ -172,6 +187,6 @@ def PSPSLdict():
 def TransformKinasePredictionMats(PSSMs, bg_sequences):
     """Transform PSSMs and PSPLs to perform matrix math."""
     bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-    bg_prob = np.delete(bg_prob, [5, -1], 1)  # Remove P0 and P+5 from background
-    PSSMs = [np.delete(np.array(list(mat.values())), [5, -1], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
+    bg_prob = np.delete(bg_prob, [5, 10], 1)  # Remove P0 and P+5 from background
+    PSSMs = [np.delete(np.array(list(mat)), [5, 10], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
     return bg_prob, PSSMs
