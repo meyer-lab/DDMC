@@ -406,14 +406,13 @@ def plotclusteraverages(ax, centers, treatments):
     ax.legend()
 
 
-def plotClusters(X, cl_labels, nrows, ncols, xlabels, figsize=(15, 15)):
-    """Boxplot of every cluster"""
-    X["Cluster"] = cl_labels
-    n = max(X["Cluster"])
+def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
+    centers = pd.DataFrame(centers.T)
+    centers.columns = xlabels
     _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
-    for i in range(n):
-        cl = X[X["Cluster"] == i + 1]
-        m = pd.melt(cl, value_vars=list(cl.select_dtypes(include=["float"])), value_name="p-signal", id_vars=["Gene"], var_name="Lines")
+    for i in range(centers.shape[0]):
+        cl = pd.DataFrame(centers.iloc[i, :]).T
+        m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
         sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
         ax[i // ncols][i % ncols].set_xticks(np.arange(len(xlabels)))
