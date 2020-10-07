@@ -20,7 +20,7 @@ def test_wins(distance_method):
     distances = MSC.wins(data)
 
     # assert that the distance to the same sequence weight is less
-    assert distances[0] < 1.0
+    assert distances[0] < 100.0
 
 
 @pytest.mark.parametrize("w", [0, 0.1, 0.3, 1])
