@@ -57,18 +57,13 @@ class MassSpecClustering(BaseEstimator):
         seqDist = np.linalg.norm(self.scores_ - seq_model)
 
         for _ in range(self.ncl - 1):
-            display(pd.DataFrame(data_model))
             data_model = np.roll(data_model, 1, axis=1)
-            display(pd.DataFrame(data_model))
             seq_model = np.roll(seq_model, 1, axis=1)
 
             dataDistTemp = np.linalg.norm(self.scores_ - data_model)
             seqDistTemp = np.linalg.norm(self.scores_ - seq_model)
 
             dataDist = np.minimum(dataDist, dataDistTemp)
-            print(dataDistTemp)
-            print(dataDist)
-            raise SystemExit
             seqDist = np.minimum(seqDist, seqDistTemp)
 
         return (dataDist, seqDist)
