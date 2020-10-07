@@ -18,7 +18,6 @@ class PAM250():
         else:
             self.background = background
 
-        self.background = np.array(self.background, dtype=np.float)
         self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
         self.logWeights = np.log(self.weights)
         self.from_summaries()

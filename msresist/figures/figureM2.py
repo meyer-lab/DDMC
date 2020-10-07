@@ -68,8 +68,12 @@ def makeFigure():
     # plsr = PLSRegression(n_components=2, scale=True)
     # plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
 
-    # Add subplot labels
-    subplotLabel(ax)
+    # Import MS data and filter peptides with excessive missingness
+    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X_f = filter_NaNpeptides(X, cut=0.1)
+    X_f.index = np.arange(X_f.shape[0])
+    d_f = X_f.select_dtypes(include=['float64']).T
+    i_f = X_f.select_dtypes(include=['object'])
 
     return f
 
