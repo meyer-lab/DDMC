@@ -63,7 +63,6 @@ def makeFigure():
     # plotROC(ax[4], lr, c, tt, cv_folds=ncl)
     # plotClusterCoefficients(ax[5], lr)
 
-
     # # Add subplot labels
     # subplotLabel(ax)
 
