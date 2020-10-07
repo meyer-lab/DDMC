@@ -142,11 +142,9 @@ def makeFigure():
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
-    distance_method = "PAM250"
     ncl = 3
-    SeqWeight = 5
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(d, y)
+    MSC = MassSpecClustering(i, ncl, SeqWeight=1, distance_method="PAM250").fit(d, y)
     centers = MSC.transform()
 
     plsr = PLSRegression(n_components=2, scale=False)
