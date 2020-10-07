@@ -1,7 +1,7 @@
 """Main Expectation-Maximization functions using gmm and binomial or pam250 to determine cluster assginments.
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
-from copy import deepcopy
+from copy import copy
 import numpy as np
 import scipy.stats as sp
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
@@ -33,10 +33,10 @@ def EM_clustering(data, info, ncl, seqDist):
         dists = list()
         for _ in range(ncl):
             nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-            dists.append(IndependentComponentsDistribution(nDist + [deepcopy(seqDist)]))
+            dists.append(IndependentComponentsDistribution(nDist + [copy(seqDist)]))
 
         gmm = GeneralMixtureModel(dists)
-        gmm.fit(d, inertia=0.1, stop_threshold=1e-12)
+        gmm.fit(d, inertia=0.1, stop_threshold=200, max_iterations=50,  verbose=True)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

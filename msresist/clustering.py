@@ -35,9 +35,11 @@ class MassSpecClustering(BaseEstimator):
         """Compute EM clustering"""
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
 
-        if self.distance_method == "PAM250":
-            for ii in range(self.ncl):
-                self.gmm_.distributions[ii][-1].background = None
+        # Use only to pickle model
+        # if self.distance_method == "PAM250":
+        #     for ii in range(self.ncl):
+        #         self.gmm_.distributions[ii][-1].background = None
+        #     self.dist.background = None
 
         return self
 
