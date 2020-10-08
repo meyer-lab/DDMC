@@ -3,15 +3,11 @@ import scipy.stats as sp
 import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
+from pomegranate.distributions import CustomDistribution
 
-from .distribution import SeqDistribution
 
-
-class PAM250(SeqDistribution):
+class PAM250(CustomDistribution):
     def __init__(self, info, background, SeqWeight):
-        super().__init__(SeqWeight, len(info["Sequence"]))
-        self.name = "PAM250"
-
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
             # Compute all pairwise distances and generate seq vs seq to score dictionary
@@ -19,14 +15,20 @@ class PAM250(SeqDistribution):
         else:
             self.background = background
 
+        super().__init__(self.background.shape[0])
+        self.name = "PAM250"
+        self.SeqWeight = SeqWeight
         self.from_summaries()
+
+    def copy(self):
+        return PAM250(None, self.background, self.SeqWeight)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        if np.sum(self.weights) == 0.0:
-            self.logWeights = np.average(self.background, axis=0)
+        if np.sum(self.weightsIn) == 0.0:
+            self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
         else:
-            self.logWeights = np.average(self.background, weights=self.weights, axis=0)
+            self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
 
 
 def MotifPam250Scores(seqs):

@@ -33,7 +33,7 @@ def EM_clustering(data, info, ncl, seqDist):
         dists = list()
         for _ in range(ncl):
             nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-            dists.append(IndependentComponentsDistribution(nDist + [copy(seqDist)]))
+            dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
 
         gmm = GeneralMixtureModel(dists)
         gmm.fit(d, inertia=0.1, stop_threshold=200, max_iterations=50, verbose=True)
@@ -42,7 +42,7 @@ def EM_clustering(data, info, ncl, seqDist):
         if np.all(np.isfinite(scores)):
             break
 
-    seq_scores = np.exp([dd[-1].weights for dd in gmm.distributions])
+    seq_scores = np.exp([dd[-1].logWeights for dd in gmm.distributions])
     avgScore = np.sum(gmm.log_probability(d))
 
     assert np.all(np.isfinite(scores))

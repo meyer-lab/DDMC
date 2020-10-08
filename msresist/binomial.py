@@ -7,8 +7,7 @@ import scipy.stats as sp
 import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
-
-from .distribution import SeqDistribution
+from pomegranate.distributions import CustomDistribution
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -130,13 +129,10 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
     return y_seqs + s_seqs + t_seqs
 
 
-class Binomial(SeqDistribution):
+class Binomial(CustomDistribution):
     """Create a binomial distance distribution compatible with pomegranate. """
 
     def __init__(self, info, background, SeqWeight):
-        super().__init__(SeqWeight, len(info["Sequence"]))
-        self.name = "Binomial"
-
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
@@ -148,13 +144,19 @@ class Binomial(SeqDistribution):
             self.bg_mat = background[0]
             self.dataTensor = background[1]
 
+        super().__init__(self.dataTensor.shape[0])
+        self.name = "Binomial"
+        self.SeqWeight = SeqWeight
         self.from_summaries()
+
+    def copy(self):
+        return Binomial(None, (self.bg_mat, self.dataTensor), self.SeqWeight)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        k = np.dot(self.dataTensor.T, self.weights).T
-        probmat = sc.betainc(np.sum(self.weights) - k, k + 1, 1 - self.bg_mat)
-        self.logWeights = np.log(np.tensordot(self.dataTensor, probmat, axes=2))
+        k = np.dot(self.dataTensor.T, self.weightsIn).T
+        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.bg_mat)
+        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.dataTensor, probmat, axes=2))
 
 
 def CountPsiteTypes(X, cA):
