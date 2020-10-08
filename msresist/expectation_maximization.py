@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, seqDist):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
     d = np.hstack((d, idxx.T))
 
-    for _ in range(5):
+    for _ in range(10):
         # Initialize model
         dists = list()
         for _ in range(ncl):
@@ -36,7 +36,7 @@ def EM_clustering(data, info, ncl, seqDist):
             dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
 
         gmm = GeneralMixtureModel(dists)
-        gmm.fit(d, inertia=0.1, stop_threshold=200, max_iterations=50, verbose=True)
+        gmm.fit(d, max_iterations=50, verbose=True)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
