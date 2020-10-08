@@ -1,6 +1,7 @@
 """ Clustering functions. """
 
 import glob
+import itertools
 from copy import copy
 import numpy as np
 import pandas as pd
@@ -56,12 +57,9 @@ class MassSpecClustering(BaseEstimator):
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
 
-        for _ in range(self.ncl - 1):
-            data_model = np.roll(data_model, 1, axis=1)
-            seq_model = np.roll(seq_model, 1, axis=1)
-
-            dataDistTemp = np.linalg.norm(self.scores_ - data_model)
-            seqDistTemp = np.linalg.norm(self.scores_ - seq_model)
+        for i in itertools.permutations(np.arange(self.ncl)):
+            dataDistTemp = np.linalg.norm(self.scores_ - data_model[:, i])
+            seqDistTemp = np.linalg.norm(self.scores_ - seq_model[:, i])
 
             dataDist = np.minimum(dataDist, dataDistTemp)
             seqDist = np.minimum(seqDist, seqDistTemp)
