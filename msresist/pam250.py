@@ -4,12 +4,13 @@ import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
 
+from .distribution import SeqDistribution
 
-class PAM250():
+
+class PAM250(SeqDistribution):
     def __init__(self, info, background, SeqWeight):
-        self.d = 1
+        super().__init__(SeqWeight, len(info["Sequence"]))
         self.name = "PAM250"
-        self.SeqWeight = SeqWeight
 
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
@@ -18,15 +19,7 @@ class PAM250():
         else:
             self.background = background
 
-        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
-        self.logWeights = np.log(self.weights)
         self.from_summaries()
-
-    def summarize(self, _, w):
-        self.weights = w
-
-    def log_probability(self, X):
-        return self.SeqWeight * self.logWeights[int(np.squeeze(X))]
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
@@ -34,10 +27,6 @@ class PAM250():
             self.logWeights = np.average(self.background, axis=0)
         else:
             self.logWeights = np.average(self.background, weights=self.weights, axis=0)
-
-    def clear_summaries(self):
-        """ Clear the summary statistics stored in the object. Not needed here. """
-        return
 
 
 def MotifPam250Scores(seqs):
