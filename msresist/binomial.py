@@ -7,6 +7,7 @@ import scipy.stats as sp
 import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
+from pomegranate.distributions import CustomDistribution
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -128,14 +129,10 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
     return y_seqs + s_seqs + t_seqs
 
 
-class Binomial():
+class Binomial(CustomDistribution):
     """Create a binomial distance distribution compatible with pomegranate. """
 
     def __init__(self, info, background, SeqWeight):
-        self.d = 1
-        self.name = "Binomial"
-        self.SeqWeight = SeqWeight
-
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
 
@@ -147,27 +144,19 @@ class Binomial():
             self.bg_mat = background[0]
             self.dataTensor = background[1]
 
-        self.weights = sp.beta.rvs(a=10, b=10, size=self.dataTensor.shape[0])
-        self.weightsIn = self.weights
+        super().__init__(self.dataTensor.shape[0])
+        self.name = "Binomial"
+        self.SeqWeight = SeqWeight
         self.from_summaries()
 
-    def summarize(self, _, w):
-        """ Weights """
-        self.weightsIn = w
-
-    def log_probability(self, X):
-        """ Log probability """
-        return self.SeqWeight * np.log(self.weights[int(np.squeeze(X))])
+    def copy(self):
+        return Binomial(None, (self.bg_mat, self.dataTensor), self.SeqWeight)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
         k = np.dot(self.dataTensor.T, self.weightsIn).T
         probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.bg_mat)
-        self.weights = np.tensordot(self.dataTensor, probmat, axes=2)
-
-    def clear_summaries(self):
-        """ Clear the summary statistics stored in the object. Not needed here. """
-        return
+        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.dataTensor, probmat, axes=2))
 
 
 def CountPsiteTypes(X, cA):
