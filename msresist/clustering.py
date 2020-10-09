@@ -47,7 +47,7 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = copy(self.dist)
+        wDist = self.dist.copy()
         wDist.SeqWeight = 0.0
         data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
         wDist.SeqWeight = 10.0
