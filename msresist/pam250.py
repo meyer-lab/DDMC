@@ -3,14 +3,11 @@ import scipy.stats as sp
 import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
+from pomegranate.distributions import CustomDistribution
 
 
-class PAM250():
+class PAM250(CustomDistribution):
     def __init__(self, info, background, SeqWeight):
-        self.d = 1
-        self.name = "PAM250"
-        self.SeqWeight = SeqWeight
-
         if isinstance(background, bool):
             seqs = [s.upper() for s in info["Sequence"]]
             # Compute all pairwise distances and generate seq vs seq to score dictionary
@@ -18,26 +15,20 @@ class PAM250():
         else:
             self.background = background
 
-        self.weights = sp.beta.rvs(a=10, b=10, size=len(info["Sequence"]))
-        self.logWeights = np.log(self.weights)
+        super().__init__(self.background.shape[0])
+        self.name = "PAM250"
+        self.SeqWeight = SeqWeight
         self.from_summaries()
 
-    def summarize(self, _, w):
-        self.weights = w
-
-    def log_probability(self, X):
-        return self.SeqWeight * self.logWeights[int(np.squeeze(X))]
+    def copy(self):
+        return PAM250(None, self.background, self.SeqWeight)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        if np.sum(self.weights) == 0.0:
-            self.logWeights = np.average(self.background, axis=0)
+        if np.sum(self.weightsIn) == 0.0:
+            self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
         else:
-            self.logWeights = np.average(self.background, weights=self.weights, axis=0)
-
-    def clear_summaries(self):
-        """ Clear the summary statistics stored in the object. Not needed here. """
-        return
+            self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
 
 
 def MotifPam250Scores(seqs):
