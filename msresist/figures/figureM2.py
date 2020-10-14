@@ -21,9 +21,9 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((12.5, 12), (4, 3))
-    # X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
-    # d = X.select_dtypes(include=["float64"]).T
+    d = X.select_dtypes(include=["float64"]).T
 
     # distance_method = "PAM250"
 
@@ -39,16 +39,20 @@ def makeFigure():
     # plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
     # # Run model
-    # X_f = filter_NaNpeptides(X, cut=0.1)
-    # d_f = X_f.select_dtypes(include=['float64']).T
-    # i_f = X_f.select_dtypes(include=['object'])
-    # distance_method = "PAM250"
-    # ncl = 19
-    # SeqWeight = 0.75
-    # MSC = MassSpecClustering(
-    #     i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1
-    # ).fit(d_f, "NA")
-    # centers = MSC.transform(d_f)
+    X_f = filter_NaNpeptides(X, cut=0.1)
+    d_f = X_f.select_dtypes(include=['float64']).T
+    i_f = X_f.select_dtypes(include=['object'])
+    distance_method = "Binomial"
+    ncl = 15
+    SeqWeight = 10
+    MSC = MassSpecClustering(i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method).fit(d_f, "NA")
+
+    import pickle
+    with open('CPTACmodel_BINOMIAL_W10_15CL', 'wb') as f:
+        pickle.dump([MSC], f)
+
+
+    centers = MSC.transform()
     # centers["Patient_ID"] = X.columns[4:]
 
     # # PCA of model
