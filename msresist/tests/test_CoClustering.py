@@ -42,11 +42,7 @@ def test_clusters(w, ncl, distance_method):
 def test_pickle(distance_method):
     """ Test that EMclustering can be pickled and unpickled. """
     MSC = MassSpecClustering(info, 2, SeqWeight=2, distance_method=distance_method).fit(X=data)
-    with open('test_file', 'wb') as f:
-        pickle.dump([MSC], f)
-
-    with open('test_file', 'rb') as f:
-        unpickled = pickle.load(f)[0]
-
-    os.remove("/home/marcc/resistance-MS/test_file")
+    
+    pstring = pickle.dumps(MSC)
+    unpickled = pickle.loads(pstring)
     assert np.all(np.isfinite(unpickled.scores_))
