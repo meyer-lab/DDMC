@@ -57,7 +57,7 @@ def InformationContent(seqs):
 
 def GenerateBinarySeqID(seqs):
     """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
-    res = np.zeros((len(seqs), len(AAlist), 11))
+    res = np.zeros((len(seqs), len(AAlist), 11), dtype=np.bool)
     for ii, seq in enumerate(seqs):
         for pos, aa in enumerate(seq):
             res[ii, AAlist.index(aa.upper()), pos] = 1
