@@ -2,6 +2,8 @@
 Testing file for the clustering methods by data and sequence.
 """
 
+import os
+import pickle
 import pytest
 import numpy as np
 from ..clustering import MassSpecClustering
@@ -34,3 +36,13 @@ def test_clusters(w, ncl, distance_method):
     # Assert that we got a reasonable result
     assert np.all(np.isfinite(MSC.scores_))
     assert np.all(np.isfinite(MSC.seq_scores_))
+
+
+@pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
+def test_pickle(distance_method):
+    """ Test that EMclustering can be pickled and unpickled. """
+    MSC = MassSpecClustering(info, 2, SeqWeight=2, distance_method=distance_method).fit(X=data)
+    
+    pstring = pickle.dumps(MSC)
+    unpickled = pickle.loads(pstring)
+    assert np.all(np.isfinite(unpickled.scores_))
