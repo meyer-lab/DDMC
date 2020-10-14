@@ -7,21 +7,25 @@ from pomegranate.distributions import CustomDistribution
 
 
 class PAM250(CustomDistribution):
-    def __init__(self, info, background, SeqWeight):
-        if isinstance(background, bool):
-            seqs = [s.upper() for s in info["Sequence"]]
+    def __init__(self, seqs, SeqWeight, background=None):
+        self.background = background
+
+        if background is None:
             # Compute all pairwise distances and generate seq vs seq to score dictionary
             self.background = MotifPam250Scores(seqs)
-        else:
-            self.background = background
 
         super().__init__(self.background.shape[0])
+        self.seqs = seqs
         self.name = "PAM250"
         self.SeqWeight = SeqWeight
         self.from_summaries()
 
+    def __reduce__(self):
+        """Serialize the distribution for pickle."""
+        return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
+
     def copy(self):
-        return PAM250(None, self.background, self.SeqWeight)
+        return PAM250(self.seqs, self.SeqWeight, self.background)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
@@ -29,6 +33,15 @@ class PAM250(CustomDistribution):
             self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
         else:
             self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
+
+
+def unpackPAM(seqs, sw, lw, frozen):
+    """Unpack from pickling."""
+    clss = PAM250(seqs, sw)
+    clss.frozen = frozen
+    clss.weightsIn[:] = np.exp(lw)
+    clss.logWeights[:] = lw
+    return clss
 
 
 def MotifPam250Scores(seqs):

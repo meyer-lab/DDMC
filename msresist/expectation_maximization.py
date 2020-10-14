@@ -36,7 +36,7 @@ def EM_clustering(data, info, ncl, seqDist):
             dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
 
         gmm = GeneralMixtureModel(dists)
-        gmm.fit(d, max_iterations=50, verbose=True)
+        gmm.fit(d, max_iterations=50, verbose=False)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

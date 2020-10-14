@@ -57,7 +57,7 @@ def InformationContent(seqs):
 
 def GenerateBinarySeqID(seqs):
     """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
-    res = np.zeros((len(seqs), len(AAlist), 11))
+    res = np.zeros((len(seqs), len(AAlist), 11), dtype=np.bool)
     for ii, seq in enumerate(seqs):
         for pos, aa in enumerate(seq):
             res[ii, AAlist.index(aa.upper()), pos] = 1
@@ -132,31 +132,42 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 class Binomial(CustomDistribution):
     """Create a binomial distance distribution compatible with pomegranate. """
 
-    def __init__(self, info, background, SeqWeight):
-        if isinstance(background, bool):
-            seqs = [s.upper() for s in info["Sequence"]]
+    def __init__(self, seq, seqs, SeqWeight, background=None):
+        self.background = background
 
+        if background is None:
             # Background sequences
-            background = position_weight_matrix(BackgroundSeqs(info["Sequence"]))
-            self.bg_mat = np.array([background[AA] for AA in AAlist])
-            self.dataTensor = GenerateBinarySeqID(seqs)
-        else:
-            self.bg_mat = background[0]
-            self.dataTensor = background[1]
+            background = position_weight_matrix(BackgroundSeqs(seq))
+            self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
 
-        super().__init__(self.dataTensor.shape[0])
+        super().__init__(len(seqs))
+        self.seq = seq
+        self.seqs = seqs
         self.name = "Binomial"
         self.SeqWeight = SeqWeight
         self.from_summaries()
 
     def copy(self):
-        return Binomial(None, (self.bg_mat, self.dataTensor), self.SeqWeight)
+        return Binomial(self.seq, self.seqs, self.SeqWeight, self.background)
+
+    def __reduce__(self):
+        """Serialize the distribution for pickle."""
+        return unpackBinomial, (self.seq, self.seqs, self.SeqWeight, self.logWeights, self.frozen)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        k = np.dot(self.dataTensor.T, self.weightsIn).T
-        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.bg_mat)
-        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.dataTensor, probmat, axes=2))
+        k = np.dot(self.background[1].T, self.weightsIn).T
+        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.background[0])
+        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
+
+
+def unpackBinomial(seq, seqs, sw, lw, frozen):
+    """Unpack from pickling."""
+    clss = Binomial(seq, seqs, sw)
+    clss.frozen = frozen
+    clss.weightsIn[:] = np.exp(lw)
+    clss.logWeights[:] = lw
+    return clss
 
 
 def CountPsiteTypes(X, cA):

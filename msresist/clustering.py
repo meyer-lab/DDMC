@@ -27,20 +27,16 @@ class MassSpecClustering(BaseEstimator):
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
 
+        seqs = [s.upper() for s in info["Sequence"]]
+
         if distance_method == "PAM250":
-            self.dist = PAM250(info, background, SeqWeight)
+            self.dist = PAM250(seqs, SeqWeight)
         elif distance_method == "Binomial":
-            self.dist = Binomial(info, background, SeqWeight)
+            self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
-
-        # Use only to pickle model
-        # if self.distance_method == "PAM250":
-        #     for ii in range(self.ncl):
-        #         self.gmm_.distributions[ii][-1].background = None
-        #     self.dist.background = None
 
         return self
 
