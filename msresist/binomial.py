@@ -34,6 +34,7 @@ AAfreq = {
     "Y": 0.033,
     "V": 0.068,
 }
+
 AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
 
 
@@ -79,7 +80,7 @@ def BackgroundSeqs(forseqs):
     pSf = forw_pSn / forw_tot
     pTf = forw_pTn / forw_tot
 
-    # Import backgroun sequences file
+    # Import background sequences file
     PsP = pd.read_csv("./msresist/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv")
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
@@ -118,13 +119,13 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
-            y_seqs.append(Seq(motif))
+            y_seqs.append(Seq(motif, alphabet=AAlist))
 
         if motif[5] == "S" and len(s_seqs) < pSn:
-            s_seqs.append(Seq(motif))
+            s_seqs.append(Seq(motif, alphabet=AAlist))
 
         if motif[5] == "T" and len(t_seqs) < pTn:
-            t_seqs.append(Seq(motif))
+            t_seqs.append(Seq(motif, alphabet=AAlist))
 
     return y_seqs + s_seqs + t_seqs
 
