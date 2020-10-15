@@ -21,7 +21,7 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((12.5, 12), (4, 3))
-    # X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
     # d = X.select_dtypes(include=["float64"]).T
 
@@ -39,15 +39,19 @@ def makeFigure():
     # plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
 
     # # Run model
-    # X_f = filter_NaNpeptides(X, cut=0.1)
-    # d_f = X_f.select_dtypes(include=['float64']).T
-    # i_f = X_f.select_dtypes(include=['object'])
-    # distance_method = "PAM250"
-    # ncl = 19
-    # SeqWeight = 0.75
-    # MSC = MassSpecClustering(
-    #     i_f, ncl, SeqWeight=SeqWeight, distance_method=distance_method, n_runs=1
-    # ).fit(d_f, "NA")
+    X_f = filter_NaNpeptides(X, cut=0.1)
+    d_f = X_f.select_dtypes(include=['float64']).T
+    i_f = X_f.select_dtypes(include=['object'])
+    pam_model = MassSpecClustering(i_f, ncl=15, SeqWeight=1, distance_method="PAM250").fit(d_f, "NA")
+
+    import pickle
+    with open('CPTACmodel_PAM250_W1_15CL', 'wb') as f:
+        pickle.dump([pam_model], f)
+
+    binom_model = MassSpecClustering(i_f, ncl=15, SeqWeight=10, distance_method="Binomial").fit(d_f, "NA")
+    with open('CPTACmodel_BINOMIAL_W10_15CL', 'wb') as f:
+        pickle.dump([binom_model], f)
+
     # centers = MSC.transform(d_f)
     # centers["Patient_ID"] = X.columns[4:]
 
@@ -67,13 +71,6 @@ def makeFigure():
 
     # plsr = PLSRegression(n_components=2, scale=True)
     # plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
-
-    # Import MS data and filter peptides with excessive missingness
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X_f = filter_NaNpeptides(X, cut=0.1)
-    X_f.index = np.arange(X_f.shape[0])
-    d_f = X_f.select_dtypes(include=['float64']).T
-    i_f = X_f.select_dtypes(include=['object'])
 
     return f
 
