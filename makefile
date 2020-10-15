@@ -18,7 +18,7 @@ output/%/manuscript.md: venv manuscripts/%/*.md
 	. venv/bin/activate && manubot process --content-directory=manuscripts/$*/ --output-directory=output/$*/ --cache-directory=cache --skip-citations --log-level=INFO
 	git remote rm rootstock
 
-output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg
+output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg figureM3.svg
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
@@ -43,4 +43,4 @@ testcover: venv
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
-	rm -rf *.pdf output venv pylint.log
+	rm -rf *.pdf output venv pylint.log figure*.svg
