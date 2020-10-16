@@ -23,17 +23,16 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
-    # # Phosphoproteomic aberrations associated with molecular signatures
+    # Phosphoproteomic aberrations associated with molecular signatures
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # ## Load Clustering Model from Figure 2
+    # Load Clustering Model from Figure 2
     ncl = 15
     with open('CPTACmodel_PAM250_W1_15CL', 'rb') as ff:
         MSC = pickle.load(ff)[0]
 
-    # ## Regression against mutation status of driver genes and clusters
-    # 
-    # #### Import mutation status of TP53, KRAS, EGFR, and ALK fusion 
+    # Regression against mutation status of driver genes and clusters
+    # Import mutation status of TP53, KRAS, EGFR, and ALK fusion 
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID", "TP53.mutation.status", "KRAS.mutation.status", "EGFR.mutation.status", "ALK.fusion"]]
     mOI = mOI[~mOI["Sample.ID"].str.contains("IR")]
@@ -42,8 +41,7 @@ def makeFigure():
     centers = MSC.transform()
     y = mOI.set_index("Sample.ID")
 
-    # ### Logistic Regression
-    # 
+    # Logistic Regression
     # EGFR mutation status
     y_egfr = y["EGFR.mutation.status"]
 
@@ -52,7 +50,7 @@ def makeFigure():
     lr.fit(centers, y_egfr)
     y_pred = lr.predict(centers)
 
-    plotPredictionProbabilities(ax[1], lr, y_pred, centers, y_egfr)
+    plotPredictionProbabilities(ax[1], lr, centers, y_egfr)
     plotConfusionMatrix(ax[2], lr, centers, y_egfr)
     plotROC(ax[3], lr, centers, y_egfr, cv_folds=ncl)
     plotClusterCoefficients(ax[4], lr)
@@ -63,7 +61,7 @@ def makeFigure():
     lr.fit(centers, y_tp53)
     y_pred = lr.predict(centers)
 
-    plotPredictionProbabilities(ax[5], lr, y_pred, centers, y_tp53)
+    plotPredictionProbabilities(ax[5], lr, centers, y_tp53)
     plotConfusionMatrix(ax[6], lr, centers, y_tp53)
     plotROC(ax[7], lr, centers, y_tp53, cv_folds=ncl)
     plotClusterCoefficients(ax[8], lr)
