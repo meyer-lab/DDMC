@@ -16,7 +16,7 @@ from ..figures.figure3 import plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (3, 3), multz={3: 2})
+    ax, f = getSetup((15, 10), (2, 3))
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
@@ -42,10 +42,10 @@ def makeFigure():
     tt = tt.replace("Tumor", 1)
     lr = LogisticRegressionCV(cv=model.ncl, solver="saga", penalty="l2").fit(c, tt)
 
-    plotPredictionProbabilities(ax[3], lr, c, tt)
-    plotConfusionMatrix(ax[4], lr, c, tt)
-    plotROC(ax[5], lr, c, tt, cv_folds=model.ncl)
-    plotClusterCoefficients(ax[6], lr)
+    # plotPredictionProbabilities(ax[3], lr, c, tt)
+    plotConfusionMatrix(ax[3], lr, c, tt)
+    plotROC(ax[4], lr, c, tt, cv_folds=model.ncl)
+    plotClusterCoefficients(ax[5], lr)
 
     # Add subplot labels
     subplotLabel(ax)
