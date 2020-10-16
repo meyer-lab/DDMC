@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from .figure3 import plotR2YQ2Y, plotActualVsPredicted, plotScoresLoadings
-from sklearn.linear_model import LogisticRegressionCV   
+from sklearn.linear_model import LogisticRegressionCV
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotPredictionProbabilities, plotConfusionMatrix, plotROC
 from sklearn.cross_decomposition import PLSRegression
@@ -32,7 +32,7 @@ def makeFigure():
         MSC = pickle.load(ff)[0]
 
     # Regression against mutation status of driver genes and clusters
-    # Import mutation status of TP53, KRAS, EGFR, and ALK fusion 
+    # Import mutation status of TP53, KRAS, EGFR, and ALK fusion
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID", "TP53.mutation.status", "KRAS.mutation.status", "EGFR.mutation.status", "ALK.fusion"]]
     mOI = mOI[~mOI["Sample.ID"].str.contains("IR")]
