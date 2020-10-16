@@ -16,12 +16,12 @@ from ..figures.figure3 import plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 10), (2, 4), multz={3: 1})
+    ax, f = getSetup((15, 9), (2, 4), multz={3: 1})
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
-    with open('CPTACmodel_PAM250_W1_15CL', 'rb') as f:
-        model = pickle.load(f)[0]
+    with open('CPTACmodel_PAM250_W1_15CL', 'rb') as p:
+        model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
     centers["Patient_ID"] = X.columns[4:]
@@ -43,10 +43,10 @@ def makeFigure():
     lr = LogisticRegressionCV(cv=model.ncl, solver="saga", penalty="l1").fit(c, tt)
     y_pred = lr.predict(c)
 
-    plotPredictionProbabilities(ax[3:5], lr, y_pred, c, tt)
-    plotConfusionMatrix(ax[5], lr, c, tt)
-    plotROC(ax[6], lr, c, tt, cv_folds=model.ncl)
-    plotClusterCoefficients(ax[7], lr)
+    plotPredictionProbabilities(ax[3], lr, y_pred, c, tt)
+    plotConfusionMatrix(ax[4], lr, c, tt)
+    plotROC(ax[5], lr, c, tt, cv_folds=model.ncl)
+    plotClusterCoefficients(ax[6], lr)
 
     # Add subplot labels
     subplotLabel(ax)
