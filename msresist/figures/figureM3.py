@@ -40,7 +40,7 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(cv=model.ncl, solver="saga", penalty="l2").fit(c, tt)
+    lr = LogisticRegressionCV(cv=model.ncl, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9]).fit(c, tt)
 
     # plotPredictionProbabilities(ax[3], lr, c, tt)
     plotConfusionMatrix(ax[3], lr, c, tt)
