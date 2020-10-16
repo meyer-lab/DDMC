@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import Binomial, position_weight_matrix, AAlist
+from .binomial import Binomial, position_weight_matrix, AAlist, BackgroundSeqs
 from .pam250 import PAM250
 
 
@@ -27,16 +27,20 @@ class MassSpecClustering(BaseEstimator):
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
 
-        seqs = [s.upper() for s in info["Sequence"]]
-
         if distance_method == "PAM250":
-            self.dist = PAM250(seqs, SeqWeight)
+            self.dist = PAM250(info, background, SeqWeight)
         elif distance_method == "Binomial":
-            self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
+            self.dist = Binomial(info, background, SeqWeight)
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
+
+        # Use only to pickle model
+        # if self.distance_method == "PAM250":
+        #     for ii in range(self.ncl):
+        #         self.gmm_.distributions[ii][-1].background = None
+        #     self.dist.background = None
 
         return self
 
@@ -47,7 +51,7 @@ class MassSpecClustering(BaseEstimator):
         wDist = self.dist.copy()
         wDist.SeqWeight = 0.0
         data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
-        wDist.SeqWeight = 10.0
+        wDist.SeqWeight = 20.0
         seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
@@ -74,26 +78,32 @@ class MassSpecClustering(BaseEstimator):
 
         return centers.T
 
-    def pssms(self, bg_sequences):
-        """Compute position-specific scoring matrix of each cluster."""
+    def pssms(self, PsP_background=False):
+        """Compute position-specific scoring matrix of each cluster. 
+        Note, to normalize by amino acid frequency this uses either 
+        all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
         pssms = []
-        back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+        if PsP_background:
+            bg_seqs = BackgroundSeqs(self.info["Sequence"])
+            back_pssm = background_pssm(bg_seqs)
+        else:
+            back_pssm = np.zeros((len(AAlist), 11), dtype=float)
         for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
             for jj, seq in enumerate(self.info["Sequence"]):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
-                    if ii == 0:
+                    if ii == 0 and not PsP_background:
                         back_pssm[AAlist.index(aa), kk] += 1.0
 
             # Normalize by position across residues and remove negative outliers
             for pos in range(pssm.shape[1]):
                 pssm[:, pos] /= np.mean(pssm[:, pos])
-                if ii == 0:
+                if ii == 0 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
             pssm = np.log2(pssm)
-            if ii == 0:
+            if ii == 0 and not PsP_background:
                 back_pssm = np.log2(back_pssm)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
@@ -104,6 +114,7 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
+    # TODO: update function, no need to transform pssms
     def predict_UpstreamKinases(self, bg_sequences):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPSLdict()
@@ -186,3 +197,13 @@ def TransformKinasePredictionMats(PSSMs, bg_sequences):
     bg_prob = np.delete(bg_prob, [5, 10], 1)  # Remove P0 and P+5 from background
     PSSMs = [np.delete(np.array(list(mat)), [5, 10], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
     return bg_prob, PSSMs
+
+def background_pssm(bg_sequences):
+    """Generate PSSM of PhosphoSitePlus phosphosite sequences."""
+    back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+    for _, seq in enumerate(bg_sequences):
+        for kk, aa in enumerate(seq):
+            back_pssm[AAlist.index(aa), kk] += 1.0
+    for pos in range(back_pssm.shape[1]):
+        back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+    return np.log2(back_pssm)
