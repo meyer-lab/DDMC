@@ -44,7 +44,7 @@ def makeFigure():
 
     # plotPredictionProbabilities(ax[3], lr, c, tt)
     plotConfusionMatrix(ax[3], lr, c, tt)
-    plotROC(ax[4], lr, c, tt, cv_folds=model.ncl)
+    plotROC(ax[4], lr, c.values, tt, cv_folds=model.ncl)
     plotClusterCoefficients(ax[5], lr)
 
     # Add subplot labels
