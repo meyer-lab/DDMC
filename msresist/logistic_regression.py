@@ -13,7 +13,7 @@ def plotClusterCoefficients(ax, lr):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["Coefficient"])
     coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
-    sns.barplot(x="Cluster", y="Coefficient", data=coefs_)
+    sns.barplot(ax=ax, x="Cluster", y="Coefficient", data=coefs_)
     ax.set_title("Logistic Regression Cluster Coefficients")
 
 
@@ -25,8 +25,8 @@ def plotPredictionProbabilities(ax, lr, y_pred, dd, yy):
     res_["Correct_Prediction"] = z.values
     res_["Prediction"] = lr.predict(dd).astype("int")
     res_["Patients"] = np.arange(res_.shape[0]) + 1
-    sns.scatterplot(x="Patients", y="Prediction", data=res_, hue="Correct_Prediction")
-    sns.lineplot(x="Patients", y="y, p(x)", data=res_, marker="s", color="gray")
+    sns.scatterplot(ax=ax, x="Patients", y="Prediction", data=res_, hue="Correct_Prediction")
+    sns.lineplot(ax=ax, x="Patients", y="y, p(x)", data=res_, marker="s", color="gray")
     ax.axhline(0.5, ls='--', color='r')
 
 
@@ -48,7 +48,6 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 def plotROC(ax, classifier, d, y, cv_folds=4):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model.
     Note that it doesn't need to be a logistic regression."""
-    d = d.values
     y = y.values
     cv = StratifiedKFold(n_splits=cv_folds)
     tprs = []
