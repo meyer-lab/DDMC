@@ -17,11 +17,11 @@ def plotClusterCoefficients(ax, lr):
     ax.set_title("Logistic Regression Cluster Coefficients")
 
 
-def plotPredictionProbabilities(ax, lr, y_pred, dd, yy):
+def plotPredictionProbabilities(ax, lr, dd, yy):
     """Plot LR predictions and prediction probabilities."""
     res_ = pd.DataFrame()
     res_["y, p(x)"] = lr.predict_proba(dd)[:, 1]
-    z = y_pred == yy
+    z = lr.predict(dd) == yy
     res_["Correct_Prediction"] = z.values
     res_["Prediction"] = lr.predict(dd).astype("int")
     res_["Patients"] = np.arange(res_.shape[0]) + 1
@@ -81,4 +81,4 @@ def plotROC(ax, classifier, d, y, cv_folds=4):
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
            title="Receiver Operating Characteristic")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
+    # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
