@@ -114,19 +114,15 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    # TODO: update function, no need to transform pssms
-    def predict_UpstreamKinases(self, bg_sequences):
+    def predict_UpstreamKinases(self):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPSLdict()
-        bg_prob, PSSMs = TransformKinasePredictionMats(self.pssms(bg_sequences), bg_sequences)
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
         a = np.zeros((len(PSPLs), len(PSSMs)))
 
         for ii, spec_profile in enumerate(PSPLs.values()):
-            sp = np.log10(np.power(2, spec_profile) / bg_prob)
-            sp -= np.mean(sp)
             for jj, pssm in enumerate(PSSMs):
-                pssm -= np.mean(pssm)
-                a[ii, jj] = np.linalg.norm(pssm - sp)
+                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
         table = pd.DataFrame(a)
         table.insert(0, "Kinase", list(PSPSLdict().keys()))
@@ -190,13 +186,6 @@ def PSPSLdict():
         pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
     return pspl_dict
 
-
-def TransformKinasePredictionMats(PSSMs, bg_sequences):
-    """Transform PSSMs and PSPLs to perform matrix math."""
-    bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-    bg_prob = np.delete(bg_prob, [5, 10], 1)  # Remove P0 and P+5 from background
-    PSSMs = [np.delete(np.array(list(mat)), [5, 10], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
-    return bg_prob, PSSMs
 
 def background_pssm(bg_sequences):
     """Generate PSSM of PhosphoSitePlus phosphosite sequences."""
