@@ -423,3 +423,14 @@ def plotMotifs(model, PsP_background=True):
         logo.style_xticks(anchor=1, spacing=1)
         logo.ax.set_title('Motif Cluster ' + str(i+1))
 
+
+def plot_LassoCoef(ax, model, title=False):
+    """Plot Lasso Coefficients"""
+    coefs = pd.DataFrame(model.coef_).T
+    coefs.index += 1
+    coefs = coefs.reset_index()
+    coefs.columns = ["Cluster", 'Viability', 'Apoptosis', 'Migration', 'Island']
+    m = pd.melt(coefs, id_vars="Cluster", value_vars=list(coefs.columns)[1:], var_name="Phenotype", value_name="Coefficient")
+    sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
+    if title:
+        ax.set_title(title)
