@@ -23,6 +23,7 @@ import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
 import matplotlib.cm as cm
 import seaborn as sns
+import logomaker as lm
 from ..pre_processing import preprocessing, y_pre, FixColumnLabels
 import warnings
 from Bio import BiopythonWarning
@@ -391,19 +392,6 @@ def plotScoresLoadings_plotly(model, X, Y, loc=False):
     return fig
 
 
-def plotclusteraverages(ax, centers, treatments):
-
-    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
-
-    for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], marker="o", label="cluster " + str(i + 1), color=colors_[i])
-
-    ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(treatments, rotation=45)
-    ax.set_ylabel("Normalized Signal", fontsize=12)
-    ax.legend()
-
-
 def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
     centers = pd.DataFrame(centers.T)
     centers.columns = xlabels
@@ -421,79 +409,28 @@ def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
-def ArtificialMissingness(x, weights, nan_per, distance_method, ncl):
-    """Incorporate different percentages of missing values and compute error between the actual
-    versus cluster average value. Note that this works best with a complete subset of the CPTAC data set"""
-    x.index = np.arange(x.shape[0])
-    wlabels = ["Data", "Co-Clustering", "Sequence"]
-    nan_indices = []
-    errors = []
-    missing = []
-    prioritize = []
-    n = x.iloc[:, 4:].shape[1]
-    for per in nan_per:
-        print(per)
-        md = x.copy()
-        m = int(n * per)
-        for i in range(md.shape[0]):
-            row_len = np.arange(4, md.shape[1])
-            cols = random.sample(list(row_len), m)
-            md.iloc[i, cols] = np.nan
-            nan_indices.append((i, cols))
-        for i, w in enumerate(weights):
-            print(w)
-            prioritize.append(wlabels[i])
-            missing.append(per)
-            errors.append(FitModelandComputeError(md, w, x, nan_indices, distance_method, ncl))
-
-    X = pd.DataFrame()
-    X["Prioritize"] = prioritize
-    X["Missing%"] = missing
-    X["Error"] = errors
-    return X
+def plotMotifs(model, PsP_background=True):
+    """Plot pssms of clusters"""
+    pssms = model.pssms(PsP_background=PsP_background)
+    for i in range(model.ncl):
+        pssm = pssms[i].T 
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+        logo = lm.Logo(pssm,
+               font_name='Stencil Std',
+               vpad=0.1,
+               width=.8)
+        logo.ax.set_ylabel('information (bits)')
+        logo.style_xticks(anchor=1, spacing=1)
+        logo.ax.set_title('Motif Cluster ' + str(i+1))
 
 
-def FitModelandComputeError(md, weight, x, nan_indices, distance_method, ncl):
-    """Fit model and compute error during ArtificialMissingness"""
-    i = md.select_dtypes(include=['object'])
-    d = md.select_dtypes(include=['float64']).T
-    model = MassSpecClustering(i, ncl, SeqWeight=weight, distance_method=distance_method).fit(d, "NA")
-    print(model.wins_)
-    z = x.copy()
-    z["Cluster"] = model.labels_
-    centers = model.transform().T  # Clusters x observations
-    errors = []
-    for idx in nan_indices:
-        v = z.iloc[idx[0], idx[1]]
-        c = centers.iloc[z["Cluster"].iloc[idx[0]], np.array(idx[1]) - 4]
-        errors.append(mean_squared_error(v, c))
-    return np.mean(errors)
-
-
-def WinsByWeight(i, d, weigths, distance_method, ncl):
-    """Plot sequence, data, both, or mix score wins when fitting across a given set of weigths. """
-    wins = []
-    prioritize = []
-    W = []
-    for w in weigths:
-        print(w)
-        model = MassSpecClustering(i, ncl, SeqWeight=w, distance_method=distance_method).fit(d, "NA")
-        won = model.wins_
-        W.append(w)
-        wins.append(int(won.split("SeqWins: ")[1].split(" DataWins:")[0]))
-        prioritize.append("Sequence")
-        W.append(w)
-        wins.append(int(won.split("DataWins: ")[1].split(" BothWin:")[0]))
-        prioritize.append("Data")
-        W.append(w)
-        wins.append(int(won.split("BothWin: ")[1].split(" MixWin:")[0]))
-        prioritize.append("Both")
-        W.append(w)
-        wins.append(int(won.split(" MixWin: ")[1]))
-        prioritize.append("Mix")
-
-    X = pd.DataFrame()
-    X["Sequence_Weighting"] = W
-    X["Prioritize"] = prioritize
-    X["Wins"] = wins
-    return X
+def plot_LassoCoef(ax, model, title=False):
+    """Plot Lasso Coefficients"""
+    coefs = pd.DataFrame(model.coef_).T
+    coefs.index += 1
+    coefs = coefs.reset_index()
+    coefs.columns = ["Cluster", 'Viability', 'Apoptosis', 'Migration', 'Island']
+    m = pd.melt(coefs, id_vars="Cluster", value_vars=list(coefs.columns)[1:], var_name="Phenotype", value_name="Coefficient")
+    sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
+    if title:
+        ax.set_title(title)
