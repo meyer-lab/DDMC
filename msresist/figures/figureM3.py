@@ -28,14 +28,14 @@ def makeFigure():
     centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
     centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
 
-    #first plot heatmap of clusters
+    # first plot heatmap of clusters
     ax[0].axis("off")
 
-    #PCA analysis
+    # PCA analysis
     centers = TumorType(centers)
     plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", hue_load="Cluster")
 
-    #Regression
+    # Regression
     c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
