@@ -18,3 +18,4 @@ git+https://github.com/meyer-lab/pomegranate.git@custom-dist
 astropy==4.0.3
 numba==0.51.2
 gprof2dot
+logomaker==0.8
