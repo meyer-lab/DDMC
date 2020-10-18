@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import Binomial, position_weight_matrix, AAlist
+from .binomial import Binomial, position_weight_matrix, AAlist, BackgroundSeqs
 from .pam250 import PAM250
 
 
@@ -74,26 +74,32 @@ class MassSpecClustering(BaseEstimator):
 
         return centers.T
 
-    def pssms(self, bg_sequences):
-        """Compute position-specific scoring matrix of each cluster."""
+    def pssms(self, PsP_background=False):
+        """Compute position-specific scoring matrix of each cluster. 
+        Note, to normalize by amino acid frequency this uses either 
+        all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
         pssms = []
-        back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+        if PsP_background:
+            bg_seqs = BackgroundSeqs(self.info["Sequence"])
+            back_pssm = background_pssm(bg_seqs)
+        else:
+            back_pssm = np.zeros((len(AAlist), 11), dtype=float)
         for ii in range(self.ncl):
             pssm = np.zeros((len(AAlist), 11), dtype=float)
             for jj, seq in enumerate(self.info["Sequence"]):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
-                    if ii == 0:
+                    if ii == 0 and not PsP_background:
                         back_pssm[AAlist.index(aa), kk] += 1.0
 
             # Normalize by position across residues and remove negative outliers
             for pos in range(pssm.shape[1]):
                 pssm[:, pos] /= np.mean(pssm[:, pos])
-                if ii == 0:
+                if ii == 0 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
             pssm = np.log2(pssm)
-            if ii == 0:
+            if ii == 0 and not PsP_background:
                 back_pssm = np.log2(back_pssm)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
@@ -104,18 +110,15 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    def predict_UpstreamKinases(self, bg_sequences):
+    def predict_UpstreamKinases(self):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPSLdict()
-        bg_prob, PSSMs = TransformKinasePredictionMats(self.pssms(bg_sequences), bg_sequences)
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
         a = np.zeros((len(PSPLs), len(PSSMs)))
 
         for ii, spec_profile in enumerate(PSPLs.values()):
-            sp = np.log10(np.power(2, spec_profile) / bg_prob)
-            sp -= np.mean(sp)
             for jj, pssm in enumerate(PSSMs):
-                pssm -= np.mean(pssm)
-                a[ii, jj] = np.linalg.norm(pssm - sp)
+                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
         table = pd.DataFrame(a)
         table.insert(0, "Kinase", list(PSPSLdict().keys()))
@@ -180,9 +183,12 @@ def PSPSLdict():
     return pspl_dict
 
 
-def TransformKinasePredictionMats(PSSMs, bg_sequences):
-    """Transform PSSMs and PSPLs to perform matrix math."""
-    bg_prob = np.array(list(position_weight_matrix(ForegroundSeqs(bg_sequences)).values()))
-    bg_prob = np.delete(bg_prob, [5, 10], 1)  # Remove P0 and P+5 from background
-    PSSMs = [np.delete(np.array(list(mat)), [5, 10], 1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
-    return bg_prob, PSSMs
+def background_pssm(bg_sequences):
+    """Generate PSSM of PhosphoSitePlus phosphosite sequences."""
+    back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+    for _, seq in enumerate(bg_sequences):
+        for kk, aa in enumerate(seq):
+            back_pssm[AAlist.index(aa), kk] += 1.0
+    for pos in range(back_pssm.shape[1]):
+        back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+    return np.log2(back_pssm)
