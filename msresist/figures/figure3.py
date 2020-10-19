@@ -413,15 +413,15 @@ def plotMotifs(model, PsP_background=True):
     """Plot pssms of clusters"""
     pssms = model.pssms(PsP_background=PsP_background)
     for i in range(model.ncl):
-        pssm = pssms[i].T 
+        pssm = pssms[i].T
         pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
         logo = lm.Logo(pssm,
-               font_name='Stencil Std',
-               vpad=0.1,
-               width=.8)
+                       font_name='Stencil Std',
+                       vpad=0.1,
+                       width=.8)
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
-        logo.ax.set_title('Motif Cluster ' + str(i+1))
+        logo.ax.set_title('Motif Cluster ' + str(i + 1))
 
 
 def plot_LassoCoef(ax, model, title=False):

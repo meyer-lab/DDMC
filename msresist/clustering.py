@@ -75,8 +75,8 @@ class MassSpecClustering(BaseEstimator):
         return centers.T
 
     def pssms(self, PsP_background=False):
-        """Compute position-specific scoring matrix of each cluster. 
-        Note, to normalize by amino acid frequency this uses either 
+        """Compute position-specific scoring matrix of each cluster.
+        Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
         pssms = []
         if PsP_background:
