@@ -2,6 +2,7 @@
 This creates Figure M1.
 """
 
+import pickle
 import random
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ from sklearn.cross_decomposition import PLSRegression
 from .common import subplotLabel, getSetup
 from .figure3 import plotR2YQ2Y, plotPCA
 from ..clustering import MassSpecClustering
-from ..pre_processing import filter_NaNpeptides
+from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import position_weight_matrix, GenerateBinarySeqID, AAlist, BackgroundSeqs
 from ..pam250 import MotifPam250Scores
 
@@ -94,91 +95,58 @@ def plotMissingnessDensity(ax, d):
 
 def plotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n_iter=200):
     """Plot artificial missingness error."""
-    m, b = ErrorAcrossMissingnessLevels(x, weights, distance_method, ncl, max_n_iter=max_n_iter)
-    m = pd.DataFrame(m)
-    m.columns = ["Missing%", "Weight", "Fit", "SeqWins", "DataWins", "BothWin", "MixWin", "Error"]
-    sns.pointplot(x="Missing%", y="Error", data=m, hue="Weight", style="Fit", palette="muted", ax=ax)
-    b = pd.DataFrame(b)
-    b.columns = ["Missing%", "Error"]
-    sns.pointplot(x="Missing%", y="Error", data=b, color="grey", ax=ax)
+    errors = ErrorAcrossMissingnessLevels(x, weights, distance_method, ncl)
+    m = pd.DataFrame(errors)
+    m.columns = ["missingness%_group", "weights", "model_error", "baseline_error"]
+    model_errors = m.iloc[:, :-1]
+    sns.pointplot(x="missingness%_group", y="model_error", data=model_errors, hue="Weight", style="Fit", palette="muted", ax=ax)
+    baseline_errors = m[["missingness%_group", "baseline_error"]]
+    sns.pointplot(x="missingness%_group", y="baseline_error", data=baseline_errors, color="grey", ax=ax)
     ax.lines[-1].set_linestyle("--")
     return m
 
 
-def plotWinsAcrossMissingnessLevels(ax, X):
-    """Plot all wins across missingness percentages per weight generated in PlotArtificialMissingnessError."""
-    X = X.dropna()
-    for r in range(X.shape[0]):
-        X.iloc[r, 3:7] = X.iloc[r, 3:7].div(X.iloc[r, 3:7].sum())
-    x = pd.melt(
-        X, id_vars=['Weight', 'Missing%', 'Error'], value_vars=['SeqWins', 'DataWins', 'BothWin', 'MixWin'],
-        var_name="Winner", value_name='Wins'
-    )
-    weights = list(set(X["Weight"]))
-    for i, w in enumerate(weights):
-        d = x[x["Weight"] == w]
-        if d.empty:
-            continue
-        sns.barplot(x="Missing%", y="Wins", hue="Winner", data=d, ax=ax[i])
-        ax[i].set_title("Weight: " + str(weights[i]))
-        ax[i].get_legend().remove()
-    ax[-1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
+def ErrorAcrossMissingnessLevels(X, distance_method):
+    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error 
+    between the actual versus cluster center or imputed peptide average across patients. 
+    Note that we start with the model fit to the entire data set."""
+    #load model with all peptides >= 7 TMTs experiments
+    models = []
+    weights = ["Mix", "Seq", "Data"]
+    if distance_method == "PAM250":
+        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT', 'rb') as m1: 
+            models.append(pickle.load(m1)[0])
+        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT_seq', 'rb') as m2:
+            models.append(pickle.load(m2)[0])
+        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT_data', 'rb') as m3:
+            models.append(pickle.load(m3)[0])
+    else:
+        with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m1:
+            models.append(pickle.load(m1)[0])
+        # with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT_seq', 'rb') as m2:
+        #     models.append(pickle.load(m2)[0])
+        # with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT_data', 'rb') as m3:
+        #     models.append(pickle.load(m3)[0])
 
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    errors = np.zeros((X.shape[0], 4))
+    for _ in range(4):
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        d = md.select_dtypes(include=['float64'])
+        errors[:, 0] = (np.count_nonzero(np.isnan(d), axis=1) / d.shape[1] * 100).astype(int)
+        idxx = np.atleast_2d(np.arange(d.shape[0]))
+        data = np.hstack((d, idxx.T))
+        print(data.shape)
+        for i, model in enumerate(models):
+            fit = model.gmm_.fit(data, "NA")
+            errors[:, 1] = weights[i]
+            errors[:, 2] = ComputeModelError(X, fit, d, nan_indices)
+            errors[:, 3] = ComputeBaselineError(X, d, nan_indices)
 
-# TO DO: Figure out why when it doesn't converge the error is lower than when it fits...
-def ErrorAcrossMissingnessLevels(X, weights, distance_method, ncl, max_n_iter):
-    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error between the actual
-    versus cluster average value. Note that the wins for all fitted models are returned to be used in PlotAMwins."""
-    sc = [0, 2, 4, 6, 8]
-    nan_per = [0, 10, 25, 50, 75]
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
-    groups = MissingnessGroups(md, nan_per)
-    md["MissingnessGroups"] = groups
-
-    # Compute Error for each missingness group and each weight
-    model_res = np.zeros(((len(nan_per)) * len(weights), 8))
-    base_res = np.zeros((len(nan_per), 2))
-    for ii in range(len(nan_per)):
-        print("Missingness %: ", nan_per[ii])
-        data = md[md["MissingnessGroups"] == ii].iloc[:, :-1]
-        assert data.empty == False, "Empty missingness group."
-        d = data.select_dtypes(include=['float64'])
-        i = data.select_dtypes(include=['object'])
-        base_res[ii, 1] = ComputeBaselineError(x, d, nan_indices)
-        base_res[ii, 0] = nan_per[ii]
-
-        for jj in range(len(weights)):
-            print("Weight: ", weights[jj])
-            model = MassSpecClustering(
-                i, ncl, SeqWeight=weights[jj], distance_method=distance_method, max_n_iter=max_n_iter
-            ).fit(d.T, "NA")
-            model_res[ii + sc[ii] + jj, 0] = int(nan_per[ii])
-            model_res[ii + sc[ii] + jj, 1] = weights[jj]
-            if all(model.converge_):
-                model_res[ii + sc[ii] + jj, 2] = 0
-                model_res[ii + sc[ii] + jj, 3:7] = model.wins_[0:4]
-                model_res[ii + sc[ii] + jj, 7] = ComputeModelError(x, model, d, nan_indices)
-            elif len(set(model.converge_)) == 2:
-                model_res[ii + sc[ii] + jj, 2] = 1
-                model_res[ii + sc[ii] + jj, 3:7] = model.wins_[0:4]
-                model_res[ii + sc[ii] + jj, 7] = ComputeModelError(x, model, d, nan_indices)
-            else:
-                model_res[ii + sc[ii] + jj, 2] = 2
-                model_res[ii + sc[ii] + jj, 3:7] = np.nan
-
-    return model_res, base_res
-
-
-def GenerateReferenceAndMissingnessDataSet(X):
-    """Generate data set with the incorporated missing values"""
-    x = filter_NaNpeptides(X, cut=0.1)
-    x.index = np.arange(x.shape[0])
-    md = x.copy()
-    x = x.iloc[:, 4:].values
-    vals = FindIdxValues(md)
-    md, nan_indices = IncorporateMissingValues(md, vals)
-    assert md.equals(x) == False, "NaNs were not added."
-    return x, md, nan_indices
+    return errors
 
 
 def ComputeBaselineError(X, d, nan_indices):
@@ -190,12 +158,12 @@ def ComputeBaselineError(X, d, nan_indices):
         v = X[idx[0], idx[1] - 4]
         b = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
         errors[ii] = (mean_squared_error(v, b))
-    return np.mean(errors)
+    return errors
 
 
 def ComputeModelError(X, model, d, nan_indices):
     """Compute error between cluster center versus real value."""
-    centers = model.transform(d.T).T.values
+    centers = model.transform()
     labels = model.labels_
     n = d.shape[0]
     errors = []
@@ -206,7 +174,7 @@ def ComputeModelError(X, model, d, nan_indices):
         assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
         mse = mean_squared_error(v, c)
         errors.append(mse)
-    return np.mean(errors)
+    return errors
 
 
 def MissingnessGroups(X, l):
@@ -231,19 +199,6 @@ def IncorporateMissingValues(X, vals):
         tmt_idx.append((a[0, 0], a[:, 1]))
         X.iloc[a[0, 0], a[:, 1]] = np.nan
     return X, tmt_idx
-
-
-def FindIdxValues(X):
-    """Find the patient indices corresponding to all non-missing values grouped in TMT experiments. Only
-    value variables should be passed."""
-    data = X.select_dtypes(include=["float64"])
-    idx = np.argwhere(~np.isnan(data.values))
-    idx[:, 1] += 4  # add ID variable columns
-    StoE = pd.read_csv("msresist/data/MS/CPTAC/IDtoExperiment.csv")
-    assert all(StoE.iloc[:, 0] == data.columns), "Sample labels don't match."
-    StoE = StoE.iloc[:, 1].values
-    tmt = [[StoE[idx[ii][1] - 4]] for ii in range(idx.shape[0])]
-    return np.append(idx, tmt, axis=1)
 
 
 def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter):

@@ -11,7 +11,9 @@ from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotPredictionProbabilities, plotConfusionMatrix, plotROC
 from ..figures.figure3 import plotPCA
-
+from ..clustering import MassSpecClustering
+from msresist.pre_processing import filter_NaNpeptides
+import pickle 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -19,6 +21,19 @@ def makeFigure():
     ax, f = getSetup((15, 10), (2, 3))
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X_f = filter_NaNpeptides(X, tmt=7)
+    d_f = X_f.select_dtypes(include=['float64']).T
+    i_f = X_f.select_dtypes(include=['object'])
+
+    pam_model = MassSpecClustering(i_f, 15, 20, "PAM250").fit(d_f, "NA")
+    with open('CPTACmodel_PAM250_filteredTMT_seq', 'wb') as p:
+        pickle.dump([pam_model], p)
+
+    # binom_model = MassSpecClustering(i_f, 15, 0, "Binomial").fit(d_f, "NA")
+    # with open('CPTACmodel_BINOMIAL_filteredTMT_data', 'wb') as p:
+    #     pickle.dump([binom_model], p)
+
+    raise SystemExit
 
     with open('CPTACmodel_PAM250_W1_15CL', 'rb') as p:
         model = pickle.load(p)[0]

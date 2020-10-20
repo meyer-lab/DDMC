@@ -44,4 +44,8 @@ def test_pickle(distance_method):
     MSC = MassSpecClustering(info, 2, SeqWeight=2, distance_method=distance_method).fit(X=data)
     pstring = pickle.dumps(MSC)
     unpickled = pickle.loads(pstring)
+    idxx = np.atleast_2d(np.arange(data.shape[0]))
+    data = np.hstack((data, idxx.T))
+    fit_up = unpickled.gmm_.fit(data)
+    assert np.allclose(unpickled.transform(), fit_up.transform()), "Same model yields different scores."
     assert np.all(np.isfinite(unpickled.scores_))
