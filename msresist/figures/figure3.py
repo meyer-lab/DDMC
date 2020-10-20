@@ -23,6 +23,7 @@ import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
 import matplotlib.cm as cm
 import seaborn as sns
+import logomaker as lm
 from ..pre_processing import preprocessing, y_pre, FixColumnLabels
 import warnings
 from Bio import BiopythonWarning
@@ -391,19 +392,6 @@ def plotScoresLoadings_plotly(model, X, Y, loc=False):
     return fig
 
 
-def plotclusteraverages(ax, centers, treatments):
-
-    colors_ = cm.rainbow(np.linspace(0, 1, centers.shape[0]))
-
-    for i in range(centers.shape[0]):
-        ax.plot(centers.iloc[i, :], marker="o", label="cluster " + str(i + 1), color=colors_[i])
-
-    ax.set_xticks(np.arange(centers.shape[1]))
-    ax.set_xticklabels(treatments, rotation=45)
-    ax.set_ylabel("Normalized Signal", fontsize=12)
-    ax.legend()
-
-
 def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
     centers = pd.DataFrame(centers.T)
     centers.columns = xlabels
@@ -419,3 +407,30 @@ def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
         ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
         ax[i // ncols][i % ncols].set_xlabel("")
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
+
+
+def plotMotifs(model, PsP_background=True):
+    """Plot pssms of clusters"""
+    pssms = model.pssms(PsP_background=PsP_background)
+    for i in range(model.ncl):
+        pssm = pssms[i].T
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+        logo = lm.Logo(pssm,
+                       font_name='Stencil Std',
+                       vpad=0.1,
+                       width=.8)
+        logo.ax.set_ylabel('information (bits)')
+        logo.style_xticks(anchor=1, spacing=1)
+        logo.ax.set_title('Motif Cluster ' + str(i + 1))
+
+
+def plot_LassoCoef(ax, model, title=False):
+    """Plot Lasso Coefficients"""
+    coefs = pd.DataFrame(model.coef_).T
+    coefs.index += 1
+    coefs = coefs.reset_index()
+    coefs.columns = ["Cluster", 'Viability', 'Apoptosis', 'Migration', 'Island']
+    m = pd.melt(coefs, id_vars="Cluster", value_vars=list(coefs.columns)[1:], var_name="Phenotype", value_name="Coefficient")
+    sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
+    if title:
+        ax.set_title(title)
