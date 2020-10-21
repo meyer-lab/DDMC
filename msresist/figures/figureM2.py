@@ -16,62 +16,19 @@ from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import position_weight_matrix, GenerateBinarySeqID, AAlist, BackgroundSeqs
 from ..pam250 import MotifPam250Scores
+from ..expectation_maximization import EM_clustering
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((12.5, 12), (4, 3))
+
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-
-    # d = X.select_dtypes(include=["float64"]).T
-
-    # distance_method = "PAM250"
-
-    # # Distribution of missingness per petide
-    # plotMissingnessDensity(ax[0], d)
-
-    # # Artificial missingness error across missingness percentages and corresponding wins
-    # m_ = plotErrorAcrossMissingnessLevels(ax[1], X, [0, 0.35, 2], "PAM250", 5, 200, baseline=True)
-    # plotWinsAcrossMissingnessLevels(ax[2:5], m_)
-
-    # # Missingness error across number of clusters or different weights
-    # plotErrorAcrossNumberOfClusters(ax[5], X, 0.45, "PAM250", np.arange(2, 21), 200)
-    # plotErrorAcrossWeights(ax[6], X, [0, 0.1, 0.25, 0.5, 0.75, 1, 2], "PAM250", 10, 200)
-
-    # # Run model
-    X_f = filter_NaNpeptides(X, cut=0.1)
-    d_f = X_f.select_dtypes(include=['float64']).T
-    i_f = X_f.select_dtypes(include=['object'])
-    pam_model = MassSpecClustering(i_f, ncl=15, SeqWeight=1, distance_method="PAM250").fit(d_f, "NA")
-
-    import pickle
-    with open('CPTACmodel_PAM250_W1_15CL', 'wb') as f:
-        pickle.dump([pam_model], f)
-
-    binom_model = MassSpecClustering(i_f, ncl=15, SeqWeight=10, distance_method="Binomial").fit(d_f, "NA")
-    with open('CPTACmodel_BINOMIAL_W10_15CL', 'wb') as f:
-        pickle.dump([binom_model], f)
-
-    # centers = MSC.transform(d_f)
-    # centers["Patient_ID"] = X.columns[4:]
-
-    # # PCA of model
-    # centers.iloc[:, :-1] = zscore(centers.iloc[:, :-1], axis=1)
-    # centers = TumorType(centers)
-    # c = 2
-    # plotPCA(
-    #     ax[7:11], centers, c, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", hue_load="Cluster"
-    # )
-
-    # # Regress against survival
-    # centers, y = TransformCPTACdataForRegression(MSC, d_f, list(X.columns[4:]))
-
-    # centers_T = centers[~centers["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
-    # y_T = y[~y["Patient_ID"].str.endswith(".N")].set_index("Patient_ID")
-
-    # plsr = PLSRegression(n_components=2, scale=True)
-    # plotR2YQ2Y(ax[11], plsr, centers_T, y_T, 1, 10)
+    errors = ErrorAcrossMissingnessLevels(X, "PAM250")
+    errors = pd.DataFrame(errors)
+    errors.columns = ["Miss", "Weight", "model_error", "base_error"]
+    errors.to_csv("errors_pam.csv")
 
     return f
 
@@ -112,39 +69,42 @@ def ErrorAcrossMissingnessLevels(X, distance_method):
     Note that we start with the model fit to the entire data set."""
     #load model with all peptides >= 7 TMTs experiments
     models = []
-    weights = ["Mix", "Seq", "Data"]
+    weights = [0.5, 1.0, 0.0]
     if distance_method == "PAM250":
-        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT', 'rb') as m1: 
+        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m1:
             models.append(pickle.load(m1)[0])
-        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT_seq', 'rb') as m2:
+        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT_seq', 'rb') as m2:
             models.append(pickle.load(m2)[0])
-        with open('msresist/data/Results/CPTACmodel_PAM250_filteredTMT_data', 'rb') as m3:
+        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT_data', 'rb') as m3:
             models.append(pickle.load(m3)[0])
     else:
-        with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m1:
+        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m1:
             models.append(pickle.load(m1)[0])
-        # with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT_seq', 'rb') as m2:
-        #     models.append(pickle.load(m2)[0])
-        # with open('msresist/data/Results/CPTACmodel_BINOMIAL_filteredTMT_data', 'rb') as m3:
-        #     models.append(pickle.load(m3)[0])
+        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT_seq', 'rb') as m2:
+            models.append(pickle.load(m2)[0])
+        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT_data', 'rb') as m3:
+            models.append(pickle.load(m3)[0])
 
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X.index = np.arange(X.shape[0])
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
-    errors = np.zeros((X.shape[0], 4))
-    for _ in range(4):
+    errors = np.zeros((X.shape[0] * len(models) * len(weights), 4))
+    for it in range(4):
+        print("iteration: ", it)
         vals = FindIdxValues(md)
         md, nan_indices = IncorporateMissingValues(md, vals)
-        d = md.select_dtypes(include=['float64'])
-        errors[:, 0] = (np.count_nonzero(np.isnan(d), axis=1) / d.shape[1] * 100).astype(int)
-        idxx = np.atleast_2d(np.arange(d.shape[0]))
-        data = np.hstack((d, idxx.T))
-        print(data.shape)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(int)
         for i, model in enumerate(models):
-            fit = model.gmm_.fit(data, "NA")
-            errors[:, 1] = weights[i]
-            errors[:, 2] = ComputeModelError(X, fit, d, nan_indices)
-            errors[:, 3] = ComputeBaselineError(X, d, nan_indices)
+            print("weight: ", weights[i])
+            _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
+            errors[i*X.shape[0]:X.shape[0]*(i+1), 0] = missingness
+            errors[i*X.shape[0]:X.shape[0]*(i+1), 1] = weights[i]
+            errors[i*X.shape[0]:X.shape[0]*(i+1), 2] = ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
+            errors[i*X.shape[0]:X.shape[0]*(i+1), 3] = ComputeBaselineError(X, data.T, nan_indices)
+            print("complete.")
 
     return errors
 
@@ -157,24 +117,41 @@ def ComputeBaselineError(X, d, nan_indices):
         idx = nan_indices[d.index[ii]]
         v = X[idx[0], idx[1] - 4]
         b = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
-        errors[ii] = (mean_squared_error(v, b))
+        assert all(~np.isnan(v)) and all(~np.isnan(b)), (v, b)
+        errors[ii] = mean_squared_error(v, b)
+
     return errors
 
 
-def ComputeModelError(X, model, d, nan_indices):
+def ComputeModelError(X, gmm, data, nan_indices, ncl):
     """Compute error between cluster center versus real value."""
-    centers = model.transform()
-    labels = model.labels_
-    n = d.shape[0]
-    errors = []
+    d = np.array(data)
+    idxx = np.atleast_2d(np.arange(d.shape[0]))
+    d = np.hstack((d, idxx.T))
+    labels = np.argmax(gmm.predict_proba(d), axis=1)
+    centers = ComputeCenters(gmm, ncl).T
+    n = data.shape[0]
+    errors = np.empty(n, dtype=float)
     for ii in range(n):
-        idx = nan_indices[d.index[ii]]
+        idx = nan_indices[data.index[ii]]
         v = X[idx[0], idx[1] - 4]
         c = centers[labels[ii], idx[1] - 4]
         assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
-        mse = mean_squared_error(v, c)
-        errors.append(mse)
+        errors[ii] =  mean_squared_error(v, c)
+
     return errors
+
+
+def ComputeCenters(gmm, ncl):
+        """Calculate cluster averages"""
+
+        centers = np.zeros((ncl, gmm.distributions[0].d - 1))
+
+        for ii, distClust in enumerate(gmm.distributions):
+            for jj, dist in enumerate(distClust[:-1]):
+                centers[ii, jj] = dist.parameters[0]
+
+        return centers.T
 
 
 def MissingnessGroups(X, l):
