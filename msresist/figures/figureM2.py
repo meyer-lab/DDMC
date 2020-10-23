@@ -25,10 +25,13 @@ def makeFigure():
     ax, f = getSetup((12.5, 12), (4, 3))
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    errors = ErrorAcrossMissingnessLevels(X, "PAM250")
+    errors, nans = ErrorAcrossMissingnessLevels(X, "Binomial")
     errors = pd.DataFrame(errors)
-    errors.columns = ["Miss", "Weight", "model_error", "base_error"]
-    errors.to_csv("errors_pam.csv")
+    errors.columns = ["Run", "Peptide_IDX", "Miss", "Weight", "model_error", "base_error"]
+    errors.to_csv("errors_binom.csv")
+    nans[0].to_csv("errors_nans1_binom.csv")
+    nans[1].to_csv("errors_nans2_binom.csv")
+    nans[2].to_csv("errors_nans3_binom.csv")
 
     return f
 
@@ -89,24 +92,31 @@ def ErrorAcrossMissingnessLevels(X, distance_method):
     X.index = np.arange(X.shape[0])
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
-    errors = np.zeros((X.shape[0] * len(models) * len(weights), 4))
-    for it in range(4):
-        print("iteration: ", it)
+    errors = np.zeros((X.shape[0] * len(models) * len(weights), 6))
+    nans = []
+    n_runs = 3
+    for ii in range(n_runs):
+        print("iteration: ", ii)
         vals = FindIdxValues(md)
         md, nan_indices = IncorporateMissingValues(md, vals)
+        nans.append(pd.DataFrame(nan_indices))
         data = md.select_dtypes(include=['float64']).T
         info = md.select_dtypes(include=['object'])
-        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(int)
-        for i, model in enumerate(models):
-            print("weight: ", weights[i])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        for jj, model in enumerate(models):
+            print("weight: ", weights[jj])
             _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
-            errors[i*X.shape[0]:X.shape[0]*(i+1), 0] = missingness
-            errors[i*X.shape[0]:X.shape[0]*(i+1), 1] = weights[i]
-            errors[i*X.shape[0]:X.shape[0]*(i+1), 2] = ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
-            errors[i*X.shape[0]:X.shape[0]*(i+1), 3] = ComputeBaselineError(X, data.T, nan_indices)
+            idx1 = ((ii*n_runs) + jj) * X.shape[0]
+            idx2 =  ((ii*n_runs) + jj + 1) * X.shape[0]
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = weights[jj]
+            errors[idx1:idx2, 4] = ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
+            errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
             print("complete.")
 
-    return errors
+    return errors, nans
 
 
 def ComputeBaselineError(X, d, nan_indices):
