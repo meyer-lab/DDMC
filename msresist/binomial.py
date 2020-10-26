@@ -118,13 +118,13 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         assert motif[5].lower() in pR, "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
-            y_seqs.append(Seq(motif))
+            y_seqs.append(Seq(motif, alphabet=AAlist))
 
         if motif[5] == "S" and len(s_seqs) < pSn:
-            s_seqs.append(Seq(motif))
+            s_seqs.append(Seq(motif, alphabet=AAlist))
 
         if motif[5] == "T" and len(t_seqs) < pTn:
-            t_seqs.append(Seq(motif))
+            t_seqs.append(Seq(motif, alphabet=AAlist))
 
     return y_seqs + s_seqs + t_seqs
 
