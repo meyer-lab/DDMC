@@ -25,7 +25,7 @@ def makeFigure():
     d_f = X_f.select_dtypes(include=['float64']).T
     i_f = X_f.select_dtypes(include=['object'])
 
-    with open('CPTACmodel_PAM250_W1_15CL', 'rb') as p:
+    with open('msresist/data/pickled_models/CPTACmodel_PAM250_W1_15CL', 'rb') as p:
         model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
