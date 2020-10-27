@@ -22,15 +22,14 @@ from ..expectation_maximization import EM_clustering
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12.5, 12), (2, 2))
+    ax, f = getSetup((15, 12), (2, 3))
 
-    plotErrorAcrossMissingnessLevels(ax[:3], "PAM250")
-    plotErrorAcrossNumberOfClusters(ax[3], "PAM250")
+    # diagram explaining reconstruction process
+    ax[0].axis("off")
 
-    # w_err = ErrorAcrossWeights("Binomial")
-    # w_err = pd.DataFrame(w_err)
-    # w_err.columns = ["weight", "miss", "pept_idx", "model_err", "base_error"]
-    # w_err.to_csv("binom_w_err.csv")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "PAM250")
+    plotErrorAcrossNumberOfClusters(ax[4], "PAM250")
+    plotErrorAcrossWeights(ax[5], "PAM250")
 
     return f
 
@@ -70,9 +69,22 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
     ax.set_xticks(np.arange(6, max(err["n_clusters"]) + 1, 3))
     ax.set_xticklabels(err["n_clusters"])
 
+
 def plotErrorAcrossWeights(ax, distance_method):
-    """Plot artificial missingness error across different weights."""
-    print("hello")
+    """Plot artificial missingness error across different number of clusters."""
+    if distance_method == "PAM250":
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_w_err.csv").iloc[:, 1:]
+    else:
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_w_err.csv").iloc[:, 1:]
+    err.columns = ["Weight", "Missingness %", "pep_idx", "model_err", "base_error"]
+    err = err.groupby(["Weight"]).mean().reset_index()
+    err["model_err"] = np.log(err["model_err"])
+    err["base_error"] = np.log(err["base_error"])
+
+    sns.regplot(x="Weight", y="model_err", data=err, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="Weight", y="base_error", data=err, color="black", ax=ax)
+    ax.set_ylabel("Mean Squared Error")
+    ax.set_title("Imputation Error across Weights")
 
 
 def plotErrorAcrossMissingnessLevels(ax, distance_method):
@@ -167,7 +179,10 @@ def ComputeBaselineError(X, d, nan_indices):
         b = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
         assert all(~np.isnan(v)) and all(~np.isnan(b)), (v, b)
         errors[ii] = mean_squared_error(v, b)
-
+    print("––––––––––––-")
+    print(errors)
+    print(errors.shape)
+    print(X.shape[0])
     return errors
 
 
@@ -190,7 +205,7 @@ def ComputeModelError(X, data, nan_indices, ncl, model, fit="gmm"):
         c = centers[labels[ii], idx[1] - 4]
         assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
         errors[ii] =  mean_squared_error(v, c)
-
+    assert len(set(errors)) > 1, (centers, nan_indices[idx], v, c)
     return errors
 
 
@@ -267,7 +282,7 @@ def ErrorAcrossWeights(distance_method):
     if distance_method == "PAM250":
         with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m:
             model = pickle.load(m)[0]
-        weights = [0, 1, 3, 6, 9]
+        weights = [0, 1, 3, 9, 27]
     else:
         with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m:
             model = pickle.load(m)[0]
@@ -281,15 +296,14 @@ def ErrorAcrossWeights(distance_method):
         errors[i1:i2, 0] = weight
         errors[i1:i2, 1] = missingness
         errors[i1:i2, 2] = md.index
-        seqs = [s.upper() for s in model.info["Sequence"]]
+        seqs = [s.upper() for s in info["Sequence"]]
         if distance_method == "PAM250":
             dist = PAM250(seqs, weight)
         elif distance_method == "Binomial":
-            dist = Binomial(model.info["Sequence"], seqs, weight)
+            dist = Binomial(info["Sequence"], seqs, weight)
         _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
-        errors[i1:i2, 3] == ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
-        errors[i1:i2, 4] == ComputeBaselineError(X, data.T, nan_indices)
-        print("complete")
+        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
+        errors[i1:i2, 4] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
 
