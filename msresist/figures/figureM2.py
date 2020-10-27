@@ -14,8 +14,8 @@ from .common import subplotLabel, getSetup
 from .figure3 import plotR2YQ2Y, plotPCA
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
-from ..binomial import position_weight_matrix, GenerateBinarySeqID, AAlist, BackgroundSeqs
-from ..pam250 import MotifPam250Scores
+from ..binomial import Binomial
+from ..pam250 import PAM250
 from ..expectation_maximization import EM_clustering
 
 
@@ -24,14 +24,12 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((12.5, 12), (4, 3))
 
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    errors, nans = ErrorAcrossMissingnessLevels(X, "Binomial")
-    errors = pd.DataFrame(errors)
-    errors.columns = ["Run", "Peptide_IDX", "Miss", "Weight", "model_error", "base_error"]
-    errors.to_csv("errors_binom.csv")
-    nans[0].to_csv("errors_nans1_binom.csv")
-    nans[1].to_csv("errors_nans2_binom.csv")
-    nans[2].to_csv("errors_nans3_binom.csv")
+    # plotErrorAcrossMissingnessLevels(ax, "PAM250")
+
+    cl_err = ErrorAcrossNumberOfClusters("PAM250")
+    cl_err = pd.DataFrame(cl_err)
+    cl_err.columns = ["n_clusters", "miss", "pept_idx", "model_err", "base_error"]
+    cl_err.to_csv("pam_cl_err.csv")
 
     return f
 
@@ -53,20 +51,41 @@ def plotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotErrorAcrossMissingnessLevels(ax, x, weights, distance_method, ncl, max_n_iter=200):
+def plotErrorAcrossMissingnessLevels(ax, distance_method):
     """Plot artificial missingness error."""
-    errors = ErrorAcrossMissingnessLevels(x, weights, distance_method, ncl)
-    m = pd.DataFrame(errors)
-    m.columns = ["missingness%_group", "weights", "model_error", "baseline_error"]
-    model_errors = m.iloc[:, :-1]
-    sns.pointplot(x="missingness%_group", y="model_error", data=model_errors, hue="Weight", style="Fit", palette="muted", ax=ax)
-    baseline_errors = m[["missingness%_group", "baseline_error"]]
-    sns.pointplot(x="missingness%_group", y="baseline_error", data=baseline_errors, color="grey", ax=ax)
-    ax.lines[-1].set_linestyle("--")
-    return m
+    if distance_method == "PAM250":
+        err = pd.read_csv("errors_pam.csv").iloc[:, 1:]
+    else:
+        err = pd.read_csv("errors_binom.csv").iloc[:, 1:]
+
+    err = err[err["model_error"] < 20]
+    err = err.groupby(["Run", "Miss", "Weight"]).mean().reset_index()
+    data = err[err["Weight"] == 0]
+    data["model_error"] = np.log(data["model_error"])
+    data["base_error"] = np.log(data["base_error"])
+    mix = err[err["Weight"] == 0.5]
+    mix["model_error"] = np.log(mix["model_error"])
+    mix["base_error"] = np.log(mix["base_error"])
+    seq = err[err["Weight"] == 1.0]
+    seq["model_error"] = np.log(seq["model_error"])
+    seq["base_error"] = np.log(seq["base_error"])
+
+    ylabel = "Mean Squared Error"
+    sns.regplot(x="Miss", y="model_error", data=data, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#acc2d9", ax=ax[0])
+    sns.regplot(x="Miss", y="base_error", data=data, color="black", scatter=False, ax=ax[0])
+    ax[0].set_title("Data only")
+    ax[0].set_ylabel(ylabel)
+    sns.regplot(x="Miss", y="model_error", data=mix, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="lightgreen", ax=ax[1])
+    sns.regplot(x="Miss", y="base_error", data=mix, color="black", scatter=False, ax=ax[1])
+    ax[1].set_title("Mix")
+    ax[1].set_ylabel(ylabel)
+    sns.regplot(x="Miss", y="model_error", data=seq, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#fdde6c", ax=ax[2])
+    sns.regplot(x="Miss", y="base_error", data=seq, color="black", scatter=False, ax=ax[2])
+    ax[2].set_title("Seq")
+    ax[2].set_ylabel(ylabel)
 
 
-def ErrorAcrossMissingnessLevels(X, distance_method):
+def ErrorAcrossMissingnessLevels(distance_method):
     """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error 
     between the actual versus cluster center or imputed peptide average across patients. 
     Note that we start with the model fit to the entire data set."""
@@ -93,18 +112,14 @@ def ErrorAcrossMissingnessLevels(X, distance_method):
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
     errors = np.zeros((X.shape[0] * len(models) * len(weights), 6))
-    nans = []
     n_runs = 3
     for ii in range(n_runs):
-        print("iteration: ", ii)
         vals = FindIdxValues(md)
         md, nan_indices = IncorporateMissingValues(md, vals)
-        nans.append(pd.DataFrame(nan_indices))
         data = md.select_dtypes(include=['float64']).T
         info = md.select_dtypes(include=['object'])
         missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
         for jj, model in enumerate(models):
-            print("weight: ", weights[jj])
             _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
             idx1 = ((ii*n_runs) + jj) * X.shape[0]
             idx2 =  ((ii*n_runs) + jj + 1) * X.shape[0]
@@ -112,11 +127,10 @@ def ErrorAcrossMissingnessLevels(X, distance_method):
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
             errors[idx1:idx2, 3] = weights[jj]
-            errors[idx1:idx2, 4] = ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, model=gmm)
             errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
-            print("complete.")
 
-    return errors, nans
+    return errors
 
 
 def ComputeBaselineError(X, d, nan_indices):
@@ -133,13 +147,17 @@ def ComputeBaselineError(X, d, nan_indices):
     return errors
 
 
-def ComputeModelError(X, gmm, data, nan_indices, ncl):
+def ComputeModelError(X, data, nan_indices, ncl, model=False):
     """Compute error between cluster center versus real value."""
-    d = np.array(data)
-    idxx = np.atleast_2d(np.arange(d.shape[0]))
-    d = np.hstack((d, idxx.T))
-    labels = np.argmax(gmm.predict_proba(d), axis=1)
-    centers = ComputeCenters(gmm, ncl).T
+    if isinstance(model, bool):
+        labels = model.labels()
+        centers = model.transform().T
+    else:
+        d = np.array(data)
+        idxx = np.atleast_2d(np.arange(d.shape[0]))
+        d = np.hstack((d, idxx.T))
+        labels = np.argmax(model.predict_proba(d), axis=1)
+        centers = ComputeCenters(model, ncl).T
     n = data.shape[0]
     errors = np.empty(n, dtype=float)
     for ii in range(n):
@@ -164,17 +182,6 @@ def ComputeCenters(gmm, ncl):
         return centers.T
 
 
-def MissingnessGroups(X, l):
-    """Assign each peptide to the closest missingness group."""
-    d = X.select_dtypes(include=["float64"])
-    pept_NaN_per = (np.count_nonzero(np.isnan(d), axis=1) / d.shape[1] * 100).astype(int)
-    l_index = []
-    for per in pept_NaN_per:
-        l_index.append(l.index(min(l, key=lambda group: abs(group - per))))
-    assert max(l_index) + 1 == len(l), "Not enough missingness present in input data set"
-    return l_index
-
-
 def IncorporateMissingValues(X, vals):
     """Remove a random TMT experiment for each peptide. If a peptide already has the maximum amount of
     missingness allowed, don't remove."""
@@ -188,106 +195,72 @@ def IncorporateMissingValues(X, vals):
     return X, tmt_idx
 
 
-def ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter):
+def ErrorAcrossNumberOfClusters(distance_method):
     """Calculate missingness error across different number of clusters."""
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
-    d = md.select_dtypes(include=['float64'])
-    i = md.select_dtypes(include=['object'])
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X.index = np.arange(X.shape[0])
+    vals = FindIdxValues(X)
+    md, nan_indices = IncorporateMissingValues(X, vals)
+    data = md.select_dtypes(include=['float64']).T
+    info = md.select_dtypes(include=['object'])
+    missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
 
-    # Pre-compute background
-    seqs = [s.upper() for s in X["Sequence"]]
-    if distance_method == "Binomial":
-        # Background sequences
-        bg = position_weight_matrix(BackgroundSeqs(md["Sequence"]))
-        background = [np.array([bg[AA] for AA in AAlist]), GenerateBinarySeqID(seqs)]
-    elif distance_method == "PAM250":
-        # Compute all pairwise distances and generate seq vs seq to score dictionary
-        background = MotifPam250Scores(seqs)
+    if distance_method == "PAM250":
+        weight = 1
+    else:
+        weight = 10
 
-    model_res = np.zeros((len(clusters), 3))
-    base_res = np.zeros((len(clusters), 2))
-    for idx, cluster in enumerate(clusters):
+    n_clusters = [6, 9, 12, 15, 18, 21, 24]
+    errors = np.zeros((X.shape[0] * len(n_clusters), 5))
+    for idx, cluster in enumerate(n_clusters):
         print(cluster)
-        base_res[idx, 0] = int(cluster)
-        model_res[idx, 0] = int(cluster)
-        model = MassSpecClustering(
-            i, cluster, SeqWeight=weight, distance_method=distance_method, max_n_iter=max_n_iter, background=background
-        ).fit(d.T, "NA")
-        if all(model.converge_):
-            model_res[idx, 1] = 0
-            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
-        elif len(set(model.converge_)) == 2:
-            model_res[idx, 1] = 1
-            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
-        else:
-            model_res[idx, 1] = 2
-            model_res[idx, 2] = np.nan
+        i1 = X.shape[0] * idx
+        i2 = X.shape[0] * (idx + 1)
+        errors[i1:i2, 0] = int(cluster)
+        errors[i1:i2, 1] = missingness
+        errors[i1:i2, 2] = md.index
+        model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
+        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, cluster, model)
+        errors[i1:i2, 4] = ComputeBaselineError(X, data.T, nan_indices)
 
-    base_res[:, 1] = [ComputeBaselineError(x, d, nan_indices)] * len(clusters)
-    return model_res, base_res
+    return errors
 
 
-def plotErrorAcrossNumberOfClusters(ax, X, weight, distance_method, clusters, max_n_iter):
-    """Plot missingness error across different number of clusters."""
-    m, b = ErrorAcrossNumberOfClusters(X, weight, distance_method, clusters, max_n_iter)
-    m = pd.DataFrame(m)
-    m.columns = ["n_clusters", "Fit", "Error"]
-    sns.lineplot(x="n_clusters", y="Error", data=m, palette="muted", ax=ax)
-    b = pd.DataFrame(b)
-    b.columns = ["Clusters", "Error"]
-    sns.lineplot(x="Clusters", y="Error", data=b, color="grey", ax=ax)
-    ax.lines[-1].set_linestyle("--")
+def ErrorAcrossWeights(distance_method):
+    """Calculate missingness error across different number of clusters."""
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X.index = np.arange(X.shape[0])
+    vals = FindIdxValues(X)
+    md, nan_indices = IncorporateMissingValues(md, vals)
+    data = md.select_dtypes(include=['float64']).T
+    info = md.select_dtypes(include=['object'])
+    missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
 
+    if distance_method == "PAM250":
+        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m:
+            model = pickle.load(m)[0]
+        weights = [0, 1, 3, 6, 9]
+    else:
+        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m2:
+            model = pickle.load(m)[0]
+        weights = [0, 5, 10, 20, 40]
 
-def ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter):
-    """Calculate missing error across different weights."""
-    x, md, nan_indices = GenerateReferenceAndMissingnessDataSet(X)
-    d = md.select_dtypes(include=['float64'])
-    i = md.select_dtypes(include=['object'])
-
-    # Pre-compute background
-    seqs = [s.upper() for s in X["Sequence"]]
-    if distance_method == "Binomial":
-        # Background sequences
-        bg = position_weight_matrix(BackgroundSeqs(md["Sequence"]))
-        background = [np.array([bg[AA] for AA in AAlist]), GenerateBinarySeqID(seqs)]
-    elif distance_method == "PAM250":
-        # Compute all pairwise distances and generate seq vs seq to score dictionary
-        background = MotifPam250Scores(seqs)
-
-    model_res = np.zeros((len(weights), 3))
-    base_res = np.zeros((len(weights), 2))
-    for idx, w in enumerate(weights):
-        print(w)
-        base_res[idx, 0] = w
-        model_res[idx, 0] = w
-        model = MassSpecClustering(
-            i, ncl, SeqWeight=w, distance_method=distance_method, max_n_iter=max_n_iter, background=background
-        ).fit(d.T, "NA")
-        if all(model.converge_):
-            model_res[idx, 1] = 0
-            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
-        elif len(set(model.converge_)) == 2:
-            model_res[idx, 1] = 1
-            model_res[idx, 2] = ComputeModelError(x, model, d, nan_indices)
-        else:
-            model_res[idx, 1] = 2
-            model_res[idx, 2] = np.nan
-
-    base_res[:, 1] = [ComputeBaselineError(x, d, nan_indices)] * len(weights)
-    return model_res, base_res
-
-
-def plotErrorAcrossWeights(ax, X, weights, distance_method, ncl, max_n_iter):
-    """Plot missingness error across different number of clusters."""
-    m, b = ErrorAcrossWeights(X, weights, distance_method, ncl, max_n_iter)
-    m = pd.DataFrame(m)
-    m.columns = ["Weights", "Error"]
-    sns.lineplot(x="Weights", y="Error", data=m, palette="muted", ax=ax)
-    b = pd.DataFrame(b)
-    b.columns = ["Weights", "Error"]
-    sns.lineplot(x="Weights", y="Error", data=b, color="grey", ax=ax)
-    ax.lines[-1].set_linestyle("--")
+    errors = np.zeros((X.shape[0] * len(weights), 6))
+    for idx, weight in enumerate(weights):
+        print(weight)
+        i1 = X.shape[0] * idx
+        i2 = X.shap[0] * (idx + 1)
+        errors[i1:i2, 0] = weight
+        errors[i1:i2, 1] = missingness
+        errors[i1:i2, 2] = md.index
+        seqs = [s.upper() for s in model.info["Sequence"]]
+        if distance_method == "PAM250":
+            dist = PAM250(seqs, weight)
+        elif distance_method == "Binomial":
+            dist = Binomial(model.info["Sequence"], seqs, weight)
+        _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
+        errors[i1:i2, 3] == ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
+        errors[i1:i2, 4] == ComputeBaselineError(X, data.T, nan_indices)
 
 
 def TumorType(centers):
