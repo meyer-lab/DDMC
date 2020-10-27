@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
+from collections import defaultdict
 from .motifs import FormatName, MapMotifs
 
 
@@ -85,7 +86,7 @@ def preprocessCPTAC():
     X = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/CPTAC3_Lung_Adeno_Carcinoma_Phosphoproteome.phosphopeptide.tmt10.csv"))
     d = X.iloc[:, 1:-3]
     X = pd.concat([X.iloc[:, 0], X.iloc[:, -3:], d.loc[:, d.columns.str.contains("CPT")]], axis=1)
-    X = filter_NaNpeptides(X)
+    X = filter_NaNpeptides(X, cut=0.2)
 
     n = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/S046_BI_CPTAC3_LUAD_Discovery_Cohort_Samples_r1_May2019.csv"))
     bi_id = list(n[~n["Broad Sample.ID"].str.contains("IR")].iloc[:, 1])
@@ -94,11 +95,30 @@ def preprocessCPTAC():
     return X.drop("Organism", axis=1)
 
 
-def filter_NaNpeptides(X, cut=0.2):
-    """ Filter peptides that have a given percentage of missingness """
+def filter_NaNpeptides(X, cut=False, tmt=False):
+    """ Filter peptides that have a given minimum percentage of completeness or number of TMT experiments. """
     d = X.select_dtypes(include=["float64"])
-    Xidx = np.count_nonzero(~np.isnan(d), axis=1) / d.shape[1] >= cut
+    if cut:
+        Xidx = np.count_nonzero(~np.isnan(d), axis=1) / d.shape[1] >= cut
+    else:
+        idx_values = FindIdxValues(X)
+        dict_ = defaultdict(list)
+        for i in range(idx_values.shape[0]):
+            dict_[idx_values[i, 0]].append(idx_values[i, -1])
+        Xidx = [len(set(dict_[i])) > tmt for i in range(X.shape[0])]
     return X.iloc[Xidx, :]
+
+
+def FindIdxValues(X):
+    """Find the patient indices corresponding to all non-missing values grouped in TMT experiments."""
+    data = X.select_dtypes(include=["float64"])
+    idx = np.argwhere(~np.isnan(data.values))
+    idx[:, 1] += 4  # add ID variable columns
+    StoE = pd.read_csv("msresist/data/MS/CPTAC/IDtoExperiment.csv")
+    assert all(StoE.iloc[:, 0] == data.columns), "Sample labels don't match."
+    StoE = StoE.iloc[:, 1].values
+    tmt = [[StoE[idx[ii][1] - 4]] for ii in range(idx.shape[0])]
+    return np.append(idx, tmt, axis=1)
 
 
 def MergeDfbyMean(X, values, indices):

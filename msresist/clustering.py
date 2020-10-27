@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import Binomial, position_weight_matrix, AAlist, BackgroundSeqs
+from .binomial import Binomial, AAlist, BackgroundSeqs
 from .pam250 import PAM250
 
 
@@ -73,6 +73,12 @@ class MassSpecClustering(BaseEstimator):
                 centers[ii, jj] = dist.parameters[0]
 
         return centers.T
+
+    def labels(self):
+        """Find cluster assignment with highest likelihood for each peptide"""
+        check_is_fitted(self, ["gmm_"])
+
+        return np.argmax(self.scores_, axis=1)
 
     def pssms(self, PsP_background=False):
         """Compute position-specific scoring matrix of each cluster.

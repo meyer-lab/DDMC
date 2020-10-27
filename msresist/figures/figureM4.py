@@ -28,7 +28,7 @@ def makeFigure():
 
     # Load Clustering Model from Figure 2
     ncl = 15
-    with open('CPTACmodel_PAM250_W1_15CL', 'rb') as ff:
+    with open('msresist/data/pickled_models/CPTACmodel_PAM250_W1_15CL', 'rb') as ff:
         MSC = pickle.load(ff)[0]
 
     # Regression against mutation status of driver genes and clusters
@@ -48,7 +48,6 @@ def makeFigure():
     lr = LogisticRegressionCV(cv=ncl, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9])
 
     lr.fit(centers, y_egfr)
-    y_pred = lr.predict(centers)
 
     plotPredictionProbabilities(ax[1], lr, centers, y_egfr)
     plotConfusionMatrix(ax[2], lr, centers, y_egfr)
