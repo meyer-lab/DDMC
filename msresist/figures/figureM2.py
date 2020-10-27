@@ -22,14 +22,10 @@ from ..expectation_maximization import EM_clustering
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12.5, 12), (4, 3))
+    ax, f = getSetup((12.5, 12), (2, 2))
 
-    # plotErrorAcrossMissingnessLevels(ax, "PAM250")
-
-    cl_err = ErrorAcrossNumberOfClusters("PAM250")
-    cl_err = pd.DataFrame(cl_err)
-    cl_err.columns = ["n_clusters", "miss", "pept_idx", "model_err", "base_error"]
-    cl_err.to_csv("pam_cl_err.csv")
+    plotErrorAcrossMissingnessLevels(ax[:3], "PAM250")
+    plotErrorAcrossNumberOfClusters(ax[3], "PAM250")
 
     # w_err = ErrorAcrossWeights("Binomial")
     # w_err = pd.DataFrame(w_err)
@@ -56,12 +52,35 @@ def plotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotErrorAcrossMissingnessLevels(ax, distance_method):
-    """Plot artificial missingness error."""
+def plotErrorAcrossNumberOfClusters(ax, distance_method):
+    """Plot artificial missingness error across different number of clusters."""
     if distance_method == "PAM250":
-        err = pd.read_csv("errors_pam.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_cl_err.csv").iloc[:, 1:]
     else:
-        err = pd.read_csv("errors_binom.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_cl_err.csv").iloc[:, 1:]
+
+    err = err.groupby(["n_clusters"]).mean().reset_index()
+    err["model_err"] = np.log(err["model_err"])
+    err["base_error"] = np.log(err["base_error"])
+
+    sns.regplot(x="n_clusters", y="model_err", data=err, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="n_clusters", y="base_error", data=err, color="black", ax=ax)
+    ax.set_ylabel("Mean Squared Error")
+    ax.set_title("Imputation Error across Number of Clusters")
+    ax.set_xticks(np.arange(6, max(err["n_clusters"]) + 1, 3))
+    ax.set_xticklabels(err["n_clusters"])
+
+def plotErrorAcrossWeights(ax, distance_method):
+    """Plot artificial missingness error across different weights."""
+    print("hello")
+
+
+def plotErrorAcrossMissingnessLevels(ax, distance_method):
+    """Plot artificial missingness error across verying missignenss."""
+    if distance_method == "PAM250":
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_varyingmiss_err.csv").iloc[:, 1:]
+    else:
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_varyingmiss_err.csv").iloc[:, 1:]
 
     err = err[err["model_error"] < 20]
     err = err.groupby(["Run", "Miss", "Weight"]).mean().reset_index()
