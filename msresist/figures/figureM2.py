@@ -31,6 +31,11 @@ def makeFigure():
     cl_err.columns = ["n_clusters", "miss", "pept_idx", "model_err", "base_error"]
     cl_err.to_csv("pam_cl_err.csv")
 
+    # w_err = ErrorAcrossWeights("Binomial")
+    # w_err = pd.DataFrame(w_err)
+    # w_err.columns = ["weight", "miss", "pept_idx", "model_err", "base_error"]
+    # w_err.to_csv("binom_w_err.csv")
+
     return f
 
 
@@ -127,7 +132,7 @@ def ErrorAcrossMissingnessLevels(distance_method):
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
             errors[idx1:idx2, 3] = weights[jj]
-            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, model=gmm)
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
             errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
@@ -147,17 +152,17 @@ def ComputeBaselineError(X, d, nan_indices):
     return errors
 
 
-def ComputeModelError(X, data, nan_indices, ncl, model=False):
+def ComputeModelError(X, data, nan_indices, ncl, model, fit="gmm"):
     """Compute error between cluster center versus real value."""
-    if isinstance(model, bool):
-        labels = model.labels()
-        centers = model.transform().T
-    else:
+    if fit == "gmm":
         d = np.array(data)
         idxx = np.atleast_2d(np.arange(d.shape[0]))
         d = np.hstack((d, idxx.T))
         labels = np.argmax(model.predict_proba(d), axis=1)
         centers = ComputeCenters(model, ncl).T
+    else:
+        labels = model.labels()
+        centers = model.transform().T
     n = data.shape[0]
     errors = np.empty(n, dtype=float)
     for ii in range(n):
@@ -199,8 +204,10 @@ def ErrorAcrossNumberOfClusters(distance_method):
     """Calculate missingness error across different number of clusters."""
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
     X.index = np.arange(X.shape[0])
-    vals = FindIdxValues(X)
-    md, nan_indices = IncorporateMissingValues(X, vals)
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    vals = FindIdxValues(md)
+    md, nan_indices = IncorporateMissingValues(md, vals)
     data = md.select_dtypes(include=['float64']).T
     info = md.select_dtypes(include=['object'])
     missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
@@ -210,7 +217,7 @@ def ErrorAcrossNumberOfClusters(distance_method):
     else:
         weight = 10
 
-    n_clusters = [6, 9, 12, 15, 18, 21, 24]
+    n_clusters = [6, 9, 12, 15, 18, 21]
     errors = np.zeros((X.shape[0] * len(n_clusters), 5))
     for idx, cluster in enumerate(n_clusters):
         print(cluster)
@@ -220,7 +227,7 @@ def ErrorAcrossNumberOfClusters(distance_method):
         errors[i1:i2, 1] = missingness
         errors[i1:i2, 2] = md.index
         model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
-        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, cluster, model)
+        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, cluster, model, fit="model")
         errors[i1:i2, 4] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
@@ -230,7 +237,9 @@ def ErrorAcrossWeights(distance_method):
     """Calculate missingness error across different number of clusters."""
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
     X.index = np.arange(X.shape[0])
-    vals = FindIdxValues(X)
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    vals = FindIdxValues(md)
     md, nan_indices = IncorporateMissingValues(md, vals)
     data = md.select_dtypes(include=['float64']).T
     info = md.select_dtypes(include=['object'])
@@ -241,15 +250,15 @@ def ErrorAcrossWeights(distance_method):
             model = pickle.load(m)[0]
         weights = [0, 1, 3, 6, 9]
     else:
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m2:
+        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m:
             model = pickle.load(m)[0]
         weights = [0, 5, 10, 20, 40]
 
-    errors = np.zeros((X.shape[0] * len(weights), 6))
+    errors = np.zeros((X.shape[0] * len(weights), 5))
     for idx, weight in enumerate(weights):
         print(weight)
         i1 = X.shape[0] * idx
-        i2 = X.shap[0] * (idx + 1)
+        i2 = X.shape[0] * (idx + 1)
         errors[i1:i2, 0] = weight
         errors[i1:i2, 1] = missingness
         errors[i1:i2, 2] = md.index
@@ -258,10 +267,12 @@ def ErrorAcrossWeights(distance_method):
             dist = PAM250(seqs, weight)
         elif distance_method == "Binomial":
             dist = Binomial(model.info["Sequence"], seqs, weight)
-        _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
-        errors[i1:i2, 3] == ComputeModelError(X, gmm, data.T, nan_indices, model.ncl)
+        _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
+        errors[i1:i2, 3] == ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
         errors[i1:i2, 4] == ComputeBaselineError(X, data.T, nan_indices)
+        print("complete")
 
+    return errors
 
 def TumorType(centers):
     """Add Normal vs Tumor column."""
