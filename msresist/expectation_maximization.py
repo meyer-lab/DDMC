@@ -20,7 +20,7 @@ def EM_clustering_repeat(nRepeats=3, *params):
     return output
 
 
-def EM_clustering(data, info, ncl, seqDist):
+def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
@@ -29,14 +29,18 @@ def EM_clustering(data, info, ncl, seqDist):
     d = np.hstack((d, idxx.T))
 
     for _ in range(10):
-        # Initialize model
-        dists = list()
-        for _ in range(ncl):
-            nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-            dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
+        if gmmIn is None:
+            # Initialize model
+            dists = list()
+            for _ in range(ncl):
+                nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
+                dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
 
-        gmm = GeneralMixtureModel(dists)
-        gmm.fit(d, max_iterations=50, verbose=False)
+            gmm = GeneralMixtureModel(dists)
+        else:
+            gmm = gmmIn
+
+        gmm.fit(d, max_iterations=50, verbose=False, stop_threshold=1e-2)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
