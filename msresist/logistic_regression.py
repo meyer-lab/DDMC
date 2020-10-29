@@ -81,4 +81,5 @@ def plotROC(ax, classifier, d, y, cv_folds=4):
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
            title="Receiver Operating Characteristic")
+    ax.get_legend().remove()
     # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)

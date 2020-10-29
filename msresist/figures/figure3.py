@@ -210,7 +210,7 @@ def plotR2YQ2Y(ax, model, X, Y, b=3):
     ax.legend(loc=0)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
@@ -223,7 +223,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
         for i, label in enumerate(Y.columns):
             y = Y.iloc[:, i]
             ypred = Y_predictions[:, i]
-            ax[i].scatter(y, ypred)
+            ax[i].scatter(y, ypred, color=color)
             ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
             ax[i].set_xlabel("Actual")
             ax[i].set_ylabel(ylabel)
