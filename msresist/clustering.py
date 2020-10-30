@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import Binomial, position_weight_matrix, AAlist, BackgroundSeqs
+from .binomial import Binomial, AAlist, BackgroundSeqs
 from .pam250 import PAM250
 
 
