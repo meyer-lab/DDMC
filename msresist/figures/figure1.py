@@ -165,7 +165,7 @@ def TransformTimeCourseMatrixForSeaborn(x, l, itp, ylabel, treatments):
     """ Preprocess data to plot with seaborn. Returns a data frame in which each row is a data point in the plot """
     y = pd.DataFrame()
     elapsed, lines, cv = [], [], []
-    for idx, row in x.iterrows():
+    for _, row in x.iterrows():
         row = pd.DataFrame(row).T
         elapsed.extend(list(row["Elapsed"]) * (row.shape[1] - 1))
         lines.extend(list(l) * (np.int((row.shape[1] - 1) / len(l))))
