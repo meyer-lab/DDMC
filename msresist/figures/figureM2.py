@@ -25,11 +25,11 @@ def makeFigure():
     ax, f = getSetup((15, 12), (2, 3))
 
     # diagram explaining reconstruction process
-    # ax[0].axis("off")
+    ax[0].axis("off")
 
-    plotErrorAcrossMissingnessLevels(ax[0:3], "PAM250")
-    plotErrorAcrossNumberOfClusters(ax[3], "PAM250")
-    plotErrorAcrossWeights(ax[4], "PAM250")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "PAM250")
+    plotErrorAcrossNumberOfClusters(ax[4], "PAM250")
+    plotErrorAcrossWeights(ax[5], "PAM250")
 
     return f
 
@@ -76,7 +76,7 @@ def plotErrorAcrossWeights(ax, distance_method):
     else:
         err = pd.read_csv("msresist/data/imputing_missingness/binom_w_5tmts.csv").iloc[:, 1:]
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
-    err = err.groupby(["Weight", "Miss"]).mean().reset_index()
+    err = err.groupby(["Run", "Weight"]).mean().reset_index()
     err["model_error"] = np.log(err["model_error"])
     err["base_error"] = np.log(err["base_error"])
 
