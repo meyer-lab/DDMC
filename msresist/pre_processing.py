@@ -64,12 +64,12 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, corrCut=0.55, stdCut=0.8)
+        X = VFilter(X, merging_indices, data_headers, corrCut=0.8, stdCut=0.4)
 
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.30)
+        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.50)
 #         X = FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4)
 
     if not log2T:
