@@ -25,23 +25,11 @@ def makeFigure():
     ax, f = getSetup((15, 12), (2, 3))
 
     # diagram explaining reconstruction process
-    ax[0].axis("off")
+    # ax[0].axis("off")
 
-    # plotErrorAcrossMissingnessLevels(ax[1:4], "Binomial")
-    # plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
-    # plotErrorAcrossWeights(ax[5], "Binomial")
-
-    # e = ErrorAcrossWeights("PAM250")
-    # e = pd.DataFrame(e)
-    # e.to_csv("msresist/data/imputing_missingness/pam_w_5tmts.csv")
-
-    c = ErrorAcrossNumberOfClusters("Binomial")
-    c = pd.DataFrame(c)
-    c.to_csv("msresist/data/imputing_missingness/binom_c_5tmts.csv")
-
-    # a = ErrorAcrossMissingnessLevels("Binomial")
-    # a = pd.DataFrame(a)
-    # a.to_csv("msresist/data/imputing_missingness/binom_am_5tmts.csv")
+    plotErrorAcrossMissingnessLevels(ax[0:3], "PAM250")
+    plotErrorAcrossNumberOfClusters(ax[3], "PAM250")
+    plotErrorAcrossWeights(ax[4], "PAM250")
 
     return f
 
@@ -70,7 +58,7 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
     else:
         err = pd.read_csv("msresist/data/imputing_missingness/binom_c_5tmts.csv").iloc[:, 1:]
 
-    err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
+    err.columns = ["Run", "pep_idx", "Miss", "n_clusters", "model_error", "base_error"]
     err = err.groupby(["Run", "n_clusters"]).mean().reset_index()
     err["model_error"] = np.log(err["model_error"])
     err["base_error"] = np.log(err["base_error"])
@@ -79,8 +67,6 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
     sns.regplot(x="n_clusters", y="base_error", data=err, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Number of Clusters")
-    ax.set_xticks(np.arange(6, max(err["n_clusters"]) + 1, 3))
-    ax.set_xticklabels(err["n_clusters"])
 
 
 def plotErrorAcrossWeights(ax, distance_method):
@@ -108,8 +94,7 @@ def plotErrorAcrossMissingnessLevels(ax, distance_method):
         err = pd.read_csv("msresist/data/imputing_missingness/binom_am_5tmts.csv").iloc[:, 1:]
 
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
-    err = err[err["model_error"] < 20]
-    err = err.groupby(["Run", "Miss", "Weight"]).mean().reset_index()
+    err = err.groupby(["Miss", "Weight"]).mean().reset_index()
     data = err[err["Weight"] == 0]
     data["model_error"] = np.log(data["model_error"])
     data["base_error"] = np.log(data["base_error"])
@@ -256,7 +241,7 @@ def ErrorAcrossNumberOfClusters(distance_method):
     X.index = np.arange(X.shape[0])
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
-    n_runs = 3
+    n_runs = 5
     errors = np.zeros((X.shape[0] * len(n_clusters) * n_runs, 6))
     for ii in range(n_runs):
         vals = FindIdxValues(md)
