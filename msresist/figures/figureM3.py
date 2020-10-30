@@ -13,7 +13,8 @@ from ..logistic_regression import plotClusterCoefficients, plotPredictionProbabi
 from ..figures.figure3 import plotPCA
 from ..clustering import MassSpecClustering
 from msresist.pre_processing import filter_NaNpeptides
-import pickle 
+import pickle
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""

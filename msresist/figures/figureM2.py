@@ -106,25 +106,25 @@ def plotErrorAcrossMissingnessLevels(ax, distance_method):
     seq["base_error"] = np.log(seq["base_error"])
 
     ylabel = "Mean Squared Error"
-    sns.regplot(x="Miss", y="model_error", data=data, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#acc2d9", ax=ax[0])
+    sns.regplot(x="Miss", y="model_error", data=data, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#acc2d9", ax=ax[0])
     sns.regplot(x="Miss", y="base_error", data=data, color="black", scatter=False, ax=ax[0])
     ax[0].set_title("Data only")
     ax[0].set_ylabel(ylabel)
-    sns.regplot(x="Miss", y="model_error", data=mix, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="lightgreen", ax=ax[1])
+    sns.regplot(x="Miss", y="model_error", data=mix, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="lightgreen", ax=ax[1])
     sns.regplot(x="Miss", y="base_error", data=mix, color="black", scatter=False, ax=ax[1])
     ax[1].set_title("Mix")
     ax[1].set_ylabel(ylabel)
-    sns.regplot(x="Miss", y="model_error", data=seq, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#fdde6c", ax=ax[2])
+    sns.regplot(x="Miss", y="model_error", data=seq, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#fdde6c", ax=ax[2])
     sns.regplot(x="Miss", y="base_error", data=seq, color="black", scatter=False, ax=ax[2])
     ax[2].set_title("Seq")
     ax[2].set_ylabel(ylabel)
 
 
 def ErrorAcrossMissingnessLevels(distance_method):
-    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error 
-    between the actual versus cluster center or imputed peptide average across patients. 
+    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error
+    between the actual versus cluster center or imputed peptide average across patients.
     Note that we start with the model fit to the entire data set."""
-    #load model with all peptides >= 7 TMTs experiments
+    # load model with all peptides >= 7 TMTs experiments
     models = []
     weights = [0.5, 1.0, 0.0]
     if distance_method == "PAM250":
@@ -199,21 +199,21 @@ def ComputeModelError(X, data, nan_indices, ncl, model, fit="gmm"):
         v = X[idx[0], idx[1] - 4]
         c = centers[labels[ii], idx[1] - 4]
         assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
-        errors[ii] =  mean_squared_error(v, c)
+        errors[ii] = mean_squared_error(v, c)
     assert len(set(errors)) > 1, (centers, nan_indices[idx], v, c)
     return errors
 
 
 def ComputeCenters(gmm, ncl):
-        """Calculate cluster averages"""
+    """Calculate cluster averages"""
 
-        centers = np.zeros((ncl, gmm.distributions[0].d - 1))
+    centers = np.zeros((ncl, gmm.distributions[0].d - 1))
 
-        for ii, distClust in enumerate(gmm.distributions):
-            for jj, dist in enumerate(distClust[:-1]):
-                centers[ii, jj] = dist.parameters[0]
+    for ii, distClust in enumerate(gmm.distributions):
+        for jj, dist in enumerate(distClust[:-1]):
+            centers[ii, jj] = dist.parameters[0]
 
-        return centers.T
+    return centers.T
 
 
 def IncorporateMissingValues(X, vals):
@@ -305,6 +305,7 @@ def ErrorAcrossWeights(distance_method):
             errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
+
 
 def TumorType(centers):
     """Add Normal vs Tumor column."""
