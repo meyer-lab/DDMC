@@ -59,7 +59,7 @@ def makeFigure():
     lr = LogisticRegressionCV(cv=model.ncl, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.7]).fit(x, y)
     plotConfusionMatrix(ax[0], lr, x, y)
     ax[0].set_title("LR Confusion Matrix")
-    plotROC(ax[1], lr, x, y, cv_folds=model.ncl)
+    plotROC(ax[1], lr, x, y, cv_folds=20)
     ax[1].set_title("LR ROC")
     plotClusterCoefficients(ax[2], lr)
 
@@ -67,7 +67,7 @@ def makeFigure():
     clf = LinearSVC(penalty="l1", dual=False, class_weight="balanced").fit(x, y)
     plotConfusionMatrix(ax[3], clf, x, y)
     ax[3].set_title("SVC Confusion Matrix")
-    plotROC(ax[4], clf, x, pd.DataFrame(y), cv_folds=model.ncl)
+    plotROC(ax[4], clf, x, pd.DataFrame(y), cv_folds=20)
     ax[4].set_title("SVC ROC")
     plotClusterCoefficients(ax[5], clf)
     ax[5].set_title("SVC Cluster Coefficients")
