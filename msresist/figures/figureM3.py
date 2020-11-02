@@ -22,11 +22,8 @@ def makeFigure():
     ax, f = getSetup((15, 10), (2, 3))
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X_f = filter_NaNpeptides(X, tmt=7)
-    d_f = X_f.select_dtypes(include=['float64']).T
-    i_f = X_f.select_dtypes(include=['object'])
 
-    with open('msresist/data/pickled_models/CPTACmodel_PAM250_W1_15CL', 'rb') as p:
+    with open('msresist/data/pickled_models/CPTACmodel_PAM250_21CL_W3_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
@@ -50,7 +47,7 @@ def makeFigure():
 
     # plotPredictionProbabilities(ax[3], lr, c, tt)
     plotConfusionMatrix(ax[3], lr, c, tt)
-    plotROC(ax[4], lr, c.values, tt, cv_folds=model.ncl)
+    plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)
 
     # Add subplot labels
