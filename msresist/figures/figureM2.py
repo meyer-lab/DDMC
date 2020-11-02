@@ -5,6 +5,7 @@ This creates Figure M1.
 import pickle
 import random
 import numpy as np
+from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
 from scipy.stats import zscore
@@ -54,35 +55,35 @@ def plotMissingnessDensity(ax, d):
 def plotErrorAcrossNumberOfClusters(ax, distance_method):
     """Plot artificial missingness error across different number of clusters."""
     if distance_method == "PAM250":
-        err = pd.read_csv("msresist/data/imputing_missingness/pam_cl_err.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_c_5tmts.csv").iloc[:, 1:]
     else:
-        err = pd.read_csv("msresist/data/imputing_missingness/binom_cl_err.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_c_5tmts.csv").iloc[:, 1:]
 
-    err = err.groupby(["n_clusters"]).mean().reset_index()
-    err["model_err"] = np.log(err["model_err"])
-    err["base_error"] = np.log(err["base_error"])
+    err.columns = ["Run", "pep_idx", "Miss", "n_clusters", "model_error", "base_error"]
+    gm = pd.DataFrame(err.groupby(["n_clusters"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["n_clusters"]).base_error.apply(gmean).values)
 
-    sns.regplot(x="n_clusters", y="model_err", data=err, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#001146", ax=ax)
-    sns.regplot(x="n_clusters", y="base_error", data=err, color="black", ax=ax)
+    sns.regplot(x="n_clusters", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="n_clusters", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Number of Clusters")
-    ax.set_xticks(np.arange(6, max(err["n_clusters"]) + 1, 3))
-    ax.set_xticklabels(err["n_clusters"])
 
 
 def plotErrorAcrossWeights(ax, distance_method):
     """Plot artificial missingness error across different number of clusters."""
     if distance_method == "PAM250":
-        err = pd.read_csv("msresist/data/imputing_missingness/pam_w_err.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_w_5tmts.csv").iloc[:, 1:]
     else:
-        err = pd.read_csv("msresist/data/imputing_missingness/binom_w_err.csv").iloc[:, 1:]
-    err.columns = ["Weight", "Missingness %", "pep_idx", "model_err", "base_error"]
-    err = err.groupby(["Weight"]).mean().reset_index()
-    err["model_err"] = np.log(err["model_err"])
-    err["base_error"] = np.log(err["base_error"])
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_w_5tmts.csv").iloc[:, 1:]
+    err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
 
-    sns.regplot(x="Weight", y="model_err", data=err, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#001146", ax=ax)
-    sns.regplot(x="Weight", y="base_error", data=err, color="black", ax=ax)
+    gm = pd.DataFrame(err.groupby(["Weight"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["Weight"]).base_error.apply(gmean).values)
+
+    sns.regplot(x="Weight", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="Weight", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Weights")
 
@@ -90,21 +91,18 @@ def plotErrorAcrossWeights(ax, distance_method):
 def plotErrorAcrossMissingnessLevels(ax, distance_method):
     """Plot artificial missingness error across verying missignenss."""
     if distance_method == "PAM250":
-        err = pd.read_csv("msresist/data/imputing_missingness/pam_varyingmiss_err.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/pam_am_5tmts.csv").iloc[:, 1:]
     else:
-        err = pd.read_csv("msresist/data/imputing_missingness/binom_varyingmiss_err.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/binom_am_5tmts.csv").iloc[:, 1:]
 
-    err = err[err["model_error"] < 20]
-    err = err.groupby(["Run", "Miss", "Weight"]).mean().reset_index()
-    data = err[err["Weight"] == 0]
-    data["model_error"] = np.log(data["model_error"])
-    data["base_error"] = np.log(data["base_error"])
-    mix = err[err["Weight"] == 0.5]
-    mix["model_error"] = np.log(mix["model_error"])
-    mix["base_error"] = np.log(mix["base_error"])
-    seq = err[err["Weight"] == 1.0]
-    seq["model_error"] = np.log(seq["model_error"])
-    seq["base_error"] = np.log(seq["base_error"])
+    err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
+    gm = pd.DataFrame(err.groupby(["Weight", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["Weight", "Miss"]).base_error.apply(gmean).values)
+
+    data = gm[gm["Weight"] == 0.0]
+    mix = gm[gm["Weight"] == 0.5]
+    seq = gm[gm["Weight"] == 1.0]
 
     ylabel = "Mean Squared Error"
     sns.regplot(x="Miss", y="model_error", data=data, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#acc2d9", ax=ax[0])
@@ -147,8 +145,8 @@ def ErrorAcrossMissingnessLevels(distance_method):
     X.index = np.arange(X.shape[0])
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
-    errors = np.zeros((X.shape[0] * len(models) * len(weights), 6))
-    n_runs = 3
+    n_runs = 5
+    errors = np.zeros((X.shape[0] * len(models) * n_runs, 6))
     for ii in range(n_runs):
         vals = FindIdxValues(md)
         md, nan_indices = IncorporateMissingValues(md, vals)
@@ -157,8 +155,8 @@ def ErrorAcrossMissingnessLevels(distance_method):
         missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
         for jj, model in enumerate(models):
             _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
-            idx1 = ((ii * n_runs) + jj) * X.shape[0]
-            idx2 = ((ii * n_runs) + jj + 1) * X.shape[0]
+            idx1 = X.shape[0] * ((ii*len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii*len(weights)) + jj + 1)
             errors[idx1:idx2, 0] = ii
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
@@ -179,10 +177,6 @@ def ComputeBaselineError(X, d, nan_indices):
         b = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
         assert all(~np.isnan(v)) and all(~np.isnan(b)), (v, b)
         errors[ii] = mean_squared_error(v, b)
-    print("––––––––––––-")
-    print(errors)
-    print(errors.shape)
-    print(X.shape[0])
     return errors
 
 
@@ -236,49 +230,41 @@ def IncorporateMissingValues(X, vals):
 
 def ErrorAcrossNumberOfClusters(distance_method):
     """Calculate missingness error across different number of clusters."""
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
-    X.index = np.arange(X.shape[0])
-    md = X.copy()
-    X = X.select_dtypes(include=['float64']).values
-    vals = FindIdxValues(md)
-    md, nan_indices = IncorporateMissingValues(md, vals)
-    data = md.select_dtypes(include=['float64']).T
-    info = md.select_dtypes(include=['object'])
-    missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
-
     if distance_method == "PAM250":
         weight = 1
     else:
         weight = 10
 
     n_clusters = [6, 9, 12, 15, 18, 21]
-    errors = np.zeros((X.shape[0] * len(n_clusters), 5))
-    for idx, cluster in enumerate(n_clusters):
-        print(cluster)
-        i1 = X.shape[0] * idx
-        i2 = X.shape[0] * (idx + 1)
-        errors[i1:i2, 0] = int(cluster)
-        errors[i1:i2, 1] = missingness
-        errors[i1:i2, 2] = md.index
-        model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
-        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, cluster, model, fit="model")
-        errors[i1:i2, 4] = ComputeBaselineError(X, data.T, nan_indices)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X.index = np.arange(X.shape[0])
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    n_runs = 5
+    errors = np.zeros((X.shape[0] * len(n_clusters) * n_runs, 6))
+    for ii in range(n_runs):
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        for jj, cluster in enumerate(n_clusters):
+            print(cluster)
+            model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
+            idx1 = X.shape[0] * ((ii*len(n_clusters)) + jj)
+            idx2 = X.shape[0] * ((ii*len(n_clusters)) + jj + 1)
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = cluster
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, model, fit="model")
+            errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
 
 
 def ErrorAcrossWeights(distance_method):
     """Calculate missingness error across different number of clusters."""
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
-    X.index = np.arange(X.shape[0])
-    md = X.copy()
-    X = X.select_dtypes(include=['float64']).values
-    vals = FindIdxValues(md)
-    md, nan_indices = IncorporateMissingValues(md, vals)
-    data = md.select_dtypes(include=['float64']).T
-    info = md.select_dtypes(include=['object'])
-    missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
-
     if distance_method == "PAM250":
         with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m:
             model = pickle.load(m)[0]
@@ -288,22 +274,34 @@ def ErrorAcrossWeights(distance_method):
             model = pickle.load(m)[0]
         weights = [0, 5, 10, 20, 40]
 
-    errors = np.zeros((X.shape[0] * len(weights), 5))
-    for idx, weight in enumerate(weights):
-        print(weight)
-        i1 = X.shape[0] * idx
-        i2 = X.shape[0] * (idx + 1)
-        errors[i1:i2, 0] = weight
-        errors[i1:i2, 1] = missingness
-        errors[i1:i2, 2] = md.index
-        seqs = [s.upper() for s in info["Sequence"]]
-        if distance_method == "PAM250":
-            dist = PAM250(seqs, weight)
-        elif distance_method == "Binomial":
-            dist = Binomial(info["Sequence"], seqs, weight)
-        _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
-        errors[i1:i2, 3] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
-        errors[i1:i2, 4] = ComputeBaselineError(X, data.T, nan_indices)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X.index = np.arange(X.shape[0])
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    n_runs = 5
+    errors = np.zeros((X.shape[0] * len(weights) * n_runs, 6))
+    for ii in range(n_runs):
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        for jj, weight in enumerate(weights):
+            print(weight)
+            seqs = [s.upper() for s in info["Sequence"]]
+            if distance_method == "PAM250":
+                dist = PAM250(seqs, weight)
+            elif distance_method == "Binomial":
+                dist = Binomial(info["Sequence"], seqs, weight)
+            _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
+            idx1 = X.shape[0] * ((ii*len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii*len(weights)) + jj + 1)
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = weight
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
+            errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
 
