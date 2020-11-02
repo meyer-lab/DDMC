@@ -28,9 +28,9 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    plotErrorAcrossMissingnessLevels(ax[1:4], "Binomial")
-    plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
-    plotErrorAcrossWeights(ax[5], "Binomial")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "PAM250")
+    plotErrorAcrossNumberOfClusters(ax[4], "PAM250")
+    plotErrorAcrossWeights(ax[5], "PAM250")
 
     return f
 
@@ -60,9 +60,9 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
         err = pd.read_csv("msresist/data/imputing_missingness/binom_c_5tmts.csv").iloc[:, 1:]
 
     err.columns = ["Run", "pep_idx", "Miss", "n_clusters", "model_error", "base_error"]
-    gm = pd.DataFrame(err.groupby(["n_clusters", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm = pd.DataFrame(err.groupby(["n_clusters"]).model_error.apply(gmean)).reset_index()
     gm["model_error"] = np.log(gm["model_error"])
-    gm["base_error"] = np.log(err.groupby(["n_clusters", "Miss"]).base_error.apply(gmean).values)
+    gm["base_error"] = np.log(err.groupby(["n_clusters"]).base_error.apply(gmean).values)
 
     sns.regplot(x="n_clusters", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
     sns.regplot(x="n_clusters", y="base_error", data=gm, color="black", scatter=False, ax=ax)
@@ -78,9 +78,9 @@ def plotErrorAcrossWeights(ax, distance_method):
         err = pd.read_csv("msresist/data/imputing_missingness/binom_w_5tmts.csv").iloc[:, 1:]
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
 
-    gm = pd.DataFrame(err.groupby(["Weight", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm = pd.DataFrame(err.groupby(["Weight"]).model_error.apply(gmean)).reset_index()
     gm["model_error"] = np.log(gm["model_error"])
-    gm["base_error"] = np.log(err.groupby(["Weight", "Miss"]).base_error.apply(gmean).values)
+    gm["base_error"] = np.log(err.groupby(["Weight"]).base_error.apply(gmean).values)
 
     sns.regplot(x="Weight", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
     sns.regplot(x="Weight", y="base_error", data=gm, color="black", scatter=False, ax=ax)
