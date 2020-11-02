@@ -64,7 +64,7 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers)
+        X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.4)
 
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
@@ -186,7 +186,7 @@ def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
 ###------------ Filter by variance (stdev or range/pearson's) ------------------###
 
 
-def VFilter(ABC, merging_indices, data_headers):
+def VFilter(ABC, merging_indices, data_headers, corrCut=0.55, stdCut=0.5):
     """ Filter based on variability across recurrent peptides in MS biological replicates """
     NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
@@ -195,13 +195,13 @@ def VFilter(ABC, merging_indices, data_headers):
     NonRecTable = NonRecTable.assign(r2_Std=list(["N/A"] * NonRecTable.shape[0]))
 
     CorrCoefPeptides = BuildMatrix(CorrCoefPeptides, ABC, data_headers)
-    DupsTable = CorrCoefFilter(CorrCoefPeptides, corrCut=0.6)
+    DupsTable = CorrCoefFilter(CorrCoefPeptides, corrCut=corrCut)
     DupsTable = MergeDfbyMean(DupsTable, DupsTable[data_headers], merging_indices + ["r2_Std"])
     DupsTable = DupsTable.assign(BioReps=list("2" * DupsTable.shape[0])).reset_index()
 
     StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
-    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"], stdCut=0.4)
+    TripsTable = FilterByStdev(TripsTable, merging_indices + ["BioReps"], stdCut=stdCut)
 
     merging_indices.insert(4, "BioReps")
     merging_indices.insert(5, "r2_Std")
