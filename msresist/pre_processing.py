@@ -105,7 +105,7 @@ def filter_NaNpeptides(X, cut=False, tmt=False):
         dict_ = defaultdict(list)
         for i in range(idx_values.shape[0]):
             dict_[idx_values[i, 0]].append(idx_values[i, -1])
-        Xidx = [len(set(dict_[i])) > tmt for i in range(X.shape[0])]
+        Xidx = [len(set(dict_[i])) >= tmt for i in range(X.shape[0])]
     return X.iloc[Xidx, :]
 
 
