@@ -194,14 +194,14 @@ def plotGridSearch(ax, gs):
     ax.set_ylabel("Mean Squared Error")
 
 
-def plotR2YQ2Y(ax, model, X, Y, b=3):
+def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue"):
     """ Plot R2Y/Q2Y variance explained by each component. """
     Q2Y = R2Y_across_components(model, X, Y, b, crossval=True)
     R2Y = R2Y_across_components(model, X, Y, b)
 
     range_ = np.arange(1, b)
 
-    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color="darkblue")
+    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color=color)
     ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black")
     ax.set_title("R2Y/Q2Y - Cross-validation", fontsize=12)
     ax.set_xticks(range_)
@@ -210,7 +210,7 @@ def plotR2YQ2Y(ax, model, X, Y, b=3):
     ax.legend(loc=0)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue"):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
@@ -223,7 +223,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation"):
         for i, label in enumerate(Y.columns):
             y = Y.iloc[:, i]
             ypred = Y_predictions[:, i]
-            ax[i].scatter(y, ypred)
+            ax[i].scatter(y, ypred, color=color)
             ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
             ax[i].set_xlabel("Actual")
             ax[i].set_ylabel(ylabel)
@@ -392,10 +392,10 @@ def plotScoresLoadings_plotly(model, X, Y, loc=False):
     return fig
 
 
-def plotCenters(centers, nrows, ncols, xlabels, figsize=(15, 15)):
+def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
     centers = pd.DataFrame(centers.T)
     centers.columns = xlabels
-    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=True, figsize=figsize)
+    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=sharey, figsize=figsize)
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
@@ -418,7 +418,9 @@ def plotMotifs(model, PsP_background=True):
         logo = lm.Logo(pssm,
                        font_name='Stencil Std',
                        vpad=0.1,
-                       width=.8)
+                       width=.8,
+                       flip_below=False,
+                       center_values=False)
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         logo.ax.set_title('Motif Cluster ' + str(i + 1))
@@ -434,3 +436,12 @@ def plot_LassoCoef(ax, model, title=False):
     sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
     if title:
         ax.set_title(title)
+
+def store_cluster_members(X, model):
+    """Save csv files with cluster members."""
+    model_L = model.labels() + 1
+    X["Cluster"] = model_L
+    for i in range(model.ncl):
+        m = X[X["Cluster"] == i+1][["Protein", "Sequence", "Gene", "Position", "Cluster"]]
+        m.index = np.arange(m.shape[0])
+        m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i+1) + ".csv")
