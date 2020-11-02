@@ -9,7 +9,6 @@ import seaborn as sns
 from msresist.figures.figure1 import TimePointFoldChange
 
 
-
 def plot_YAPinhibitorTimeLapse(ax, X):
     lines = ["WT", "KO"]
     treatments = ["UT", "E", "E/R", "E/A"]
