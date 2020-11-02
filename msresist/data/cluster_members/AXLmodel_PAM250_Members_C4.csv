@@ -1,0 +1,203 @@
+,Protein,Sequence,Gene,Position,Cluster
+0,"1-phosphatidylinositol 4,5-bisphosphate phosphodiesterase beta-3",DDHQDyAEALI,PLCB3,Y855-p,4
+1,182 kDa tankyrase-1-binding protein,VSLGTyGSRAA,TNKS1BP1,Y940-p,4
+2,26S proteasome regulatory subunit 4,DKKKKyEPPVP,PSMC1,Y25-p,4
+3,60S acidic ribosomal protein P0,QLLDDyPKCFI,RPLP0,Y24-p,4
+4,60S ribosomal protein L35a,KIEGVyARDET,RPL35A,Y34-p,4
+5,Actin filament-associated protein 1-like 2,DEEYIyMNKVT,AFAP1L2,Y56-p,4
+6,Actin filament-associated protein 1-like 2,NHLHFyQDRNR,AFAP1L2,Y383-p,4
+7,Actin filament-associated protein 1-like 2,SPDHLySFRIL,AFAP1L2,Y413-p,4
+8,"Actin, cytoplasmic 1",IRKDLyANTVL,ACTB,Y294-p,4
+9,"Actin, cytoplasmic 1",SLEKsyELPDG,ACTB,Y240-p;S239-p,4
+10,Activated CDC42 kinase 1,ASDPKyATPQV,TNK2,Y827-p,4
+11,Activated CDC42 kinase 1,QNDDHyVMQEH,TNK2,Y284-p,4
+12,Adapter molecule crk,RVPNAyDKTAL,CRK,Y251-p,4
+13,Adenylosuccinate lyase,PLASRyASPEM,ADSL,Y21-p,4
+14,Adenylyl cyclase-associated protein 1,QVAYIyKCVNT,CAP1,Y354-p,4
+15,Albumin,TFLKKyLyEIA,ALB,Y162-p;Y164-p,4
+16,Aldo-keto reductase family 1 member B1,KPGLKyKPAVN,AKR1B1,Y178-p,4
+17,Annexin A1,DARALyEAGER,ANXA1,Y207-p,4
+18,Annexin A2,QKALLyLCGGD,ANXA2,Y333-p,4
+19,Annexin A5,RLYDAyELKHA,ANXA5,Y94-p,4
+20,Apoptosis-stimulating of p53 protein 2,VQRIIyEVDDP,TP53BP2,Y947-p,4
+21,"Arf-GAP with Rho-GAP domain, ANK repeat and PH domain-containing protein 2",SSIFPyGETFL,ARAP2,Y334-p,4
+22,Band 4.1-like protein 2,EGDNIyVRHSN,EPB41L2,Y623-p,4
+23,Bifunctional purine biosynthesis protein ATIC,QMPLRyGMNPH,ATIC,Y208-p,4
+24,Brain-specific angiogenesis inhibitor 1-associated protein 2,QGLDDyGARSM,BAIAP2,Y505-p,4
+25,Brain-specific angiogenesis inhibitor 1-associated protein 2-like protein 1,KDGWLyGEHDV,BAIAP2L1,Y380-p,4
+26,Breast cancer anti-estrogen resistance protein 1,AQQGLyQVPGP,BCAR1,Y128-p,4
+27,Breast cancer anti-estrogen resistance protein 1,GPQDIyDVPPV,BCAR1,Y249-p,4
+28,Breast cancer anti-estrogen resistance protein 1,LREETyDVPPA,BCAR1,Y327-p,4
+29,Breast cancer anti-estrogen resistance protein 1,PAEDVyDVPPP,BCAR1,Y362-p,4
+30,Breast cancer anti-estrogen resistance protein 1,PAPDLyDVPPG,BCAR1,Y372-p,4
+31,Breast cancer anti-estrogen resistance protein 1,PLLEVyDVPPS,BCAR1,Y287-p,4
+32,Breast cancer anti-estrogen resistance protein 1,VDSGVyAVPPP,BCAR1,Y410-p,4
+33,Breast cancer anti-estrogen resistance protein 1,YGQEVyDTPPM,BCAR1,Y267-p,4
+34,Breast cancer anti-estrogen resistance protein 3,CLEEHyGTSPG,BCAR3,Y266-p,4
+35,Breast cancer anti-estrogen resistance protein 3,RLSEAySRVQY,BCAR3,Y212-p,4
+36,CD2-associated protein,PKPSVyLSTPS,CD2AP,Y548-p,4
+37,CTP synthase 1,YGDADyLEERH,CTPS1,Y473-p,4
+38,Calmodulin-1,KDGNGyISAAE,CALM1,Y100-p,4
+39,Calponin-3,KGMSVyGLGRQ,CNN3,Y261-p,4
+40,Caskin-2,NIRNTyNQTAL,CASKIN2,Y253-p,4
+41,Catenin delta-1,PSDQYyWAPLA,CTNND1,Y335-p,4
+42,Catenin delta-1,SRQDVyGPQPQ,CTNND1,Y257-p,4
+43,Catenin delta-1,SVSNNyIQTLG,CTNND1,Y174-p,4
+44,Caveolae-associated protein 1,FKVMIyQDEVK,CAVIN1,Y156-p,4
+45,Caveolae-associated protein 1,PDHVVyARSKT,CAVIN1,Y308-p,4
+46,Charged multivesicular body protein 1a,ECARVyAENAI,CHMP1A,Y48-p,4
+47,Coiled-coil domain-containing protein 120,SSEVLyERPQP,CCDC120,Y398-p,4
+48,Crk-like protein,YVRtLyDFPGN,CRKL,Y132-p;T130-p,4
+49,Desmoplakin,EKSAIyQLEEE,DSP,Y249-p,4
+50,Desmoplakin,EKsAIyQLEEE,DSP,Y249-p;S246-p,4
+51,Desmoplakin,QNSDGyCQTGT,DSP,Y56-p,4
+52,"Discoidin, CUB and LCCL domain-containing protein 2",ADSAEyAQPLV,DCBLD2,Y621-p,4
+53,"Discoidin, CUB and LCCL domain-containing protein 2",PDELVyQVPQS,DCBLD2,Y750-p,4
+54,Disintegrin and metalloproteinase domain-containing protein 9,REVPIyANRFA,ADAM9,Y769-p,4
+55,DnaJ homolog subfamily B member 1,SLEEIySGCTK,DNAJB1,Y176-p,4
+56,Docking protein 1,PATDDyAVPPP,DOK1,Y409-p,4
+57,Docking protein 1,SPPALyAEPLD,DOK1,Y296-p,4
+58,Dual specificity tyrosine-phosphorylation-regulated kinase 1A,QRIYQyIQSRF,DYRK1A,Y321-p,4
+59,Dual specificity tyrosine-phosphorylation-regulated kinase 2,QRVYTyIQSRF,DYRK2,Y382-p,4
+60,Dual specificity tyrosine-phosphorylation-regulated kinase 3,QKLYTyIQSRF,DYRK3,Y369-p,4
+61,Elongation factor 1-alpha 1,HALLAyTLGVK,EEF1A1,Y141-p,4
+62,Elongation factor 1-alpha 1,TGHLIyKCGGI,EEF1A1,Y29-p,4
+63,Enhancer of filamentation 1,ERDGVyDVPLH,NEDD9,Y345-p,4
+64,Enhancer of filamentation 1,EYPSRyQKDVY,NEDD9,Y172-p,4
+65,Enhancer of filamentation 1,GHGYVyEYPSR,NEDD9,Y166-p,4
+66,Enhancer of filamentation 1,GQQKLyQVPNP,NEDD9,Y92-p,4
+67,Enhancer of filamentation 1,KPQGVyDIPPT,NEDD9,Y214-p,4
+68,Enhancer of filamentation 1,LREKDyDFPPP,NEDD9,Y241-p,4
+69,Enhancer of filamentation 1,PRDTIyQVPPS,NEDD9,Y106-p,4
+70,Enhancer of filamentation 1,PTKGVyAIPPS,NEDD9,Y223-p,4
+71,Enhancer of filamentation 1,QVPPSyQNQGI,NEDD9,Y112-p,4
+72,Enhancer of filamentation 1,RPEGVyDIPPT,NEDD9,Y261-p,4
+73,Enhancer of filamentation 1,SQNDAyDVPRG,NEDD9,Y317-p,4
+74,Enhancer of filamentation 1,YQKDVyDIPPS,NEDD9,Y177-p,4
+75,Ephrin type-A receptor 2,DPEATyTTSGG,EPHA2,Y772-p,4
+76,Ephrin type-A receptor 2,VDPHTyEDPNQ,EPHA2,Y594-p,4
+77,Ephrin type-B receptor 2,PGMKIyIDPFT,EPHB2,Y596-p,4
+78,Epidermal growth factor receptor,LDNPDyQQDFF,EGFR,Y1172-p,4
+79,Ezrin,LSDEIyCPPET,EZR,Y116-p,4
+80,Filamin-A,ALEECyVTEID,FLNA,Y2379-p,4
+81,Filamin-B,IDNYDySHTVK,FLNB,Y904-p,4
+82,Focal adhesion kinase 1,FGLSRyMEDST,PTK2,Y570-p,4
+83,Fructose-bisphosphate aldolase A,LKRCQyVTEKV,ALDOA,Y204-p,4
+84,G-protein coupled receptor family C group 5 member B,FRsNVyQPTEM,GPRC5B,Y376-p;S373-p,4
+85,GRB2-associated-binding protein 1,ADGELyVFNTP,GAB1,Y285-p,4
+86,GRB2-associated-binding protein 2,DNEDVyTFKTP,GAB2,Y293-p,4
+87,Glucose-6-phosphate 1-dehydrogenase,RVGFQyEGTYK,G6PD,Y503-p,4
+88,Glucose-6-phosphate 1-dehydrogenase,YVAGQyDDAAS,G6PD,Y112-p,4
+89,Glutathione S-transferase P,GDLTLyQSNTI,GSTP1,Y64-p,4
+90,Glyceraldehyde-3-phosphate dehydrogenase,KLISWyDNEFG,GAPDH,Y314-p,4
+91,Heat shock protein HSP 90-alpha,EDQTEyLEERR,HSP90AA1,Y197-p,4
+92,Heterogeneous nuclear ribonucleoproteins A2/B1,NMGGPyGGGNY,HNRNPA2B1,Y331-p,4
+93,Homeodomain-interacting protein kinase 3,TVCSTyLQSRY,HIPK3,Y359-p,4
+94,IST1 homolog,KEIADyLAAGK,IST1,Y43-p,4
+95,Inactive tyrosine-protein kinase PEAK1,SSAIRyQEVWT,PEAK1,Y531-p,4
+96,Inactive tyrosine-protein kinase PEAK1,SVEELyAIPPD,PEAK1,Y797-p,4
+97,Inactive tyrosine-protein kinase PRAG1,DAPVVyLGSFR,PRAG1,Y132-p,4
+98,Integrin beta-1,KSAVTtVVNPK,ITGB1,T789-p,4
+99,Intersectin-2,QNKLIyLVPEK,ITSN2,Y553-p,4
+100,"Keratin, type I cytoskeletal 18",DRLASyLDRVR,KRT18,Y94-p,4
+101,"Keratin, type II cytoskeletal 7",AVRsAyGGPVG,KRT7,Y55-p;S53-p,4
+102,"Keratin, type II cytoskeletal 7",DVDAAyMSKVE,KRT7,Y205-p,4
+103,"Keratin, type II cytoskeletal 7",GSSSLyGLGAS,KRT7,Y40-p,4
+104,"Keratin, type II cytoskeletal 7",GSSsLyGLGAS,KRT7,Y40-p;S38-p,4
+105,"Keratin, type II cytoskeletal 7",GSsSLyGLGAS,KRT7,Y40-p;S37-p,4
+106,"Keratin, type II cytoskeletal 8",DVDEAyMNKVE,KRT8,Y204-p,4
+107,L-lactate dehydrogenase A chain,SARFRyLMGER,LDHA,Y172-p,4
+108,LIM and SH3 domain protein 1,ISNIKyHEEFE,LASP1,Y122-p,4
+109,Leupaxin,QDSDEySNPAP,LPXN,Y22-p,4
+110,Lipolysis-stimulated lipoprotein receptor,SGDLPyDGRLL,LSR,Y586-p,4
+111,Lipoma-preferred partner,DSDPTyGQQGH,LPP,Y317-p,4
+112,Lipoma-preferred partner,GMDYAyIPPPG,LPP,Y275-p,4
+113,Mitogen-activated protein kinase 10,FMMTPyVVTRY,MAPK10,Y223-p,4
+114,Mitogen-activated protein kinase 10,FMMtPyVVTRY,MAPK10,Y223-p;T221-p,4
+115,Mitogen-activated protein kinase 13,AEMTGyVVTRW,MAPK13,Y182-p,4
+116,Mitogen-activated protein kinase 14,DEMTGyVATRW,MAPK14,Y182-p,4
+117,Mitogen-activated protein kinase 9,FMMtPyVVTRY,MAPK9,Y185-p;T183-p,4
+118,Mitotic interactor and substrate of PLK1,GRPSLyVQRDI,MISP,Y350-p,4
+119,Multivesicular body subunit 12A,RNDSIyEASSL,MVB12A,Y204-p,4
+120,Myosin-9,LDSNLyRIGQS,MYH9,Y754-p,4
+121,NSFL1 cofactor p47,EEESAyVAGEK,NSFL1C,Y167-p,4
+122,Non-receptor tyrosine-protein kinase TNK1,SAASRyVLARP,TNK1,Y661-p,4
+123,Non-receptor tyrosine-protein kinase TYK2,EGEPCyIRDSG,TYK2,Y292-p,4
+124,"Oligoribonuclease, mitochondrial",WYPEEyEFAPK,REXO2,Y184-p,4
+125,Partitioning defective 3 homolog,GSAPIyVKNIL,PARD3,Y489-p,4
+126,Partitioning defective 3 homolog B,HLEGLyAKVNK,PARD3B,Y1000-p,4
+127,Paxillin,EEEHVySFPNK,PXN,Y118-p,4
+128,Paxillin,SSSPVyGSSAK,PXN,Y88-p,4
+129,Paxillin,SSsPVyGSSAK,PXN,Y88-p;S85-p,4
+130,Phosphatidylinositol 4-kinase alpha,NLRNRyAGEVY,PI4KA,Y1149-p,4
+131,Phosphofurin acidic cluster sorting protein 1,AEIKIySLSSQ,PACS1,Y251-p,4
+132,Phosphoglycerate mutase 1,RFSGWyDADLS,PGAM1,Y26-p,4
+133,Plakophilin-2,VPEYVyNLHLV,PKP2,Y88-p,4
+134,Plakophilin-3,MRNLIyDNADN,PKP3,Y390-p,4
+135,Plakophilin-4,NTTATyAEPYR,PKP4,Y478-p,4
+136,Pleckstrin homology domain-containing family A member 6,RsEDIyADPAA,PLEKHA6,Y492-p;S488-p,4
+137,Pleckstrin homology-like domain family B member 2,HKEGLyLSDTL,PHLDB2,Y894-p,4
+138,Polyglutamine-binding protein 1,EELAPyPKSKK,PQBP1,Y187-p,4
+139,Profilin-1,INKKCyEMASH,PFN1,Y129-p,4
+140,Proteasome subunit alpha type-2,QKsILyDERSV,PSMA2,Y57-p;S54-p,4
+141,Proteasome subunit alpha type-6,AANWKyKYGYE,PSMA6,Y103-p,4
+142,Proteasome subunit alpha type-6,AANWKyKYGyE,PSMA6,Y103-p;Y107-p,4
+143,Proteasome subunit beta type-4,MRVLYyRDARS,PSMB4,Y223-p,4
+144,Protein BRICK1,ERRIEyIEARV,BRK1,Y63-p,4
+145,Protein CDV3 homolog,GPPEIySDTQF,CDV3,Y190-p,4
+146,Protein SON,LGQDPyRLGHD,SON,Y949-p,4
+147,Protein-glutamine gamma-glutamyltransferase 2,DLSTKyDAPFV,TGM2,Y388-p,4
+148,Protein-tyrosine kinase 2-beta,FGLSRyIEDED,PTK2B,Y573-p,4
+149,Pyruvate kinase PKM,AEAAIyHLQLF,PKM,Y390-p,4
+150,Pyruvate kinase PKM,TAKGDyPLEAV,PKM,Y370-p,4
+151,RNA-binding protein 14,SDYARySGSYN,RBM14,Y648-p,4
+152,Rap guanine nucleotide exchange factor 1,QLLEDySEPQP,RAPGEF1,Y561-p,4
+153,Ras and Rab interactor 1,AQDPLyDVPNA,RIN1,Y36-p,4
+154,Retinoic acid-induced protein 3,TLYAPySTHFQ,GPRC5A,Y320-p,4
+155,Rho GDP-dissociation inhibitor 1,VSGMKyIQHTY,ARHGDIA,Y128-p,4
+156,Rho GDP-dissociation inhibitor 2,VSGLKyVQHTY,ARHGDIB,Y125-p,4
+157,Rho GTPase-activating protein 35,EEENIySVPHD,ARHGAP35,Y1105-p,4
+158,Rho GTPase-activating protein 35,FDPSDyAEPMD,ARHGAP35,Y1087-p,4
+159,Rho GTPase-activating protein 42,GKEPIyTLPAI,ARHGAP42,Y376-p,4
+160,Rho GTPase-activating protein 5,YSDEIyVVPDD,ARHGAP5,Y1109-p,4
+161,Rho guanine nucleotide exchange factor 5,TEELIyLSQKI,ARHGEF5,Y1370-p,4
+162,SH2 domain-containing adapter protein B,GESAGyMEPYE,SHB,Y268-p,4
+163,SH2 domain-containing adapter protein B,RPADEyDQPWE,SHB,Y336-p,4
+164,SH2 domain-containing adapter protein B,TIADDySDPFD,SHB,Y246-p,4
+165,SH3 and multiple ankyrin repeat domains protein 2,DSEDLySRNAG,SHANK2,Y588-p,4
+166,Serine/threonine-protein kinase PRP4 homolog,NDITPyLVSRF,PRPF4B,Y849-p,4
+167,Serine/threonine-protein kinase mTOR,EDPLIyQHRML,MTOR,Y1232-p,4
+168,Sickle tail protein homolog,RNEGFyADPYL,KIAA1217,Y393-p,4
+169,Signal transducer and activator of transcription 3,EAFGKyCRPES,STAT3,Y686-p,4
+170,Signal transducer and activator of transcription 6,KDGRGyVPATI,STAT6,Y641-p,4
+171,Sodium-coupled neutral amino acid transporter 2,NSDFNySYPTK,SLC38A2,Y28-p,4
+172,Splicing factor 3B subunit 4,QDATVyVGGLD,SF3B4,Y16-p,4
+173,Src substrate cortactin,PSSPVyEDAAS,CTTN,Y421-p,4
+174,Src substrate cortactin,QVSSAyQKTVP,CTTN,Y334-p,4
+175,TOM1-like protein 2,RKTVTyEDPQA,TOM1L2,Y404-p,4
+176,TOM1-like protein 2,RKtVTyEDPQA,TOM1L2,Y404-p;T401-p,4
+177,Talin-1,PSTMVyDACRI,TLN1,Y26-p,4
+178,Tensin-1,HPAGVyQVSGL,TNS1,Y1254-p,4
+179,Tensin-1,RsYSPyDYQPC,TNS1,Y796-p;S792-p,4
+180,Tensin-3,LSLGQyDNDAG,TNS3,Y780-p,4
+181,Tensin-3,SPETPyVKTAL,TNS3,Y855-p,4
+182,"Thioredoxin reductase 1, cytoplasmic",PKsYDyDLIII,TXNRD1,Y163-p;S160-p,4
+183,"Threonine--tRNA ligase 1, cytoplasmic",TLQRIyGISFP,TARS,Y298-p,4
+184,Tight junction protein ZO-1,PAPLSyDSRPR,TJP1,Y1140-p,4
+185,Tight junction protein ZO-1,SEYSMySTDSR,TJP1,Y833-p,4
+186,Tight junction protein ZO-2,KHPDIyAVPIK,TJP2,Y1118-p,4
+187,Transgelin-2,AGMTGyGMPRQ,TAGLN2,Y192-p,4
+188,Tubulin alpha-1B chain,DAANNyARGHY,TUBA1B,Y103-p,4
+189,Tubulin alpha-1B chain,KVGINyQPPTV,TUBA1B,Y357-p,4
+190,Twinfilin-2,TAEFLyDEVHP,TWF2,Y309-p,4
+191,Tyrosine-protein kinase ABL1,SDGKLyVSSES,ABL1,Y185-p,4
+192,Tyrosine-protein kinase FRK,EKQLLySENKT,FRK,Y132-p,4
+193,Tyrosine-protein kinase Fer,PPVVNyEEDAR,FER,Y402-p,4
+194,Tyrosine-protein kinase Lck,DNGGFyISPRI,LCK,Y192-p,4
+195,Tyrosine-protein kinase Lck,IEDNEyTAREG,LCK,Y394-p,4
+196,Tyrosine-protein kinase Tec,FGMARyVLDDQ,TEC,Y513-p,4
+197,Tyrosine-protein kinase Yes,DNGGYyITTRA,YES1,Y223-p,4
+198,Tyrosine-protein kinase Yes,SPAIKyRPENT,YES1,Y16-p,4
+199,Vacuolar protein sorting-associated protein VTA1 homolog,QKYCKyAGsAL,VTA1,Y278-p;S281-p,4
+200,Vasodilator-stimulated phosphoprotein,SRVQIyHNPTA,VASP,Y39-p,4
+201,Zyxin,PPSFTyAQQRE,ZYX,Y316-p,4
