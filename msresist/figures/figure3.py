@@ -437,11 +437,12 @@ def plot_LassoCoef(ax, model, title=False):
     if title:
         ax.set_title(title)
 
+
 def store_cluster_members(X, model):
     """Save csv files with cluster members."""
     model_L = model.labels() + 1
     X["Cluster"] = model_L
     for i in range(model.ncl):
-        m = X[X["Cluster"] == i+1][["Protein", "Sequence", "Gene", "Position", "Cluster"]]
+        m = X[X["Cluster"] == i + 1][["Protein", "Sequence", "Gene", "Position", "Cluster"]]
         m.index = np.arange(m.shape[0])
-        m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i+1) + ".csv")
+        m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
