@@ -1,0 +1,65 @@
+,Protein,Sequence,Gene,Position,Cluster
+0,40S ribosomal protein S27,VQSPNsYFMDV,RPS27,S30-p,1
+1,Actin filament-associated protein 1-like 2,PDHLYsFRILH,AFAP1L2,S414-p,1
+2,Actin-related protein 2/3 complex subunit 3,VDEAIyYFKAN,ARPC3,Y47-p,1
+3,Activated CDC42 kinase 1,GVKKPtYDPVS,TNK2,T517-p,1
+4,Activated CDC42 kinase 1,VSSTHyYLLPE,TNK2,Y859-p,1
+5,Activator of 90 kDa heat shock protein ATPase homolog 1,QGWQRyYFEGI,AHSA1,Y322-p,1
+6,Annexin A2,YGKsLyYYIQQ,ANXA2,Y316-p;S314-p,1
+7,Breast cancer anti-estrogen resistance protein 3,AHQSEsYLPIG,BCAR3,S340-p,1
+8,Catenin delta-1,VPSDQyYWAPL,CTNND1,Y334-p,1
+9,Cyclin-dependent kinase 2,GVPVRtYtHEV,CDK2,T158-p;T160-p,1
+10,Cyclin-dependent-like kinase 5,KIGEGtYGTVF,CDK5,T14-p,1
+11,Cysteine-rich protein 1,CNKEVyFAERV,CRIP1,Y12-p,1
+12,Desmoplakin,GSRRGsFDATG,DSP,S2849-p,1
+13,Disintegrin and metalloproteinase domain-containing protein 9,RFAVPtYAAKQ,ADAM9,T777-p,1
+14,Elongation factor 1-alpha 1,FETSKyyVTII,EEF1A1,Y85-p;Y86-p,1
+15,Engulfment and cell motility protein 2,LPNPEyYTLRY,ELMO2,Y48-p,1
+16,Ephrin type-A receptor 2,DDPEAtYTTSG,EPHA2,T771-p,1
+17,Ephrin type-A receptor 2,SPEDVyFSKSE,EPHA2,Y575-p,1
+18,Ephrin type-B receptor 2,DTSDPtYTSAL,EPHB2,T779-p,1
+19,Ephrin type-B receptor 3,DPSDPtYTSSL,EPHB3,T791-p,1
+20,Ephrin type-B receptor 4,NSSDPtYTSSL,EPHB4,T773-p,1
+21,Eukaryotic translation initiation factor 2 subunit 2,KDTRLyFLQCE,EIF2S2,Y298-p,1
+22,"GDP-mannose 4,6 dehydratase",TVDLKyYRPTE,GMDS,Y323-p,1
+23,GRB2-associated-binding protein 1,PTPGNtYQIPR,GAB1,T316-p,1
+24,GRB2-associated-binding protein 2,EFRDStYDLPR,GAB2,T265-p,1
+25,GRB2-associated-binding protein 2,NEDVYtFKTPS,GAB2,T294-p,1
+26,Glucose-6-phosphate 1-dehydrogenase,EGRGGyFDEFG,G6PD,Y249-p,1
+27,Glutathione S-transferase P,QDGDLtLYQSN,GSTP1,T62-p,1
+28,Glycogen synthase kinase-3 alpha,GEPNVsYICSR,GSK3A,S278-p,1
+29,Heat shock protein HSP 90-beta,TQKsIyYITGE,HSP90AB1,Y484-p;S482-p,1
+30,Heterogeneous nuclear ribonucleoprotein A1,GGGGQyFAKPR,HNRNPA1,Y347-p,1
+31,Heterogeneous nuclear ribonucleoprotein U,IPEEYtFIQNV,HNRNPU,T474-p,1
+32,Homeodomain-interacting protein kinase 1,KAVCStYLQSR,HIPK1,T351-p,1
+33,Inactive tyrosine-protein kinase PEAK1,IHDEPtYARSS,PEAK1,T615-p,1
+34,Inactive tyrosine-protein kinase PEAK1,NPCSAtYSNLG,PEAK1,T1106-p,1
+35,"Keratin, type I cytoskeletal 19",RDYSHyYTTIQ,KRT19,Y130-p,1
+36,Kinesin light chain 2,AEEVEyYYRRA,KLC2,Y345-p,1
+37,LIM domain only protein 7,AQSNPyYNGPH,LMO7,Y185-p,1
+38,LIM domain-containing protein 1,LTHGDyYDNLS,LIMD1,Y179-p,1
+39,Lipoma-preferred partner,NDSDPtYGQQG,LPP,T316-p,1
+40,Lipoma-preferred partner,PNQGRyYEGYY,LPP,Y296-p,1
+41,Low molecular weight phosphotyrosine protein phosphatase,IIEDPyYGNDS,ACP1,Y132-p,1
+42,Phenylalanine--tRNA ligase alpha subunit,FTPVKyFSIDR,FARSA,Y350-p,1
+43,"Phosphatidylinositol 3,4,5-trisphosphate 5-phosphatase 2",FNNPAyYVLEG,INPPL1,Y986-p,1
+44,Phosphatidylinositol 3-kinase regulatory subunit gamma,DADENyFINEE,PIK3R3,Y341-p,1
+45,Phosphoglycerate kinase 1,KKELNyFAKAL,PGK1,Y196-p,1
+46,Plakophilin-4,QHQQLyYSQDD,PKP4,Y1115-p,1
+47,Plectin,GSRRGsFDATG,PLEC,S4642-p,1
+48,Protein LTV1 homolog,ESICStYSNLY,LTV1,T356-p,1
+49,Protein SETSIP,FDENPyFENKV,SETSIP,Y156-p,1
+50,Protein diaphanous homolog 1,QGEEDsYDLKG,DIAPH1,S373-p,1
+51,Protein kinase C delta type,KGRGEyFAIKA,PRKCD,Y374-p,1
+52,Protein transport protein Sec16A,TYDRRyWCDAE,SEC16A,Y1291-p,1
+53,Receptor tyrosine-protein kinase erbB-3,FDNPDyWHSRL,ERBB3,Y1328-p,1
+54,SHC-transforming protein 1,LFDDPsYVNVQ,SHC1,S426-p,1
+55,SHC-transforming protein 1,PPDHQyYNDFP,SHC1,Y349-p,1
+56,Secretory carrier-associated membrane protein 3,PKNYGsYSTQA,SCAMP3,S85-p,1
+57,T-complex protein 1 subunit alpha,DDKHGsYEDAV,TCP1,S544-p,1
+58,Talin-1,GKALDyYMLRN,TLN1,Y70-p,1
+59,Tight junction protein ZO-1,RKQLSyFDRRS,TJP1,Y1361-p,1
+60,Tubulin beta-3 chain,SKNSSyFVEWI,TUBB3,Y340-p,1
+61,Tubulin beta-4B chain,NKNSSyFVEWI,TUBB4B,Y340-p,1
+62,Tyrosine-protein kinase FRK,QRHGHyFVALF,FRK,Y46-p,1
+63,Tyrosine-protein kinase Yes,LDNGGyYITTR,YES1,Y222-p,1

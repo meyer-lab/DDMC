@@ -1,0 +1,27 @@
+,Protein,Sequence,Gene,Position,Cluster
+0,182 kDa tankyrase-1-binding protein,GPPARsPsQDF,TNKS1BP1,S1552-p;S1554-p,2
+1,Abl interactor 1,NTPYKtLEPVK,ABI1,T200-p,2
+2,Actin filament-associated protein 1-like 2,QDRNRsKVAQQ,AFAP1L2,S389-p,2
+3,DNA replication licensing factor MCM2,GLLYDsDEEDE,MCM2,S139-p,2
+4,Double-strand break repair protein MRE11,IEVDEsDVEED,MRE11,S649-p,2
+5,Drebrin,GYFSQsQEEEF,DBN1,S601-p,2
+6,E3 SUMO-protein ligase RanBP2,RPDYVsEEEED,RANBP2,S2668-p,2
+7,E3 ubiquitin-protein ligase RNF113A,NYEVGsDDEEI,RNF113A,S253-p,2
+8,Golgi SNAP receptor complex member 1,RDRYSsDTTPL,GOSR1,S52-p,2
+9,Golgin subfamily A member 5,IYSKNtDYTEL,GOLGA5,T40-p,2
+10,Heterogeneous nuclear ribonucleoprotein U-like protein 1,DRRGRsPQPPA,HNRNPUL1,S194-p,2
+11,Kanadaptin,EDFYDsDDDTF,SLC4A1AP,S466-p,2
+12,La-related protein 1,TFTAWsDEEsD,LARP1,S627-p;S631-p,2
+13,Low-density lipoprotein receptor,PVYQKtTEDEV,LDLR,T831-p,2
+14,Neuroblast differentiation-associated protein AHNAK,SEVVLsGDDEE,AHNAK,S115-p,2
+15,Phosphoprotein associated with glycosphingolipid-enriched microdomains 1,SLSYKsREEDP,PAG1,S301-p,2
+16,Plakophilin-2,GNLHRtSsVPE,PKP2,T80-p;S82-p,2
+17,RNA-binding protein 5,AYSGDsDNEEE,RBM5,S624-p,2
+18,Ras GTPase-activating protein-binding protein 1,NDIFRyQDEVF,G3BP1,Y133-p,2
+19,Rho GTPase-activating protein 35,EEVFNsPRAGS,ARHGAP35,S970-p,2
+20,SLAIN motif-containing protein 2,SWLYSsPKKKL,SLAIN2,S134-p,2
+21,Serine/arginine repetitive matrix protein 2,CAGVKssTPPG,SRRM2,S1041-p;S1042-p,2
+22,Signal-induced proliferation-associated 1-like protein 1,RIRQRsNSDIT,SIPA1L1,S174-p,2
+23,Tight junction protein ZO-2,GADYLsCDSRL,TJP2,S913-p,2
+24,UPF0687 protein C20orf27,ELEYDsEHSDW,C20orf27,S165-p,2
+25,Uncharacterized protein C11orf52,HLENAtEYATL,C11orf52,T101-p,2
