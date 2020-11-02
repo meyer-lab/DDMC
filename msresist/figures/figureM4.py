@@ -49,7 +49,7 @@ def makeFigure():
 
     plotConfusionMatrix(ax[0], lr_egfr, centers, y_egfr)
     ax[0].set_title("EGFR confusion matrix")
-    plotROC(ax[1], lr_egfr, centers, y_egfr, cv_folds=model.ncl)
+    plotROC(ax[1], lr_egfr, centers, y_egfr, cv_folds=4)
     ax[1].set_title("EGFR ROC")
     plotClusterCoefficients(ax[2], lr_egfr)
     ax[2].set_title("EGFR Cluster Coefficients")
@@ -61,7 +61,7 @@ def makeFigure():
 
     plotConfusionMatrix(ax[3], lr_tp53, centers, y_tp53)
     ax[3].set_title("TP53 confusion matrix")
-    plotROC(ax[4], lr_tp53, centers, y_tp53, cv_folds=model.ncl)
+    plotROC(ax[4], lr_tp53, centers, y_tp53, cv_folds=4)
     ax[4].set_title("TP53 ROC")
     plotClusterCoefficients(ax[5], lr_tp53)
     ax[5].set_title("TP53 Cluster Coefficients")

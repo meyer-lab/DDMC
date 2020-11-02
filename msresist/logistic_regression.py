@@ -46,8 +46,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 
 
 def plotROC(ax, classifier, d, y, cv_folds=4):
-    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model.
-    Note that it doesn't need to be a logistic regression."""
+    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values
     cv = StratifiedKFold(n_splits=cv_folds)
     tprs = []
