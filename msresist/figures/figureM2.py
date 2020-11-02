@@ -5,6 +5,7 @@ This creates Figure M1.
 import pickle
 import random
 import numpy as np
+from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
 from scipy.stats import zscore
@@ -27,9 +28,9 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    plotErrorAcrossMissingnessLevels(ax[1:4], "PAM250")
-    plotErrorAcrossNumberOfClusters(ax[4], "PAM250")
-    plotErrorAcrossWeights(ax[5], "PAM250")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "Binomial")
+    plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
+    plotErrorAcrossWeights(ax[5], "Binomial")
 
     return f
 
@@ -59,12 +60,12 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
         err = pd.read_csv("msresist/data/imputing_missingness/binom_c_5tmts.csv").iloc[:, 1:]
 
     err.columns = ["Run", "pep_idx", "Miss", "n_clusters", "model_error", "base_error"]
-    err = err.groupby(["Run", "n_clusters"]).mean().reset_index()
-    err["model_error"] = np.log(err["model_error"])
-    err["base_error"] = np.log(err["base_error"])
+    gm = pd.DataFrame(err.groupby(["n_clusters", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["n_clusters", "Miss"]).base_error.apply(gmean).values)
 
-    sns.regplot(x="n_clusters", y="model_error", data=err, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
-    sns.regplot(x="n_clusters", y="base_error", data=err, color="black", scatter=False, ax=ax)
+    sns.regplot(x="n_clusters", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="n_clusters", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Number of Clusters")
 
@@ -76,12 +77,13 @@ def plotErrorAcrossWeights(ax, distance_method):
     else:
         err = pd.read_csv("msresist/data/imputing_missingness/binom_w_5tmts.csv").iloc[:, 1:]
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
-    err = err.groupby(["Run", "Weight"]).mean().reset_index()
-    err["model_error"] = np.log(err["model_error"])
-    err["base_error"] = np.log(err["base_error"])
 
-    sns.regplot(x="Weight", y="model_error", data=err, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
-    sns.regplot(x="Weight", y="base_error", data=err, color="black", scatter=False, ax=ax)
+    gm = pd.DataFrame(err.groupby(["Weight", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["Weight", "Miss"]).base_error.apply(gmean).values)
+
+    sns.regplot(x="Weight", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="Weight", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Weights")
 
@@ -94,16 +96,13 @@ def plotErrorAcrossMissingnessLevels(ax, distance_method):
         err = pd.read_csv("msresist/data/imputing_missingness/binom_am_5tmts.csv").iloc[:, 1:]
 
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
-    err = err.groupby(["Miss", "Weight"]).mean().reset_index()
-    data = err[err["Weight"] == 0]
-    data["model_error"] = np.log(data["model_error"])
-    data["base_error"] = np.log(data["base_error"])
-    mix = err[err["Weight"] == 0.5]
-    mix["model_error"] = np.log(mix["model_error"])
-    mix["base_error"] = np.log(mix["base_error"])
-    seq = err[err["Weight"] == 1.0]
-    seq["model_error"] = np.log(seq["model_error"])
-    seq["base_error"] = np.log(seq["base_error"])
+    gm = pd.DataFrame(err.groupby(["Weight", "Miss"]).model_error.apply(gmean)).reset_index()
+    gm["model_error"] = np.log(gm["model_error"])
+    gm["base_error"] = np.log(err.groupby(["Weight", "Miss"]).base_error.apply(gmean).values)
+
+    data = gm[gm["Weight"] == 0.0]
+    mix = gm[gm["Weight"] == 0.5]
+    seq = gm[gm["Weight"] == 1.0]
 
     ylabel = "Mean Squared Error"
     sns.regplot(x="Miss", y="model_error", data=data, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#acc2d9", ax=ax[0])
