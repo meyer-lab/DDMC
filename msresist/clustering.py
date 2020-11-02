@@ -109,7 +109,7 @@ class MassSpecClustering(BaseEstimator):
                 back_pssm = np.log2(back_pssm)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
-            pssm[pssm < -4] = -4
+            pssm[pssm < -3] = -3
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist
             pssms.append(pssm)
@@ -154,23 +154,6 @@ class MassSpecClustering(BaseEstimator):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         return self
-
-
-def ClusterAverages(X, labels):
-    """Calculate cluster averages and dictionary with cluster members and sequences"""
-    X = X.T.assign(cluster=labels)
-    centers = []
-    dict_clustermembers = {}
-    for i in range(0, max(labels) + 1):
-        centers.append(list(X[X["cluster"] == i].iloc[:, :-1].mean()))
-        if "object" in list(X.dtypes):
-            dict_clustermembers["Protein_C" + str(i + 1)] = list(X[X["cluster"] == i]["Protein"])
-            dict_clustermembers["Gene_C" + str(i + 1)] = list(X[X["cluster"] == i]["Gene"])
-            dict_clustermembers["Sequence_C" + str(i + 1)] = list(X[X["cluster"] == i]["Sequence"])
-            dict_clustermembers["Position_C" + str(i + 1)] = list(X[X["cluster"] == i]["Position"])
-
-    members = pd.DataFrame({k: pd.Series(v) for (k, v) in dict_clustermembers.items()})
-    return pd.DataFrame(centers).T, members
 
 
 def PSPSLdict():
