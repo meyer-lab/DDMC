@@ -64,7 +64,7 @@ def plotErrorAcrossNumberOfClusters(ax, distance_method):
     gm["model_error"] = np.log(gm["model_error"])
     gm["base_error"] = np.log(err.groupby(["n_clusters"]).base_error.apply(gmean).values)
 
-    sns.regplot(x="n_clusters", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="n_clusters", y="model_error", data=gm, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#001146", ax=ax)
     sns.regplot(x="n_clusters", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Number of Clusters")
@@ -82,7 +82,7 @@ def plotErrorAcrossWeights(ax, distance_method):
     gm["model_error"] = np.log(gm["model_error"])
     gm["base_error"] = np.log(err.groupby(["Weight"]).base_error.apply(gmean).values)
 
-    sns.regplot(x="Weight", y="model_error", data=gm, line_kws={'color':'red'}, scatter_kws={'alpha':0.5}, color="#001146", ax=ax)
+    sns.regplot(x="Weight", y="model_error", data=gm, line_kws={'color': 'red'}, scatter_kws={'alpha': 0.5}, color="#001146", ax=ax)
     sns.regplot(x="Weight", y="base_error", data=gm, color="black", scatter=False, ax=ax)
     ax.set_ylabel("Mean Squared Error")
     ax.set_title("Imputation Error across Weights")
@@ -155,8 +155,8 @@ def ErrorAcrossMissingnessLevels(distance_method):
         missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
         for jj, model in enumerate(models):
             _, _, _, gmm = EM_clustering(data, info, model.ncl, gmmIn=model.gmm_)
-            idx1 = X.shape[0] * ((ii*len(weights)) + jj)
-            idx2 = X.shape[0] * ((ii*len(weights)) + jj + 1)
+            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
             errors[idx1:idx2, 0] = ii
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
@@ -251,8 +251,8 @@ def ErrorAcrossNumberOfClusters(distance_method):
         for jj, cluster in enumerate(n_clusters):
             print(cluster)
             model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
-            idx1 = X.shape[0] * ((ii*len(n_clusters)) + jj)
-            idx2 = X.shape[0] * ((ii*len(n_clusters)) + jj + 1)
+            idx1 = X.shape[0] * ((ii * len(n_clusters)) + jj)
+            idx2 = X.shape[0] * ((ii * len(n_clusters)) + jj + 1)
             errors[idx1:idx2, 0] = ii
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
@@ -294,8 +294,8 @@ def ErrorAcrossWeights(distance_method):
             elif distance_method == "Binomial":
                 dist = Binomial(info["Sequence"], seqs, weight)
             _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
-            idx1 = X.shape[0] * ((ii*len(weights)) + jj)
-            idx2 = X.shape[0] * ((ii*len(weights)) + jj + 1)
+            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
             errors[idx1:idx2, 0] = ii
             errors[idx1:idx2, 1] = md.index
             errors[idx1:idx2, 2] = missingness
