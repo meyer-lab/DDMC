@@ -123,8 +123,6 @@ class MassSpecClustering(BaseEstimator):
         a = np.zeros((len(PSPLs), len(PSSMs)))
 
         for ii, spec_profile in enumerate(PSPLs.values()):
-            if np.all(spec_profile < 0):
-                spec_profile = np.log2(spec_profile)
             for jj, pssm in enumerate(PSSMs):
                 a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
