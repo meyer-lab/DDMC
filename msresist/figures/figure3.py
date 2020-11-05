@@ -409,21 +409,23 @@ def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
-def plotMotifs(model, PsP_background=True):
-    """Plot pssms of clusters"""
-    pssms = model.pssms(PsP_background=PsP_background)
-    for i in range(model.ncl):
-        pssm = pssms[i].T
-        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+def plotMotifs(pssms, positions, titles=False):
+    """Generate logo plots of a list of PSSMs"""
+    for i, pssm in enumerate(pssms):
+        pssm = pssm.T
+        pssm.index = positions
         logo = lm.Logo(pssm,
-                       font_name='Stencil Std',
+                       font_name='Arial',
                        vpad=0.1,
                        width=.8,
                        flip_below=False,
                        center_values=False)
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
-        logo.ax.set_title('Motif Cluster ' + str(i + 1))
+        if titles:
+            logo.ax.set_title(titles[i] + " Motif")
+        else:
+            logo.ax.set_title('Motif Cluster ' + str(i + 1))
 
 
 def plot_LassoCoef(ax, model, title=False):
