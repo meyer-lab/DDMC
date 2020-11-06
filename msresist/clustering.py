@@ -161,12 +161,17 @@ def PSPSLdict():
     pspl_dict = {}
     PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
     for sp in PSPLs:
-        sp_mat = pd.read_csv(sp)
+        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
 
         if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
+            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
             sp_mat = sp_mat.iloc[:-2, 1:].values
         else:
+            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
             sp_mat = sp_mat.iloc[:, 1:].values
+
+        if np.all(sp_mat >= 0):
+            sp_mat = np.log2(sp_mat)
 
         pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
     return pspl_dict

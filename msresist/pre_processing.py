@@ -47,7 +47,7 @@ def preprocessing(
     FCto = data_headers[1]
 
     if mc_row or mc_col:
-        X = MeanCenter(Log2T(pd.concat(filesin), data_headers), data_headers, mc_row, mc_col)
+        X = MeanCenter(Log2T(pd.concat(filesin)), mc_row, mc_col)
         fullnames, genes = FormatName(X)
         X["Protein"] = fullnames
         X.insert(3, "Gene", genes)
@@ -144,14 +144,16 @@ def FoldChangeToControl(X, data_headers):
     return X
 
 
-def Log2T(X, data_headers):
+def Log2T(X):
     """ Convert to log2 scale keeping original sign. """
+    data_headers = X.select_dtypes(include=["float64"]).columns
     X[data_headers] = np.log2(X[data_headers])
     return X
 
 
-def MeanCenter(X, data_headers, mc_row, mc_col):
+def MeanCenter(X, mc_row, mc_col):
     """ Mean centers each row of values. logT also optionally log2-transforms. """
+    data_headers = X.select_dtypes(include=["float64"]).columns
     if mc_row:
         X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=1), axis=0)
     if mc_col:
