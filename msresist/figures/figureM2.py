@@ -127,18 +127,18 @@ def ErrorAcrossMissingnessLevels(distance_method):
     models = []
     weights = [0.5, 1.0, 0.0]
     if distance_method == "PAM250":
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m1:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_PAM250_filteredTMT', 'rb') as m1:
             models.append(pickle.load(m1)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT_seq', 'rb') as m2:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_PAM250_filteredTMT_seq', 'rb') as m2:
             models.append(pickle.load(m2)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT_data', 'rb') as m3:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_PAM250_filteredTMT_data', 'rb') as m3:
             models.append(pickle.load(m3)[0])
     else:
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m1:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m1:
             models.append(pickle.load(m1)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT_seq', 'rb') as m2:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_BINOMIAL_filteredTMT_seq', 'rb') as m2:
             models.append(pickle.load(m2)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT_data', 'rb') as m3:
+        with open('msresist/data/pickled_models/artificial_missingness/CPTACmodel_BINOMIAL_filteredTMT_data', 'rb') as m3:
             models.append(pickle.load(m3)[0])
 
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)

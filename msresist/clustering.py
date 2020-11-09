@@ -111,7 +111,6 @@ class MassSpecClustering(BaseEstimator):
                 back_pssm = np.log2(back_pssm)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
-            pssm[pssm < -3] = -3
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist
 
@@ -124,6 +123,7 @@ class MassSpecClustering(BaseEstimator):
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
+            pssm[pssm < -3] = -3
             pssms.append(pssm)
 
         return pssms

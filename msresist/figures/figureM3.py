@@ -4,6 +4,7 @@ This creates Figure M3.
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import pickle
 from scipy.stats import zscore
 from sklearn.linear_model import LogisticRegressionCV
@@ -21,21 +22,13 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((15, 20), (4, 3), multz={9:2})
 
-<<<<<<< HEAD
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
-    data = X.select_dtypes(include=["float64"]).T
-    info = X.select_dtypes(include=["object"])
-    model = MassSpecClustering(info, 21, 15, "PAM250").fit(data, nRepeats=1).fit(data)
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # TODO W40 IS ACTUALLY 35
-    with open("msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W15_TMT2", "wb") as m:
-        pickle.dump([model], m)
-=======
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
     with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W100_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
->>>>>>> f0327c9ad17ee299fd899fff9b1482d3247084b0
 
     centers = pd.DataFrame(model.transform())
     centers["Patient_ID"] = X.columns[4:]
