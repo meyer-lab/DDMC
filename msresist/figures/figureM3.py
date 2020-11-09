@@ -24,9 +24,10 @@ def makeFigure():
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     data = X.select_dtypes(include=["float64"]).T
     info = X.select_dtypes(include=["object"])
-    model = MassSpecClustering(info, 24, 20, "Binomial").fit(data, nRepeats=1).fit(data)
+    model = MassSpecClustering(info, 21, 15, "PAM250").fit(data, nRepeats=1).fit(data)
 
-    with open("msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W20_TMT2", "wb") as m:
+    # TODO W40 IS ACTUALLY 35
+    with open("msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W15_TMT2", "wb") as m:
         pickle.dump([model], m)
 
 
