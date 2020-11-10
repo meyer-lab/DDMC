@@ -4,26 +4,30 @@ This creates Figure M3.
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import pickle
 from scipy.stats import zscore
 from sklearn.linear_model import LogisticRegressionCV
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotPredictionProbabilities, plotConfusionMatrix, plotROC
-from ..figures.figure3 import plotPCA
+from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from ..clustering import MassSpecClustering
-from msresist.pre_processing import filter_NaNpeptides
+from ..pre_processing import filter_NaNpeptides, MeanCenter
 import pickle
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (2, 3))
+    ax, f = getSetup((15, 20), (4, 3), multz={9:2})
+
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
-    with open('msresist/data/pickled_models/CPTACmodel_PAM250_21CL_W3_TMT2', 'rb') as p:
+    with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W100_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
@@ -49,6 +53,14 @@ def makeFigure():
     plotConfusionMatrix(ax[3], lr, c, tt)
     plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)
+
+    # plot Cluster Motifs 
+    pssms = model.pssms(PsP_background=True)
+    motifs = [pssms[7], pssms[19], pssms[22]]
+    plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 8", "Cluster 20", "Cluster 23"], ax=ax[6:9])
+
+    # plot Upstream Kinases
+    plotUpstreamKinase_heatmap(model, [8, 20, 23], ax=ax[9])
 
     # Add subplot labels
     subplotLabel(ax)

@@ -24,7 +24,7 @@ from sklearn.model_selection import cross_val_predict
 import matplotlib.cm as cm
 import seaborn as sns
 import logomaker as lm
-from ..pre_processing import preprocessing, y_pre, FixColumnLabels
+from ..pre_processing import preprocessing, y_pre, FixColumnLabels, MeanCenter
 import warnings
 from Bio import BiopythonWarning
 
@@ -409,7 +409,7 @@ def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
-def plotMotifs(pssms, positions, titles=False):
+def plotMotifs(pssms, positions, ax, titles=False):
     """Generate logo plots of a list of PSSMs"""
     for i, pssm in enumerate(pssms):
         pssm = pssm.T
@@ -419,7 +419,8 @@ def plotMotifs(pssms, positions, titles=False):
                        vpad=0.1,
                        width=.8,
                        flip_below=False,
-                       center_values=False)
+                       center_values=False,
+                       ax=ax[i])
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
@@ -448,3 +449,11 @@ def store_cluster_members(X, model):
         m = X[X["Cluster"] == i + 1][["Protein", "Sequence", "Gene", "Position", "Cluster"]]
         m.index = np.arange(m.shape[0])
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
+
+
+def plotUpstreamKinase_heatmap(model, clusters, ax):
+    """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
+    ukin = model.predict_UpstreamKinases()
+    ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
+    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl+1))
+    sns.heatmap(ukin_mc.set_index("Kinase")[clusters].T, ax=ax)
