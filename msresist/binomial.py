@@ -37,9 +37,9 @@ AAfreq = {
 AAlist = ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
 
 
-def position_weight_matrix(seqs):
+def position_weight_matrix(seqs, pseudoC=AAfreq):
     """Build PWM of a given set of sequences."""
-    return frequencies(seqs).normalize(pseudocounts=AAfreq)
+    return frequencies(seqs).normalize(pseudocounts=pseudoC)
 
 
 def frequencies(seqs):

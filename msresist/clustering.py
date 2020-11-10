@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
-from .binomial import Binomial, AAlist, BackgroundSeqs
+from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
 
 
@@ -78,7 +78,7 @@ class MassSpecClustering(BaseEstimator):
         """Find cluster assignment with highest likelihood for each peptide"""
         check_is_fitted(self, ["gmm_"])
 
-        return np.argmax(self.scores_, axis=1)
+        return np.argmax(self.scores_, axis=1) + 1
 
     def pssms(self, PsP_background=False):
         """Compute position-specific scoring matrix of each cluster.
@@ -101,6 +101,8 @@ class MassSpecClustering(BaseEstimator):
 
             # Normalize by position across residues and remove negative outliers
             for pos in range(pssm.shape[1]):
+                if pos == 5:
+                    continue
                 pssm[:, pos] /= np.mean(pssm[:, pos])
                 if ii == 0 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
@@ -109,9 +111,19 @@ class MassSpecClustering(BaseEstimator):
                 back_pssm = np.log2(back_pssm)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
-            pssm[pssm < -3] = -3
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist
+
+            #Normalize phosphoacceptor position to frequency
+            df = pd.DataFrame(self.info["Sequence"].str.upper())
+            df["Cluster"] = self.labels()
+            clSeq = df[df["Cluster"] == ii + 1]["Sequence"]
+            clSeq = pd.DataFrame(frequencies(clSeq)).T
+            tm = np.mean([clSeq.loc["S", 5], clSeq.loc["T", 5], clSeq.loc["Y", 5]])
+            for p_site in ["S", "T", "Y"]:
+                pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
+
+            pssm[pssm < -3] = -3
             pssms.append(pssm)
 
         return pssms
