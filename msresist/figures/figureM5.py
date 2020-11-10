@@ -17,8 +17,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((15, 10), (2, 3))
 
-    with open('msresist/data/pickled_models/CPTACmodel_PAM250_21CL_W3_TMT2', 'rb') as m:
-        model = pickle.load(m)[0]
+    with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W100_TMT2', 'rb') as p:
+        model = pickle.load(p)[0]
 
     # Import cancer stage data
     cd = pd.read_csv("msresist/data/MS/CPTAC/CPTAC_Clinical_Data_May2019.csv")

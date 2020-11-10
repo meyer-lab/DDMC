@@ -26,7 +26,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Load Clustering Model from Figure 2
-    with open('msresist/data/pickled_models/CPTACmodel_PAM250_21CL_W3_TMT2', 'rb') as p:
+    with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W100_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
     # Regression against mutation status of driver genes and clusters
