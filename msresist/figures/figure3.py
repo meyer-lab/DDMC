@@ -455,5 +455,5 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases()
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl+1))
+    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
     sns.heatmap(ukin_mc.set_index("Kinase")[clusters].T, ax=ax)
