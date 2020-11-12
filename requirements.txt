@@ -8,6 +8,7 @@ manubot==0.4.1
 pandoc-fignos==2.4.0
 pandoc-eqnos==2.4.0
 pandoc-tablenos==2.3.0
+panflute==2.0.5
 pytest==6.1.2
 pytest-cov==2.10.1
 biopython==1.78
