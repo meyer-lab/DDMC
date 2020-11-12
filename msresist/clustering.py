@@ -114,7 +114,7 @@ class MassSpecClustering(BaseEstimator):
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist
 
-            #Normalize phosphoacceptor position to frequency
+            # Normalize phosphoacceptor position to frequency
             df = pd.DataFrame(self.info["Sequence"].str.upper())
             df["Cluster"] = self.labels()
             clSeq = df[df["Cluster"] == ii + 1]["Sequence"]
