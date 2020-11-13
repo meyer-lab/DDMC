@@ -58,7 +58,7 @@ def makeFigure():
     tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
     ylabel = "fold-change to t=" + str(itp) + "h"
     IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
-    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h",  "Cell Viability - Erl + AF154 ", TimePointFC=itp, colors=c)
+    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h",  "Cell Viability - Erl + AF154 ", TimePointFC=itp)
 
     # Add subplot labels
     subplotLabel(ax)
