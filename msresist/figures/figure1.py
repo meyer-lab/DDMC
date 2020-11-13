@@ -54,8 +54,9 @@ def makeFigure():
     tr1 = ["-UT", "-E", "-A/E"]
     tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
     ylabel = "fold-change to t=" + str(itp) + "h"
+    c = ["white", "windows blue", "scarlet"]
     IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
-    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h",  "Cell Viability - Erl + AF154 ", TimePointFC=itp)
+    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h",  "Cell Viability - Erl + AF154 ", c, TimePointFC=itp)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -164,7 +165,7 @@ def FormatDf(cv, t, l, ylabel):
     return dfc
 
 
-def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=False, TreatmentFC=False, colors=colors):
+def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePointFC=False, TreatmentFC=False):
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
     ds = FixColumnLabels(ds)
