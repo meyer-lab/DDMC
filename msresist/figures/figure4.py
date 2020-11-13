@@ -42,10 +42,10 @@ def transform_YAPviability_data(data, itp=12):
 
 def MeanTRs(X):
     """Merge technical replicates of 2 BR by taking the mean."""
-    idx = [np.arange(0, 6)+i for i in range(1, X.shape[1], 12)]
+    idx = [np.arange(0, 6) + i for i in range(1, X.shape[1], 12)]
     for i in idx:
         for j in i:
-            X.iloc[:, j] = X.iloc[:, [j, j+6]].mean(axis=1)
+            X.iloc[:, j] = X.iloc[:, [j, j + 6]].mean(axis=1)
             X.drop(X.columns[j + 6], axis="columns")
 
     return X.drop(X.columns[[j + 6 for i in idx for j in i]], axis="columns")
