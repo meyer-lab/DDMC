@@ -2,6 +2,7 @@
 This creates Figure 2.
 """
 import os
+import pickle
 import random
 import pandas as pd
 import numpy as np
@@ -36,7 +37,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 9), (2, 4))
+    ax, f = getSetup((15, 20), (4, 3), multz={10: 1})
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -143,16 +144,23 @@ def makeFigure():
 
     # -------- Cross-validation 1 -------- #
     # R2Y/Q2Y
-    ncl = 3
 
-    MSC = MassSpecClustering(i, ncl, SeqWeight=1, distance_method="PAM250").fit(d, y)
-    centers = MSC.transform()
+    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
+        model = pickle.load(m)[0]
+    centers = model.transform()
 
     plsr = PLSRegression(n_components=2, scale=False)
-    plotR2YQ2Y(ax[2], plsr, centers, y, ncl + 1)
+    plotR2YQ2Y(ax[2], plsr, centers, y, model.ncl + 1)
 
     # Plot Measured vs Predicted
     plotActualVsPredicted(ax[3:7], plsr, centers, y)
+
+    # Plot motifs
+    pssms = model.pssms(PsP_background=True)
+    plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], ax=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
+
+    #Plot upstream kinases heatmap
+    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
 
     # Add subplot labels
     subplotLabel(ax)
