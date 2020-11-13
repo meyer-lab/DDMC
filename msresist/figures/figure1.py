@@ -44,11 +44,8 @@ def makeFigure():
     # Read in Mass Spec data
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
-    i = X.select_dtypes(include=['object'])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    mut_lines = all_lines[1:]
-    g_lines = all_lines[2:]
 
     d.index = all_lines
 
@@ -57,28 +54,9 @@ def makeFigure():
     tr1 = ["-UT", "-E", "-A/E"]
     tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
     ylabel = "fold-change to t=" + str(itp) + "h"
-    title = "Cell Viability - Erl + AF154 "
     c = ["white", "windows blue", "scarlet"]
     IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
-    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability", TimePointFC=itp, colors=c)
-
-    # Scores and Loadings MS data
-    d = X.select_dtypes(include=["float64"]).T
-    plotpca_ScoresLoadings(ax[1:3], d, list(X["Gene"]), list(X["Position"]))
-
-    # Variability across overlapping peptides in MS replicates
-    #     X = preprocessing(Axlmuts_ErlF154=True, rawdata=True)
-    #     plotVarReplicates(ax[4:6], X)
-
-    # Phosphorylation levels of selected peptides
-
-    plot_AllSites(ax[3], X.copy(), "AXL", "AXL p-sites")
-
-    RTKs = {"EGFR": "Y1172-p", "MET": "S988-p", "ERBB2": "Y877-p", "ERBB3": "Y1328-p", "EPHB3": "T791-p"}
-    plot_IdSites(ax[4], X.copy(), RTKs, "RTKs")
-
-    adapters = {"GAB1": "Y659-p", "GAB2": "Y266-p", "CRK": "Y251-p", "SHC1": "S426-p"}
-    plot_IdSites(ax[5], X.copy(), adapters, "Adapters")
+    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h",  "Cell Viability - Erl + AF154 ", c, TimePointFC=itp)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -187,7 +165,7 @@ def FormatDf(cv, t, l, ylabel):
     return dfc
 
 
-def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, TimePointFC=False, TreatmentFC=False, colors=colors):
+def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePointFC=False, TreatmentFC=False):
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
     ds = FixColumnLabels(ds)
