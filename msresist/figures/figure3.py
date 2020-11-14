@@ -159,7 +159,7 @@ def makeFigure():
     pssms = model.pssms(PsP_background=True)
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], ax=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
-    #Plot upstream kinases heatmap
+    # Plot upstream kinases heatmap
     plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
 
     # Add subplot labels
