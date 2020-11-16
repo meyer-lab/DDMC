@@ -171,8 +171,11 @@ class MassSpecClustering(BaseEstimator):
 def PSPSLdict():
     """Generate dictionary with kinase name-specificity profile pairs"""
     pspl_dict = {}
+    # individual files
     PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
     for sp in PSPLs:
+        if sp == "./msresist/data/PSPL/pssm_data.csv":
+            continue
         sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
 
         if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
@@ -186,6 +189,20 @@ def PSPSLdict():
             sp_mat = np.log2(sp_mat)
 
         pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
+
+    #NetPhores PSPL results
+    f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
+    matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
+    for ii in matIDX:
+        kin = f.iloc[ii[0], 0]
+        mat = f.iloc[ii[1:], :].T
+        mat.columns = np.arange(mat.shape[1])
+        mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
+        mat = np.log2(mat)
+        mat[mat > 3] = 3
+        mat[mat < -3] = -3
+        pspl_dict[kin] = mat
+
     return pspl_dict
 
 
