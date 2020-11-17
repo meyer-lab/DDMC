@@ -190,7 +190,7 @@ def PSPSLdict():
 
         pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
 
-    #NetPhores PSPL results
+    # NetPhores PSPL results
     f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
     matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
     for ii in matIDX:
