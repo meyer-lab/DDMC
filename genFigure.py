@@ -25,4 +25,4 @@ if __name__ == "__main__":
     if sys.argv[1] == 'M2':
         # Overlay Figure M2 cartoon
         overlayCartoon(fdir + 'figureM2.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.78)
+                       f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
