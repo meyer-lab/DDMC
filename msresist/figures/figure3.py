@@ -417,10 +417,10 @@ def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
-def plotMotifs(pssms, positions, ax, titles=False):
+def plotMotifs(pssms, positions, axes, titles=False):
     """Generate logo plots of a list of PSSMs"""
-    for i, pssm in enumerate(pssms):
-        pssm = pssm.T
+    for i, ax in enumerate(axes):
+        pssm = pssms[i].T
         pssm.index = positions
         logo = lm.Logo(pssm,
                        font_name='Arial',
@@ -428,7 +428,7 @@ def plotMotifs(pssms, positions, ax, titles=False):
                        width=.8,
                        flip_below=False,
                        center_values=False,
-                       ax=ax[i])
+                       ax=ax)
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
