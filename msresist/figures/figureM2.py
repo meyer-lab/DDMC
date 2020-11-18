@@ -1,7 +1,7 @@
 """
 This creates Figure M1.
 """
-
+import glob
 import pickle
 import random
 import numpy as np
@@ -269,27 +269,10 @@ def ErrorAcrossNumberOfClusters(distance_method):
 
 def ErrorAcrossWeights(distance_method):
     """Calculate missingness error across different number of clusters."""
-    models = []
     if distance_method == "PAM250":
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W0_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W3_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W9_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W15_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_CL21_W27_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
+        fn = glob.glob("msresist/data/pickled_models/pam250/*")
     else:
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W0_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W30_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_CL24_W50_TMT2', 'rb') as m:
-            models.append(pickle.load(m)[0])
+        fn = glob.glob("msresist/data/pickled_models/binomial/*")
 
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=4)
     X.index = np.arange(X.shape[0])
@@ -300,9 +283,10 @@ def ErrorAcrossWeights(distance_method):
     data = md.select_dtypes(include=['float64']).T
     info = md.select_dtypes(include=['object'])
     missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
-    errors = np.empty((X.shape[0] * len(models), 6))
-    for ii, model in enumerate(models):
-        print(model.SeqWeight)
+    errors = np.empty((X.shape[0] * len(fn), 6))
+    for ii, pathtofile in enumerate(fn):
+        with open(pathtofile, 'rb') as m:
+            model = pickle.load(m)[0]
         seqs = [s.upper() for s in info["Sequence"]]
         if distance_method == "PAM250":
             dist = PAM250(seqs, model.SeqWeight)
