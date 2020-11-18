@@ -20,3 +20,4 @@ astropy==4.1
 numba==0.51.2
 gprof2dot
 logomaker==0.8
+svgutils==0.3.1
