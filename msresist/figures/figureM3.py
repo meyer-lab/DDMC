@@ -20,7 +20,7 @@ import pickle
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 20), (3 3), multz={7: 1})
+    ax, f = getSetup((20, 20), (3, 3), multz={7: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
