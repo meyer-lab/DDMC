@@ -157,7 +157,7 @@ def makeFigure():
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], ax=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
+    plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
     plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
@@ -417,10 +417,10 @@ def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
         ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
 
 
-def plotMotifs(pssms, positions, ax, titles=False):
+def plotMotifs(pssms, positions, axes, titles=False):
     """Generate logo plots of a list of PSSMs"""
-    for i, pssm in enumerate(pssms):
-        pssm = pssm.T
+    for i, ax in enumerate(axes):
+        pssm = pssms[i].T
         pssm.index = positions
         logo = lm.Logo(pssm,
                        font_name='Arial',
@@ -428,7 +428,7 @@ def plotMotifs(pssms, positions, ax, titles=False):
                        width=.8,
                        flip_below=False,
                        center_values=False,
-                       ax=ax[i])
+                       ax=ax)
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
@@ -464,4 +464,13 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     ukin = model.predict_UpstreamKinases()
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
-    sns.heatmap(ukin_mc.set_index("Kinase")[clusters].T, ax=ax)
+    data = ukin_mc.set_index("Kinase")[clusters]
+    if len(clusters) > 1:
+        sns.heatmap(data.T, ax=ax)
+    else:
+        data = data.reset_index()
+        data.columns = ["Kinase", "Motif Similarity"]
+        data = data.sort_values(by="Motif Similarity")
+        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
+        ax.set_xticklabels(data["Kinase"], rotation=90)
+

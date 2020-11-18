@@ -1,7 +1,7 @@
 """
 This creates Figure M1.
 """
-
+import glob
 import pickle
 import random
 import numpy as np
@@ -28,9 +28,9 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    plotErrorAcrossMissingnessLevels(ax[1:4], "PAM250")
-    plotErrorAcrossNumberOfClusters(ax[4], "PAM250")
-    plotErrorAcrossWeights(ax[5], "PAM250")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "Binomial")
+    plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
+    plotErrorAcrossWeights(ax[5], "Binomial")
 
     return f
 
@@ -75,7 +75,7 @@ def plotErrorAcrossWeights(ax, distance_method):
     if distance_method == "PAM250":
         err = pd.read_csv("msresist/data/imputing_missingness/pam_w_5tmts.csv").iloc[:, 1:]
     else:
-        err = pd.read_csv("msresist/data/imputing_missingness/binom_w_5tmts.csv").iloc[:, 1:]
+        err = pd.read_csv("msresist/data/imputing_missingness/binomial_weights.csv").iloc[:, 1:]
     err.columns = ["Run", "pep_idx", "Miss", "Weight", "model_error", "base_error"]
 
     gm = pd.DataFrame(err.groupby(["Weight"]).model_error.apply(gmean)).reset_index()
@@ -266,42 +266,37 @@ def ErrorAcrossNumberOfClusters(distance_method):
 def ErrorAcrossWeights(distance_method):
     """Calculate missingness error across different number of clusters."""
     if distance_method == "PAM250":
-        with open('msresist/data/pickled_models/CPTACmodel_PAM250_filteredTMT', 'rb') as m:
-            model = pickle.load(m)[0]
-        weights = [0, 1, 3, 9, 27]
+        fn = glob.glob("msresist/data/pickled_models/pam250/*")
     else:
-        with open('msresist/data/pickled_models/CPTACmodel_BINOMIAL_filteredTMT', 'rb') as m:
-            model = pickle.load(m)[0]
-        weights = [0, 5, 10, 20, 40]
+        fn = glob.glob("msresist/data/pickled_models/binomial/*")
 
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=7)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=4)
     X.index = np.arange(X.shape[0])
     md = X.copy()
     X = X.select_dtypes(include=['float64']).values
-    n_runs = 5
-    errors = np.zeros((X.shape[0] * len(weights) * n_runs, 6))
-    for ii in range(n_runs):
-        vals = FindIdxValues(md)
-        md, nan_indices = IncorporateMissingValues(md, vals)
-        data = md.select_dtypes(include=['float64']).T
-        info = md.select_dtypes(include=['object'])
-        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
-        for jj, weight in enumerate(weights):
-            print(weight)
-            seqs = [s.upper() for s in info["Sequence"]]
-            if distance_method == "PAM250":
-                dist = PAM250(seqs, weight)
-            elif distance_method == "Binomial":
-                dist = Binomial(info["Sequence"], seqs, weight)
-            _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
-            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
-            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
-            errors[idx1:idx2, 0] = ii
-            errors[idx1:idx2, 1] = md.index
-            errors[idx1:idx2, 2] = missingness
-            errors[idx1:idx2, 3] = weight
-            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
-            errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
+    vals = FindIdxValues(md)
+    md, nan_indices = IncorporateMissingValues(md, vals)
+    data = md.select_dtypes(include=['float64']).T
+    info = md.select_dtypes(include=['object'])
+    missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+    errors = np.empty((X.shape[0] * len(fn), 6))
+    for ii, pathtofile in enumerate(fn):
+        with open(pathtofile, 'rb') as m:
+            model = pickle.load(m)[0]
+        seqs = [s.upper() for s in info["Sequence"]]
+        if distance_method == "PAM250":
+            dist = PAM250(seqs, model.SeqWeight)
+        elif distance_method == "Binomial":
+            dist = Binomial(info["Sequence"], seqs, model.SeqWeight)
+        _, _, _, gmm = EM_clustering(data, info, model.ncl, seqDist=dist, gmmIn=model.gmm_)
+        idx1 = X.shape[0] * ii
+        idx2 = X.shape[0] * (ii + 1)
+        errors[idx1:idx2, 0] = ii
+        errors[idx1:idx2, 1] = md.index
+        errors[idx1:idx2, 2] = missingness
+        errors[idx1:idx2, 3] = model.SeqWeight
+        errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model.ncl, gmm, fit="gmm")
+        errors[idx1:idx2, 5] = ComputeBaselineError(X, data.T, nan_indices)
 
     return errors
 
