@@ -473,4 +473,3 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
         data = data.sort_values(by="Motif Similarity")
         sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
         ax.set_xticklabels(data["Kinase"], rotation=90)
-
