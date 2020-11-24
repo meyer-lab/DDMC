@@ -130,7 +130,7 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    def predict_UpstreamKinases(self):
+    def predict_UpstreamKinases(self, n_components=4):
         """Use multi-dimensional scaling to match kinase profiling with cluster motifs."""
         pspls = list(PSPSLdict().values())
         pssms = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]
@@ -145,26 +145,27 @@ class MassSpecClustering(BaseEstimator):
         res[res < 1.0e-100] = 0
 
         seed = np.random.RandomState(seed=3)
-        mds = MDS(n_components=2, max_iter=3000, eps=1e-9, random_state=seed,
+        mds = MDS(n_components=n_components, max_iter=3000, eps=1e-9, random_state=seed,
                         dissimilarity="precomputed", n_jobs=1)
         pos = mds.fit(res).embedding_
 
-        nmds = MDS(n_components=2, metric=False, max_iter=3000, eps=1e-12,
+        nmds = MDS(n_components=n_components, metric=False, max_iter=3000, eps=1e-12,
                             dissimilarity="precomputed", random_state=seed, n_jobs=1,
                             n_init=1)
         npos = nmds.fit_transform(res, init=pos)
 
-        clf = PCA(n_components=2)
+        clf = PCA(n_components=n_components)
         npos = clf.fit_transform(npos)
-        varExp = np.round(clf.explained_variance_ratio_, 2)
 
         table = pd.DataFrame()
         table["Component 1"] = npos[:, 0]
         table["Component 2"] = npos[:, 1]
+        table["Component 3"] = npos[:, 2]
+        table["Component 4"] = npos[:, 3]
         table["Matrix Type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
         table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
 
-        return table, varExp
+        return table
 
     def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
