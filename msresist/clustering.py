@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
@@ -137,13 +138,25 @@ class MassSpecClustering(BaseEstimator):
 
         n = len(mats)
         res = np.empty((n, n), dtype=float)
-        for ii, jj in itertools.permutations(np.arange(n), 2):
-            res[ii, jj] = np.linalg.norm(mats[ii] - mats[jj])
+        for ii in range(n):
+            for jj in range(n):
+                res[ii, jj] = np.linalg.norm(mats[ii] - mats[jj])
 
         res[res < 1.0e-100] = 0
 
-        mds = MDS(n_components=2, metric=False, dissimilarity="precomputed")
-        npos = mds.fit_transform(res)
+        seed = np.random.RandomState(seed=3)
+        mds = MDS(n_components=2, max_iter=3000, eps=1e-9, random_state=seed,
+                        dissimilarity="precomputed", n_jobs=1)
+        pos = mds.fit(res).embedding_
+
+        nmds = MDS(n_components=2, metric=False, max_iter=3000, eps=1e-12,
+                            dissimilarity="precomputed", random_state=seed, n_jobs=1,
+                            n_init=1)
+        npos = nmds.fit_transform(res, init=pos)
+
+        clf = PCA(n_components=2)
+        npos = clf.fit_transform(npos)
+        varExp = np.round(clf.explained_variance_ratio_, 2)
 
         table = pd.DataFrame()
         table["Component 1"] = npos[:, 0]
@@ -151,7 +164,7 @@ class MassSpecClustering(BaseEstimator):
         table["Matrix Type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
         table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
 
-        return table
+        return table, varExp
 
     def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
