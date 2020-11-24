@@ -4,6 +4,7 @@ This file contains functions that are used in multiple figures.
 from string import ascii_uppercase
 from matplotlib import gridspec, pyplot as plt
 import seaborn as sns
+import svgutils.transform as st
 
 
 def getSetup(figsize, gridd, multz=None, empts=None):
@@ -39,3 +40,19 @@ def subplotLabel(axs):
     """ Place subplot labels on the list of axes. """
     for ii, ax in enumerate(axs):
         ax.text(-0.2, 1.2, ascii_uppercase[ii], transform=ax.transAxes, fontsize=16, fontweight="bold", va="top")
+
+
+def overlayCartoon(figFile, cartoonFile, x, y, scalee=1, scale_x=1, scale_y=1, rotate=None):
+    """ Add cartoon to a figure file. """
+
+    # Overlay Figure cartoons
+    template = st.fromfile(figFile)
+    cartoon = st.fromfile(cartoonFile).getroot()
+
+    cartoon.moveto(x, y, scale=scalee)
+    cartoon.scale_xy(scale_x, scale_y)
+    if rotate:
+        cartoon.rotate(rotate, x, y)
+
+    template.append(cartoon)
+    template.save(figFile)
