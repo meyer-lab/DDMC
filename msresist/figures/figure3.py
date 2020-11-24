@@ -159,7 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinases(model, [1, 4, 5], ax[10])
+    plotUpstreamKinases(model, ax[10])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -374,5 +374,5 @@ def plotUpstreamKinases(model, ax):
 def label_point(x, y, val, ax):
     """Add labels to data points"""
     a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
-    for i, point in a.iterrows():
+    for _, point in a.iterrows():
         ax.text(point['x']+.02, point['y'], str(point['val']))
