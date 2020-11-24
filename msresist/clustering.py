@@ -130,7 +130,7 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    def predict_UpstreamKinases(self, n_components=4):
+    def predict_UpstreamKinases(self, n_components=2):
         """Use multi-dimensional scaling to match kinase profiling with cluster motifs."""
         pspls = list(PSPSLdict().values())
         pssms = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]
@@ -158,10 +158,9 @@ class MassSpecClustering(BaseEstimator):
         npos = clf.fit_transform(npos)
 
         table = pd.DataFrame()
-        table["Component 1"] = npos[:, 0]
-        table["Component 2"] = npos[:, 1]
-        table["Component 3"] = npos[:, 2]
-        table["Component 4"] = npos[:, 3]
+        for i in range(n_components):
+            c = str(i + 1)
+            table["Component " + c] = npos[:, i]
         table["Matrix Type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
         table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
 
