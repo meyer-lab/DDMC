@@ -35,6 +35,9 @@ def makeFigure():
     plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
     plotErrorAcrossWeights(ax[5], "Binomial")
 
+    # Add subplot labels
+    subplotLabel(ax)
+
     return f
 
 
