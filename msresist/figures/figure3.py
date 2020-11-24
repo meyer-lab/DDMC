@@ -365,10 +365,8 @@ def store_cluster_members(X, model):
 
 def plotUpstreamKinases(model, ax):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    table, varExp = model.predict_UpstreamKinases()
+    table = model.predict_UpstreamKinases()
     p = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
-    ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)")
-    ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)")
     label_point(table["Component 1"], table["Component 2"], table["Label"], p)
 
 def label_point(x, y, val, ax):
