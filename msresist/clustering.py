@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
+from sklearn.manifold import MDS
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
@@ -129,17 +130,27 @@ class MassSpecClustering(BaseEstimator):
         return pssms
 
     def predict_UpstreamKinases(self):
-        """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
-        PSPLs = PSPSLdict()
-        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
-        a = np.zeros((len(PSPLs), len(PSSMs)))
+        """Use multi-dimensional scaling to match kinase profiling with cluster motifs."""
+        pspls = list(PSPSLdict().values())
+        pssms = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]
+        mats = pspls + pssms
 
-        for ii, spec_profile in enumerate(PSPLs.values()):
-            for jj, pssm in enumerate(PSSMs):
-                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
+        n = len(mats)
+        res = np.empty((n, n), dtype=float)
+        for ii, jj in itertools.permutations(np.arange(n), 2):
+            res[ii, jj] = np.linalg.norm(mats[ii] - mats[jj])
 
-        table = pd.DataFrame(a)
-        table.insert(0, "Kinase", list(PSPSLdict().keys()))
+        res[res < 1.0e-100] = 0
+
+        mds = MDS(n_components=2, metric=False, dissimilarity="precomputed")
+        npos = mds.fit_transform(res)
+
+        table = pd.DataFrame()
+        table["Component 1"] = npos[:, 0]
+        table["Component 2"] = npos[:, 1]
+        table["Matrix Type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
+        table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
+
         return table
 
     def predict(self):
