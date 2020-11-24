@@ -363,18 +363,16 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, clusters, ax):
+def plotUpstreamKinases(model, ax):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases()
-    ukin.iloc[:, 1:] = ukin.iloc[:, 1:].divide(sp.stats.mstats.gmean(ukin.iloc[:, 1:], axis=0), axis=1)
-    ukin.iloc[:, 1:] = ukin.iloc[:, 1:].divide(sp.stats.mstats.gmean(ukin.iloc[:, 1:], axis=1), axis=0)
-    ukin.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
-    data = ukin.set_index("Kinase")[clusters]
-    if len(clusters) > 1:
-        sns.heatmap(data.T, xticklabels=True, ax=ax)
-    else:
-        data = data.reset_index()
-        data.columns = ["Kinase", "Motif Similarity"]
-        data = data.sort_values(by="Motif Similarity")
-        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
-        ax.set_xticklabels(data["Kinase"], rotation=90)
+    table, varExp = model.predict_UpstreamKinases()
+    p = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
+    ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)")
+    ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)")
+    label_point(table["Component 1"], table["Component 2"], table["Label"], p)
+
+def label_point(x, y, val, ax):
+    """Add labels to data points"""
+    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+    for i, point in a.iterrows():
+        ax.text(point['x']+.02, point['y'], str(point['val']))
