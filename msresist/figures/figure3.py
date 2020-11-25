@@ -363,11 +363,17 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax):
+def plotUpstreamKinases(model, ax, n_components=2, labels=["Component 3", "Component 4"]):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    table = model.predict_UpstreamKinases()
-    p = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
-    label_point(table["Component 1"], table["Component 2"], table["Label"], p)
+    table = model.predict_UpstreamKinases(n_components=n_components)
+    if isinstance(ax, np.ndarray):
+        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax[0])
+        p2 = sns.scatterplot(x=labels[0], y=labels[1], data=table, hue="Matrix Type", ax=ax[1])
+        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
+        label_point(table[labels[0]], table[labels[1]], table["Label"], p2)
+    else:
+        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
+        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
 
 def label_point(x, y, val, ax):
     """Add labels to data points"""
