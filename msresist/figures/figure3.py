@@ -46,7 +46,6 @@ def makeFigure():
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
 
     d = X.select_dtypes(include=["float64"]).T
-    i = X.select_dtypes(include=["object"])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
 
@@ -160,7 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
+    plotUpstreamKinases(model, ax[10])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -305,101 +304,6 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-#     spacer = 0.1
-#     ax[1].set_xlim([(-1 * max(np.abs(list(PC1_xload) + list(PC1_yload)))) - spacer, max(np.abs(list(PC1_xload) + list(PC1_yload))) + spacer])
-#     ax[1].set_ylim([(-1 * max(np.abs(list(PC2_xload) + list(PC2_yload)))) - spacer, max(np.abs(list(PC2_xload) + list(PC2_yload))) + spacer])
-
-
-def plotScoresLoadings_plotly(model, X, Y, loc=False):
-    """ Interactive PLSR plot. Note that this works best by pre-defining the dataframe's
-    indices which will serve as labels for each dot in the plot. """
-    if cv == 1:
-        X_scores, _ = model.transform(X, Y)
-        PC1_xload, PC2_xload = model.x_loadings_[:, 0], model.x_loadings_[:, 1]
-        PC1_yload, PC2_yload = model.y_loadings_[:, 0], model.y_loadings_[:, 1]
-
-    if cv == 2:
-        X_scores, _ = model.named_steps.plsr.transform(X, Y)
-        PC1_xload, PC2_xload = model.named_steps.plsr.x_loadings_[:, 0], model.named_steps.plsr.x_loadings_[:, 1]
-        PC1_yload, PC2_yload = model.named_steps.plsr.y_loadings_[:, 0], model.named_steps.plsr.y_loadings_[:, 1]
-
-    scores = pd.DataFrame()
-    scores["PC1"] = X_scores[:, 0]
-    scores["PC2"] = X_scores[:, 1]
-    scores.index = X.index
-
-    xloads = pd.DataFrame()
-    xloads["PC1"] = PC1_xload
-    xloads["PC2"] = PC2_xload
-    xloads.index = X.columns
-
-    yloads = pd.DataFrame()
-    yloads["PC1"] = PC1_yload
-    yloads["PC2"] = PC2_yload
-    yloads.index = Y.columns
-
-    if loc:
-        print(xloads.loc[loc])
-
-    fig = make_subplots(rows=1, cols=2, subplot_titles=("PLSR Scores", "PLSR Loadings"))
-    fig.add_trace(
-        go.Scatter(
-            mode="markers+text",
-            x=scores["PC1"],
-            y=scores["PC2"],
-            text=scores.index,
-            textposition="top center",
-            textfont=dict(size=10, color="black"),
-            marker=dict(color="blue", size=8, line=dict(color="black", width=1)),
-        ),
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            mode="markers",
-            x=xloads["PC1"],
-            y=xloads["PC2"],
-            opacity=0.7,
-            text=["Protein: " + xloads.index[i][0] + "  Pos: " + xloads.index[i][1] for i in range(len(xloads.index))],
-            marker=dict(size=8, line=dict(color="black", width=1)),
-        ),
-        row=1,
-        col=2,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            mode="markers",
-            x=yloads["PC1"],
-            y=yloads["PC2"],
-            opacity=0.7,
-            text=yloads.index,
-            marker=dict(color=["green", "black", "blue", "cyan"], size=10, line=dict(color="black", width=1)),
-        ),
-        row=1,
-        col=2,
-    )
-
-    fig.update_layout(
-        height=500,
-        width=1000,
-        showlegend=False,
-        xaxis=dict(showgrid=False),
-        yaxis=dict(showgrid=False),
-        xaxis2=dict(showgrid=False),
-        yaxis2=dict(showgrid=False),
-    )
-    fig.update_xaxes(title_text="Principal Component 1", row=1, col=1)
-    fig.update_xaxes(title_text="Principal Component 1", row=1, col=2)
-    fig.update_yaxes(title_text="Principal Component 2", row=1, col=1)
-    fig.update_yaxes(title_text="Principal Component 2", row=1, col=2)
-
-    fig.show()
-    return fig
-
-
 def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
     centers = pd.DataFrame(centers.T)
     centers.columns = xlabels
@@ -459,17 +363,20 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinase_heatmap(model, clusters, ax):
+def plotUpstreamKinases(model, ax, n_components=2, labels=["Component 3", "Component 4"]):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases()
-    ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
-    data = ukin_mc.set_index("Kinase")[clusters]
-    if len(clusters) > 1:
-        sns.heatmap(data.T, ax=ax)
+    table = model.predict_UpstreamKinases(n_components=n_components)
+    if isinstance(ax, np.ndarray):
+        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax[0])
+        p2 = sns.scatterplot(x=labels[0], y=labels[1], data=table, hue="Matrix Type", ax=ax[1])
+        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
+        label_point(table[labels[0]], table[labels[1]], table["Label"], p2)
     else:
-        data = data.reset_index()
-        data.columns = ["Kinase", "Motif Similarity"]
-        data = data.sort_values(by="Motif Similarity")
-        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
-        ax.set_xticklabels(data["Kinase"], rotation=90)
+        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
+        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
+
+def label_point(x, y, val, ax):
+    """Add labels to data points"""
+    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+    for _, point in a.iterrows():
+        ax.text(point['x']+.02, point['y'], str(point['val']))
