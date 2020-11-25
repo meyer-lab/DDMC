@@ -146,12 +146,12 @@ class MassSpecClustering(BaseEstimator):
 
         seed = np.random.RandomState(seed=3)
         mds = MDS(n_components=n_components, max_iter=3000, eps=1e-9, random_state=seed,
-                        dissimilarity="precomputed", n_jobs=1)
+                  dissimilarity="precomputed", n_jobs=1)
         pos = mds.fit(res).embedding_
 
         nmds = MDS(n_components=n_components, metric=False, max_iter=3000, eps=1e-12,
-                            dissimilarity="precomputed", random_state=seed, n_jobs=1,
-                            n_init=1)
+                   dissimilarity="precomputed", random_state=seed, n_jobs=1,
+                   n_init=1)
         npos = nmds.fit_transform(res, init=pos)
 
         clf = PCA(n_components=n_components)
