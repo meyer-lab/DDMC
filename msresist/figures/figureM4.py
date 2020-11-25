@@ -40,7 +40,7 @@ def makeFigure():
     y = mOI.set_index("Sample.ID")
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=4, solver="liblinear", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=4, solver="liblinear", n_jobs=-1, penalty="l1", class_weight="balanced")
 
     # TP53 mutation status
     predict_mutants(ax[:3], centers, y, lr, "TP53.mutation.status")
