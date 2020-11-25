@@ -25,6 +25,9 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((17, 12), (2, 3))
 
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
