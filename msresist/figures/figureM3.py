@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotPredictionProbabilities, plotConfusionMatrix, plotROC
-from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
+from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, MeanCenter
 import pickle
@@ -20,7 +20,7 @@ import pickle
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 20), (3, 3), multz={7: 1})
+    ax, f = getSetup((20, 10), (2, 4))
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -47,7 +47,7 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(cv=model.ncl, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9]).fit(c, tt)
+    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9]).fit(c, tt)
 
     # plotPredictionProbabilities(ax[3], lr, c, tt)
     plotConfusionMatrix(ax[3], lr, c, tt)
@@ -60,7 +60,7 @@ def makeFigure():
     plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 11"], axes=[ax[6]])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [11], ax=ax[7])
+    plotUpstreamKinases(model, ax=ax[7], n_components=2)
 
     # Add subplot labels
     subplotLabel(ax)

@@ -17,7 +17,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (2, 3))
+    ax, f = getSetup((15, 15), (3, 3))
 
     # Add subplot labels
     subplotLabel(ax)
@@ -32,7 +32,7 @@ def makeFigure():
     # Regression against mutation status of driver genes and clusters
     # Import mutation status of TP53, KRAS, EGFR, and ALK fusion
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[["Sample.ID", "TP53.mutation.status", "KRAS.mutation.status", "EGFR.mutation.status", "ALK.fusion"]]
+    mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     mOI = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
     # #### Import clusters
@@ -40,30 +40,45 @@ def makeFigure():
     y = mOI.set_index("Sample.ID")
 
     # Logistic Regression
-    # EGFR mutation status
-    y_egfr = y["EGFR.mutation.status"]
-
-    lr = LogisticRegressionCV(cv=model.ncl, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9])
-
-    lr_egfr = lr.fit(centers, y_egfr)
-
-    plotConfusionMatrix(ax[0], lr_egfr, centers, y_egfr)
-    ax[0].set_title("EGFR confusion matrix")
-    plotROC(ax[1], lr_egfr, centers, y_egfr, cv_folds=4)
-    ax[1].set_title("EGFR ROC")
-    plotClusterCoefficients(ax[2], lr_egfr)
-    ax[2].set_title("EGFR Cluster Coefficients")
+    lr = LogisticRegressionCV(cv=4, solver="liblinear", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     # TP53 mutation status
-    y_tp53 = y["TP53.mutation.status"]
-
-    lr_tp53 = lr.fit(centers, y_tp53)
-
-    plotConfusionMatrix(ax[3], lr_tp53, centers, y_tp53)
-    ax[3].set_title("TP53 confusion matrix")
-    plotROC(ax[4], lr_tp53, centers, y_tp53, cv_folds=4)
-    ax[4].set_title("TP53 ROC")
-    plotClusterCoefficients(ax[5], lr_tp53)
-    ax[5].set_title("TP53 Cluster Coefficients")
+    predict_mutants(ax[:3], centers, y, lr, "TP53.mutation.status")
+    predict_mutants(ax[3:6], centers, y, lr, "EGFR.mutation.status", mutant2="ALK.fusion")
+    predict_mutants(ax[6:9], centers, y, lr, "STK11.mutation.status")
 
     return f
+
+
+def predict_mutants(ax, centers, y, lr, mutant, mutant2=False):
+    """Determine what mutants to predict"""
+    if mutant2:
+        y_ = merge_binary_vectors(y, mutant, mutant2)
+    else:
+        y_ = y[mutant]
+
+    lr_ = lr.fit(centers, y_)
+    plotConfusionMatrix(ax[0], lr_, centers, y_)
+    ax[0].set_title(mutant.split(".")[0] + "m Confusion Matrix")
+    if mutant2:
+        ax[0].set_title(mutant.split(".")[0] + "m/" + mutant2.split(".")[0] + " Confusion Matrix")
+    plotROC(ax[1], lr_, centers, y_, cv_folds=4)
+    if mutant2:
+        ax[1].set_title(mutant.split(".")[0] + "m/" + mutant2.split(".")[0] + " Cluster Coefficients")
+    ax[1].set_title(mutant.split(".")[0] + "m ROC")
+    plotClusterCoefficients(ax[2], lr_)
+    if mutant2:
+        ax[2].set_title(mutant.split(".")[0] + "m/" + mutant2.split(".")[0] + " Cluster Coefficients")
+    else:
+        ax[2].set_title(mutant.split(".")[0] + "m Cluster Coefficients")
+
+
+def merge_binary_vectors(y, mutant1, mutant2):
+    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
+    y1 = y[mutant1]
+    y2 = y[mutant2]
+    y_ = np.zeros(y.shape[0])
+    for binary in [y1, y2]:
+        indices = [i for i, x in enumerate(binary) if x == 1]
+        y_[indices] = 1
+    return pd.Series(y_)
