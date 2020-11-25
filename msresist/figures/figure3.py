@@ -14,7 +14,7 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
-from sklearn.pipeline import Pipeline
+from sklearn.neighbors import NearestNeighbors
 from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from ..figures.figure1 import pca_dfs
@@ -363,20 +363,38 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, n_components=2, labels=["Component 3", "Component 4"]):
+def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=["PC3", "PC4"]):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     table = model.predict_UpstreamKinases(n_components=n_components)
-    if isinstance(ax, np.ndarray):
-        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax[0])
-        p2 = sns.scatterplot(x=labels[0], y=labels[1], data=table, hue="Matrix Type", ax=ax[1])
-        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
-        label_point(table[labels[0]], table[labels[1]], table["Label"], p2)
+    pspl = table.iloc[:-model.ncl, :]
+    if not SH2:
+        pspl = pspl[~pspl["Label"].str.contains("SH2")]
+    if isinstance(clusters, int):
+        pssm = pd.DataFrame(table.set_index("Label").loc[clusters]).T.reset_index()
     else:
-        p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
-        label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
+        pssm = table.set_index("Label").loc[clusters].reset_index()
+    pssm.columns = ["Label"] + list(pssm.columns[1:])
+    X = pd.concat([pspl, pssm]).set_index("Label")
+    if isinstance(ax, np.ndarray):
+        p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[0])
+        p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[1])
+        X = X.drop("Matrix type", axis=1)
+        label_point(X[["PC1", "PC2"]], clusters, p1)
+        label_point(X[labels], clusters, p2)
+    else:
+        p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
+        X = X.drop("Matrix type", axis=1)
+        label_point(X, clusters, p1)
 
-def label_point(x, y, val, ax):
+def label_point(X, clusters, ax, n_neighbors=5):
     """Add labels to data points"""
-    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
-    for _, point in a.iterrows():
-        ax.text(point['x']+.02, point['y'], str(point['val']))
+    knn = NearestNeighbors(n_neighbors=n_neighbors)
+    knn.fit(X.values)
+    if isinstance(clusters, int):
+        clusters = [clusters]
+    for cluster in clusters:
+        idc = knn.kneighbors(X.loc[cluster].values.reshape(1, 2), return_distance=False)
+        a = X.iloc[idc.reshape(n_neighbors), :].reset_index()
+        a.columns = ["val", "x", "y"]
+        for _, point in a.iterrows():
+            ax.text(point['x']+.02, point['y'], str(point['val']))
