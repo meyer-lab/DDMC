@@ -375,8 +375,9 @@ def plotUpstreamKinases(model, ax, n_components=2, labels=["Component 3", "Compo
         p1 = sns.scatterplot(x="Component 1", y="Component 2", data=table, hue="Matrix Type", ax=ax)
         label_point(table["Component 1"], table["Component 2"], table["Label"], p1)
 
+
 def label_point(x, y, val, ax):
     """Add labels to data points"""
     a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
     for _, point in a.iterrows():
-        ax.text(point['x']+.02, point['y'], str(point['val']))
+        ax.text(point['x'] + .02, point['y'], str(point['val']))
