@@ -386,6 +386,7 @@ def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=[
         X = X.drop("Matrix type", axis=1)
         label_point(X, clusters, p1)
 
+
 def label_point(X, clusters, ax, n_neighbors=5):
     """Add labels to data points"""
     knn = NearestNeighbors(n_neighbors=n_neighbors)
