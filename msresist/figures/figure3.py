@@ -159,7 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinases(model, ax[10])
+    plotUpstreamKinases(model, ax=ax, clusters=[1,2,3,4,5], n_components=2)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -375,27 +375,31 @@ def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=[
         pssm = table.set_index("Label").loc[clusters].reset_index()
     pssm.columns = ["Label"] + list(pssm.columns[1:])
     X = pd.concat([pspl, pssm]).set_index("Label")
+    pspl = pspl.drop("Matrix type", axis=1).set_index("Label")
     if isinstance(ax, np.ndarray):
         p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[0])
         p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[1])
         X = X.drop("Matrix type", axis=1)
-        label_point(X[["PC1", "PC2"]], clusters, p1)
-        label_point(X[labels], clusters, p2)
+        label_point(X[["PC1", "PC2"]], clusters, pspl[["PC1", "PC2"]], p1)
+        label_point(X[labels], clusters, pspl[labels], p2)
     else:
         p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
         X = X.drop("Matrix type", axis=1)
-        label_point(X, clusters, p1)
+        label_point(X, clusters, pspl, p1)
 
 
-def label_point(X, clusters, ax, n_neighbors=5):
+def label_point(X, clusters, pspl, ax, n_neighbors=5):
     """Add labels to data points"""
-    knn = NearestNeighbors(n_neighbors=n_neighbors)
-    knn.fit(X.values)
     if isinstance(clusters, int):
         clusters = [clusters]
     for cluster in clusters:
-        idc = knn.kneighbors(X.loc[cluster].values.reshape(1, 2), return_distance=False)
-        a = X.iloc[idc.reshape(n_neighbors), :].reset_index()
+        pssm = pd.DataFrame(X.loc[cluster]).T.reset_index()
+        pssm.columns = ["Label"] + list(pssm.columns[1:])
+        XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
+        knn = NearestNeighbors(n_neighbors=n_neighbors)
+        knn.fit(XX.values)
+        idc = knn.kneighbors(XX.loc[cluster].values.reshape(1, 2), return_distance=False)
+        a = XX.iloc[idc.reshape(n_neighbors), :].reset_index()
         a.columns = ["val", "x", "y"]
         for _, point in a.iterrows():
             ax.text(point['x']+.02, point['y'], str(point['val']))
