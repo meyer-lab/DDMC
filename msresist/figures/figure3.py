@@ -380,22 +380,26 @@ def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=[
         p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[0])
         p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[1])
         X = X.drop("Matrix type", axis=1)
-        label_point(X[["PC1", "PC2"]], clusters, pspl[["PC1", "PC2"]], p1)
-        label_point(X[labels], clusters, pspl[labels], p2)
+        label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
+        label_point(X[labels], model, clusters, pspl[labels], p2)
     else:
         p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
         X = X.drop("Matrix type", axis=1)
-        label_point(X, clusters, pspl, p1)
+        label_point(X, model, clusters, pspl, p1)
 
 
-def label_point(X, clusters, pspl, ax, n_neighbors=5):
+def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
     """Add labels to data points"""
     if isinstance(clusters, int):
         clusters = [clusters]
+    pspl_ = pspl.copy()
     for cluster in clusters:
+        pX_type = np.max(model.pssms(PsP_background=True)[cluster-1].iloc[:, 5].index)
         pssm = pd.DataFrame(X.loc[cluster]).T.reset_index()
         pssm.columns = ["Label"] + list(pssm.columns[1:])
-        XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
+        IDX = [KinToPhosphotypeDict[kin] == pX_type for kin in pspl.index] #find phosphoacceptor specific kinases 
+        pspl_ = pspl.iloc[IDX, :]
+        XX = pd.concat([pspl_.reset_index(), pssm]).set_index("Label")
         knn = NearestNeighbors(n_neighbors=n_neighbors)
         knn.fit(XX.values)
         idc = knn.kneighbors(XX.loc[cluster].values.reshape(1, 2), return_distance=False)
