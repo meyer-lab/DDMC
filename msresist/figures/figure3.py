@@ -15,7 +15,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import NearestNeighbors
-from ..clustering import MassSpecClustering
+from ..clustering import MassSpecClustering, KinToPhosphotypeDict
 from ..plsr import R2Y_across_components
 from ..figures.figure1 import pca_dfs
 from ..distances import DataFrameRipleysK
@@ -393,13 +393,14 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
     if isinstance(clusters, int):
         clusters = [clusters]
     pspl_ = pspl.copy()
+    X_ = X.copy()
     for cluster in clusters:
-        pX_type = np.max(model.pssms(PsP_background=True)[cluster-1].iloc[:, 5].index)
-        pssm = pd.DataFrame(X.loc[cluster]).T.reset_index()
+        pX_type = model.pssms(PsP_background=True)[cluster-1].iloc[:, 5].idxmax()
+        pssm = pd.DataFrame(X_.loc[cluster]).T.reset_index()
         pssm.columns = ["Label"] + list(pssm.columns[1:])
         IDX = [KinToPhosphotypeDict[kin] == pX_type for kin in pspl.index] #find phosphoacceptor specific kinases 
-        pspl_ = pspl.iloc[IDX, :]
-        XX = pd.concat([pspl_.reset_index(), pssm]).set_index("Label")
+        pspl = pspl_.iloc[IDX, :]
+        XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
         knn = NearestNeighbors(n_neighbors=n_neighbors)
         knn.fit(XX.values)
         idc = knn.kneighbors(XX.loc[cluster].values.reshape(1, 2), return_distance=False)
