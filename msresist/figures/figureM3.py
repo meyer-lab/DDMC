@@ -60,7 +60,7 @@ def makeFigure():
     plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 11"], axes=[ax[6]])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[7], n_components=2)
+    plotUpstreamKinases(model, clusters=11, ax=ax[7], n_components=2)
 
     # Add subplot labels
     subplotLabel(ax)
