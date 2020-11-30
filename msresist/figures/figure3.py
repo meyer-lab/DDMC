@@ -37,7 +37,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 20), (4, 3), multz={10: 1})
+    ax, f = getSetup((15, 20), (4, 3))
 
     # blank out first axis for cartoon
     #     ax[0].axis('off')
@@ -159,7 +159,8 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinases(model, ax=ax, clusters=[1,2,3,4,5], n_components=2)
+    print(type(ax[10:12]))
+    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1,2,3,4,5], n_components=4)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -376,7 +377,7 @@ def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=[
     pssm.columns = ["Label"] + list(pssm.columns[1:])
     X = pd.concat([pspl, pssm]).set_index("Label")
     pspl = pspl.drop("Matrix type", axis=1).set_index("Label")
-    if isinstance(ax, np.ndarray):
+    if isinstance(ax, np.ndarray) or isinstance(ax, list):
         p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[0])
         p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[1])
         X = X.drop("Matrix type", axis=1)
@@ -398,7 +399,7 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
         pX_type = model.pssms(PsP_background=True)[cluster-1].iloc[:, 5].idxmax()
         pssm = pd.DataFrame(X_.loc[cluster]).T.reset_index()
         pssm.columns = ["Label"] + list(pssm.columns[1:])
-        IDX = [KinToPhosphotypeDict[kin] == pX_type for kin in pspl.index] #find phosphoacceptor specific kinases 
+        IDX = [KinToPhosphotypeDict[kin].split("/")[0] == pX_type for kin in pspl_.index] #find phosphoacceptor specific kinases 
         pspl = pspl_.iloc[IDX, :]
         XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
         knn = NearestNeighbors(n_neighbors=n_neighbors)
