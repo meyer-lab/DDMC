@@ -160,7 +160,7 @@ def makeFigure():
 
     # Plot upstream kinases heatmap
     print(type(ax[10:12]))
-    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1,2,3,4,5], n_components=4)
+    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1, 2, 3, 4, 5], n_components=4)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -396,10 +396,10 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
     pspl_ = pspl.copy()
     X_ = X.copy()
     for cluster in clusters:
-        pX_type = model.pssms(PsP_background=True)[cluster-1].iloc[:, 5].idxmax()
+        pX_type = model.pssms(PsP_background=True)[cluster - 1].iloc[:, 5].idxmax()
         pssm = pd.DataFrame(X_.loc[cluster]).T.reset_index()
         pssm.columns = ["Label"] + list(pssm.columns[1:])
-        IDX = [KinToPhosphotypeDict[kin].split("/")[0] == pX_type for kin in pspl_.index] #find phosphoacceptor specific kinases 
+        IDX = [KinToPhosphotypeDict[kin].split("/")[0] == pX_type for kin in pspl_.index]  # find phosphoacceptor specific kinases
         pspl = pspl_.iloc[IDX, :]
         XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
         knn = NearestNeighbors(n_neighbors=n_neighbors)
@@ -408,4 +408,4 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
         a = XX.iloc[idc.reshape(n_neighbors), :].reset_index()
         a.columns = ["val", "x", "y"]
         for _, point in a.iterrows():
-            ax.text(point['x']+.02, point['y'], str(point['val']))
+            ax.text(point['x'] + .02, point['y'], str(point['val']))

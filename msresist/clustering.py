@@ -305,5 +305,5 @@ KinToPhosphotypeDict = {
     "TLK1": "S/T",
     "TNIK": "S/T",
     "p70S6K": "S/T",
-    "EphA3": "Y" 
+    "EphA3": "Y"
 }
