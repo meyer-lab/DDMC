@@ -160,8 +160,8 @@ class MassSpecClustering(BaseEstimator):
         table = pd.DataFrame()
         for i in range(n_components):
             c = str(i + 1)
-            table["Component " + c] = npos[:, i]
-        table["Matrix Type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
+            table["PC" + c] = npos[:, i]
+        table["Matrix type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
         table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
 
         return table
@@ -239,3 +239,71 @@ def background_pssm(bg_sequences):
     for pos in range(back_pssm.shape[1]):
         back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
     return np.log2(back_pssm)
+
+
+KinToPhosphotypeDict = {
+    "ABL": "Y",
+    "AKT": "S/T",
+    "ALK": "Y",
+    "BLK": "Y",
+    "BRK": "Y",
+    "CKII": "S/T",
+    "ERK2": "S/T",
+    "FRK": "Y",
+    "HCK": "Y",
+    "INSR": "Y",
+    "LCK": "Y",
+    "LYN": "Y",
+    "MET": "Y",
+    "NEK1": "S/T",
+    "NEK2": "S/T",
+    "NEK3": "S/T",
+    "NEK4": "S/T",
+    "NEK5": "S/T",
+    "NEK6": "S/T",
+    "NEK7": "S/T",
+    "NEK8": "S/T",
+    "NEK9": "S/T",
+    "NEK10_S": "S/T",
+    "NEK10_Y": "Y",
+    "PKA": "S/T",
+    "PKC-theta": "S/T",
+    "PKD": "S/T",
+    "PLM2": "S/T",
+    "RET": "Y",
+    "SRC": "Y",
+    "TbetaRII": "S/T",
+    "YES": "Y",
+    "BRCA1": "S/T",
+    "AMPK": "S/T",
+    "CDK5": "S/T",
+    "CK1": "S/T",
+    "DMPK1": "S/T",
+    "EGFR": "Y",
+    "InsR": "Y",
+    "p38": "S/T",
+    "ERK1": "S/T",
+    "SHC1": "Y",
+    "SH2_PLCG1": "Y",
+    "SH2_INPP5D": "Y",
+    "SH2_SH3BP2": "Y",
+    "SH2_SHC2": "Y",
+    "SH2_SHE": "Y",
+    "SH2_Syk": "Y",
+    "SH2_TNS4": "Y",
+    "CLK2": "S/T",
+    "DAPK3": "S/T",
+    "ICK": "S/T",
+    "LKB1": "S/T",
+    "MST1": "S/T",
+    "MST4": "S/T",
+    "PAK2": "S/T",
+    "Pim1": "S/T",
+    "Pim2": "S/T",
+    "SLK": "S/T",
+    "TGFbR2": "S/T",
+    "TLK1": "S/T",
+    "TNIK": "S/T",
+    "p70S6K": "S/T",
+    "EphA3": "Y" 
+}
