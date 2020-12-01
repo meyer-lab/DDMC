@@ -160,7 +160,7 @@ def makeFigure():
 
     # Plot upstream kinases heatmap
     print(type(ax[10:12]))
-    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1,2,3,4,5], n_components=4)
+    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1, 2, 3, 4, 5], n_components=4)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -408,4 +408,4 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
         a = XX.iloc[idc.reshape(n_neighbors), :].reset_index()
         a.columns = ["val", "x", "y"]
         for _, point in a.iterrows():
-            ax.text(point['x']+.02, point['y'], str(point['val']))
+            ax.text(point['x'] + .02, point['y'], str(point['val']))
