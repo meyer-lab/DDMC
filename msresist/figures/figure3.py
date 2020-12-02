@@ -159,12 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    print(type(ax[10:12]))
-<<<<<<< HEAD
     plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
-=======
-    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1, 2, 3, 4, 5], n_components=4)
->>>>>>> f36030d66db4fadc3421d1aba85db3ee4b9dd99f
 
     # Add subplot labels
     subplotLabel(ax)
