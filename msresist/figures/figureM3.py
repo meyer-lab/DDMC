@@ -20,7 +20,7 @@ import pickle
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 4))
+    ax, f = getSetup((15, 15), (3, 3))
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -60,7 +60,7 @@ def makeFigure():
     plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 11"], axes=[ax[6]])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, clusters=11, ax=ax[7], n_components=2)
+    plotUpstreamKinases(model, ax=ax[7:9], clusters_=[11], n_components=4, pX=1)
 
     # Add subplot labels
     subplotLabel(ax)

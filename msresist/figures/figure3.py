@@ -160,7 +160,7 @@ def makeFigure():
 
     # Plot upstream kinases heatmap
     print(type(ax[10:12]))
-    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1,2,3,4,5], n_components=4)
+    plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -364,12 +364,16 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"]):
+def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     tables = model.predict_UpstreamKinases(n_components=n_components)
+    if isinstance(pX, int):
+        tables = [tables[pX]]
     for ii, table in enumerate(tables):
         pX_clusters = list(table[table["Matrix type"] == "PSSM"]["Label"])
         clusters = [cluster for cluster in clusters_ if cluster in pX_clusters]
+        if len(clusters) == 1:
+            clusters = clusters[0]
         pspl = table[table["Matrix type"] == "PSPL"]
         if isinstance(clusters, int):
             pssm = pd.DataFrame(table.set_index("Label").loc[clusters]).T.reset_index()
@@ -378,7 +382,7 @@ def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC
         pssm.columns = ["Label"] + list(pssm.columns[1:])
         X = pd.concat([pspl, pssm]).set_index("Label").drop("pX", axis=1)
         pspl = pspl.drop(["Matrix type", "pX"], axis=1).set_index("Label")
-        if len(ax) > 2:
+        if n_components > 2:
             if ii > 0:
                 ii = 2
             p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[ii])
@@ -387,7 +391,7 @@ def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC
             label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
             label_point(X[labels], model, clusters, pspl[labels], p2)
         else:
-            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[ii])
+            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
             X = X.drop("Matrix type", axis=1)
             label_point(X, model, clusters, pspl, p1)
 
