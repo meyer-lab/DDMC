@@ -304,24 +304,28 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(centers, nrows, ncols, xlabels, sharey=True, figsize=(15, 15)):
-    centers = pd.DataFrame(centers.T)
+def plotCenters(ax, centers, xlabels, title, yaxis=False):
+    centers = pd.DataFrame(centers).T
     centers.columns = xlabels
-    _, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=sharey, figsize=figsize)
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i // ncols][i % ncols], linewidth=2)
-        ax[i // ncols][i % ncols].set_xticks(np.arange(len(xlabels)))
-        ax[i // ncols][i % ncols].set_xticklabels(xlabels, rotation=45)
-        ax[i // ncols][i % ncols].set_ylabel("$log_{10}$ p-signal")
-        ax[i // ncols][i % ncols].xaxis.set_tick_params(bottom=True)
-        ax[i // ncols][i % ncols].set_xlabel("")
-        ax[i // ncols][i % ncols].legend(["cluster " + str(i + 1)])
+        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax, linewidth=2)
+        ax.set_xticklabels(xlabels, rotation=45)
+        ax.set_xticks(np.arange(len(xlabels)))
+        ax.set_ylabel("$log_{10}$ p-signal")
+        ax.xaxis.set_tick_params(bottom=True)
+        ax.set_xlabel("")
+        if title:
+            ax.legend([title])
+        else:
+            ax.legend(["cluster " + str(i + 1)])
+        if yaxis:
+            ax.set_ylim([yaxis[0], yaxis[1]])
 
 
-def plotMotifs(pssms, positions, axes, titles=False):
+def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     for i, ax in enumerate(axes):
         pssm = pssms[i].T
@@ -336,9 +340,11 @@ def plotMotifs(pssms, positions, axes, titles=False):
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
-            logo.ax.set_title(titles[i] + " Motif")
+            logo.ax.set_title(titles[0] + " Motif")
         else:
             logo.ax.set_title('Motif Cluster ' + str(i + 1))
+        if yaxis:
+            logo.ax.set_ylim([yaxis[0], yaxis[1]])
 
 
 def plot_LassoCoef(ax, model, title=False):
