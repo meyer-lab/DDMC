@@ -159,8 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    print(type(ax[10:12]))
-    plotUpstreamKinases(model, ax=ax[10:12], clusters=[1, 2, 3, 4, 5], n_components=4)
+    plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
 
     # Add subplot labels
     subplotLabel(ax)
@@ -364,29 +363,36 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, clusters, SH2=False, n_components=2, labels=["PC3", "PC4"]):
+def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    table = model.predict_UpstreamKinases(n_components=n_components)
-    pspl = table.iloc[:-model.ncl, :]
-    if not SH2:
-        pspl = pspl[~pspl["Label"].str.contains("SH2")]
-    if isinstance(clusters, int):
-        pssm = pd.DataFrame(table.set_index("Label").loc[clusters]).T.reset_index()
-    else:
-        pssm = table.set_index("Label").loc[clusters].reset_index()
-    pssm.columns = ["Label"] + list(pssm.columns[1:])
-    X = pd.concat([pspl, pssm]).set_index("Label")
-    pspl = pspl.drop("Matrix type", axis=1).set_index("Label")
-    if isinstance(ax, np.ndarray) or isinstance(ax, list):
-        p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[0])
-        p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[1])
-        X = X.drop("Matrix type", axis=1)
-        label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
-        label_point(X[labels], model, clusters, pspl[labels], p2)
-    else:
-        p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
-        X = X.drop("Matrix type", axis=1)
-        label_point(X, model, clusters, pspl, p1)
+    tables = model.predict_UpstreamKinases(n_components=n_components)
+    if isinstance(pX, int):
+        tables = [tables[pX]]
+    for ii, table in enumerate(tables):
+        pX_clusters = list(table[table["Matrix type"] == "PSSM"]["Label"])
+        clusters = [cluster for cluster in clusters_ if cluster in pX_clusters]
+        if len(clusters) == 1:
+            clusters = clusters[0]
+        pspl = table[table["Matrix type"] == "PSPL"]
+        if isinstance(clusters, int):
+            pssm = pd.DataFrame(table.set_index("Label").loc[clusters]).T.reset_index()
+        else:
+            pssm = table.set_index("Label").loc[clusters].reset_index()
+        pssm.columns = ["Label"] + list(pssm.columns[1:])
+        X = pd.concat([pspl, pssm]).set_index("Label").drop("pX", axis=1)
+        pspl = pspl.drop(["Matrix type", "pX"], axis=1).set_index("Label")
+        if n_components > 2:
+            if ii > 0:
+                ii = 2
+            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[ii])
+            p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[ii+1])
+            X = X.drop("Matrix type", axis=1)
+            label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
+            label_point(X[labels], model, clusters, pspl[labels], p2)
+        else:
+            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
+            X = X.drop("Matrix type", axis=1)
+            label_point(X, model, clusters, pspl, p1)
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
@@ -396,12 +402,9 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
     pspl_ = pspl.copy()
     X_ = X.copy()
     for cluster in clusters:
-        pX_type = model.pssms(PsP_background=True)[cluster - 1].iloc[:, 5].idxmax()
         pssm = pd.DataFrame(X_.loc[cluster]).T.reset_index()
         pssm.columns = ["Label"] + list(pssm.columns[1:])
-        IDX = [KinToPhosphotypeDict[kin].split("/")[0] == pX_type for kin in pspl_.index]  # find phosphoacceptor specific kinases
-        pspl = pspl_.iloc[IDX, :]
-        XX = pd.concat([pspl.reset_index(), pssm]).set_index("Label")
+        XX = pd.concat([pspl_.reset_index(), pssm]).set_index("Label")
         knn = NearestNeighbors(n_neighbors=n_neighbors)
         knn.fit(XX.values)
         idc = knn.kneighbors(XX.loc[cluster].values.reshape(1, 2), return_distance=False)
