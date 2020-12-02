@@ -131,40 +131,67 @@ class MassSpecClustering(BaseEstimator):
         return pssms
 
     def predict_UpstreamKinases(self, n_components=2):
-        """Use multi-dimensional scaling to match kinase profiling with cluster motifs."""
-        pspls = list(PSPSLdict().values())
-        pssms = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]
-        mats = pspls + pssms
+        # Split PSPLs into pY and pST
+        pspls = PSPSLdict()
+        kins = list(PSPSLdict().keys())
 
-        n = len(mats)
-        res = np.empty((n, n), dtype=float)
-        for ii in range(n):
-            for jj in range(n):
-                res[ii, jj] = np.linalg.norm(mats[ii] - mats[jj])
+        sp_y = {}
+        sp_st = {}
+        for kin in kins:
+            if KinToPhosphotypeDict[kin] == "Y":
+                sp_y[kin] = pspls[kin]
+            else:
+                sp_st[kin] = pspls[kin]
 
-        res[res < 1.0e-100] = 0
+        #Split PSSMs into pY and pST
+        pssm_y = {}
+        pssm_st = {}
+        for ii, mat in enumerate(self.pssms(PsP_background=True)):
+            mat_ = np.delete(list(np.array(mat)), [5, 10], 1)
+            if mat.iloc[:, 5].idxmax() == "Y":
+                pssm_y[ii + 1] = mat_
+            else:
+                pssm_st[ii + 1] = mat_
 
-        seed = np.random.RandomState(seed=3)
-        mds = MDS(n_components=n_components, max_iter=3000, eps=1e-9, random_state=seed,
-                  dissimilarity="precomputed", n_jobs=1)
-        pos = mds.fit(res).embedding_
+        mats_y = list(sp_y.values()) + list(pssm_y.values())
+        mats_st = list(sp_st.values()) + list(pssm_st.values())
+        mats = [mats_y, mats_st]
+        sp = [len(sp_y), len(sp_st)]
+        mot = [len(pssm_y), len(pssm_st)]
+        labels = [list(sp_y.keys()) + list(pssm_y.keys()), list(sp_st.keys()) + list(pssm_st.keys())]
+        pX = ["Y", "S/T"]
 
-        nmds = MDS(n_components=n_components, metric=False, max_iter=3000, eps=1e-12,
-                   dissimilarity="precomputed", random_state=seed, n_jobs=1,
-                   n_init=1)
-        npos = nmds.fit_transform(res, init=pos)
+        tables = []
+        for q, mat in enumerate(mats):
+            n = len(mat)
+            res = np.empty((n, n), dtype=float)
+            for ii in range(n):
+                for jj in range(n):
+                    res[ii, jj] = np.linalg.norm(mat[ii] - mat[jj])
+            res[res < 1.0e-100] = 0
+            seed = np.random.RandomState(seed=3)
+            mds = MDS(n_components=n_components, max_iter=3000, eps=1e-9, random_state=seed,
+                        dissimilarity="precomputed", n_jobs=1)
+            pos = mds.fit(res).embedding_
 
-        clf = PCA(n_components=n_components)
-        npos = clf.fit_transform(npos)
+            nmds = MDS(n_components=n_components, metric=False, max_iter=3000, eps=1e-12,
+                        dissimilarity="precomputed", random_state=seed, n_jobs=1,
+                        n_init=1)
+            npos = nmds.fit_transform(res, init=pos)
 
-        table = pd.DataFrame()
-        for i in range(n_components):
-            c = str(i + 1)
-            table["PC" + c] = npos[:, i]
-        table["Matrix type"] = ["PSPL"] * len(pspls) + ["PSSM"] * self.ncl
-        table["Label"] = list(PSPSLdict().keys()) + list(np.arange(self.ncl) + 1)
+            clf = PCA(n_components=n_components)
+            npos = clf.fit_transform(npos)
 
-        return table
+            t = pd.DataFrame()
+            for i in range(n_components):
+                c = str(i + 1)
+                t["PC" + c] = npos[:, i]
+            t["Matrix type"] = ["PSPL"] * sp[q] + ["PSSM"] * mot[q]
+            t["Label"] = labels[q]
+            t["pX"] = pX[q]
+            tables.append(t)
+
+        return tables
 
     def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
