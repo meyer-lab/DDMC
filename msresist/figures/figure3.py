@@ -305,7 +305,7 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, centers, xlabels, title):
+def plotCenters(ax, centers, xlabels, title, yaxis=False):
     centers = pd.DataFrame(centers).T
     centers.columns = xlabels
     for i in range(centers.shape[0]):
@@ -322,9 +322,11 @@ def plotCenters(ax, centers, xlabels, title):
             ax.legend([title])
         else:
             ax.legend(["cluster " + str(i + 1)])
+        if yaxis:
+            ax.set_ylim([yaxis[0], yaxis[1]])
 
 
-def plotMotifs(pssms, positions, axes, titles=False):
+def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     for i, ax in enumerate(axes):
         pssm = pssms[i].T
@@ -342,6 +344,8 @@ def plotMotifs(pssms, positions, axes, titles=False):
             logo.ax.set_title(titles[0] + " Motif")
         else:
             logo.ax.set_title('Motif Cluster ' + str(i + 1))
+        if yaxis:
+            logo.ax.set_ylim([yaxis[0], yaxis[1]])
 
 
 def plot_LassoCoef(ax, model, title=False):

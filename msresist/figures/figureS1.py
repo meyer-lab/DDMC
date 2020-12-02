@@ -15,13 +15,13 @@ def makeFigure():
     with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as p:
         model = pickle.load(p)[0]
 
-    pssms = model.pssms(PsP_background=True)
+    pssms = model.pssms(PsP_background=False)
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
 
     for ii, jj in zip(range(0, 10, 2), range(5)):
         cluster = "Cluster " + str(jj + 1)
-        plotMotifs([pssms[jj]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=[ax[ii]], titles=[cluster])
-        plotCenters(ax[ii+1], model.transform()[:, jj], all_lines, title=cluster)
+        plotMotifs([pssms[jj]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=[ax[ii]], titles=[cluster], yaxis=[-35, 12.5])
+        plotCenters(ax[ii+1], model.transform()[:, jj], all_lines, title=cluster, yaxis=[-1, 1])
 
     # Add subplot labels
     subplotLabel(ax)
