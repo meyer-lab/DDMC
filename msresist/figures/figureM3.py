@@ -4,7 +4,7 @@ This creates Figure M3.
 
 import numpy as np
 import pandas as pd
-import seaborn as    sns
+import seaborn as sns
 import pickle
 from scipy.stats import zscore
 from sklearn.linear_model import LogisticRegressionCV
