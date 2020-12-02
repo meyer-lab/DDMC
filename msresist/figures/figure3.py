@@ -385,7 +385,7 @@ def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC
             if ii > 0:
                 ii = 2
             p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[ii])
-            p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[ii+1])
+            p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[ii + 1])
             X = X.drop("Matrix type", axis=1)
             label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
             label_point(X[labels], model, clusters, pspl[labels], p2)
