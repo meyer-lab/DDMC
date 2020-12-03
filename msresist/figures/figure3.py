@@ -340,7 +340,7 @@ def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
-            logo.ax.set_title(titles[0] + " Motif")
+            logo.ax.set_title(titles[i] + " Motif")
         else:
             logo.ax.set_title('Motif Cluster ' + str(i + 1))
         if yaxis:
