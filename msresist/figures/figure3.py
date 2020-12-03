@@ -369,9 +369,9 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False):
+def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False, PsP_background=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    tables = model.predict_UpstreamKinases(n_components=n_components)
+    tables = model.predict_UpstreamKinases(n_components=n_components, PsP_background=PsP_background)
     if isinstance(pX, int):
         tables = [tables[pX]]
     for ii, table in enumerate(tables):
