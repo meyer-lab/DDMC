@@ -7,6 +7,7 @@ import numpy as np
 from ..figures.figure3 import plotMotifs, plotCenters
 from .common import subplotLabel, getSetup
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
@@ -21,7 +22,7 @@ def makeFigure():
     for ii, jj in zip(range(0, 10, 2), range(5)):
         cluster = "Cluster " + str(jj + 1)
         plotMotifs([pssms[jj]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=[ax[ii]], titles=[cluster], yaxis=[-35, 12.5])
-        plotCenters(ax[ii+1], model.transform()[:, jj], all_lines, title=cluster, yaxis=[-1, 1])
+        plotCenters(ax[ii + 1], model.transform()[:, jj], all_lines, title=cluster, yaxis=[-1, 1])
 
     # Add subplot labels
     subplotLabel(ax)
