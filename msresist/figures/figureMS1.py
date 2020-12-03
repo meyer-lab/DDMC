@@ -6,6 +6,7 @@ import pickle
 from .common import subplotLabel, getSetup
 from ..figures.figure3 import plotMotifs
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
