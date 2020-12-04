@@ -167,7 +167,7 @@ def makeFigure():
     return f
 
 
-def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, hue_load=None, style_load=None, legendOut=False):
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
     """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
     dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
@@ -184,12 +184,16 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
     # Loadings
-    g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+    if isinstance(pvals, np.ndarray):
+        dLoad_["p-value"] = pvals
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+    else:
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_.set_index("Cluster"), style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[1].get_legend().remove()
-    for j, txt in enumerate(dLoad_[hue_load]):
+    for j, txt in enumerate(dLoad_["Cluster"]):
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 
