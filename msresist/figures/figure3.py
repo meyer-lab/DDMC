@@ -136,7 +136,7 @@ def makeFigure():
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", hue_load="Phenotype", legendOut=True)
+    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -188,12 +188,12 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         dLoad_["p-value"] = pvals
         sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
     else:
-        sns.scatterplot(x="PC1", y="PC2", data=dLoad_.set_index("Cluster"), style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
 
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    for j, txt in enumerate(dLoad_["Cluster"]):
+    for j, txt in enumerate(dLoad_[loadings_ind]):
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 
