@@ -18,7 +18,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (3, 3), multz={0:1})
+    ax, f = getSetup((15, 10), (2, 3), multz={0:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -56,11 +56,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[1], pssms[7], pssms[11], pssms[13]]
-    plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 2", "Cluster 8", "Cluster 12", "Cluster 14"], axes=ax[2:6])
+    motifs = [pssms[11], pssms[18]]
+    plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 12", "Cluster 19"], axes=ax[2:4])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[6:8], clusters_=[2, 8, 12, 14], n_components=4, pX=1)
+    plotUpstreamKinases(model, ax=ax[4], clusters_=[12, 19], n_components=2, pX=1)
 
 
     # EGFRmut + ALKfus
