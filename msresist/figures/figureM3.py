@@ -8,6 +8,7 @@ import seaborn as sns
 import pickle
 from scipy.stats import zscore, mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
+from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
@@ -39,7 +40,7 @@ def makeFigure():
 
     # PCA analysis
     centers = TumorType(centers)
-    pvals = build_pval_matrix(calculate_mannW_pvals(centers, "Type", "Normal", "Tumor"), 24).iloc[:, -1].values
+    pvals = build_pval_matrix(model.ncl, centers, "Type", "Normal", "Tumor").iloc[:, -1].values
     c_ = centers.copy()
     c_.iloc[:, :-2] = zscore(c_.iloc[:, :-2], axis=1) #zscore for PCA 
     plotPCA(ax[1:3], c_, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals)
@@ -72,11 +73,24 @@ def makeFigure():
     return f
 
 
-def plot_clusters_binaryfeatures(centers, id_var, ax):
+def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 2
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl)+1, value_name="p-signal", var_name="Cluster", frame=centers)
-    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax)
+    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.4)
+    sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
+    handles, _ = ax.get_legend_handles_labels()
+    ax.legend(title="TP53 status", labels=["WT", "mut"], handles=handles[2:])
+    if not isinstance(pvals, bool):
+        for ii, s in enumerate(pvals["Significant"]):
+            y, h, col = data['p-signal'].max(), .05, 'k'
+            if s == "Not Significant":
+                continue
+            elif s == "<0.05":
+                mark = "*"
+            else:
+                mark = "**"
+            ax.text(ii, y + h, mark, ha='center', va='bottom', color=col, fontsize=20)
 
 
 def calculate_mannW_pvals(centers, col, feature1, feature2):
@@ -88,11 +102,13 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
         x2 = x[x[col] == feature2].iloc[:, 0]
         pval = mannwhitneyu(x1, x2)[1]
         pvals.append(pval)
+    pvals = multipletests(pvals)[1] #p-value correction for multiple tests
     return pvals
 
 
-def build_pval_matrix(pvals, ncl):
+def build_pval_matrix(ncl, centers, col, feature1, feature2):
     """Build data frame with pvalues per cluster"""
+    pvals = calculate_mannW_pvals(centers, col, feature1, feature2)
     data = pd.DataFrame()
     data["Clusters"] = np.arange(ncl) + 1
     data["p-value"] = pvals
