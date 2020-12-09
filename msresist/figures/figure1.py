@@ -274,9 +274,9 @@ def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
 
 
 # Plot Separately since makefigure can't add it as a subplot
-def plotClustergram(data, title, lim=False, robust=True, yticklabels=False, figsize=(10, 10)):
+def plotClustergram(data, title=False, lim=False, robust=True, figsize=(10, 10)):
     """ Clustergram plot. """
-    g = sns.clustermap(data, method="complete", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, yticklabels=yticklabels, figsize=figsize)
+    g = sns.clustermap(data, method="complete", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize)
     g.fig.suptitle(title, fontsize=17)
     ax = g.ax_heatmap
     ax.set_ylabel("")

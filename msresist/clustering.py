@@ -130,7 +130,7 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms
 
-    def predict_UpstreamKinases(self, n_components=2):
+    def predict_UpstreamKinases(self, n_components=2, PsP_background=False):
         # Split PSPLs into pY and pST
         pspls = PSPSLdict()
         kins = list(PSPSLdict().keys())
@@ -146,7 +146,7 @@ class MassSpecClustering(BaseEstimator):
         # Split PSSMs into pY and pST
         pssm_y = {}
         pssm_st = {}
-        for ii, mat in enumerate(self.pssms(PsP_background=True)):
+        for ii, mat in enumerate(self.pssms(PsP_background=PsP_background)):
             mat_ = np.delete(list(np.array(mat)), [5, 10], 1)
             if mat.iloc[:, 5].idxmax() == "Y":
                 pssm_y[ii + 1] = mat_
