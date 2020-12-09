@@ -136,7 +136,7 @@ def makeFigure():
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", hue_load="Phenotype", legendOut=True)
+    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -167,7 +167,7 @@ def makeFigure():
     return f
 
 
-def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, hue_load=None, style_load=None, legendOut=False):
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
     """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
     dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
@@ -184,12 +184,16 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
 
     # Loadings
-    g = sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue=hue_load, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+    if isinstance(pvals, np.ndarray):
+        dLoad_["p-value"] = pvals
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+    else:
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+
     ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[1].get_legend().remove()
-    for j, txt in enumerate(dLoad_[hue_load]):
+    for j, txt in enumerate(dLoad_[loadings_ind]):
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
 
 
@@ -340,7 +344,7 @@ def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
         logo.ax.set_ylabel('information (bits)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
-            logo.ax.set_title(titles[0] + " Motif")
+            logo.ax.set_title(titles[i] + " Motif")
         else:
             logo.ax.set_title('Motif Cluster ' + str(i + 1))
         if yaxis:
@@ -369,9 +373,9 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False):
+def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False, PsP_background=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    tables = model.predict_UpstreamKinases(n_components=n_components)
+    tables = model.predict_UpstreamKinases(n_components=n_components, PsP_background=PsP_background)
     if isinstance(pX, int):
         tables = [tables[pX]]
     for ii, table in enumerate(tables):
