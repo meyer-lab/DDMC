@@ -43,7 +43,7 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.sort_values(by="Patient_ID").set_index("Patient_ID").drop(['C3N.02379.1', 'C3N.02587', 'C3N.02587.N']).reset_index()
 
-    #Use tumor samples
+    # Use tumor samples
     centers = centers[~centers["Patient_ID"].str.endswith(".N")]
     ts = ts[~ts["Patient_ID"].str.endswith(".N")]
     assert list(ts["Patient_ID"]) == list(centers["Patient_ID"]), "Patients don't match"
@@ -54,7 +54,7 @@ def makeFigure():
     # Plot p-site abundance per stage
     cluster = [8, 12, 14, 16, 19]
     for i, c in enumerate(cluster):
-        plot_abundanceVSstage(centers, c, ts, ax=ax[1+i])
+        plot_abundanceVSstage(centers, c, ts, ax=ax[1 + i])
 
     # Motifs and kinase predictions
     pssms = model.pssms(PsP_background=True)
@@ -81,7 +81,7 @@ def plot_ClinicalStaging_Kuskal(centers, ts, model, ax):
         pval = kruskal(s1, s2, s3, s4, s5)[1]
         pvals.append(pval)
 
-    #plot pvalues
+    # plot pvalues
     data = pd.DataFrame()
     data["Clusters"] = np.arange(model.ncl) + 1
     data["p-value"] = pvals
