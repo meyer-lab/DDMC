@@ -9,6 +9,7 @@ from scipy.stats import kruskal
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..figures.figureM2 import SwapPatientIDs, AddTumorPerPatient
+from ..figures.figureM3 import build_pval_matrix
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 
 
@@ -49,7 +50,10 @@ def makeFigure():
     assert list(ts["Patient_ID"]) == list(centers["Patient_ID"]), "Patients don't match"
 
     # Run Kruskal-Wallis H-test
-    plot_ClinicalStaging_Kuskal(centers, ts, model, ax=ax[0])
+    centers["Stage"] = np.array(ts.iloc[:, 1])
+    centers_ = centers.iloc[:, 1:].set_index("Stage")
+    pvals = calculate_Kuskal_pvals(centers_, model)
+    data = build_pval_matrix(model.ncl, centers)
 
     # Plot p-site abundance per stage
     cluster = [8, 12, 14, 16, 19]
@@ -65,43 +69,25 @@ def makeFigure():
     return f
 
 
-def plot_ClinicalStaging_Kuskal(centers, ts, model, ax):
-    """Plot Kuskal p-value vs cluster"""
-    centers["Stage"] = np.array(ts.iloc[:, 1])
-    centers_ = centers.iloc[:, 1:].set_index("Stage")
+def calculate_Kuskal_pvals(centers, model):
+    """Plot Kuskal p-value vs cluster. Note that categorical variables should be converted to numerical."""
     cluster_samples = []
     for ii in range(model.ncl):
         samples = []
-        for jj in range(max(centers_.index) + 1):
-            samples.append(centers_.iloc[:, ii].loc[jj].values)
+        for jj in range(max(centers.index) + 1):
+            samples.append(centers.iloc[:, ii].loc[jj].values)
         cluster_samples.append(samples)
     pvals = []
     for c in cluster_samples:
-        s1, s2, s3, s4, s5 = c
-        pval = kruskal(s1, s2, s3, s4, s5)[1]
+        [*samples] = c
+        pval = kruskal(*samples)[1]
         pvals.append(pval)
-
-    #plot pvalues
-    data = pd.DataFrame()
-    data["Clusters"] = np.arange(model.ncl) + 1
-    data["p-value"] = pvals
-    signif = []
-    for val in pvals:
-        if 0.01 < val < 0.05:
-            signif.append("<0.05")
-        elif val < 0.01:
-            signif.append("<0.01")
-        else:
-            signif.append("Not Significant")
-    data["Significant"] = signif
-    sns.barplot(x="Clusters", y="p-value", hue="Significant", data=data, ax=ax)
-    ax.set_title("Kruskal-Wallis H test")
+    return pvals
 
 
 def plot_abundanceVSstage(centers, cluster, ts, ax):
     """Cluster Abundance in each patient vs Stage"""
     cluster -= 1
-    centers["Stage"] = np.array(ts.iloc[:, 1])
     X = centers.loc[:, ["Patient_ID", "Stage", cluster]]
     sns.stripplot(x="Stage", y=cluster, data=X, color="darkblue", ax=ax)
     sns.boxplot(x="Stage", y=cluster, data=X, color="white", linewidth=2, ax=ax)

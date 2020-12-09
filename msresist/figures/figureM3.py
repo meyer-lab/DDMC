@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
-from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
+from ..logisticentersregression import plotClusterCoefficients, plotConfusionMatrix, plotROC
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, MeanCenter
@@ -40,16 +40,16 @@ def makeFigure():
 
     # PCA analysis
     centers = TumorType(centers)
-    pvals = build_pval_matrix(model.ncl, centers, "Type", "Normal", "Tumor").iloc[:, -1].values
-    c_ = centers.copy()
-    c_.iloc[:, :-2] = zscore(c_.iloc[:, :-2], axis=1) #zscore for PCA 
-    plotPCA(ax[1:3], c_, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals)
+    pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
+    pvals = build_pval_matrix(model.ncl, pvals).iloc[:, -1].values
+    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1) #zscore for PCA 
+    plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals)
 
     # Plot NAT vs tumor signal per cluster
     plot_clusters_binaryfeatures(centers, "Type", ax[3])
 
     # Regression
-    c = c_.select_dtypes(include=['float64'])
+    c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
@@ -106,9 +106,8 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
     return pvals
 
 
-def build_pval_matrix(ncl, centers, col, feature1, feature2):
+def build_pval_matrix(ncl, pvals):
     """Build data frame with pvalues per cluster"""
-    pvals = calculate_mannW_pvals(centers, col, feature1, feature2)
     data = pd.DataFrame()
     data["Clusters"] = np.arange(ncl) + 1
     data["p-value"] = pvals
