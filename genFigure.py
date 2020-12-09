@@ -26,3 +26,8 @@ if __name__ == "__main__":
         # Overlay Figure M2 cartoon
         overlayCartoon(fdir + 'figureM2.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
+
+    if sys.argv[1] == "M3":
+        # Overlay Figure M3 heatmap
+        overlayCartoon(fdir + 'figureM3.svg',
+                        f'{cartoon_dir}/heatmap_fM3.svg', 50, 25, scalee=0.35)
