@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import kruskal
 from .figure3 import plotMotifs, plotUpstreamKinases
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from sklearn.linear_model import LogisticRegressionCV
@@ -39,8 +40,8 @@ def makeFigure():
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
+    centers.columns = list(np.arange(model.ncl) + 1)
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     cc = centers[~centers["Patient_ID"].str.endswith(".N")] #only tumor samples
     yy = y[~y.index.str.endswith(".N")]
 
@@ -63,6 +64,7 @@ def makeFigure():
     plotUpstreamKinases(model, ax=ax[4], clusters_=[12, 19], n_components=2, pX=1)
 
 
+    #TODO export the code below to supplementals
     # EGFRmut + ALKfus
     # predict_mutants(ax[5:8], model.transform(), y, lr1, "EGFR.mutation.status", mutant2="ALK.fusion")
     # cc["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").iloc[cc.index]
@@ -104,6 +106,24 @@ def predict_mutants(ax, centers, y, lr, mutant, mutant2=False):
         ax[2].set_title(mutant.split(".")[0] + "m Cluster Coefficients")
 
 
+def calculate_Kuskal_pvals(centers):
+    """Plot Kuskal p-value vs cluster. Note that categorical variables should be converted to numerical."""
+    ncl = max(centers.columns)
+    cluster_samples = []
+    for ii in range(ncl):
+        samples = []
+        for jj in range(max(centers.index) + 1):
+            samples.append(centers.iloc[:, ii].loc[jj].values)
+        cluster_samples.append(samples)
+    pvals = []
+    for c in cluster_samples:
+        [*samples] = c
+        pval = kruskal(*samples)[1]
+        pvals.append(pval)
+    # pvals = multipletests(pvals)[1] #p-value correction for multiple tests
+    return pvals
+
+
 def merge_binary_vectors(y, mutant1, mutant2):
     """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
     y1 = y[mutant1]
@@ -113,3 +133,13 @@ def merge_binary_vectors(y, mutant1, mutant2):
         indices = [i for i, x in enumerate(binary) if x == 1]
         y_[indices] = 1
     return pd.Series(y_)
+
+
+def plot_abundance_methylation(centers, cluster, ax):
+    """Plot methylation status per cluster"""
+    X = centers.loc[:, ["methylation status", cluster]]
+    sns.stripplot(x="methylation status", y=cluster, data=X, color="darkblue", ax=ax)
+    sns.boxplot(x="methylation status", y=cluster, data=X, color="white", linewidth=2, ax=ax)
+    ax.set_xticklabels(["CIMP-2", "CIMP-1", "CIMP+"])
+    ax.set_title("p-site Abundance")
+    ax.set_ylabel("Cluster " + str(cluster))

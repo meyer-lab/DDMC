@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
-from ..logisticentersregression import plotClusterCoefficients, plotConfusionMatrix, plotROC
+from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, MeanCenter
@@ -73,14 +73,14 @@ def makeFigure():
     return f
 
 
-def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False):
+def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT", "mut"]):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 2
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl)+1, value_name="p-signal", var_name="Cluster", frame=centers)
     sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.4)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
     handles, _ = ax.get_legend_handles_labels()
-    ax.legend(title="TP53 status", labels=["WT", "mut"], handles=handles[2:])
+    ax.legend(title=id_var, labels=labels, handles=handles[2:])
     if not isinstance(pvals, bool):
         for ii, s in enumerate(pvals["Significant"]):
             y, h, col = data['p-signal'].max(), .05, 'k'
