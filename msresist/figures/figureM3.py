@@ -41,12 +41,12 @@ def makeFigure():
     # PCA analysis
     centers = TumorType(centers)
     pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
-    pvals = build_pval_matrix(model.ncl, pvals).iloc[:, -1].values
+    pvals = build_pval_matrix(model.ncl, pvals)
     centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1) #zscore for PCA 
-    plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals)
+    plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
-    plot_clusters_binaryfeatures(centers, "Type", ax[3])
+    plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals)
 
     # Regression
     c = centers.select_dtypes(include=['float64'])

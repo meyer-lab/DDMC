@@ -51,7 +51,8 @@ def makeFigure():
 
     # TP53 mutation status
     cc["TP53 status"] = yy["TP53.mutation.status"].values
-    pvals = build_pval_matrix(model.ncl, cc, "TP53 status", 1, 0)
+    pvals = calculate_mannW_pvals(centers, "TP53 status", 1, 0)
+    pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(cc, "TP53 status", ax[0], pvals=pvals)
     plotROC(ax[1], lr1, model.transform(), y["TP53.mutation.status"], cv_folds=4)
 
