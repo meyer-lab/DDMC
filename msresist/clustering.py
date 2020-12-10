@@ -108,6 +108,7 @@ class MassSpecClustering(BaseEstimator):
                 pssm[:, pos] /= np.mean(pssm[:, pos])
                 if ii == 0 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+            pssm[pssm == 0] = 1e-3
             pssm = np.log2(pssm)
             if ii == 0 and not PsP_background:
                 back_pssm = np.log2(back_pssm)
