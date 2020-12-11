@@ -268,7 +268,8 @@ def background_pssm(bg_sequences):
             back_pssm[AAlist.index(aa), kk] += 1.0
     for pos in range(back_pssm.shape[1]):
         back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
-    return np.log2(back_pssm)
+    back_pssm = np.ma.log2(back_pssm)
+    return back_pssm.filled(0)
 
 
 KinToPhosphotypeDict = {
