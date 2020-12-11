@@ -9,7 +9,7 @@ from sklearn.metrics import plot_roc_curve
 from sklearn.model_selection import StratifiedKFold
 
 
-def plotClusterCoefficients(ax, lr, title):
+def plotClusterCoefficients(ax, lr, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
