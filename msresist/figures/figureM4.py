@@ -18,7 +18,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (2, 3), multz={0:1})
+    ax, f = getSetup((15, 10), (2, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -41,7 +41,7 @@ def makeFigure():
     centers = pd.DataFrame(model.transform())
     centers["Patient_ID"] = X.columns[4:]
     centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
-    cc = centers[~centers["Patient_ID"].str.endswith(".N")] #only tumor samples
+    cc = centers[~centers["Patient_ID"].str.endswith(".N")]  # only tumor samples
     yy = y[~y.index.str.endswith(".N")]
 
     # Logistic Regression
@@ -61,7 +61,6 @@ def makeFigure():
 
     # plot Upstream Kinases
     plotUpstreamKinases(model, ax=ax[4], clusters_=[12, 19], n_components=2, pX=1)
-
 
     # EGFRmut + ALKfus
     # predict_mutants(ax[5:8], model.transform(), y, lr1, "EGFR.mutation.status", mutant2="ALK.fusion")
