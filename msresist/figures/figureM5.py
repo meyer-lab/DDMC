@@ -36,7 +36,7 @@ def makeFigure():
     li1 = list(imf["Sample ID"])
     li2 = list(centers["Patient_ID"])
     dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
-s.set_index("Patient_ID").drop(dif).reset_index()
+    centers = centers.set_index("Patient_ID").drop(dif).reset_index()
     assert all(centers["Patient_ID"].values == imf["Sample ID"].values), "sampels not matching"
 
     centers["Infiltration"] = imf["Group"].values
