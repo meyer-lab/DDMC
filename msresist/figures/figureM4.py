@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (2, 3), multz={0:1})
+    ax, f = getSetup((15, 10), (2, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -39,8 +39,10 @@ def makeFigure():
     centers = pd.DataFrame(model.transform())
     centers.columns = list(np.arange(model.ncl) + 1)
     centers["Patient_ID"] = X.columns[4:]
-    # centers = centers[~centers["Patient_ID"].str.endswith(".N")] #only tumor samples
-    # y = y[~y.index.str.endswith(".N")]
+
+    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
+    cc = centers[~centers["Patient_ID"].str.endswith(".N")]  # only tumor samples
+    yy = y[~y.index.str.endswith(".N")]
 
     # Logistic Regression
     # lr = LogisticRegressionCV(cv=4, solver="liblinear", n_jobs=-1, penalty="l1", class_weight="balanced")

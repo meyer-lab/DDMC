@@ -76,7 +76,7 @@ def makeFigure():
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT", "mut"]):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 2
-    data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl)+1, value_name="p-signal", var_name="Cluster", frame=centers)
+    data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
     sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
     handles, _ = ax.get_legend_handles_labels()
@@ -102,7 +102,7 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
         x2 = x[x[col] == feature2].iloc[:, 0]
         pval = mannwhitneyu(x1, x2)[1]
         pvals.append(pval)
-    pvals = multipletests(pvals)[1] #p-value correction for multiple tests
+    pvals = multipletests(pvals)[1]  # p-value correction for multiple tests
     return pvals
 
 

@@ -85,5 +85,3 @@ def plot_abundance_byBinaryFeature(centers, cluster, feature, xlabels, ax):
     ax.set_xticklabels(xlabels)
     ax.set_ylabel("p-site Abundance")
     ax.set_title("Cluster " + str(cluster))
-
-
