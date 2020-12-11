@@ -108,9 +108,11 @@ class MassSpecClustering(BaseEstimator):
                 pssm[:, pos] /= np.mean(pssm[:, pos])
                 if ii == 0 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
-            pssm = np.log2(pssm)
+            pssm = np.ma.log2(pssm)
+            pssm = pssm.filled(0)
             if ii == 0 and not PsP_background:
-                back_pssm = np.log2(back_pssm)
+                back_pssm = np.ma.log2(back_pssm)
+                back_pssm = back_pssm.filled(0)
             pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
             pssm = pd.DataFrame(pssm)
@@ -249,7 +251,8 @@ def PSPSLdict():
         mat = f.iloc[ii[1:], :].T
         mat.columns = np.arange(mat.shape[1])
         mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
-        mat = np.log2(mat)
+        mat = np.ma.log2(mat)
+        mat = mat.filled(0)
         mat[mat > 3] = 3
         mat[mat < -3] = -3
         pspl_dict[kin] = mat
