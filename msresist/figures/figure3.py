@@ -39,8 +39,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((15, 20), (4, 3))
 
-    # blank out first axis for cartoon
-    #     ax[0].axis('off')
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # -------- Import and Preprocess Signaling Data -------- #
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
@@ -136,7 +136,7 @@ def makeFigure():
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+    plotPCA(ax[:2], y_c, 2, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")

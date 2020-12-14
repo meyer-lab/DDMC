@@ -19,6 +19,9 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((10, 20), (7, 4), multz={0:3})
 
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
     # Add subplot labels
     subplotLabel(ax)
 
