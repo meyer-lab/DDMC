@@ -62,24 +62,6 @@ def makeFigure():
     return f
 
 
-def calculate_Kuskal_pvals(centers):
-    """Plot Kuskal p-value vs cluster. Note that categorical variables should be converted to numerical."""
-    ncl = max(centers.columns)
-    cluster_samples = []
-    for ii in range(ncl):
-        samples = []
-        for jj in range(max(centers.index) + 1):
-            samples.append(centers.iloc[:, ii].loc[jj].values)
-        cluster_samples.append(samples)
-    pvals = []
-    for c in cluster_samples:
-        [*samples] = c
-        pval = kruskal(*samples)[1]
-        pvals.append(pval)
-    pvals = multipletests(pvals)[1] #p-value correction for multiple tests
-    return pvals
-
-
 def plot_abundance_byBinaryFeature(centers, cluster, feature, xlabels, ax):
     """Plot infiltration status per cluster"""
     X = centers.loc[:, [feature, cluster]]
