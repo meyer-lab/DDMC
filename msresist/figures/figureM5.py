@@ -17,7 +17,7 @@ from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 20), (7, 4), multz={0:3})
+    ax, f = getSetup((15, 5), (1, 4), multz={0:3})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -53,11 +53,6 @@ def makeFigure():
     pvals = calculate_mannW_pvals(centers_MW, "Infiltration", 0, 1)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers_MW, "Infiltration", ax[0], pvals=pvals, labels=["Cold", "Hot"])
-
-    #Three-way: NAT vs Cold vs Hot tumors
-    pvals = calculate_Kuskal_pvals(centers.iloc[:, 1:].set_index("Infiltration"))
-    for ii in range(model.ncl):
-        plot_abundance_byBinaryFeature(centers.reset_index(), ii+1, "Infiltration", ["NAT", "Cold", "Hot"], ax[1 + ii])
 
     return f
 
