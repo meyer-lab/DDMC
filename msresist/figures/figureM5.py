@@ -50,7 +50,7 @@ def makeFigure():
     centers_MW = centers_MW.set_index("Patient_ID").drop(["C3L.00412", "C3L.02508", "C3N.00738"]).reset_index()
 
     # Two-way; Cold vs Hot tumors
-    pvals = calculate_mannW_pvals(centers_MW, "Infiltration", 0, 1)
+    pvals = calculate_mannW_pvals(centers_MW, "Infiltration", 1, 2)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers_MW, "Infiltration", ax[0], pvals=pvals, labels=["Cold", "Hot"])
 
