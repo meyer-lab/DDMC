@@ -156,7 +156,7 @@ def makeFigure():
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
+    plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
     plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
@@ -194,7 +194,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
-        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001))
 
 
 def plotGridSearch(ax, gs):
@@ -329,11 +329,11 @@ def plotCenters(ax, centers, xlabels, title, yaxis=False):
             ax.set_ylim([yaxis[0], yaxis[1]])
 
 
-def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
+def plotMotifs(pssms, axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     for i, ax in enumerate(axes):
         pssm = pssms[i].T
-        pssm.index = positions
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
         logo = lm.Logo(pssm,
                        font_name='Arial',
                        vpad=0.1,

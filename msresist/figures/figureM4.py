@@ -39,10 +39,7 @@ def makeFigure():
     centers = pd.DataFrame(model.transform())
     centers.columns = list(np.arange(model.ncl) + 1)
     centers["Patient_ID"] = X.columns[4:]
-
     centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
-    cc = centers[~centers["Patient_ID"].str.endswith(".N")]  # only tumor samples
-    yy = y[~y.index.str.endswith(".N")]
 
     # Logistic Regression
     # lr = LogisticRegressionCV(cv=4, solver="liblinear", n_jobs=-1, penalty="l1", class_weight="balanced")
@@ -58,7 +55,7 @@ def makeFigure():
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[11], pssms[18]]
-    plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 12", "Cluster 19"], axes=ax[2:4])
+    plotMotifs(motifs, titles=["Cluster 12", "Cluster 19"], axes=ax[2:4])
 
     # plot Upstream Kinases
     plotUpstreamKinases(model, ax=ax[4], clusters_=[12, 19], n_components=2, pX=1)
