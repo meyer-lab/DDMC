@@ -40,16 +40,16 @@ def makeFigure():
 
     # PCA analysis
     centers = TumorType(centers)
-    pvals = build_pval_matrix(model.ncl, centers, "Type", "Normal", "Tumor").iloc[:, -1].values
-    c_ = centers.copy()
-    c_.iloc[:, :-2] = zscore(c_.iloc[:, :-2], axis=1)  # zscore for PCA
-    plotPCA(ax[1:3], c_, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals)
+    pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
+    pvals = build_pval_matrix(model.ncl, pvals)
+    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1) #zscore for PCA 
+    plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
-    plot_clusters_binaryfeatures(centers, "Type", ax[3])
+    plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals)
 
     # Regression
-    c = c_.select_dtypes(include=['float64'])
+    c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
@@ -62,7 +62,7 @@ def makeFigure():
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[10], pssms[11]]
-    plotMotifs(motifs, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], titles=["Cluster 11", "Cluster 12"], axes=ax[7:9])
+    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12"], axes=ax[7:9])
 
     # plot Upstream Kinases
     plotUpstreamKinases(model, ax=ax[9:11], clusters_=[11, 12], n_components=4, pX=1)
@@ -73,14 +73,14 @@ def makeFigure():
     return f
 
 
-def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False):
+def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT", "mut"]):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 2
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
-    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.4)
+    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
     handles, _ = ax.get_legend_handles_labels()
-    ax.legend(title="TP53 status", labels=["WT", "mut"], handles=handles[2:])
+    ax.legend(title=id_var, labels=labels, handles=handles[2:])
     if not isinstance(pvals, bool):
         for ii, s in enumerate(pvals["Significant"]):
             y, h, col = data['p-signal'].max(), .05, 'k'
@@ -106,9 +106,8 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
     return pvals
 
 
-def build_pval_matrix(ncl, centers, col, feature1, feature2):
+def build_pval_matrix(ncl, pvals):
     """Build data frame with pvalues per cluster"""
-    pvals = calculate_mannW_pvals(centers, col, feature1, feature2)
     data = pd.DataFrame()
     data["Clusters"] = np.arange(ncl) + 1
     data["p-value"] = pvals
