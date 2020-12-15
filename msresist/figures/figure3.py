@@ -39,8 +39,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((15, 20), (4, 3))
 
-    # blank out first axis for cartoon
-    #     ax[0].axis('off')
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # -------- Import and Preprocess Signaling Data -------- #
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
@@ -136,7 +136,7 @@ def makeFigure():
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
 
-    plotPCA(ax[:2], y_c, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+    plotPCA(ax[:2], y_c, 2, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     # MODEL
     y = y_ae.drop("Treatment", axis=1).set_index("Lines")
@@ -156,7 +156,7 @@ def makeFigure():
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
+    plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
     plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
@@ -194,7 +194,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
-        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.01, dLoad_["PC2"][j] + 0.01))
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001))
 
 
 def plotGridSearch(ax, gs):
@@ -329,11 +329,11 @@ def plotCenters(ax, centers, xlabels, title, yaxis=False):
             ax.set_ylim([yaxis[0], yaxis[1]])
 
 
-def plotMotifs(pssms, positions, axes, titles=False, yaxis=False):
+def plotMotifs(pssms, axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     for i, ax in enumerate(axes):
         pssm = pssms[i].T
-        pssm.index = positions
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
         logo = lm.Logo(pssm,
                        font_name='Arial',
                        vpad=0.1,

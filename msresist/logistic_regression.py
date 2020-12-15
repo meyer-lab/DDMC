@@ -9,12 +9,13 @@ from sklearn.metrics import plot_roc_curve
 from sklearn.model_selection import StratifiedKFold
 
 
-def plotClusterCoefficients(ax, lr):
+def plotClusterCoefficients(ax, lr, title=False):
     """Plot LR coeficients of clusters."""
-    coefs_ = pd.DataFrame(lr.coef_.T, columns=["Coefficient"])
+    coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
-    sns.barplot(ax=ax, x="Cluster", y="Coefficient", data=coefs_)
-    ax.set_title("Logistic Regression Cluster Coefficients")
+    sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", data=coefs_, color='darkblue')
+    if title:
+        ax.set_title(title)
 
 
 def plotPredictionProbabilities(ax, lr, dd, yy):
@@ -45,7 +46,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha='center', va='center', color='white')
 
 
-def plotROC(ax, classifier, d, y, cv_folds=4):
+def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values
     cv = StratifiedKFold(n_splits=cv_folds)
@@ -79,6 +80,8 @@ def plotROC(ax, classifier, d, y, cv_folds=4):
                     label=r'$\pm$ 1 std. dev.')
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-           title="Receiver Operating Characteristic")
+           title="ROC")
     ax.get_legend().remove()
+    if title:
+        ax.set_title(title)
     # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)

@@ -18,7 +18,7 @@ def makeFigure():
     pssms = model.pssms(PsP_background=False)
     for ii in range(21):
         cluster = "Cluster " + str(ii + 1)
-        plotMotifs([pssms[ii]], [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], axes=[ax[ii]], titles=[cluster], yaxis=[-20, 8])
+        plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[-20, 8])
 
     # Add subplot labels
     subplotLabel(ax)
