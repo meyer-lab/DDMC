@@ -42,7 +42,7 @@ def makeFigure():
     centers = TumorType(centers)
     pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
-    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1) #zscore for PCA 
+    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1)  # zscore for PCA
     plotPCA(ax[1:3], centers, 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
