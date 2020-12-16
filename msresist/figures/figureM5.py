@@ -21,7 +21,7 @@ from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((25, 10), (2, 5), multz={2:2})
+    ax, f = getSetup((25, 10), (2, 5), multz={2: 2})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -81,7 +81,7 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl):
     ax.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0, labelspacing=0.2)
     ax.set_title("Clusters driving Immune Infiltration Signatures")
 
-    #Add r2 coef
+    # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
     props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
     ax.text(0.85, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
