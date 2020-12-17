@@ -1,5 +1,5 @@
  
-all: figure3.svg figure1.svg figure2.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg
+all: figure3.svg figure1.svg figure2.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg figureMS10.svg
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
