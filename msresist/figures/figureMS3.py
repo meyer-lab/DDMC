@@ -12,11 +12,12 @@ from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
 from ..figures.figureM2 import TumorType
+from ..figures.figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (2, 5), multz={4:1, 8:1})
+    ax, f = getSetup((10, 17), (5, 2), multz={4:1, 8:1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -37,7 +38,7 @@ def makeFigure():
 
     lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     uc_lr = lr.fit(d, y)
-    plotROC(ax[0], uc_lr, d.values, y, cv_folds=4)
+    plotROC(ax[0], uc_lr, d.values, y, cv_folds=4, title="ROC unclustered")
     plot_unclustered_LRcoef(ax[1], uc_lr, z)
 
     # Tumor vs NAT k-means
@@ -46,10 +47,11 @@ def makeFigure():
     x_ = X.copy()
     x_["Cluster"] = labels
     c_kmeans = x_.groupby("Cluster").mean().T
+    c_kmeans.columns = list(np.arange(ncl) + 1)
     km_lr = lr.fit(c_kmeans, y)
-    plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4)
-    plotClusterCoefficients(ax[3], lr)
-    c_kmeans["Type"] = z.iloc[:, -1]
+    plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
+    plotClusterCoefficients(ax[3], lr, "k-means")
+    c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "Normal", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
     plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals)
@@ -63,10 +65,11 @@ def makeFigure():
     x_ = X.copy()
     x_["Cluster"] = gmm.predict(d.T)
     c_gmm = x_.groupby("Cluster").mean().T
+    c_gmm.columns = list(np.arange(ncl) + 1)
     gmm_lr = lr.fit(c_gmm, y)
-    plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4)
-    plotClusterCoefficients(ax[6], gmm_lr)
-    c_gmm["Type"] = z.iloc[:, -1]
+    plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
+    plotClusterCoefficients(ax[6], gmm_lr, title="GMM")
+    c_gmm["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_gmm, "Type", "Normal", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
     plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals)

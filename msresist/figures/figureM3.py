@@ -39,7 +39,7 @@ def makeFigure():
     ax[0].axis("off")
 
     # PCA analysis
-    centers = TumorType(centers)
+    centers = TumorType(centers).set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
     centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1)  # zscore for PCA
@@ -75,7 +75,7 @@ def makeFigure():
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT", "mut"]):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
-    ncl = centers.shape[1] - 2
+    ncl = centers.shape[1] - 1
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
     sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
@@ -96,7 +96,7 @@ def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT",
 def calculate_mannW_pvals(centers, col, feature1, feature2):
     """Compute Mann Whitney rank test p-values"""
     pvals = []
-    for ii in range(centers.shape[1] - 2):
+    for ii in range(centers.shape[1] - 1):
         x = centers.iloc[:, [ii, -1]]
         x1 = x[x[col] == feature1].iloc[:, 0]
         x2 = x[x[col] == feature2].iloc[:, 0]
