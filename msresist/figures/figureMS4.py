@@ -11,8 +11,6 @@ from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureM4 import merge_binary_vectors
-from .figureM5 import plot_abundance_byBinaryFeature
-
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""

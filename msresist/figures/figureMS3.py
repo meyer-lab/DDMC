@@ -11,8 +11,8 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
-from ..figures.figureM2 import TumorType
-from ..figures.figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from .figureM2 import TumorType
+from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
