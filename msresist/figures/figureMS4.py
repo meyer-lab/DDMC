@@ -38,6 +38,7 @@ def makeFigure():
     y = y["TP53.mutation.status"]
 
     # Remove NATs
+    X  = X.loc[:, ~X.columns.str.endswith(".N")]
     d = d[~d["Patient_ID"].str.endswith(".N")].iloc[:, 1:]
     y = y[~y.index.str.endswith(".N")]
     z = d.copy()
