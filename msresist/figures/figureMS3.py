@@ -78,7 +78,7 @@ def makeFigure():
 
 def plot_unclustered_LRcoef(ax, lr, z):
     """Plot logistic regression coefficients of unclustered data"""
-    cdic = dict(zip(lr.coef_[0], z.columns[2:-1]))
+    cdic = dict(zip(lr.coef_[0], z.columns[1:-1]))
     coefs = pd.DataFrame()
     coefs["Coefficients"] = list(cdic.keys())[1:]
     coefs["Proteins"] = list(cdic.values())[1:]
