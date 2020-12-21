@@ -46,6 +46,7 @@ def makeFigure():
 
     # TP53 MW p-values and LR coefficients #TODO hue lines instead of coloring (hue order?)
     centers["TP53 status"] = y["TP53.mutation.status"].values
+    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "TP53 status", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     pvals["p-value"] = -np.log10(pvals["p-value"])
@@ -53,10 +54,11 @@ def makeFigure():
     sns.barplot(x="p-value", y="Clusters", data=pvals, orient="h", hue="Significant", ax=ax[1])
     ax[1].set_ylabel("-log10(p-value)")
     ax[1].set_title("Mann-Whitney Test TP53")
-    centers = centers.drop("TP53 status", axis=1)
+    centers = centers.drop("TP53 status", axis=1).reset_index()
 
     # EGFRmut + ALKfus
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").iloc[centers.index]
+    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[2], pvals=pvals)
