@@ -1,5 +1,6 @@
  
-all: figure3.svg figure1.svg figure2.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg
+flist = 1 2 3 S1 M2 M3 M4 M5 MS1 MS3 MS4
+all: spell.txt $(patsubst %, output/figure%.svg, $(flist))
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py

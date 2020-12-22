@@ -16,7 +16,7 @@ from .figureM4 import merge_binary_vectors
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={2: 1, 7: 1})
+    ax, f = getSetup((17, 10), (3, 3), multz={1: 1, 5: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -54,9 +54,6 @@ def makeFigure():
     pvals = build_pval_matrix(model.ncl, pvals)
     pvals["p-value"] = -np.log10(pvals["p-value"])
     plotClusterCoefficients(ax[0], lr.fit(centers.iloc[:, :-2], centers["TP53 status"].values), title="TP53")
-    sns.barplot(x="p-value", y="Clusters", data=pvals, orient="h", hue="Significant", ax=ax[1])
-    ax[1].set_ylabel("-log10(p-value)")
-    ax[1].set_title("Mann-Whitney Test TP53")
     centers = centers.drop("TP53 status", axis=1).reset_index()
 
     # EGFRmut + ALKfus
@@ -64,13 +61,10 @@ def makeFigure():
     centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[2], pvals=pvals)
-    plotROC(ax[3], lr, centers.iloc[:, :-2].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[4], lr.fit(centers.iloc[:, :-2], centers["EGFRm/ALKf"].values), title="EGFRm/ALKf")
+    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[1], pvals=pvals)
+    plotROC(ax[2], lr, centers.iloc[:, :-2].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
+    plotClusterCoefficients(ax[3], lr.fit(centers.iloc[:, :-2], centers["EGFRm/ALKf"].values), title="EGFRm/ALKf")
     pvals["p-value"] = -np.log10(pvals["p-value"])
-    sns.barplot(x="p-value", y="Clusters", data=pvals, orient="h", hue="Significant", ax=ax[5])
-    ax[5].set_ylabel("-log10(p-value)")
-    ax[5].set_title("Mann-Whitney Test EGFRm/ALKf")
     centers = centers.drop("EGFRm/ALKf", axis=1).reset_index()
 
     # STK11
@@ -78,12 +72,9 @@ def makeFigure():
     centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "STK11", ax[6], pvals=pvals)
-    plotROC(ax[7], lr, centers.iloc[:, :-2].values, centers["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[8], lr.fit(centers.iloc[:, :-2], centers["STK11"].values), title="STK11")
+    plot_clusters_binaryfeatures(centers, "STK11", ax[4], pvals=pvals)
+    plotROC(ax[5], lr, centers.iloc[:, :-2].values, centers["STK11"], cv_folds=4, title="ROC STK11")
+    plotClusterCoefficients(ax[6], lr.fit(centers.iloc[:, :-2], centers["STK11"].values), title="STK11")
     pvals["p-value"] = -np.log10(pvals["p-value"])
-    sns.barplot(x="p-value", y="Clusters", data=pvals, orient="h", hue="Significant", ax=ax[9])
-    ax[9].set_ylabel("-log10(p-value)")
-    ax[9].set_title("Mann-Whitney Test STK11")
 
     return f
