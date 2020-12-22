@@ -47,10 +47,11 @@ def makeFigure():
 
     # TP53 mutation status
     centers["TP53 status"] = y["TP53.mutation.status"].values
+    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "TP53 status", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "TP53 status", ax[0], pvals=pvals)
-    plotROC(ax[1], lr, centers.iloc[:, :-2].values, centers["TP53 status"], cv_folds=4)
+    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["TP53 status"], cv_folds=4)
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
