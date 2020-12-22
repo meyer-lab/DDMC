@@ -1,6 +1,10 @@
  
+SHELL := /bin/bash
+
+.PHONY: clean test testprofile testcover docs
+
 flist = 1 2 3 S1 M2 M3 M4 M5 MS1 MS3 MS4
-all: spell.txt $(patsubst %, output/figure%.svg, $(flist))
+all: spell.txt $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
@@ -19,7 +23,7 @@ output/%/manuscript.md: venv manuscripts/%/*.md
 	. venv/bin/activate && manubot process --content-directory=manuscripts/$*/ --output-directory=output/$*/ --cache-directory=cache --skip-citations --log-level=INFO
 	git remote rm rootstock
 
-output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg
+output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
