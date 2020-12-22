@@ -1,4 +1,4 @@
- SHELL := /bin/bash
+SHELL := /bin/bash
 
 .PHONY: clean test testprofile testcover docs
 
