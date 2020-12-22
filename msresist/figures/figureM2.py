@@ -307,16 +307,16 @@ def ErrorAcrossWeights(distance_method):
     return errors
 
 
-def TumorType(centers):
+def TumorType(X):
     """Add Normal vs Tumor column."""
     tumortype = []
-    for i in range(centers.shape[0]):
-        if ".N" in centers["Patient_ID"][i]:
+    for i in range(X.shape[0]):
+        if ".N" in X["Patient_ID"][i]:
             tumortype.append("Normal")
         else:
             tumortype.append("Tumor")
-    centers["Type"] = tumortype
-    return centers
+    X["Type"] = tumortype
+    return X
 
 
 def TransformCPTACdataForRegression(model, d, patient_IDs):
