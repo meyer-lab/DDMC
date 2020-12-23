@@ -1,5 +1,3 @@
- SHELL := /bin/bash
-
 .PHONY: clean test testprofile testcover docs
 
 flist = 1 2 3 S1 M2 M3 M4 M5 MS1 MS3 MS4
@@ -27,6 +25,14 @@ output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, output/%/man
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
+		--output=output/$*/manuscript.html output/$*/manuscript.md
+
+output/%/manuscript.docx: venv output/manuscript.md $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
+	mkdir -p output/output
+	cp *.svg output/$*/
+	. venv/bin/activate && pandoc --verbose \
+		--defaults=./common/templates/manubot/pandoc/common.yaml \
+		--defaults=./common/templates/manubot/pandoc/docx.yaml output/manuscript.md
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
 test: venv
