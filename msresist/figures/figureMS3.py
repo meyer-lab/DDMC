@@ -14,10 +14,11 @@ from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, 
 from .figureM2 import TumorType
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 17), (5, 2), multz={4:1, 8:1})
+    ax, f = getSetup((10, 17), (5, 2), multz={4: 1, 8: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -25,11 +26,11 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
-    # Tumor vs NAT unclustered 
+    # Tumor vs NAT unclustered
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
     d = X.set_index("Gene").select_dtypes(include=["float64"]).T.reset_index()
-    d.rename(columns={"index": "Patient_ID"},  inplace=True)
+    d.rename(columns={"index": "Patient_ID"}, inplace=True)
     z = TumorType(d)
     d = z.iloc[:, 1:-1]
     y = z.iloc[:, -1]
@@ -75,6 +76,7 @@ def makeFigure():
     plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals)
 
     return f
+
 
 def plot_unclustered_LRcoef(ax, lr, z):
     """Plot logistic regression coefficients of unclustered data"""
