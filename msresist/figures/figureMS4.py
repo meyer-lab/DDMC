@@ -12,6 +12,7 @@ from .common import subplotLabel, getSetup
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureM4 import merge_binary_vectors
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
