@@ -19,13 +19,14 @@ jobs:
     - name: Build figures
       run: make all
     - name: Build manuscript
-      run: make output/biol/manuscript.html output/method/manuscript.html
+      run: make output/biol/manuscript.html output/method/manuscript.html output/biol/manuscript.docx output/method/manuscript.docx
     - name: Upload files
       uses: actions/upload-artifact@v2
       with:
         name: files
         path: |
           figure*.svg
+          output/*/manuscript.docx
     - name: Deploy 🚀
       uses: JamesIves/github-pages-deploy-action@releases/v3
       if: github.ref == 'refs/heads/master'
