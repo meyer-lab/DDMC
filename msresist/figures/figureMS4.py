@@ -14,6 +14,7 @@ from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, 
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureMS3 import plot_unclustered_LRcoef
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
