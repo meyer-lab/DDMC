@@ -27,7 +27,7 @@ output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, figure%.svg,
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
-output/%/manuscript.docx: venv output/manuscript.md $(patsubst %, figure%.svg, $(flist))
+output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
