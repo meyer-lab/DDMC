@@ -1,7 +1,4 @@
-.PHONY: clean test testprofile testcover docs
-
-flist = 1 2 3 S1 M2 M3 M4 M5 MS1 MS3 MS4
-all: spell.txt $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
+all: figure3.svg figure1.svg figure2.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg figureMS3.svg figureMS4.svg figureMS5.svg
 
 # Figure rules
 figure%.svg: venv genFigure.py msresist/figures/figure%.py
@@ -20,19 +17,11 @@ output/%/manuscript.md: venv manuscripts/%/*.md
 	. venv/bin/activate && manubot process --content-directory=manuscripts/$*/ --output-directory=output/$*/ --cache-directory=cache --skip-citations --log-level=INFO
 	git remote rm rootstock
 
-output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
+output/%/manuscript.html: venv output/%/manuscript.md figure1.svg figure2.svg figure3.svg figureS1.svg figureM2.svg figureM3.svg figureM4.svg figureM5.svg figureMS1.svg figureMS3.svg figureMS4.svg figureMS5.svg
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
-		--output=output/$*/manuscript.html output/$*/manuscript.md
-
-output/%/manuscript.docx: venv output/manuscript.md $(patsubst %, output/%/manuscript/figure%.svg, $(flist))
-	mkdir -p output/output
-	cp *.svg output/$*/
-	. venv/bin/activate && pandoc --verbose \
-		--defaults=./common/templates/manubot/pandoc/common.yaml \
-		--defaults=./common/templates/manubot/pandoc/docx.yaml output/manuscript.md
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
 test: venv
