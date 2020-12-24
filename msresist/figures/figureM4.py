@@ -41,6 +41,10 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
     centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
 
+    # Remove NATs
+    centers = centers[~centers["Patient_ID"].str.endswith(".N")]
+    y = y[~y.index.str.endswith(".N")]
+
     # Logistic Regression
     # lr = LogisticRegressionCV(cv=4, solver="liblinear", n_jobs=-1, penalty="l1", class_weight="balanced")
     lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.2, 0.9])
