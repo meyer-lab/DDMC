@@ -21,7 +21,7 @@ from .figure3 import plotPCA, plotMotifs, plotUpstreamKinases
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((25, 10), (2, 5), multz={2: 2})
+    ax, f = getSetup((20, 10), (2, 5), multz={2: 2})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})

@@ -32,9 +32,10 @@ def makeFigure():
     d = X.set_index("Gene").select_dtypes(include=["float64"]).T.reset_index()
     d.rename(columns={"index": "Patient_ID"}, inplace=True)
     z = TumorType(d)
+    z.iloc[:, -1] = z.iloc[:, -1].replace("Normal", "NAT")
     d = z.iloc[:, 1:-1]
     y = z.iloc[:, -1]
-    y = y.replace("Normal", 0)
+    y = y.replace("NAT", 0)
     y = y.replace("Tumor", 1)
 
     lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
@@ -53,9 +54,9 @@ def makeFigure():
     plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
     plotClusterCoefficients(ax[3], lr, "k-means")
     c_kmeans["Type"] = z.iloc[:, -1].values
-    pvals = calculate_mannW_pvals(c_kmeans, "Type", "Normal", "Tumor")
+    pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals)
+    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals, labels=["NAT", "Tumor"])
 
     # Tumor vs NAT GMM
     for _ in range(10):
@@ -71,9 +72,9 @@ def makeFigure():
     plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
     plotClusterCoefficients(ax[6], gmm_lr, title="GMM")
     c_gmm["Type"] = z.iloc[:, -1].values
-    pvals = calculate_mannW_pvals(c_gmm, "Type", "Normal", "Tumor")
+    pvals = calculate_mannW_pvals(c_gmm, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals)
+    plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals, labels=["NAT", "Tumor"])
 
     return f
 
