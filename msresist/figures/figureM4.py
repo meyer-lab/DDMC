@@ -5,10 +5,10 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.stats import kruskal
 from .figure3 import plotMotifs, plotUpstreamKinases
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import StandardScaler
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 
@@ -45,7 +45,9 @@ def makeFigure():
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.2, 0.9])
+    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="l2", class_weight="balanced")
+    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
+    centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
 
     # TP53 mutation status
     centersT["TP53 status"] = yT["TP53.mutation.status"].values
