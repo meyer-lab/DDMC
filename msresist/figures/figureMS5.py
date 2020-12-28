@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.stats import zscore
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
@@ -45,11 +45,13 @@ def makeFigure():
 
     # Logistic Regression
     lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.2, 0.9])
-    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=0)
+    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
+    centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
 
     # EGFRmut + ALKfus
-    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").iloc[centers.index]
-    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion")
+    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
+    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
+    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)
@@ -62,6 +64,8 @@ def makeFigure():
     # STK11
     centers["STK11"] = y["STK11.mutation.status"].values
     centersT["STK11"] = yT["STK11.mutation.status"].values
+    centers = centers.set_index("Patient_ID")
+    centersT = centersT.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "STK11", ax[3], pvals=pvals)
