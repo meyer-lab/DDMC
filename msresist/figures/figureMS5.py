@@ -40,7 +40,7 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
 
     # Remove NATs
-    centers = centers[~centers["Patient_ID"].str.endswith(".N")] #only tumor samples
+    centers = centers[~centers["Patient_ID"].str.endswith(".N")]  # only tumor samples
     y = y[~y.index.str.endswith(".N")]
 
     # Logistic Regression
