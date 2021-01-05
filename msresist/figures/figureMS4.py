@@ -18,7 +18,7 @@ from .figureMS3 import plot_unclustered_LRcoef
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 17), (5, 2), multz={4:1, 8:1})
+    ax, f = getSetup((10, 17), (5, 2), multz={4: 1, 8: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -30,7 +30,7 @@ def makeFigure():
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
     d = X.set_index("Gene").select_dtypes(include=["float64"]).T.reset_index()
-    d.rename(columns={"index": "Patient_ID"},  inplace=True)
+    d.rename(columns={"index": "Patient_ID"}, inplace=True)
 
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
@@ -39,7 +39,7 @@ def makeFigure():
     y = y["TP53.mutation.status"]
 
     # Remove NATs
-    X  = X.loc[:, ~X.columns.str.endswith(".N")]
+    X = X.loc[:, ~X.columns.str.endswith(".N")]
     d = d[~d["Patient_ID"].str.endswith(".N")].iloc[:, 1:]
     y = y[~y.index.str.endswith(".N")]
     z = d.copy()
