@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 import pickle
 from scipy.stats import zscore, mannwhitneyu
-from sklearn.linear_model import LogisticRegressionCV
+from sklearn.svm import LinearSVC
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
@@ -53,19 +53,18 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.5, 0.9]).fit(c, tt)
+    svc = LinearSVC(penalty="l1", dual=False, max_iter=10000, tol=1e-7)
 
-    plotConfusionMatrix(ax[4], lr, c, tt)
-    plotROC(ax[5], lr, c.values, tt, cv_folds=4)
-    plotClusterCoefficients(ax[6], lr)
+    plotROC(ax[4], svc, c.values, tt, cv_folds=4)
+    plotClusterCoefficients(ax[5], svc)
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[10], pssms[11]]
-    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12"], axes=ax[7:9])
+    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12"], axes=ax[6:8])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[9:11], clusters_=[11, 12], n_components=4, pX=1)
+    plotUpstreamKinases(model, ax=ax[8:10], clusters_=[11, 12], n_components=4, pX=1)
 
     # Add subplot labels
     subplotLabel(ax)
