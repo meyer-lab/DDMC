@@ -60,7 +60,7 @@ def makeFigure():
     c_kmeans.columns = list(np.arange(ncl) + 1)
     km_svc = svc.fit(c_kmeans, y)
     plotROC(ax[2], km_svc, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
-    plotClusterCoefficients(ax[3], svc, "k-means")
+    plotClusterCoefficients(ax[3], svc, title="k-means")
     c_kmeans["STK11 status"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "STK11 status", 0, 1)
     pvals = build_pval_matrix(ncl, pvals)

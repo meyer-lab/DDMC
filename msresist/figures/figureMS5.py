@@ -57,7 +57,7 @@ def makeFigure():
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFR", ax[0], pvals=pvals)
     plotROC(ax[1], svc, centersT.iloc[:, :-1].values, centersT["EGFR"], cv_folds=4, title="ROC EGFR")
-    plotClusterCoefficients(ax[2], svc.fit(centersT.iloc[:, :-1], centersT["EGFR"].values), title="EGFR")
+    plotClusterCoefficients(ax[2], svc.fit(centersT.iloc[:, :-1], centersT["EGFR"].values), list(centersT.columns[:-1]), title="EGFR")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
