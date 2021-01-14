@@ -40,10 +40,9 @@ def makeFigure():
     y_ = y["STK11.mutation.status"]
 
     lr = LogisticRegressionCV(Cs=10, cv=15, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-    uc_lr = lr.fit(d, y_)
 
-    plotROC(ax[0], uc_lr, d.values, y_, cv_folds=4, title="ROC unclustered")
-    plot_unclustered_LRcoef(ax[1], uc_lr, d)
+    plotROC(ax[0], lr, d.values, y_, cv_folds=4, title="ROC unclustered")
+    plot_unclustered_LRcoef(ax[1], lr.fit(d, y_), d)
 
     # Run k-means
     ncl = 24
@@ -75,7 +74,6 @@ def makeFigure():
         scores = gmm.predict_proba(d.T)
         if np.all(np.isfinite(scores)):
             break
-    x_ = X.copy()
     x_["Cluster"] = gmm.predict(d.T)
     c_gmm = x_.groupby("Cluster").mean().T
     c_gmm["Patient_ID"] = X.columns[4:]
