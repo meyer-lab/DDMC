@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .figure3 import plotMotifs, plotUpstreamKinases
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
@@ -35,7 +35,6 @@ def makeFigure():
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
-    centers.columns = list(np.arange(model.ncl) + 1)
     centers["Patient_ID"] = X.columns[4:]
     centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
 
@@ -45,7 +44,7 @@ def makeFigure():
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
     # Logistic Regression
-    svc = LinearSVC(penalty="l1", dual=False, max_iter=10000, tol=1e-7)
+    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
     centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
 
@@ -56,8 +55,8 @@ def makeFigure():
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
-    plotROC(ax[1], svc, centersT.iloc[:, :-1].values, centersT["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[2], svc.fit(centersT.iloc[:, :-1], centersT["STK11"].values), title="STK11")
+    plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["STK11"], cv_folds=4, title="ROC STK11")
+    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["STK11"].values), title="STK11")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
