@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 import pickle
 from scipy.stats import zscore, mannwhitneyu
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
@@ -53,10 +53,10 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("Normal", 0)
     tt = tt.replace("Tumor", 1)
-    svc = LinearSVC(penalty="l1", dual=False, max_iter=10000, tol=1e-7)
+    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
-    plotROC(ax[4], svc, c.values, tt, cv_folds=4)
-    plotClusterCoefficients(ax[5], svc)
+    plotROC(ax[4], lr, c.values, tt, cv_folds=4)
+    plotClusterCoefficients(ax[5], lr)
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
