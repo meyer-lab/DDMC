@@ -16,6 +16,7 @@ from ..pre_processing import filter_NaNpeptides
 from .figureM2 import SwapPatientIDs, AddTumorPerPatient
 from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinases
+from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
 
 def makeFigure():
@@ -40,24 +41,23 @@ def makeFigure():
 
     # Import infiltration data
     y = pd.read_csv("msresist/data/MS/CPTAC/xCellSign_minimal.csv").sort_values(by="Patient ID").dropna(axis=1)
-    y = y[~y["Patient ID"].str.endswith(".N")]
-    y = y.drop("Tregs", axis=1)
-    li1 = list(y["Patient ID"])
-    li2 = list(centers["Patient_ID"])
-    dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
-    centers = centers.set_index("Patient_ID").drop(dif).reset_index()
-    assert all(centers["Patient_ID"].values == y["Patient ID"].values), "sampels not matching"
+    # y = y.drop("Tregs", axis=1)
+    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
+    y = find_patients_with_NATandTumor(y, "Patient ID", conc=False)
+    l1 = list(centers.index)
+    l2 = list(y.index)
+    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
+    centers = centers.drop(dif)
 
-    # Normnalize Y matrix
-    y.iloc[:, 1:] = StandardScaler().fit_transform(y.iloc[:, 1:])
+    # Normnalize
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    y.iloc[:, :] = StandardScaler().fit_transform(y.iloc[:, :])
 
     # Infiltration data PCA
-    plotPCA(ax[:2], y, 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
+    plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
 
     # LASSO regression
-    y = y.set_index("Patient ID")
-    centers = centers.set_index("Patient_ID")
-    reg = MultiTaskLassoCV(cv=7).fit(centers, y)
+    reg = MultiTaskLassoCV(cv=7, max_iter=10000, tol=0.2).fit(centers, y)
     plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl)
 
     # plot Cluster Motifs
@@ -75,7 +75,7 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl):
     """Plot LASSO coefficients of centers explaining immune infiltration"""
     coef = pd.DataFrame(reg.coef_.T)
     coef.columns = y.columns
-    coef["Cluster"] = np.arange(ncl) + 1
+    coef["Cluster"] = centers.columns
     m = pd.melt(coef, id_vars="Cluster", value_vars=list(coef.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
     sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=m, ax=ax)
     ax.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0, labelspacing=0.2)

@@ -5,18 +5,20 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.stats import zscore
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
+from .figure3 import plotMotifs, plotUpstreamKinases
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
-from .figureM4 import merge_binary_vectors
+from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 3), multz={1: 1, 5: 1})
+    ax, f = getSetup((20, 10), (2, 4), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -28,53 +30,42 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     # Regression against mutation status of driver genes and clusters
-    # Import mutation status of TP53, KRAS, EGFR, and ALK fusion
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
-    mOI = mOI[~mOI["Sample.ID"].str.contains("IR")]
-    y = mOI.set_index("Sample.ID")
+    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
     centers.columns = list(np.arange(model.ncl) + 1)
     centers["Patient_ID"] = X.columns[4:]
+    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
 
-    # Remove NATs
-    centers = centers[~centers["Patient_ID"].str.endswith(".N")]  # only tumor samples
-    y = y[~y.index.str.endswith(".N")]
+    # Reshape data (Patients vs NAT and tumor sample per cluster)
+    centersT = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
+    yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+    assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
-    # Logistic Regression
-    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.2, 0.9])
-    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=0)
+    # Support Vector Classifier
+    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
+    centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
 
-    # TP53 MW p-values and LR coefficients #TODO hue lines instead of coloring (hue order?)
-    centers["TP53 status"] = y["TP53.mutation.status"].values
-    centers = centers.set_index("Patient_ID")
-    pvals = calculate_mannW_pvals(centers, "TP53 status", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
-    pvals["p-value"] = -np.log10(pvals["p-value"])
-    plotClusterCoefficients(ax[0], lr.fit(centers.iloc[:, :-2], centers["TP53 status"].values), title="TP53")
-    centers = centers.drop("TP53 status", axis=1).reset_index()
-
-    # EGFRmut + ALKfus
-    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").iloc[centers.index]
+    # EGFR mutation status
+    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
+    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
     centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[1], pvals=pvals)
-    plotROC(ax[2], lr, centers.iloc[:, :-2].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[3], lr.fit(centers.iloc[:, :-2], centers["EGFRm/ALKf"].values), title="EGFRm/ALKf")
-    pvals["p-value"] = -np.log10(pvals["p-value"])
-    centers = centers.drop("EGFRm/ALKf", axis=1).reset_index()
+    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)
+    plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
+    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), title="EGFRm/ALKf")
 
-    # STK11
-    centers["STK11"] = y["STK11.mutation.status"].values
-    centers = centers.set_index("Patient_ID")
-    pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "STK11", ax[4], pvals=pvals)
-    plotROC(ax[5], lr, centers.iloc[:, :-2].values, centers["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[6], lr.fit(centers.iloc[:, :-2], centers["STK11"].values), title="STK11")
-    pvals["p-value"] = -np.log10(pvals["p-value"])
+    # plot Cluster Motifs
+    pssms = model.pssms(PsP_background=False)
+    motifs = [pssms[0], pssms[16]]
+    plotMotifs(motifs, titles=["Cluster 1", "Cluster 17"], axes=ax[3:5])
+
+    # plot Upstream Kinases
+    plotUpstreamKinases(model, ax=ax[5:7], clusters_=[1, 17], n_components=4, pX=1)
 
     return f

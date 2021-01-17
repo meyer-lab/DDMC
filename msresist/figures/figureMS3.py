@@ -38,7 +38,7 @@ def makeFigure():
     y = y.replace("NAT", 0)
     y = y.replace("Tumor", 1)
 
-    lr = LogisticRegressionCV(cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     uc_lr = lr.fit(d, y)
     plotROC(ax[0], uc_lr, d.values, y, cv_folds=4, title="ROC unclustered")
     plot_unclustered_LRcoef(ax[1], uc_lr, z)
@@ -79,9 +79,9 @@ def makeFigure():
     return f
 
 
-def plot_unclustered_LRcoef(ax, lr, z):
+def plot_unclustered_LRcoef(ax, lr, d):
     """Plot logistic regression coefficients of unclustered data"""
-    cdic = dict(zip(lr.coef_[0], z.columns[1:-1]))
+    cdic = dict(zip(lr.coef_[0], d.columns[1:]))
     coefs = pd.DataFrame()
     coefs["Coefficients"] = list(cdic.keys())[1:]
     coefs["Proteins"] = list(cdic.values())[1:]
