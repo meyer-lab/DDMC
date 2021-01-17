@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
 from .figure3 import plotMotifs, plotUpstreamKinases
@@ -45,19 +46,19 @@ def makeFigure():
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
     # Support Vector Classifier
-    svc = LinearSVC(penalty="l1", dual=False, max_iter=10000, tol=1e-7)
+    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
     centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
 
     # EGFR mutation status
-    centers["EGFR"] = y["EGFR.mutation.status"].values
-    centersT["EGFR"] = yT["EGFR.mutation.status"].values
+    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
+    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
     centers = centers.set_index("Patient_ID")
-    pvals = calculate_mannW_pvals(centers, "EGFR", 1, 0)
+    pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "EGFR", ax[0], pvals=pvals)
-    plotROC(ax[1], svc, centersT.iloc[:, :-1].values, centersT["EGFR"], cv_folds=4, title="ROC EGFR")
-    plotClusterCoefficients(ax[2], svc.fit(centersT.iloc[:, :-1], centersT["EGFR"].values), list(centersT.columns[:-1]), title="EGFR")
+    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)
+    plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
+    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), title="EGFRm/ALKf")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
