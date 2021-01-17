@@ -56,7 +56,7 @@ def makeFigure():
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
     plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["STK11"].values), title="STK11")
+    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["STK11"].values), list(centersT.columns[:-1]), title="STK11")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
