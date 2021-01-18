@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup

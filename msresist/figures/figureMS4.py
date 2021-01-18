@@ -5,7 +5,7 @@ This creates Supplemental Figure 4.
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup

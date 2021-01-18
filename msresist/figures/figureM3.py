@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 import pickle
 from scipy.stats import zscore, mannwhitneyu
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
