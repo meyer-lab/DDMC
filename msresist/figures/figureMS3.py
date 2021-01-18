@@ -52,7 +52,7 @@ def makeFigure():
     c_kmeans.columns = list(np.arange(ncl) + 1)
     km_lr = lr.fit(c_kmeans, y)
     plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
-    plotClusterCoefficients(ax[3], lr, "k-means")
+    plotClusterCoefficients(ax[3], lr, title="k-means")
     c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
@@ -88,3 +88,4 @@ def plot_unclustered_LRcoef(ax, lr, d):
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
     sns.barplot(data=coefs, x="Proteins", y="Coefficients", ax=ax, color="darkblue")
     ax.set_title("p-sites explaining tumor vs NATs")
+    ax.set_xticklabels(coefs["Proteins"][1:], rotation=90)
