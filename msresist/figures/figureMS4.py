@@ -40,7 +40,6 @@ def makeFigure():
     y_ = y["STK11.mutation.status"]
 
     lr = LogisticRegressionCV(Cs=10, cv=15, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-
     plotROC(ax[0], lr, d.values, y_, cv_folds=4, title="ROC unclustered")
     plot_unclustered_LRcoef(ax[1], lr.fit(d, y_), d)
 
