@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
@@ -45,7 +44,7 @@ def makeFigure():
     yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
-    # Support Vector Classifier
+    # Logistic Regression
     lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
     centersT.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centersT.iloc[:, :])
@@ -58,7 +57,7 @@ def makeFigure():
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)
     plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), title="EGFRm/ALKf")
+    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), list(centersT.columns[:-1]), title="EGFRm/ALKf")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
