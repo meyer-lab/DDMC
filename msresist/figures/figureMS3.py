@@ -39,9 +39,8 @@ def makeFigure():
     y = y.replace("Tumor", 1)
 
     lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-    uc_lr = lr.fit(d, y)
-    plotROC(ax[0], uc_lr, d.values, y, cv_folds=4, title="ROC unclustered")
-    plot_unclustered_LRcoef(ax[1], uc_lr, z)
+    plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
+    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
 
     # Tumor vs NAT k-means
     ncl = 15
@@ -52,7 +51,7 @@ def makeFigure():
     c_kmeans.columns = list(np.arange(ncl) + 1)
     km_lr = lr.fit(c_kmeans, y)
     plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
-    plotClusterCoefficients(ax[3], lr, "k-means")
+    plotClusterCoefficients(ax[3], lr, title="k-means")
     c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
@@ -81,10 +80,13 @@ def makeFigure():
 
 def plot_unclustered_LRcoef(ax, lr, d):
     """Plot logistic regression coefficients of unclustered data"""
-    cdic = dict(zip(lr.coef_[0], d.columns[1:]))
+    cdic = dict(zip(lr.coef_[0], d.columns))
     coefs = pd.DataFrame()
-    coefs["Coefficients"] = list(cdic.keys())[1:]
-    coefs["Proteins"] = list(cdic.values())[1:]
+    coefs["Coefficients"] = list(cdic.keys())
+    coefs["Proteins"] = list(cdic.values())
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
+    sliced_coefs = coefs.head(5)
+    coefs = sliced_coefs.append(coefs.tail(5))
     sns.barplot(data=coefs, x="Proteins", y="Coefficients", ax=ax, color="darkblue")
     ax.set_title("p-sites explaining tumor vs NATs")
+    ax.set_xticklabels(list(set(coefs["Proteins"])), rotation=90)
