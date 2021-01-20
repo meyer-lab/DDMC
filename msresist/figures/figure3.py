@@ -194,7 +194,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
-        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001))
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 
 
 def plotGridSearch(ax, gs):
