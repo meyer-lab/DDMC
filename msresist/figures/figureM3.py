@@ -12,7 +12,7 @@ from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
-from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinases
+from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, MeanCenter
 import pickle
@@ -21,7 +21,7 @@ import pickle
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((13, 15), (4, 3), multz={3: 1})
+    ax, f = getSetup((13, 15), (4, 3), multz={3: 1, 10:1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -60,11 +60,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[10], pssms[11]]
-    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12"], axes=ax[6:8])
+    motifs = [pssms[10], pssms[11], pssms[22]]
+    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12", "Cluster 23"], axes=ax[6:9])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[8:10], clusters_=[11, 12], n_components=4, pX=1)
+    plotUpstreamKinase_heatmap(model, [11, 12, 23], ax[9])
 
     # Add subplot labels
     subplotLabel(ax)
