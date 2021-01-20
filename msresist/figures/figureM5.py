@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from scipy.stats import kruskal
 from sklearn.linear_model import MultiTaskLassoCV
 from sklearn.preprocessing import StandardScaler
