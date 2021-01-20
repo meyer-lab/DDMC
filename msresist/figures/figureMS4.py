@@ -40,7 +40,6 @@ def makeFigure():
     y_ = y["STK11.mutation.status"]
 
     lr = LogisticRegressionCV(Cs=10, cv=15, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-
     plotROC(ax[0], lr, d.values, y_, cv_folds=4, title="ROC unclustered")
     plot_unclustered_LRcoef(ax[1], lr.fit(d, y_), d)
 
@@ -62,7 +61,7 @@ def makeFigure():
     c_kmeansT["STK11"] = yT["STK11.mutation.status"].values
     c_kmeans = c_kmeans.set_index("Patient_ID")
     plotROC(ax[2], lr, c_kmeansT.iloc[:, :-1].values, c_kmeansT["STK11"], cv_folds=4, title="ROC k-means")
-    plotClusterCoefficients(ax[3], lr.fit(c_kmeansT.iloc[:, :-1], c_kmeansT["STK11"].values), title="k-means")
+    plotClusterCoefficients(ax[3], lr.fit(c_kmeansT.iloc[:, :-1], c_kmeansT["STK11"].values), list(c_kmeansT.columns[:-1]), title="k-means")
     pvals = calculate_mannW_pvals(c_kmeans, "STK11", 0, 1)
     pvals = build_pval_matrix(ncl, pvals)
     plot_clusters_binaryfeatures(c_kmeans, "STK11", ax[4], pvals=pvals)
@@ -88,7 +87,7 @@ def makeFigure():
     c_gmmT["STK11"] = yT["STK11.mutation.status"].values
     c_gmm = c_gmm.set_index("Patient_ID")
     plotROC(ax[5], lr, c_gmmT.iloc[:, :-1].values, c_gmmT["STK11"], cv_folds=4, title="ROC GMM")
-    plotClusterCoefficients(ax[6], lr.fit(c_gmmT.iloc[:, :-1], c_gmmT["STK11"].values), title="GMM")
+    plotClusterCoefficients(ax[6], lr.fit(c_gmmT.iloc[:, :-1], c_gmmT["STK11"].values), list(c_gmmT.columns[:-1]), title="GMM")
     pvals = calculate_mannW_pvals(c_gmm, "STK11", 0, 1)
     pvals = build_pval_matrix(ncl, pvals)
     plot_clusters_binaryfeatures(c_gmm, "STK11", ax[7], pvals=pvals)
