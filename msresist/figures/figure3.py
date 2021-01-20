@@ -373,6 +373,22 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
+def plotUpstreamKinase_heatmap(model, clusters, ax):
+    """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
+    ukin = model.predict_UpstreamKinases()
+    ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
+    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
+    data = ukin_mc.set_index("Kinase")[clusters]
+    if len(clusters) > 1:
+        sns.heatmap(data.T, ax=ax)
+    else:
+        data = data.reset_index()
+        data.columns = ["Kinase", "Motif Similarity"]
+        data = data.sort_values(by="Motif Similarity")
+        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
+        ax.set_xticklabels(data["Kinase"], rotation=90)
+
+
 def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False, PsP_background=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     tables = model.predict_UpstreamKinases(n_components=n_components, PsP_background=PsP_background)

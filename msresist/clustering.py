@@ -133,67 +133,18 @@ class MassSpecClustering(BaseEstimator):
         return pssms
 
     def predict_UpstreamKinases(self, n_components=2, PsP_background=False):
-        # Split PSPLs into pY and pST
-        pspls = PSPSLdict()
-        kins = list(PSPSLdict().keys())
+        """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
+        PSPLs = PSPSLdict()
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
+        a = np.zeros((len(PSPLs), len(PSSMs)))
 
-        sp_y = {}
-        sp_st = {}
-        for kin in kins:
-            if KinToPhosphotypeDict[kin] == "Y":
-                sp_y[kin] = pspls[kin]
-            else:
-                sp_st[kin] = pspls[kin]
+        for ii, spec_profile in enumerate(PSPLs.values()):
+            for jj, pssm in enumerate(PSSMs):
+                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
-        # Split PSSMs into pY and pST
-        pssm_y = {}
-        pssm_st = {}
-        for ii, mat in enumerate(self.pssms(PsP_background=PsP_background)):
-            mat_ = np.delete(list(np.array(mat)), [5, 10], 1)
-            if mat.iloc[:, 5].idxmax() == "Y":
-                pssm_y[ii + 1] = mat_
-            else:
-                pssm_st[ii + 1] = mat_
-
-        mats_y = list(sp_y.values()) + list(pssm_y.values())
-        mats_st = list(sp_st.values()) + list(pssm_st.values())
-        mats = [mats_y, mats_st]
-        sp = [len(sp_y), len(sp_st)]
-        mot = [len(pssm_y), len(pssm_st)]
-        labels = [list(sp_y.keys()) + list(pssm_y.keys()), list(sp_st.keys()) + list(pssm_st.keys())]
-        pX = ["Y", "S/T"]
-
-        tables = []
-        for q, mat in enumerate(mats):
-            n = len(mat)
-            res = np.empty((n, n), dtype=float)
-            for ii in range(n):
-                for jj in range(n):
-                    res[ii, jj] = np.linalg.norm(mat[ii] - mat[jj])
-            res[res < 1.0e-100] = 0
-            seed = np.random.RandomState(seed=3)
-            mds = MDS(n_components=n_components, max_iter=3000, eps=1e-9, random_state=seed,
-                      dissimilarity="precomputed", n_jobs=1)
-            pos = mds.fit(res).embedding_
-
-            nmds = MDS(n_components=n_components, metric=False, max_iter=3000, eps=1e-12,
-                       dissimilarity="precomputed", random_state=seed, n_jobs=1,
-                       n_init=1)
-            npos = nmds.fit_transform(res, init=pos)
-
-            clf = PCA(n_components=n_components)
-            npos = clf.fit_transform(npos)
-
-            t = pd.DataFrame()
-            for i in range(n_components):
-                c = str(i + 1)
-                t["PC" + c] = npos[:, i]
-            t["Matrix type"] = ["PSPL"] * sp[q] + ["PSSM"] * mot[q]
-            t["Label"] = labels[q]
-            t["pX"] = pX[q]
-            tables.append(t)
-
-        return tables
+        table = pd.DataFrame(a)
+        table.insert(0, "Kinase", list(PSPSLdict().keys()))
+        return table
 
     def predict(self):
         """Provided the current model parameters, predict the cluster each peptide belongs to"""
