@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from scipy.stats import kruskal
 from sklearn.linear_model import MultiTaskLassoCV
 from sklearn.preprocessing import StandardScaler
@@ -22,7 +23,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 5), multz={2: 2})
+    ax, f = getSetup((17, 10), (3, 3))
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -58,30 +59,40 @@ def makeFigure():
 
     # LASSO regression
     reg = MultiTaskLassoCV(cv=7, max_iter=10000, tol=0.2).fit(centers, y)
-    plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl)
+    plot_LassoCoef_Immune(ax[2:4], reg, centers, y, model.ncl)
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[5], pssms[8], pssms[19]]
-    plotMotifs(motifs, titles=["Cluster 6", "Cluster 9", "Cluster 20"], axes=ax[3:6])
+    plotMotifs(motifs, titles=["Cluster 6", "Cluster 9", "Cluster 20"], axes=ax[4:7])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[6:8], clusters_=[6, 9, 20], n_components=4, pX=1)
+    plotUpstreamKinases(model, ax=ax[7:9], clusters_=[6, 9, 20], n_components=4, pX=1)
 
     return f
 
 
 def plot_LassoCoef_Immune(ax, reg, centers, y, ncl):
     """Plot LASSO coefficients of centers explaining immune infiltration"""
-    coef = pd.DataFrame(reg.coef_.T)
-    coef.columns = y.columns
-    coef["Cluster"] = centers.columns
-    m = pd.melt(coef, id_vars="Cluster", value_vars=list(coef.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
-    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=m, ax=ax)
-    ax.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0, labelspacing=0.2)
-    ax.set_title("Clusters driving Immune Infiltration Signatures")
+    coef_T = pd.DataFrame(reg.coef_.T).iloc[:24, :]
+    coef_T.columns = y.columns
+    coef_T["Cluster"] = np.arange(ncl) + 1
+    coef_T = pd.melt(coef_T, id_vars="Cluster", value_vars=list(coef_T.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
+    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_T, ax=ax[0])
+    ax[0].get_legend().remove()
+    ax[0].set_title("Tumor Clusters")
+    ax[0].set_ylim(-1.5, 2.5)
+
+    coef_NAT = pd.DataFrame(reg.coef_.T).iloc[24:, :]
+    coef_NAT.columns = y.columns
+    coef_NAT["Cluster"] = np.arange(ncl) + 1
+    coef_NAT = pd.melt(coef_NAT, id_vars="Cluster", value_vars=list(coef_NAT.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
+    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_NAT, ax=ax[1])
+    ax[1].get_legend().remove()
+    ax[1].set_title("NAT Clusters")
+    ax[1].set_ylim(-1.5, 2.5)
 
     # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
     props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-    ax.text(0.85, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
+    ax[1].text(0.65, 0.10, textstr, transform=ax[1].transAxes, verticalalignment="top", bbox=props, fontsize=10)
