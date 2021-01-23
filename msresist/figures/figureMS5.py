@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
-from .figure3 import plotMotifs, plotUpstreamKinases
+from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
@@ -17,7 +17,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 4), multz={0: 1})
+    ax, f = getSetup((20, 10), (2, 4), multz={0: 1, 6:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -65,6 +65,6 @@ def makeFigure():
     plotMotifs(motifs, titles=["Cluster 1", "Cluster 17"], axes=ax[3:5])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[5:7], clusters_=[1, 17], n_components=4, pX=1)
+    plotUpstreamKinase_heatmap(model, [1, 17], ax[5])
 
     return f

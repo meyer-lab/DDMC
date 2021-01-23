@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .figure3 import plotMotifs, plotUpstreamKinases
+from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 4), multz={0: 1})
+    ax, f = getSetup((17, 15), (3, 3), multz={0: 1, 7:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -60,11 +60,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[11], pssms[18]]
-    plotMotifs(motifs, titles=["Cluster 12", "Cluster 19"], axes=ax[3:5])
+    motifs = [pssms[7], pssms[8], pssms[21]]
+    plotMotifs(motifs, titles=["Cluster 8", "Cluster 9", "Cluster 22"], axes=ax[3:6])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[5:7], clusters_=[12, 19], n_components=4, pX=1)
+    plotUpstreamKinase_heatmap(model, [8, 9, 22], ax[6])
 
     return f
 

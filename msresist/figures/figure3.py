@@ -37,7 +37,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 20), (4, 3))
+    ax, f = getSetup((17, 20), (4, 3), multz={10:1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -130,8 +130,8 @@ def makeFigure():
     # -------- PLOTS -------- #
     # PCA analysis of phenotypes
     y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_ae["Island"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ae["Island"]], axis=1)
+    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
+    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
 
     y_c = pd.concat([y_ut, y_e, y_ae])
     y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
@@ -159,7 +159,7 @@ def makeFigure():
     plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinases(model, ax=ax[10:12], clusters_=[1, 4, 5], n_components=3, labels=["PC2", "PC3"], pX=0)
+    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -190,7 +190,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     else:
         sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
 
-    ax[1].set_title("PCA Loadings", fontsize=11)
+    ax[1].set_title("PCA Loadings")
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
@@ -373,36 +373,20 @@ def store_cluster_members(X, model):
         m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinases(model, ax, clusters_, n_components=2, labels=["PC3", "PC4"], pX=False, PsP_background=False):
+def plotUpstreamKinase_heatmap(model, clusters, ax):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    tables = model.predict_UpstreamKinases(n_components=n_components, PsP_background=PsP_background)
-    if isinstance(pX, int):
-        tables = [tables[pX]]
-    for ii, table in enumerate(tables):
-        pX_clusters = list(table[table["Matrix type"] == "PSSM"]["Label"])
-        clusters = [cluster for cluster in clusters_ if cluster in pX_clusters]
-        if len(clusters) == 1:
-            clusters = clusters[0]
-        pspl = table[table["Matrix type"] == "PSPL"]
-        if isinstance(clusters, int):
-            pssm = pd.DataFrame(table.set_index("Label").loc[clusters]).T.reset_index()
-        else:
-            pssm = table.set_index("Label").loc[clusters].reset_index()
-        pssm.columns = ["Label"] + list(pssm.columns[1:])
-        X = pd.concat([pspl, pssm]).set_index("Label").drop("pX", axis=1)
-        pspl = pspl.drop(["Matrix type", "pX"], axis=1).set_index("Label")
-        if n_components > 2:
-            if ii > 0:
-                ii = 2
-            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax[ii])
-            p2 = sns.scatterplot(x=labels[0], y=labels[1], hue="Matrix type", data=X, ax=ax[ii + 1])
-            X = X.drop("Matrix type", axis=1)
-            label_point(X[["PC1", "PC2"]], model, clusters, pspl[["PC1", "PC2"]], p1)
-            label_point(X[labels], model, clusters, pspl[labels], p2)
-        else:
-            p1 = sns.scatterplot(x="PC1", y="PC2", hue="Matrix type", data=X, ax=ax)
-            X = X.drop("Matrix type", axis=1)
-            label_point(X, model, clusters, pspl, p1)
+    ukin = model.predict_UpstreamKinases()
+    ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
+    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
+    data = ukin_mc.set_index("Kinase")[clusters]
+    if len(clusters) > 1:
+        sns.heatmap(data.T, ax=ax, xticklabels=data.index)
+    else:
+        data = data.reset_index()
+        data.columns = ["Kinase", "Motif Similarity"]
+        data = data.sort_values(by="Motif Similarity")
+        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
+        ax.set_xticklabels(data["Kinase"], rotation=90)
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
