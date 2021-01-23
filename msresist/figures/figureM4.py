@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 4), multz={0: 1, 6:1})
+    ax, f = getSetup((17, 15), (3, 3), multz={0: 1, 7:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -60,11 +60,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[11], pssms[18]]
-    plotMotifs(motifs, titles=["Cluster 12", "Cluster 19"], axes=ax[3:5])
+    motifs = [pssms[7], pssms[8], pssms[21]]
+    plotMotifs(motifs, titles=["Cluster 8", "Cluster 9", "Cluster 22"], axes=ax[3:6])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [12, 19], ax[5])
+    plotUpstreamKinase_heatmap(model, [8, 9, 22], ax[6])
 
     return f
 
