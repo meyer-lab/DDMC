@@ -16,14 +16,14 @@ from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from .figureM2 import SwapPatientIDs, AddTumorPerPatient
 from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
-from .figure3 import plotPCA, plotMotifs, plotUpstreamKinases
+from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 3))
+    ax, f = getSetup((20, 15), (3, 3), multz={7:1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -63,34 +63,38 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[5], pssms[8], pssms[19]]
-    plotMotifs(motifs, titles=["Cluster 6", "Cluster 9", "Cluster 20"], axes=ax[4:7])
+    motifs = [pssms[1], pssms[2], pssms[16]]
+    plotMotifs(motifs, titles=["Cluster 2", "Cluster 3", "Cluster 17"], axes=ax[4:7])
 
     # plot Upstream Kinases
-    plotUpstreamKinases(model, ax=ax[7:9], clusters_=[6, 9, 20], n_components=4, pX=1)
+    plotUpstreamKinase_heatmap(model, [2, 3, 17], ax[7])
 
     return f
 
-
 def plot_LassoCoef_Immune(ax, reg, centers, y, ncl):
     """Plot LASSO coefficients of centers explaining immune infiltration"""
-    coef_T = pd.DataFrame(reg.coef_.T).iloc[:24, :]
-    coef_T.columns = y.columns
-    coef_T["Cluster"] = np.arange(ncl) + 1
-    coef_T = pd.melt(coef_T, id_vars="Cluster", value_vars=list(coef_T.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
-    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_T, ax=ax[0])
+    #Format data for seaborn
+    coef = pd.DataFrame(reg.coef_.T)
+    coef.columns = y.columns
+    coef["Cluster"] = list(np.arange(24)) * 2
+    coef["Sample"] = ["Tumor"] * ncl + ["NAT"] * ncl
+    coef = pd.melt(coef, id_vars=["Cluster", "Sample"], value_vars=list(coef.columns[:-2]), var_name=["Cell Line"], value_name="Coefficient")
+    
+    #Plot tumor
+    coef_T = coef[coef["Sample"] == "Tumor"]
+    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_T, ax=ax[0], **{"linewidth": 0.2}, **{"edgecolor": "black"})
     ax[0].get_legend().remove()
-    ax[0].set_title("Tumor Clusters")
-    ax[0].set_ylim(-1.5, 2.5)
+    ax[0].set(ylim=(-1.5, 2.5))
+    ax[0].set_title("Tumor")
 
-    coef_NAT = pd.DataFrame(reg.coef_.T).iloc[24:, :]
-    coef_NAT.columns = y.columns
-    coef_NAT["Cluster"] = np.arange(ncl) + 1
-    coef_NAT = pd.melt(coef_NAT, id_vars="Cluster", value_vars=list(coef_NAT.columns[:-1]), var_name=["Cell Line"], value_name="Coefficient")
-    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_NAT, ax=ax[1])
-    ax[1].get_legend().remove()
-    ax[1].set_title("NAT Clusters")
-    ax[1].set_ylim(-1.5, 2.5)
+    #Plot NAT
+    coef_NAT = coef[coef["Sample"] == "NAT"]
+    sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_NAT, ax=ax[1], **{"linewidth": 0.2}, **{"edgecolor": "black"})
+    ax[1].set(ylim=(-1.5, 2.5))
+    ax[1].set_title("NAT")
+    ax[1].legend(labelspacing=0.1)
+    plt.setp(ax[1].get_legend().get_texts(), fontsize='10')
+    plt.setp(ax[1].get_legend().get_title(), fontsize='9')
 
     # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
