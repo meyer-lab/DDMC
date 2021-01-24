@@ -13,7 +13,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 ###-------------------------- Pre-processing MS data --------------------------###
 def preprocessing(
-    AXLwt=False, Axlmuts_Erl=False, Axlmuts_ErlAF154=False, CPTAC=False, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=False, rawdata=False, mc_row=True, mc_col=False,
+    AXLwt=False, Axlmuts_ErlAF154=False, Vfilter=False, FCfilter=False, log2T=False, FCtoUT=False, rawdata=False, mc_row=True, mc_col=False,
 ):
     """ Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
     1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
@@ -24,24 +24,16 @@ def preprocessing(
     filesin = list()
 
     if AXLwt:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20180817_JG_AM_TMT10plex_R1_psms_raw.csv")))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv")))
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/CombinedBR3_TR1&2_raw.csv")))
-    if Axlmuts_Erl:
-        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_unstim_BR1_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/GrowthFactors/20180817_JG_AM_TMT10plex_R1_psms_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/GrowthFactors/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv")))
+        filesin.append(pd.read_csv(os.path.join(path, "./data/MS/GrowthFactors/CombinedBR3_TR1&2_raw.csv")))
     if Axlmuts_ErlAF154:
-        br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw.csv"))
-        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR2_raw.csv")).drop("UniprotAcc", axis=1)
-        br2.columns = br1.columns
-        br3 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw.csv"))
-        br4 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw.csv"))
+        br1 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw_wAcc.csv"))
+        br2 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw_wAcc.csv"))
+        br3 = pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw_wAcc.csv"))
         filesin.append(br1)
-#         filesin.append(br2)
+        filesin.append(br2)
         filesin.append(br3)
-        filesin.append(br4)
-    if CPTAC:
-        X = preprocessCPTAC()
-        filesin.append(X)
 
     data_headers = list(filesin[0].select_dtypes(include=["float64"]).columns)
     FCto = data_headers[1]
