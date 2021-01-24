@@ -363,14 +363,13 @@ def plot_LassoCoef(ax, model, title=False):
         ax.set_title(title)
 
 
-def store_cluster_members(X, model):
+def store_cluster_members(X, model, filename, cols):
     """Save csv files with cluster members."""
-    model_L = model.labels() + 1
-    X["Cluster"] = model_L
+    X["Cluster"] = model.labels()
     for i in range(model.ncl):
-        m = X[X["Cluster"] == i + 1][["Protein", "Sequence", "Gene", "Position", "Cluster"]]
+        m = X[X["Cluster"] == i + 1][cols]
         m.index = np.arange(m.shape[0])
-        m.to_csv("msresist/data/cluster_members/AXLmodel_PAM250_Members_C" + str(i + 1) + ".csv")
+        m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
 def plotUpstreamKinase_heatmap(model, clusters, ax):
