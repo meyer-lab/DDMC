@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 15), (3, 3), multz={0: 1, 7:1})
+    ax, f = getSetup((17, 15), (3, 3), multz={0: 1, 7: 1})
 
     # Add subplot labels
     subplotLabel(ax)
