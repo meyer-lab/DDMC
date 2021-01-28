@@ -23,7 +23,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 15), (3, 3), multz={7:1})
+    ax, f = getSetup((20, 15), (3, 3), multz={7: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -71,23 +71,24 @@ def makeFigure():
 
     return f
 
+
 def plot_LassoCoef_Immune(ax, reg, centers, y, ncl):
     """Plot LASSO coefficients of centers explaining immune infiltration"""
-    #Format data for seaborn
+    # Format data for seaborn
     coef = pd.DataFrame(reg.coef_.T)
     coef.columns = y.columns
     coef["Cluster"] = list(np.arange(24)) * 2
     coef["Sample"] = ["Tumor"] * ncl + ["NAT"] * ncl
     coef = pd.melt(coef, id_vars=["Cluster", "Sample"], value_vars=list(coef.columns[:-2]), var_name=["Cell Line"], value_name="Coefficient")
-    
-    #Plot tumor
+
+    # Plot tumor
     coef_T = coef[coef["Sample"] == "Tumor"]
     sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_T, ax=ax[0], **{"linewidth": 0.2}, **{"edgecolor": "black"})
     ax[0].get_legend().remove()
     ax[0].set(ylim=(-1.5, 2.5))
     ax[0].set_title("Tumor")
 
-    #Plot NAT
+    # Plot NAT
     coef_NAT = coef[coef["Sample"] == "NAT"]
     sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef_NAT, ax=ax[1], **{"linewidth": 0.2}, **{"edgecolor": "black"})
     ax[1].set(ylim=(-1.5, 2.5))
