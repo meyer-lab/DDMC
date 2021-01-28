@@ -53,7 +53,7 @@ def preprocessing(
         return X
 
     X = MapMotifs(X, genes)
-    merging_indices.insert(3, "Position")
+ing_indices.insert(3, "Position")
 
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.1)
