@@ -56,7 +56,7 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.4)
+        X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.1)
 
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 

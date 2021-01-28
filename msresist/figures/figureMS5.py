@@ -17,7 +17,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 10), (2, 4), multz={0: 1, 6:1})
+    ax, f = getSetup((20, 10), (2, 4), multz={0: 1, 6: 1})
 
     # Add subplot labels
     subplotLabel(ax)
