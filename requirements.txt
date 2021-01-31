@@ -2,7 +2,7 @@ matplotlib==3.3.4
 numpy==1.20.0
 scipy==1.6.0
 seaborn==0.11.1
-svgutils==0.3.2
+svgutils==0.3.1
 pandas==1.2.1
 manubot==0.5.0
 panflute==1.12
