@@ -10,7 +10,7 @@ venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
 	test -d venv || virtualenv venv
-	. venv/bin/activate && pip install Cython scipy numpy
+	. venv/bin/activate && pip install Cython scipy==1.5.4 numpy==1.19.4
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
 
