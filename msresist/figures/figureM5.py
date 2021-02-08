@@ -15,7 +15,7 @@ from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from .figureM2 import SwapPatientIDs, AddTumorPerPatient
-from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
+from .figureM3 import build_pval_matrix, calculate_mannW_pvals
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
