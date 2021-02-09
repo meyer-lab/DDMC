@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 1.
+This creates Supplemental Figure 2: Cluster motifs
 """
 
 import pickle
