@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 3.
+This creates Supplemental Figure 3: Predicting sample type with different modeling strategies
 """
 
 import numpy as np
@@ -29,7 +29,8 @@ def makeFigure():
     # Tumor vs NAT unclustered
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
-    d = X.set_index("Gene").select_dtypes(include=["float64"]).T.reset_index()
+    X["Gene/Pos"] = X["Gene"] + ": " + X["Position"]
+    d = X.set_index("Gene/Pos").select_dtypes(include=["float64"]).T.reset_index()
     d.rename(columns={"index": "Patient_ID"}, inplace=True)
     z = TumorType(d)
     z.iloc[:, -1] = z.iloc[:, -1].replace("Normal", "NAT")
@@ -40,10 +41,10 @@ def makeFigure():
 
     lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
-    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
+    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z, title="p-sites explaining tumor vs NATs")
 
     # Tumor vs NAT k-means
-    ncl = 15
+    ncl = 24
     labels = KMeans(n_clusters=ncl).fit(d.T).labels_
     x_ = X.copy()
     x_["Cluster"] = labels
@@ -55,9 +56,10 @@ def makeFigure():
     c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals, labels=["NAT", "Tumor"])
+    plot_clusters_binaryfeatures(c_kmeans, "Type", ["Tumor", "NAT"], ax[4], pvals=pvals)
 
     # Tumor vs NAT GMM
+    ncl = 15
     for _ in range(10):
         gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
         scores = gmm.predict_proba(d.T)
@@ -73,20 +75,20 @@ def makeFigure():
     c_gmm["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_gmm, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals, labels=["NAT", "Tumor"])
+    plot_clusters_binaryfeatures(c_gmm, "Type", ["Tumor", "NAT"], ax[7], pvals=pvals)
 
     return f
 
 
-def plot_unclustered_LRcoef(ax, lr, d):
+def plot_unclustered_LRcoef(ax, lr, d, title=False):
     """Plot logistic regression coefficients of unclustered data"""
     cdic = dict(zip(lr.coef_[0], d.columns))
     coefs = pd.DataFrame()
     coefs["Coefficients"] = list(cdic.keys())
-    coefs["Proteins"] = list(cdic.values())
+    coefs["p-sites"] = list(cdic.values())
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
     sliced_coefs = coefs.head(5)
     coefs = sliced_coefs.append(coefs.tail(5))
-    sns.barplot(data=coefs, x="Proteins", y="Coefficients", ax=ax, color="darkblue")
-    ax.set_title("p-sites explaining tumor vs NATs")
-    ax.set_xticklabels(list(set(coefs["Proteins"])), rotation=90)
+    sns.barplot(data=coefs, x="p-sites", y="Coefficients", ax=ax, color="darkblue")
+    ax.set_title(title)
+    ax.set_xticklabels(list(set(coefs["p-sites"])), rotation=90)
