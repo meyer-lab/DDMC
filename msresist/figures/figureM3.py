@@ -1,5 +1,5 @@
 """
-This creates Figure M3.
+This creates Figure 3: Tumor vs NAT analysis
 """
 
 import numpy as np
@@ -15,13 +15,12 @@ from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, 
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, MeanCenter
-import pickle
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((13, 15), (4, 3), multz={3: 1, 10: 1})
+    ax, f = getSetup((15, 15), (4, 3), multz={3: 1, 10: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -40,18 +39,19 @@ def makeFigure():
 
     # PCA analysis
     centers = TumorType(centers).set_index("Patient_ID")
-    pvals = calculate_mannW_pvals(centers, "Type", "Normal", "Tumor")
+    centers["Type"] = centers["Type"].replace("Normal", "NAT")
+    pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
     centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1)  # zscore for PCA
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
-    plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals)
+    plot_clusters_binaryfeatures(centers, "Type", ["Tumor", "NAT"], ax[3], pvals=pvals)
 
     # Regression
     c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
-    tt = tt.replace("Normal", 0)
+    tt = tt.replace("NAT", 0)
     tt = tt.replace("Tumor", 1)
     lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
@@ -72,7 +72,7 @@ def makeFigure():
     return f
 
 
-def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, labels=["WT", "mut"]):
+def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 1
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
