@@ -8,11 +8,8 @@ import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from scipy.stats import zscore
 from sklearn.metrics import mean_squared_error
-from sklearn.cross_decomposition import PLSRegression
 from .common import subplotLabel, getSetup
-from .figure3 import plotR2YQ2Y, plotPCA
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import Binomial
