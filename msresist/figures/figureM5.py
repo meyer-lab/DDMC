@@ -37,12 +37,10 @@ def makeFigure():
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers["Patient_ID"] = X.columns[4:]
 
     # Import infiltration data
     y = pd.read_csv("msresist/data/MS/CPTAC/xCellSign_minimal.csv").sort_values(by="Patient ID").dropna(axis=1)
-    y = y.drop("Tregs", axis=1)
     centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
     y = find_patients_with_NATandTumor(y, "Patient ID", conc=False)
     l1 = list(centers.index)
@@ -50,15 +48,17 @@ def makeFigure():
     dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
     centers = centers.drop(dif)
     assert all(centers.index.values == y.index.values), "Samples don't match"
+
     # Normnalize
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     y.iloc[:, :] = StandardScaler().fit_transform(y.iloc[:, :])
 
     # Infiltration data PCA
     plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
 
     # LASSO regression
-    reg = MultiTaskLassoCV(cv=7, max_iter=10000, tol=0.2).fit(centers, y)
-    plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl)
+    reg = MultiTaskLassoCV(cv=10, max_iter=10000, tol=1e-8).fit(centers, y)
+    plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl, s_type="Tumor")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
@@ -86,9 +86,7 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl, s_type="Tumor"):
         sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
     else:
         ax.set_title("Tumor and NAT samples driving Infiltration")
-        sns.catplot(x="Cluster", y="Coefficient", hue="Cell Line", col="Sample", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
-
-    plt.legend(loc=2, prop={'size': 6})
+        sns.catplot(x="Cluster", y="Coefficient", hue="Cell Line", col="Sample", kind="bar", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
 
     # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
