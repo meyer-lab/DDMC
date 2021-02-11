@@ -20,7 +20,7 @@ from .figureM4 import find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (2, 4), multz={2:1, 7: 1})
+    ax, f = getSetup((15, 7), (2, 4), multz={2:1, 7: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -54,7 +54,7 @@ def makeFigure():
     plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
 
     # LASSO regression
-    reg = MultiTaskLassoCV(cv=10, max_iter=10000, tol=1e-8).fit(centers, y)
+    reg = MultiTaskLassoCV(cv=10, max_iter=100000, tol=1e-8).fit(centers, y)
     plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl, s_type="Tumor")
 
     # plot Cluster Motifs
