@@ -10,7 +10,7 @@ venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
 	test -d venv || virtualenv venv
-	. venv/bin/activate && pip install Cython scipy==1.5.4 numpy==1.19.4
+	. venv/bin/activate && pip install Cython scipy==1.6.0 numpy==1.20.1
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
 
@@ -41,7 +41,7 @@ testprofile: venv
 	. venv/bin/activate && gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 figprofile: venv
-	. venv/bin/activate && python3 -m cProfile -o profile genFigure.py M1
+	. venv/bin/activate && python3 -m cProfile -o profile genFigure.py M2
 	. venv/bin/activate && python3 -m gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
 testcover: venv
