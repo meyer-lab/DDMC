@@ -11,10 +11,8 @@ from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
-from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
+from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-from ..clustering import MassSpecClustering
-from ..pre_processing import filter_NaNpeptides, MeanCenter
 
 
 def makeFigure():
