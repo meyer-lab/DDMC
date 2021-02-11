@@ -17,7 +17,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((8, 15), (5, 2), multz={0: 1, 8: 1})
+    ax, f = getSetup((10, 17), (5, 2), multz={0: 1, 8: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -35,9 +35,8 @@ def makeFigure():
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
-    centers.columns = list(np.arange(model.ncl) + 1)
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
