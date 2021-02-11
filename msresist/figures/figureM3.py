@@ -51,7 +51,7 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("NAT", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)

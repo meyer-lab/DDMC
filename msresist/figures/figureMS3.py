@@ -39,7 +39,7 @@ def makeFigure():
     y = y.replace("NAT", 0)
     y = y.replace("Tumor", 1)
 
-    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
     plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z, title="p-sites explaining tumor vs NATs")
 

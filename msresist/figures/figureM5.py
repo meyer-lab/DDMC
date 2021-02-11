@@ -53,7 +53,7 @@ def makeFigure():
     plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
 
     # LASSO regression
-    reg = MultiTaskLassoCV(cv=7, max_iter=10000, tol=0.2).fit(centers, y)
+    reg = MultiTaskLassoCV(cv=7, max_iter=10000, n_jobs=-1).fit(centers, y)
     plot_LassoCoef_Immune(ax[2:4], reg, centers, y, model.ncl)
 
     # plot Cluster Motifs
