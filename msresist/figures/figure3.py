@@ -3,23 +3,17 @@ This creates Figure 2.
 """
 import os
 import pickle
-import random
 import pandas as pd
 import numpy as np
 import scipy as sp
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import NearestNeighbors
-from ..clustering import MassSpecClustering, KinToPhosphotypeDict
 from ..plsr import R2Y_across_components
 from ..figures.figure1 import pca_dfs
 from ..distances import DataFrameRipleysK
-import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
 import matplotlib.cm as cm
