@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import pickle
-from scipy.stats import zscore, mannwhitneyu
+from scipy.stats import mannwhitneyu
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
@@ -38,11 +39,15 @@ def makeFigure():
     ax[0].axis("off")
 
     # PCA analysis
+    centers = pd.DataFrame(model.transform()).T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
+    centers["Patient_ID"] = X.columns[4:]
+    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
-    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1)  # zscore for PCA
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
