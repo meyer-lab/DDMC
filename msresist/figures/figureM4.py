@@ -35,8 +35,8 @@ def makeFigure():
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
