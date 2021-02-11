@@ -5,7 +5,7 @@ This creates Figure 2.
 from .common import subplotLabel, getSetup
 import pandas as pd
 from msresist.pre_processing import preprocessing
-from msresist.figures.figure1 import plot_AllSites, IndividualTimeCourses, barplot_UtErlAF154
+from msresist.figures.figure1 import IndividualTimeCourses, barplot_UtErlAF154
 
 pd.set_option("display.max_columns", 30)
 endpointcolors = ["light grey", "dark grey", "light navy blue", "jungle green"]
@@ -15,10 +15,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((12, 9), (2, 3), multz={8: 1, 10: 1})
-
-    # blank out first axis for cartoon
-
-    # ax[0].axis('off')
 
     # Read in Cell Migration data on collagen
     lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
@@ -40,7 +36,6 @@ def makeFigure():
     r4.columns = cols
 
     ds = [r2, r3, r4]
-    itp = 0
     ftp = 24
     tr1 = ["UT", "AF", "-E", "A/E"]
     tr2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
@@ -52,7 +47,6 @@ def makeFigure():
     IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=False, TreatmentFC=False, plot="Y821F", ax_=ax[3])
 
     ftp = 10
-    itp = 0
 
     tr1 = ["UT", "AF", "-E", "A/E"]
     tr2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
@@ -67,11 +61,8 @@ def makeFigure():
     # Phosphorylation levels of selected peptides
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
-    i = X.select_dtypes(include=['object'])
 
     all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-    mut_lines = all_lines[1:]
-    g_lines = all_lines[2:]
 
     d.index = all_lines
 

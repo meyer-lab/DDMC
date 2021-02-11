@@ -1,7 +1,6 @@
 """Main Expectation-Maximization functions using gmm and binomial or pam250 to determine cluster assginments.
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
-from copy import copy
 import numpy as np
 import scipy.stats as sp
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution

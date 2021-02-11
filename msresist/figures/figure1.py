@@ -9,13 +9,9 @@ import os
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import matplotlib.colors as colors
 import matplotlib.cm as cm
-import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 
-# from plotly.subplots import make_subplots
-# import plotly.graph_objects as go
 sns.set(color_codes=True)
 
 
@@ -124,7 +120,8 @@ def TimePointFoldChange(d, itp):
 def TreatmentFoldChange(d, FC, treatment):
     """ Take fold-change of the time lapse data set to an initial time point  """
     fcto = d.loc[:, d.columns.str.contains(FC)]
-    tr = d.loc[:, d.columns.str.contains(treatment)]
+    tr = d.loc[:, d.columns.str.contains(treatment)].copy()
+
     for jj in range(0, tr.columns.size):
         tr.iloc[:, jj] /= fcto.iloc[:, jj]
     return tr
