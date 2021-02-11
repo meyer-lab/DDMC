@@ -7,17 +7,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import kruskal
 from sklearn.linear_model import MultiTaskLassoCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
-from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from ..pre_processing import filter_NaNpeptides
-from .figureM2 import SwapPatientIDs, AddTumorPerPatient
-from .figureM3 import build_pval_matrix, calculate_mannW_pvals
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
+from .figureM4 import find_patients_with_NATandTumor
 
 
 def makeFigure():
@@ -58,7 +53,7 @@ def makeFigure():
     plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
 
     # LASSO regression
-    reg = MultiTaskLassoCV(cv=7, max_iter=10000, tol=0.2).fit(centers, y)
+    reg = MultiTaskLassoCV(cv=10, max_iter=1000000, n_jobs=-1).fit(centers, y)
     plot_LassoCoef_Immune(ax[2:4], reg, centers, y, model.ncl)
 
     # plot Cluster Motifs

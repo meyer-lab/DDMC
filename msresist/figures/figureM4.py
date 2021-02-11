@@ -45,7 +45,7 @@ def makeFigure():
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
     # Logistic Regression
-    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     # STK11 mutation status
     centers["STK11"] = y["STK11.mutation.status"].values
