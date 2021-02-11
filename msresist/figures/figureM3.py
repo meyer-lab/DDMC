@@ -8,6 +8,7 @@ import seaborn as sns
 import pickle
 from scipy.stats import zscore, mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
@@ -29,8 +30,9 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
+    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
 
     # first plot heatmap of clusters
     ax[0].axis("off")
