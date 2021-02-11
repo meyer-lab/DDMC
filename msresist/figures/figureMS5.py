@@ -59,6 +59,7 @@ def makeFigure():
 
     return f
 
+
 def plot_ROCs(ax, centers, X, y, gene_label):
     """Generate ROC plots using DDMC, unclustered, k-means, and GMM for a particular feature."""
     # LASSO
@@ -108,4 +109,3 @@ def plot_ROCs(ax, centers, X, y, gene_label):
 
     # Regress GMM clusters against STK11 status
     plotROC(ax[3], lr, c_gmmT.values, y, cv_folds=4, title="GMM " + gene_label)
-
