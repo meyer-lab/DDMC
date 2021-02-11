@@ -13,7 +13,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from ..pre_processing import filter_NaNpeptides
 from .figureM2 import SwapPatientIDs, AddTumorPerPatient
 from .figureM3 import build_pval_matrix, calculate_mannW_pvals
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
