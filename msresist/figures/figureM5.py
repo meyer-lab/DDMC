@@ -63,7 +63,7 @@ def makeFigure():
     plotMotifs(motifs, titles=["Cluster 5", "Cluster 19"], axes=ax[3:5])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [5, 19], ax[6])
+    plotUpstreamKinase_heatmap(model, [5, 19], ax[5])
 
     return f
 
