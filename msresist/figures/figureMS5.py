@@ -36,10 +36,11 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     # Find and scale centers
-    centers = pd.DataFrame(model.transform())
+    centers = pd.DataFrame(model.transform()).T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
     centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
 
     # Predicting STK11
