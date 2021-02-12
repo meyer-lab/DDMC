@@ -35,8 +35,8 @@ def makeFigure():
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
@@ -45,7 +45,7 @@ def makeFigure():
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
     # Logistic Regression
-    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     # STK11 mutation status
     centers["STK11"] = y["STK11.mutation.status"].values

@@ -6,15 +6,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import pickle
-from scipy.stats import zscore, mannwhitneyu
+from scipy.stats import mannwhitneyu
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..figures.figureM2 import TumorType
-from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
+from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-from ..clustering import MassSpecClustering
-from ..pre_processing import filter_NaNpeptides, MeanCenter
 
 
 def makeFigure():
@@ -31,18 +31,23 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
+    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
 
     # first plot heatmap of clusters
     ax[0].axis("off")
 
     # PCA analysis
+    centers = pd.DataFrame(model.transform()).T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
+    centers["Patient_ID"] = X.columns[4:]
+    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
-    centers.iloc[:, :-2] = zscore(centers.iloc[:, :-2], axis=1)  # zscore for PCA
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
 
     # Plot NAT vs tumor signal per cluster
@@ -53,7 +58,7 @@ def makeFigure():
     tt = centers.iloc[:, -1]
     tt = tt.replace("NAT", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(Cs=10, cv=24, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)

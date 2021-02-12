@@ -12,10 +12,8 @@ from sklearn.preprocessing import StandardScaler
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
-from ..logistic_regression import plotClusterCoefficients, plotConfusionMatrix, plotROC
-from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from ..logistic_regression import plotROC
 from .figureM4 import find_patients_with_NATandTumor, merge_binary_vectors
-from .figureMS3 import plot_unclustered_LRcoef
 
 
 def makeFigure():
@@ -39,8 +37,8 @@ def makeFigure():
 
     # Find and scale centers
     centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
     centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
     centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
 
@@ -63,7 +61,7 @@ def makeFigure():
 def plot_ROCs(ax, centers, X, y, gene_label):
     """Generate ROC plots using DDMC, unclustered, k-means, and GMM for a particular feature."""
     # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=15, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     # DDMC
     plotROC(ax[0], lr, centers.values, y, cv_folds=4, title="DDMC " + gene_label)
