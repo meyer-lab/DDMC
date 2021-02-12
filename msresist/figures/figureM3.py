@@ -30,20 +30,17 @@ def makeFigure():
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :-1])
-
     # first plot heatmap of clusters
     ax[0].axis("off")
 
-    # PCA analysis
+    # Normalize
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
+    centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-    centers.columns = list(np.arange(model.ncl) + 1) + ["Patient_ID"]
+
+    # PCA Analysis
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
