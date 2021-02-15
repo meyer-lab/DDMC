@@ -20,7 +20,7 @@ from .figureM4 import find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 7), (2, 4), multz={2:1, 7: 1})
+    ax, f = getSetup((15, 7), (2, 4), multz={2: 1, 7: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -32,7 +32,9 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    centers = pd.DataFrame(model.transform())
+    centers = pd.DataFrame(model.transform()).T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
 
@@ -46,8 +48,7 @@ def makeFigure():
     centers = centers.drop(dif)
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
-    # Normnalize
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    # Normnalize xCell data
     y.iloc[:, :] = StandardScaler().fit_transform(y.iloc[:, :])
 
     # Infiltration data PCA
