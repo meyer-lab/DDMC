@@ -39,7 +39,7 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
 
     # Import infiltration data
-    y = pd.read_csv("msresist/data/MS/CPTAC/xCellSign_minimal.csv").sort_values(by="Patient ID").dropna(axis=1).drop("Tregs", axis=1)
+    y = pd.read_csv("msresist/data/MS/CPTAC/xCellSign_minimal.csv").sort_values(by="Patient ID").dropna(axis=1)
     centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
     y = find_patients_with_NATandTumor(y, "Patient ID", conc=False)
     l1 = list(centers.index)
