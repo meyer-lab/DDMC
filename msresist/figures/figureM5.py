@@ -74,7 +74,7 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl, s_type="Tumor"):
     # Format data for seaborn
     coef = pd.DataFrame(reg.coef_.T)
     coef.columns = y.columns
-    coef["Cluster"] = list(np.arange(24)) * 2
+    coef["Cluster"] = list(np.arange(ncl) + 1) * 2
     coef["Sample"] = ["Tumor"] * ncl + ["NAT"] * ncl
     coef = pd.melt(coef, id_vars=["Cluster", "Sample"], value_vars=list(coef.columns[:-2]), var_name=["Cell Line"], value_name="Coefficient")
 
@@ -85,6 +85,8 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl, s_type="Tumor"):
     else:
         ax.set_title("Tumor and NAT samples driving Infiltration")
         sns.catplot(x="Cluster", y="Coefficient", hue="Cell Line", col="Sample", kind="bar", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
+
+    ax.legend(loc=2, prop={'size': 6}, labelspacing=0.2)
 
     # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
