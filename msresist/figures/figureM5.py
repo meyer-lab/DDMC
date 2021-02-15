@@ -20,7 +20,7 @@ from .figureM4 import find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 7), (2, 4), multz={2: 1, 7: 1})
+    ax, f = getSetup((15, 7), (2, 4), multz={2:1, 6: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -60,11 +60,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[1], pssms[2], pssms[16]]
-    plotMotifs(motifs, titles=["Cluster 2", "Cluster 3", "Cluster 17"], axes=ax[3:6])
+    motifs = [pssms[4], pssms[18]]
+    plotMotifs(motifs, titles=["Cluster 5", "Cluster 19"], axes=ax[3:5])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [2, 3, 17], ax[6])
+    plotUpstreamKinase_heatmap(model, [5, 19], ax[5])
 
     return f
 
