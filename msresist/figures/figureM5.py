@@ -20,7 +20,7 @@ from .figureM4 import find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 7), (2, 4), multz={2: 1, 6: 1})
+    ax, f = getSetup((14, 7), (2, 4), multz={2: 1, 6: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -61,10 +61,10 @@ def makeFigure():
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[4], pssms[18]]
-    plotMotifs(motifs, titles=["Cluster 5", "Cluster 19"], axes=ax[3:5])
+    plotMotifs(motifs, titles=["Cluster 6", "Cluster 17"], axes=ax[3:5])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [5, 19], ax[5])
+    plotUpstreamKinase_heatmap(model, [5, 16], ax[5])
 
     return f
 
@@ -86,9 +86,9 @@ def plot_LassoCoef_Immune(ax, reg, centers, y, ncl, s_type="Tumor"):
         ax.set_title("Tumor and NAT samples driving Infiltration")
         sns.catplot(x="Cluster", y="Coefficient", hue="Cell Line", col="Sample", kind="bar", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
 
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)  # Legend out
+    ax.legend(prop={'size': 8}, loc=4, labelspacing=0.2)
 
     # Add r2 coef
     textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
     props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-    ax.text(0.65, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props, fontsize=10)
+    ax.text(0.02, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props, fontsize=10)
