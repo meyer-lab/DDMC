@@ -60,11 +60,11 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[4], pssms[18]]
+    motifs = [pssms[5], pssms[17]]
     plotMotifs(motifs, titles=["Cluster 6", "Cluster 17"], axes=ax[3:5])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [5, 16], ax[5])
+    plotUpstreamKinase_heatmap(model, [6, 17], ax[5])
 
     return f
 
