@@ -17,7 +17,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 17), (5, 2), multz={0: 1, 8: 1})
+    ax, f = getSetup((15, 12), (3, 3), multz={0: 1, 7: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -60,10 +60,10 @@ def makeFigure():
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[1], pssms[12], pssms[19], pssms[22]]
-    plotMotifs(motifs, titles=["Cluster 2", "Cluster 13", "Cluster 20", "Cluster 23"], axes=ax[3:7])
+    motifs = [pssms[1], pssms[12], pssms[19]]
+    plotMotifs(motifs, titles=["Cluster 2", "Cluster 13", "Cluster 20"], axes=ax[3:6])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [1, 2, 8, 12, 13, 20, 23], ax[7])
+    plotUpstreamKinase_heatmap(model, [1, 13, 20], ax[6])
 
     return f
