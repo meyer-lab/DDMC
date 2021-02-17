@@ -64,13 +64,14 @@ def plot_ROCs(ax, centers, X, y, gene_label):
     # LASSO
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
+    folds = 7
     # DDMC
-    plotROC(ax[0], lr, centers.values, y, cv_folds=4, title="DDMC " + gene_label)
+    plotROC(ax[0], lr, centers.values, y, cv_folds=folds, title="DDMC " + gene_label)
 
     # Unclustered
     X_f = X.loc[:, centers.index].T
     X_f.index = np.arange(X_f.shape[0])
-    plotROC(ax[1], lr, X_f.values, y, cv_folds=4, title="Unclustered " + gene_label)
+    plotROC(ax[1], lr, X_f.values, y, cv_folds=folds, title="Unclustered " + gene_label)
 
     # Run k-means
     ncl = 24
@@ -88,7 +89,7 @@ def plot_ROCs(ax, centers, X, y, gene_label):
     c_kmeansT = find_patients_with_NATandTumor(c_kmeans.copy(), "Patient_ID", conc=True)
 
     # Regress k-means clusters against STK11 status
-    plotROC(ax[2], lr, c_kmeansT.values, y, cv_folds=4, title="k-means " + gene_label)
+    plotROC(ax[2], lr, c_kmeansT.values, y, cv_folds=folds, title="k-means " + gene_label)
 
     # Run GMM
     ncl = 15
@@ -107,4 +108,4 @@ def plot_ROCs(ax, centers, X, y, gene_label):
     c_gmmT = find_patients_with_NATandTumor(c_gmm.copy(), "Patient_ID", conc=True)
 
     # Regress GMM clusters against STK11 status
-    plotROC(ax[3], lr, c_gmmT.values, y, cv_folds=4, title="GMM " + gene_label)
+    plotROC(ax[3], lr, c_gmmT.values, y, cv_folds=folds, title="GMM " + gene_label)

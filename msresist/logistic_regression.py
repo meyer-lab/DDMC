@@ -96,4 +96,3 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
         ax.set_title(title)
 
     ax.legend(loc=4, prop={'size': 8}, labelspacing=0.2)
-
