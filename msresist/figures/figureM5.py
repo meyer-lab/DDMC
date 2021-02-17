@@ -9,13 +9,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import r2_score
-from scipy.stats import zscore
 from .common import subplotLabel, getSetup
-from .figureM2 import SwapPatientIDs, AddTumorPerPatient
 from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-from .figureM4 import find_patients_with_NATandTumor
 from ..logistic_regression import plotROC, plotClusterCoefficients
 
 
@@ -67,7 +63,7 @@ def makeFigure():
     plot_clusters_binaryfeatures(centers, "HCT", ["Cold", "Hot"], ax[0], pvals=pvals)
 
     # Logistic Regression
-    lr = LogisticRegressionCV(Cs=10, cv=4, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], y.values), title="TIIC")
 
