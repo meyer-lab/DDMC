@@ -22,6 +22,9 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((15, 15), (4, 3), multz={3: 1, 10: 1})
 
+    # Add subplot labels
+    subplotLabel(ax)
+
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
@@ -39,24 +42,23 @@ def makeFigure():
     centers = centers.T
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-
-    # PCA Analysis
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
+
+    # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
-
-    # Plot NAT vs tumor signal per cluster
     plot_clusters_binaryfeatures(centers, "Type", ["Tumor", "NAT"], ax[3], pvals=pvals)
 
-    # Regression
+    # Transform to Binary
     c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
     tt = tt.replace("NAT", 0)
     tt = tt.replace("Tumor", 1)
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
+    # Logistic Regression
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)
 
@@ -67,9 +69,6 @@ def makeFigure():
 
     # plot Upstream Kinases
     plotUpstreamKinase_heatmap(model, [11, 12, 23], ax[9])
-
-    # Add subplot labels
-    subplotLabel(ax)
 
     return f
 
