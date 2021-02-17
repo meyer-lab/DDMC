@@ -26,7 +26,7 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
-    # Import DDMC clusters 
+    # Import DDMC clusters
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
@@ -52,8 +52,8 @@ def makeFigure():
     y = np.squeeze(y)
 
     # Remove NAT-enriched samples
-    centers = centers.drop(y[y=="NAT enriched"].index)
-    y = y.drop(y[y=="NAT enriched"].index).astype(int)
+    centers = centers.drop(y[y == "NAT enriched"].index)
+    y = y.drop(y[y == "NAT enriched"].index).astype(int)
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
     # Hypothesis Testing
