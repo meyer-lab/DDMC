@@ -45,20 +45,20 @@ def makeFigure():
     yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
-    # Logistic Regression
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-
-    # STK11 mutation status
+    # Hypothesis Testing
     centers["STK11"] = y["STK11.mutation.status"].values
-    centersT["STK11"] = yT["STK11.mutation.status"].values
     centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "STK11", ["WT", "Mutant"], ax[0], pvals=pvals)
+
+    # Logistic Regression
+    centersT["STK11"] = yT["STK11.mutation.status"].values
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["STK11"], cv_folds=4, title="ROC STK11")
     plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["STK11"].values), list(centersT.columns[:-1]), title="STK11")
 
-    # plot Cluster Motifs
+    # Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[7], pssms[13], pssms[21]]
     plotMotifs(motifs, titles=["Cluster 8", "Cluster 14", "Cluster 22"], axes=ax[3:6])

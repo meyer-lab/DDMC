@@ -184,7 +184,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     else:
         sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
 
-    ax[1].set_title("PCA Loadings")
+    ax[1].set_title("PCA Loadings", fontsize=11)
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
@@ -371,15 +371,12 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     ukin = model.predict_UpstreamKinases()
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
-    data = ukin_mc.set_index("Kinase")[clusters]
-    if len(clusters) > 1:
-        sns.heatmap(data.T, ax=ax, xticklabels=data.index)
-    else:
-        data = data.reset_index()
-        data.columns = ["Kinase", "Motif Similarity"]
-        data = data.sort_values(by="Motif Similarity")
-        sns.barplot(x="Kinase", y="Motif Similarity", data=data, ax=ax)
-        ax.set_xticklabels(data["Kinase"], rotation=90)
+    data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
+    sns.heatmap(data.T, ax=ax, xticklabels=data.index, cbar_kws={"shrink": 0.75})
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=7)
+    ax.set_ylabel("Frobenius Norm (motif vs kinase specifcity)")
+
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):

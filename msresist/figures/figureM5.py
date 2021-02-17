@@ -7,20 +7,18 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.linear_model import MultiTaskLassoCV
+from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import r2_score
 from .common import subplotLabel, getSetup
-from .figureM2 import SwapPatientIDs, AddTumorPerPatient
-from .figureM3 import build_pval_matrix, calculate_mannW_pvals
+from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-from .figureM4 import find_patients_with_NATandTumor
+from ..logistic_regression import plotROC, plotClusterCoefficients
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 7), (2, 4), multz={2: 1, 6: 1})
+    ax, f = getSetup((15, 12), (3, 3), multz={0: 1, 7: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -28,6 +26,7 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
+    # Import DDMC clusters 
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
@@ -37,58 +36,43 @@ def makeFigure():
     centers = centers.T
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
+    centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
 
-    # Import infiltration data
-    y = pd.read_csv("msresist/data/MS/CPTAC/xCellSign_minimal.csv").sort_values(by="Patient ID").dropna(axis=1)
-    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
-    y = find_patients_with_NATandTumor(y, "Patient ID", conc=False)
+    # Import Cold-Hot Tumor data
+    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
+    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
     l1 = list(centers.index)
     l2 = list(y.index)
     dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
     centers = centers.drop(dif)
+
+    # Transform to binary
+    y = y.replace("Cold-tumor enriched", 0)
+    y = y.replace("Hot-tumor enriched", 1)
+    y = np.squeeze(y)
+
+    # Remove NAT-enriched samples
+    centers = centers.drop(y[y=="NAT enriched"].index)
+    y = y.drop(y[y=="NAT enriched"].index).astype(int)
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
-    # Normnalize xCell data
-    y.iloc[:, :] = StandardScaler().fit_transform(y.iloc[:, :])
+    # Hypothesis Testing
+    centers["HCT"] = y.values
+    pvals = calculate_mannW_pvals(centers, "HCT", 1, 0)
+    pvals = build_pval_matrix(model.ncl, pvals)
+    plot_clusters_binaryfeatures(centers, "HCT", ["Cold", "Hot"], ax[0], pvals=pvals)
 
-    # Infiltration data PCA
-    plotPCA(ax[:2], y.reset_index(), 2, ["Patient ID"], "Cell Line", hue_scores=None, style_scores=None, style_load=None, legendOut=False)
+    # Logistic Regression
+    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
+    plotROC(ax[1], lr, centers.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
+    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], y.values), title="TIIC")
 
-    # LASSO regression
-    reg = MultiTaskLassoCV(cv=10, max_iter=100000, tol=1e-8).fit(centers, y)
-    plot_LassoCoef_Immune(ax[2], reg, centers, y, model.ncl, s_type="Tumor")
-
-    # plot Cluster Motifs
+    # Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[4], pssms[18]]
-    plotMotifs(motifs, titles=["Cluster 5", "Cluster 19"], axes=ax[3:5])
+    motifs = [pssms[16], pssms[17], pssms[20]]
+    plotMotifs(motifs, titles=["Cluster 17", "Cluster 18", "Cluster 21"], axes=ax[3:6])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [5, 19], ax[5])
+    plotUpstreamKinase_heatmap(model, [6, 9, 17, 18, 20, 21], ax[6])
 
     return f
-
-
-def plot_LassoCoef_Immune(ax, reg, centers, y, ncl, s_type="Tumor"):
-    """Plot LASSO coefficients of centers explaining immune infiltration"""
-    # Format data for seaborn
-    coef = pd.DataFrame(reg.coef_.T)
-    coef.columns = y.columns
-    coef["Cluster"] = list(np.arange(ncl) + 1) * 2
-    coef["Sample"] = ["Tumor"] * ncl + ["NAT"] * ncl
-    coef = pd.melt(coef, id_vars=["Cluster", "Sample"], value_vars=list(coef.columns[:-2]), var_name=["Cell Line"], value_name="Coefficient")
-
-    if s_type:
-        coef = coef[coef["Sample"] == s_type]
-        ax.set_title(s_type + " samples driving Infiltration")
-        sns.barplot(x="Cluster", y="Coefficient", hue="Cell Line", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
-    else:
-        ax.set_title("Tumor and NAT samples driving Infiltration")
-        sns.catplot(x="Cluster", y="Coefficient", hue="Cell Line", col="Sample", kind="bar", data=coef, ax=ax, **{"linewidth": 0.2}, **{"edgecolor": "black"})
-
-    ax.legend(loc=2, prop={'size': 6}, labelspacing=0.2)
-
-    # Add r2 coef
-    textstr = "$r2 score$ = " + str(np.round(r2_score(y, reg.predict(centers)), 4))
-    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-    ax.text(0.65, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props, fontsize=10)

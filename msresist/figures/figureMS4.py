@@ -22,6 +22,7 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
+    # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Load Clustering Model from Figure 2
@@ -45,16 +46,16 @@ def makeFigure():
     yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
     assert all(centersT.index.values == yT.index.values), "Samples don't match"
 
-    # Logistic Regression
-    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-
-    # EGFR mutation status
+    # Hypothesis Testing
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
-    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
     centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ["WT", "Mutant"], ax[0], pvals=pvals)
+
+    # Logistic Regression
+    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
+    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
     plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), list(centersT.columns[:-1]), title="EGFRm/ALKf")
 
