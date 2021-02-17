@@ -51,6 +51,11 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha='center', va='center', color='white')
 
 
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import auc
+from sklearn.metrics import plot_roc_curve
+from sklearn.model_selection import StratifiedKFold
+
 def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values
@@ -86,7 +91,9 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
            title="ROC")
-    ax.get_legend().remove()
+
     if title:
         ax.set_title(title)
-    # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
+
+    ax.legend(loc=4, prop={'size': 8}, labelspacing=0.2)
+
