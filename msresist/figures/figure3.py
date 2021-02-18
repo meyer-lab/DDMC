@@ -378,7 +378,6 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     ax.set_ylabel("Frobenius Norm (motif vs kinase specifcity)")
 
 
-
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
     """Add labels to data points"""
     if isinstance(clusters, int):
