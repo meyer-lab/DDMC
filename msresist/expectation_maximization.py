@@ -3,6 +3,7 @@ EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
 from sklearn.cluster import KMeans
+from statsmodels.multivariate.pca import PCA
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
 
 
@@ -26,9 +27,15 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     # Indices for looking up probabilities later.
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
-    km = KMeans(ncl, tol=1e-9)
-    km.fit(d)
+    # In case we have missing data, use SVD-EM to fill it for initialization
+    kmD = np.copy(d)
+    pc = PCA(kmD, ncomp=ncl, missing="fill-em")
 
+    # Solve for the KMeans clustering for initialization
+    km = KMeans(ncl, tol=1e-9)
+    km.fit(pc._adjusted_data)
+
+    # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
 
     for _ in range(10):
