@@ -2,7 +2,7 @@
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
-import scipy.stats as sp
+from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
 
 
@@ -25,21 +25,35 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
 
     # Indices for looking up probabilities later.
     idxx = np.atleast_2d(np.arange(d.shape[0]))
+
+    km = KMeans(ncl, tol=1e-9)
+    km.fit(d)
+
     d = np.hstack((d, idxx.T))
 
     for _ in range(10):
         if gmmIn is None:
             # Initialize model
             dists = list()
-            for _ in range(ncl):
-                nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-                dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
+            for ii in range(ncl):
+                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)] + [seqDist.copy()]
+                
+                for jj in range(d.shape[1] - 1):
+                    nDist[jj].fit(d[km.labels_ == ii, jj])
+
+                weights = np.array(km.labels_ == ii, dtype=float)
+                weights = 0.9 * weights + 0.01
+
+                nDist[-1].summarize(d[:, -1], weights=weights)
+                nDist[-1].from_summaries()
+
+                dists.append(IndependentComponentsDistribution(nDist))
 
             gmm = GeneralMixtureModel(dists)
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=50, verbose=False, stop_threshold=1e-2)
+        gmm.fit(d, max_iterations=200, verbose=True, stop_threshold=1e-3)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

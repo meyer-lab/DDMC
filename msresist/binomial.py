@@ -146,6 +146,8 @@ class Binomial(CustomDistribution):
         self.name = "Binomial"
         self.SeqWeight = SeqWeight
         self.from_summaries()
+        assert np.all(np.isfinite(self.background[0]))
+        assert np.all(np.isfinite(self.background[1]))
 
     def copy(self):
         return Binomial(self.seq, self.seqs, self.SeqWeight, self.background)
@@ -156,9 +158,19 @@ class Binomial(CustomDistribution):
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        k = np.dot(self.background[1].T, self.weightsIn).T
-        probmat = sc.betainc(np.sum(self.weightsIn) - k, k + 1, 1 - self.background[0])
-        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
+        with np.errstate(all='print'):
+            assert np.all(np.isfinite(self.weightsIn))
+            k = np.dot(self.background[1].T, self.weightsIn).T
+            assert np.all(np.isfinite(k))
+
+            # The counts must be positive, so check this
+            betaA = np.sum(self.weightsIn) - k
+            betaA = np.clip(betaA, 0.01, np.inf)
+            probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
+            assert np.all(np.isfinite(probmat))
+            self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
+            self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+            assert np.all(np.isfinite(self.logWeights))
 
 
 def unpackBinomial(seq, seqs, sw, lw, frozen):

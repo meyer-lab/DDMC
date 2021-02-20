@@ -33,15 +33,12 @@ def makeFigure():
     X = filter_NaNpeptides(X, cut=1)
 
     # Fit DDMC to complete data
-    d = X.select_dtypes(include=['float64']).T
+    d = np.array(X.select_dtypes(include=['float64']).T)
     i = X.select_dtypes(include=['object'])
-    for _ in range(10):
-        try:
-            model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
-            break
-        except:
-            print(_)
-            continue
+
+    assert np.all(np.isfinite(d))
+    
+    model_min = MassSpecClustering(i, ncl=20, SeqWeight=1, distance_method="PAM250").fit(d, "NA")
 
     assert np.all(np.isfinite(model_min.scores_))
 
