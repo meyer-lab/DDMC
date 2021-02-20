@@ -28,8 +28,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    kmD = np.copy(d)
-    pc = PCA(kmD, ncomp=ncl, missing="fill-em")
+    pc = PCA(d, ncomp=ncl, missing="fill-em", standardize=False, demean=False, normalize=False)
 
     # Solve for the KMeans clustering for initialization
     km = KMeans(ncl, tol=1e-9)
