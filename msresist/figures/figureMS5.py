@@ -38,7 +38,7 @@ def makeFigure():
 
     assert np.all(np.isfinite(d))
     
-    model_min = MassSpecClustering(i, ncl=20, SeqWeight=1, distance_method="PAM250").fit(d, "NA")
+    model_min = MassSpecClustering(i, ncl=15, SeqWeight=3, distance_method="Binomial").fit(d, "NA")
 
     assert np.all(np.isfinite(model_min.scores_))
 
