@@ -33,6 +33,8 @@ class PAM250(CustomDistribution):
             self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
         else:
             self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
+        
+        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
 
 
 def unpackPAM(seqs, sw, lw, frozen):
