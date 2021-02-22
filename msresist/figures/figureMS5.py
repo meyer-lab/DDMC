@@ -33,14 +33,16 @@ def makeFigure():
     X = filter_NaNpeptides(X, cut=1)
 
     # Fit DDMC to complete data
-    d = X.select_dtypes(include=['float64']).T
+    d = np.array(X.select_dtypes(include=['float64']).T)
     i = X.select_dtypes(include=['object'])
+
+    assert np.all(np.isfinite(d))
+
     for _ in range(10):
         try:
             model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
             break
         except:
-            print(_)
             continue
 
     assert np.all(np.isfinite(model_min.scores_))
@@ -75,7 +77,7 @@ def makeFigure():
 
     # Predicting EGFRm/Alkf
     y_EA = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion")
-    plot_ROCs(ax[5:9], centers, centers_min, X, y_EA, "EGFRm/ALKf")
+    plot_ROCs(ax[5:], centers, centers_min, X, y_EA, "EGFRm/ALKf")
 
     return f
 
@@ -86,11 +88,13 @@ def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     folds = 7
-    # DDMC minimal
-    plotROC(ax[0], lr, centers_min.values, y, cv_folds=folds, title="Full DDMC " + gene_label)
 
     # DDMC full
-    plotROC(ax[1], lr, centers.values, y, cv_folds=folds, title="Full DDMC " + gene_label)
+    plotROC(ax[0], lr, centers.values, y, cv_folds=folds, title="DDMC—Full data set" + gene_label)
+
+    # DDMC minimal
+    plotROC(ax[1], lr, centers_min.values, y, cv_folds=folds, title="DDMC—Complete portion" + gene_label)
+
 
     # Unclustered
     X_f = X.loc[:, centers.index].T
