@@ -38,11 +38,11 @@ def makeFigure():
 
     # Load pickled PAM250 and binomial models
     models = []
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        models.append(pickle.load(p)[0])
+    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as b:
+        models.append(pickle.load(b)[0])
 
     with open('msresist/data/pickled_models/pam250/CPTACmodel_PAM250_CL21_W9_TMT2', 'rb') as p:
-        pam250 = pickle.load(p)[0]
+        models.append(pickle.load(p)[0])
 
 
     return f

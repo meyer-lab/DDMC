@@ -42,7 +42,7 @@ def makeFigure():
     # LASSO
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
-    folds = 7
+    folds = 5
     ii = np.arange(0, 13, 3)
     for jj, PathToModel in enumerate(models):
         with open(PathToModel, 'rb') as m:
