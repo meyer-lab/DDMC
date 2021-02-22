@@ -28,9 +28,9 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    plotErrorAcrossMissingnessLevels(ax[1:4], "Binomial")
-    plotErrorAcrossNumberOfClusters(ax[4], "Binomial")
-    plotErrorAcrossWeights(ax[5], "Binomial")
+    plotErrorAcrossMissingnessLevels(ax[1:4], "binomial")
+    plotErrorAcrossNumberOfClusters(ax[4], "binomial")
+    plotErrorAcrossWeights(ax[5], "binomial")
 
     # Add subplot labels
     subplotLabel(ax)
