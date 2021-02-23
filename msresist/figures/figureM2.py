@@ -2,7 +2,6 @@
 This creates Figure M2: Predictive performance of DDMC clusters using different weights
 """
 
-import glob
 import pickle
 import numpy as np
 import pandas as pd
@@ -18,7 +17,7 @@ from .figureM4 import find_patients_with_NATandTumor, merge_binary_vectors
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 15), (5, 3))
+    ax, f = getSetup((15, 10), (3, 5))
 
     # Add subplot labels
     subplotLabel(ax)
@@ -37,32 +36,30 @@ def makeFigure():
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
 
     # Load pickled models with varying weigths
-    models = glob.glob('msresist/data/pickled_models/binomial/*')
 
     # LASSO
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     folds = 5
-    ii = np.arange(0, 13, 3)
-    for jj, PathToModel in enumerate(models):
-        with open(PathToModel, 'rb') as m:
+    weights = [0, 15, 20, 40, 50]
+    path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
+    for ii, w in enumerate(weights):
+        with open(path + str(w) + '_TMT2', 'rb') as m:
             model = pickle.load(m)[0]
-
-        IDX = ii[jj]
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
 
-        # STK11
-        plotROC(ax[IDX], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK " + "w=" + str(model.SeqWeight))
+        #STK11
+        plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK " + "w=" + str(model.SeqWeight))
 
         # EGFRm/ALKf
         y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        plotROC(ax[IDX + 1], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight))
+        plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight))
 
         # Hot-Cold behavior
         y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        plotROC(ax[IDX + 2], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight))
+        plotROC(ax[ii + 10], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight))
 
     return f
 
