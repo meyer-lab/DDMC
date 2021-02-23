@@ -42,7 +42,7 @@ def makeFigure():
         try:
             model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
             break
-        except:
+        except BaseException:
             continue
 
     assert np.all(np.isfinite(model_min.scores_))
@@ -94,7 +94,6 @@ def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
 
     # DDMC minimal
     plotROC(ax[1], lr, centers_min.values, y, cv_folds=folds, title="DDMC—Complete portion" + gene_label)
-
 
     # Unclustered
     X_f = X.loc[:, centers.index].T
