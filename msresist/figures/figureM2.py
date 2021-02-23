@@ -2,7 +2,6 @@
 This creates Figure M2: Predictive performance of DDMC clusters using different weights
 """
 
-from os import walk
 import pickle
 import numpy as np
 import pandas as pd
@@ -54,11 +53,11 @@ def makeFigure():
         #STK11
         plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK " + "w=" + str(model.SeqWeight))
 
-        #EGFRm/ALKf
+        # EGFRm/ALKf
         y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
         plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight))
 
-        #Hot-Cold behavior
+        # Hot-Cold behavior
         y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
         plotROC(ax[ii + 10], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight))
 
