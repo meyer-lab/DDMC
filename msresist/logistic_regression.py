@@ -60,9 +60,9 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
 
-    for i, (train, test) in enumerate(cv.split(d, y)):
+    for _, (train, test) in enumerate(cv.split(d, y)):
         classifier.fit(d[train], y[train])
-        viz = plot_roc_curve(classifier, d[test], y[test], ax=ax)
+        viz = plot_roc_curve(classifier, d[test], y[test], name="", alpha=0.0, lw=1)
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
