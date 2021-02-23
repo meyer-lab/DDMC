@@ -22,9 +22,9 @@ if __name__ == "__main__":
 
     logging.info("%s is done after %s seconds.", nameOut, time.time() - start)
 
-    if sys.argv[1] == 'M2':
-        # Overlay Figure M2 cartoon
-        overlayCartoon(fdir + 'figureM2.svg',
+    if sys.argv[1] == 'MS6':
+        # Overlay Figure MS6 cartoon
+        overlayCartoon(fdir + 'figureMS6.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
 
     if sys.argv[1] == "M3":
