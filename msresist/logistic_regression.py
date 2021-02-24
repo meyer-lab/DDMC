@@ -19,7 +19,8 @@ def plotClusterCoefficients(ax, lr, hue=None, title=False):
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
-    sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", hue=hue, data=coefs_, color='darkblue', **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    p = sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", hue=hue, data=coefs_, color='darkblue', **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    p.tick_params(axis='x', labelsize=6)
     if title:
         ax.set_title(title)
 

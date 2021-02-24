@@ -20,7 +20,7 @@ from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (4, 3), multz={3: 1, 10: 1})
+    ax, f = getSetup((15, 14), (4, 3), multz={3: 1, 10: 1})
 
     # Add subplot labels
     subplotLabel(ax)
