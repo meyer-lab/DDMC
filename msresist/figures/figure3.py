@@ -171,7 +171,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
 
     # Scores
     sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
-    ax[0].set_title("PCA Scores", fontsize=11)
+    ax[0].set_title("PCA Scores")
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     if legendOut:
@@ -184,7 +184,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     else:
         sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
 
-    ax[1].set_title("PCA Loadings", fontsize=11)
+    ax[1].set_title("PCA Loadings")
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
     for j, txt in enumerate(dLoad_[loadings_ind]):
