@@ -50,16 +50,23 @@ def makeFigure():
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
 
+        if w == 0:
+            prio = " (data only)"
+        elif w == 50:
+            prio = " (motif mainly)"
+        else:
+            prio = " (mix)"
+
         #STK11
-        plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK " + "w=" + str(model.SeqWeight))
+        plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK11m " + "w=" + str(model.SeqWeight) + prio)
 
         # EGFRm/ALKf
         y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight))
+        plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight) + prio)
 
         # Hot-Cold behavior
         y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        plotROC(ax[ii + 10], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight))
+        plotROC(ax[ii + 10], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight) + prio)
 
     return f
 
