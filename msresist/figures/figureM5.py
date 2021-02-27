@@ -31,9 +31,7 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
+    centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
@@ -56,6 +54,11 @@ def makeFigure():
     y = y.drop(y[y == "NAT enriched"].index).astype(int)
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
+    # Normalize
+    centers = centers.T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
+
     # Hypothesis Testing
     centers["HCT"] = y.values
     pvals = calculate_mannW_pvals(centers, "HCT", 1, 0)
@@ -63,7 +66,7 @@ def makeFigure():
     plot_clusters_binaryfeatures(centers, "HCT", ["Cold", "Hot"], ax[0], pvals=pvals)
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
+    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.1, 0.9])
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], y.values), title="TIIC")
 

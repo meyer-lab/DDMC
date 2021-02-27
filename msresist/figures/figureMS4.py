@@ -42,22 +42,21 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
-    centersT = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-    assert all(centersT.index.values == yT.index.values), "Samples don't match"
+    centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
+    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+    assert all(centers.index.values == y.index.values), "Samples don't match"
 
     # Hypothesis Testing
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
-    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ["WT", "Mutant"], ax[0], pvals=pvals)
 
     # Logistic Regression
-    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
+    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
     lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), list(centersT.columns[:-1]), title="EGFRm/ALKf")
+    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
+    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["EGFRm/ALKf"].values), list(centers.columns[:-1]), title="EGFRm/ALKf")
 
     # plot Cluster Motifs
     pssms = model.pssms(PsP_background=False)
