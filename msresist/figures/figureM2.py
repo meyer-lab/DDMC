@@ -57,7 +57,7 @@ def makeFigure():
         else:
             prio = " (mix)"
 
-        #STK11
+        # STK11
         plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK11m " + "w=" + str(model.SeqWeight) + prio)
 
         # EGFRm/ALKf
