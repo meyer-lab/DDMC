@@ -22,12 +22,12 @@ if __name__ == "__main__":
 
     logging.info("%s is done after %s seconds.", nameOut, time.time() - start)
 
-    if sys.argv[1] == 'M2':
-        # Overlay Figure M2 cartoon
-        overlayCartoon(fdir + 'figureM2.svg',
+    if sys.argv[1] == 'MS6':
+        # Overlay Figure MS6 cartoon
+        overlayCartoon(fdir + 'figureMS6.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
 
     if sys.argv[1] == "M3":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
-                       f'{cartoon_dir}/heatmap_fM3.svg', 90, 6, scalee=0.30)
+                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)

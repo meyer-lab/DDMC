@@ -34,6 +34,8 @@ class PAM250(CustomDistribution):
         else:
             self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
 
+        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+
 
 def unpackPAM(seqs, sw, lw, frozen):
     """Unpack from pickling."""

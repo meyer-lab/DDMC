@@ -12,7 +12,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from ..figures.figureM2 import TumorType
+from ..figures.figureMS6 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 
@@ -20,7 +20,7 @@ from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (4, 3), multz={3: 1, 10: 1})
+    ax, f = getSetup((15, 14), (4, 3), multz={3: 1, 10: 1})
 
     # Add subplot labels
     subplotLabel(ax)
