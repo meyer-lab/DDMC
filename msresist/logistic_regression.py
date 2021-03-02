@@ -10,7 +10,7 @@ from sklearn.metrics import plot_roc_curve
 from sklearn.model_selection import StratifiedKFold
 
 
-def plotClusterCoefficients(ax, lr, hue=None, title=False):
+def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -19,6 +19,8 @@ def plotClusterCoefficients(ax, lr, hue=None, title=False):
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
+    if xlabels:
+        coefs_["Cluster"] = xlabels
     p = sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", hue=hue, data=coefs_, color='darkblue', **{"linewidth": 0.5}, **{"edgecolor": "black"})
     p.tick_params(axis='x', labelsize=6)
     if title:
