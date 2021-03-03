@@ -1,5 +1,5 @@
 """
-This creates Figure 5: Tumor infiltrating immune cells 
+This creates Figure 6: STK11m downregulates TIICs 
 """
 
 import pickle
@@ -9,15 +9,13 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
-from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
-from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from ..logistic_regression import plotROC, plotClusterCoefficients
-
+from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 3), multz={0: 1, 7: 1})
+    ax, f = getSetup((15, 12), (2, 3), multz={4: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -53,28 +51,26 @@ def makeFigure():
     y = y.drop(y[y == "NAT enriched"].index).astype(int)
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
+    # Select clusters changed by STK status (from figure M4)
+    coi = [1, 5, 7, 9, 11, 12, 15, 19, 21, 22, 24]
+    centers = centers.loc[:, coi]
+
     # Normalize
     centers = centers.T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
 
-    # Hypothesis Testing
-    centers["HCT"] = y.values
-    pvals = calculate_mannW_pvals(centers, "HCT", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "HCT", ["Cold", "Hot"], ax[0], pvals=pvals)
-
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
-    plotROC(ax[1], lr, centers.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], y.values), title="TIIC")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
+    plotROC(ax[0], lr, centers.values, y, cv_folds=4, title="ROC TIIC")
+    plotClusterCoefficients(ax[1], lr.fit(centers, y.values), xlabels=coi, title="TIIC")
 
     # Motifs
     pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[16], pssms[17], pssms[20]]
-    plotMotifs(motifs, titles=["Cluster 17", "Cluster 18", "Cluster 21"], axes=ax[3:6])
+    motifs = [pssms[18], pssms[23]]
+    plotMotifs(motifs, titles=["Cluster 19", "Cluster 24"], axes=ax[2:4])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [6, 9, 17, 18, 20, 21], ax[6])
+    plotUpstreamKinase_heatmap(model, [11, 18, 19, 21, 24], ax[4])
 
     return f

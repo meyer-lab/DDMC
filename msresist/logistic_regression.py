@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
@@ -10,7 +11,7 @@ from sklearn.metrics import plot_roc_curve
 from sklearn.model_selection import StratifiedKFold
 
 
-def plotClusterCoefficients(ax, lr, hue=None, title=False):
+def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -19,6 +20,8 @@ def plotClusterCoefficients(ax, lr, hue=None, title=False):
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
+    if xlabels:
+        coefs_["Cluster"] = xlabels
     p = sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", hue=hue, data=coefs_, color='darkblue', **{"linewidth": 0.5}, **{"edgecolor": "black"})
     p.tick_params(axis='x', labelsize=6)
     if title:
@@ -64,6 +67,7 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
     for _, (train, test) in enumerate(cv.split(d, y)):
         classifier.fit(d[train], y[train])
         viz = plot_roc_curve(classifier, d[test], y[test], name="", alpha=0.0, lw=1)
+        plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
