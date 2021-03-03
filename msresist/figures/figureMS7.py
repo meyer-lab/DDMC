@@ -61,7 +61,7 @@ def makeFigure():
     centers = centers.T
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-8, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[0], lr, centers.values, y, cv_folds=4, title="ROC TIIC")
     plotClusterCoefficients(ax[1], lr.fit(centers, y.values), xlabels=coi, title="TIIC")
 
