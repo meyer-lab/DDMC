@@ -29,37 +29,43 @@ def makeFigure():
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
-    # Regression against mutation status of driver genes and clusters
+    # Import Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
+    # Find centers
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
+    centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
-
-    # Reshape data (Patients vs NAT and tumor sample per cluster)
-    centersT = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    yT = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-    assert all(centersT.index.values == yT.index.values), "Samples don't match"
+    centers = centers.set_index("Patient_ID")
 
     # Hypothesis Testing
+    assert np.all(y['Sample.ID'] == centers.index)
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
-    centers = centers.set_index("Patient_ID")
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ["WT", "Mutant"], ax[0], pvals=pvals)
 
-    # Logistic Regression
-    centersT["EGFRm/ALKf"] = merge_binary_vectors(yT, "EGFR.mutation.status", "ALK.fusion").values
-    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[1], lr, centersT.iloc[:, :-1].values, centersT["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[2], lr.fit(centersT.iloc[:, :-1], centersT["EGFRm/ALKf"].values), list(centersT.columns[:-1]), title="EGFRm/ALKf")
+    # Reshape data (Patients vs NAT and tumor sample per cluster)
+    centers = centers.reset_index().set_index("EGFRm/ALKf")
+    centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
+    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+    assert all(centers.index.values == y.index.values), "Samples don't match"
 
-    # plot Cluster Motifs
+    # Normalize
+    centers = centers.T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
+    centers = centers.T
+
+    # Logistic Regression
+    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
+    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
+    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["EGFRm/ALKf"].values), list(centers.columns[:-1]), title="EGFRm/ALKf")
+
+    # Cluster Motifs
     pssms = model.pssms(PsP_background=False)
     motifs = [pssms[1], pssms[12], pssms[19]]
     plotMotifs(motifs, titles=["Cluster 2", "Cluster 13", "Cluster 20"], axes=ax[3:6])
