@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
@@ -66,6 +67,7 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
     for _, (train, test) in enumerate(cv.split(d, y)):
         classifier.fit(d[train], y[train])
         viz = plot_roc_curve(classifier, d[test], y[test], name="", alpha=0.0, lw=1)
+        plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
