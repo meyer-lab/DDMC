@@ -10,7 +10,7 @@ from ..figures.figure3 import plotMotifs
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 20), (6, 4))
+    ax, f = getSetup((8, 12), (6, 4))
 
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
