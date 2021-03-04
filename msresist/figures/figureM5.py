@@ -62,7 +62,7 @@ def makeFigure():
     centers["HCT"] = y.values
     pvals = calculate_mannW_pvals(centers, "HCT", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "HCT", ["Cold", "Hot"], ax[0], pvals=pvals)
+    plot_clusters_binaryfeatures(centers, "HCT", ["CTE", "HTE"], ax[0], pvals=pvals)
 
     # Logistic Regression
     lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
