@@ -1,0 +1,9 @@
+﻿Treatment,Line,Lysate_Con,p-YAP,p-ABL,p-SRC,p-MEK
+Untreated,WT,25,121,106,55,26
+EA + 1.6nM Das,WT,25,115,78,56,26
+Untreated,WT,37.5,125,115.5,86.5,25
+EA + 1.6nM Das,WT,37.5,136,104,92,26
+EA + 1.6nM Das,WT,75,176.5,190.5,134,25
+Background,Background,Background,62.5,122,31,14
+Background,Background,Background,59,113.5,27,14
+Background,Background,Background,48.5,121,31,16
