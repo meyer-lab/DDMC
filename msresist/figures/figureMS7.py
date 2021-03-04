@@ -1,5 +1,5 @@
 """
-This creates Figure 6: STK11m downregulates TIICs 
+This creates Figure 6: STK11m downregulates TIICs
 """
 
 import pickle
@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
