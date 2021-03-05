@@ -33,7 +33,7 @@ def makeFigure():
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
-    # Find centers 
+    # Find centers
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
