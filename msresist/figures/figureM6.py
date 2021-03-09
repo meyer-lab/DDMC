@@ -9,12 +9,12 @@ import seaborn as sns
 from msresist.validations import preprocess_ebdt_mcf7
 from msresist.clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
-from .figure3 import plotPCA, plotUpstreamKinase_heatmap
+from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((9, 12), (3, 2), multz={0:1, 4: 1})
+    ax, f = getSetup((12, 12), (3, 3), multz={0:1, 7: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -26,8 +26,7 @@ def makeFigure():
     with open('msresist/data/pickled_models/ebdt_mcf7_pam250_CL12_W5', 'rb') as m:
         pam_model = pickle.load(m)[0]
 
-    pamC = pam_model.transform()
-    centers = pd.DataFrame(pamC)
+    centers = pd.DataFrame(pam_model.transform())
     centers.columns = np.arange(pam_model.ncl) + 1
     centers.insert(0, "Sample", x.columns[3:])
     centers["Sample"] = [s.split(".")[1].split(".")[0]  for s in centers["Sample"]]
@@ -38,8 +37,13 @@ def makeFigure():
     # PCA
     plotPCA(ax[1:3], centers, 2, ["Sample"], "Cluster")
 
+    # Motifs
+    pssms = pam_model.pssms(PsP_background=False)
+    motifs = [pssms[1], pssms[5], pssms[10]]
+    plotMotifs(motifs, titles=["Cluster 2", "Cluster 6", "Cluster 11"], axes=ax[3:6])
+
     # Upstream Kinases
-    plotUpstreamKinase_heatmap(pam_model, list(np.arange(pam_model.ncl) + 1), ax[3])
+    plotUpstreamKinase_heatmap(pam_model, list(np.arange(pam_model.ncl) + 1), ax[6])
 
     return f 
 
