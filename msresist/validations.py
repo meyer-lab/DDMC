@@ -11,9 +11,9 @@ def preprocess_ebdt_mcf7():
     x.insert(1, "pos", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)  for s in x["sh.index.sites"]])
     x = x.drop("sh.index.sites", axis=1)
     motifs, del_ids = pos_to_motif(x["gene"], x["pos"], motif_size=5)
-    x = x.set_index(["gene", "pos"]).drop(del_ids)
-    x.insert(2, "Sequence", motifs)
-    return x.reset_index()
+    x = x.set_index(["gene", "pos"]).drop(del_ids).reset_index()
+    x.insert(0, "Sequence", motifs)
+    return x
 
 def pos_to_motif(genes, pos, motif_size=5):
     """Map p-site sequence position to uniprot's proteome and extract motifs."""
@@ -29,7 +29,7 @@ def pos_to_motif(genes, pos, motif_size=5):
             continue
         idx = int(pos[1:]) - 1
         motif = list(UP_seq[max(0, idx - motif_size): idx + motif_size + 1])
-        if len(motif) != motif_size*2+1 or pos[0] != motif[motif_size]:
+        if len(motif) != motif_size*2+1 or pos[0] != motif[motif_size] or pos[0] not in ["S", "T", "Y"]:
             del_GeneToPos.append([gene, pos])
             continue
         motif[motif_size] = motif[motif_size].lower()

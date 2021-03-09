@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from msresist.figures.figure1 import TimePointFoldChange
+from .figure1 import TimePointFoldChange
 
 
 def plot_YAPinhibitorTimeLapse(ax, X):

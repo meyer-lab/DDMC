@@ -31,3 +31,9 @@ if __name__ == "__main__":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
                        f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)
+
+
+    if sys.argv[1] == "M6":
+        # Overlay Figure M3 heatmap
+        overlayCartoon(fdir + 'figureM6.svg',
+                       f'{cartoon_dir}/heatmap_ebdt_mcf7.svg', 60, 10, scalee=0.48)

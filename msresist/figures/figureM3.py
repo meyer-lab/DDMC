@@ -12,9 +12,9 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from ..figures.figureMS6 import TumorType
+from .figureMS6 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
+from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 
 
 def makeFigure():

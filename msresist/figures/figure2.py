@@ -5,7 +5,7 @@ This creates Figure 2.
 from .common import subplotLabel, getSetup
 import pandas as pd
 from msresist.pre_processing import preprocessing
-from msresist.figures.figure1 import IndividualTimeCourses, barplot_UtErlAF154
+from .figure1 import IndividualTimeCourses, barplot_UtErlAF154
 
 pd.set_option("display.max_columns", 30)
 endpointcolors = ["light grey", "dark grey", "light navy blue", "jungle green"]

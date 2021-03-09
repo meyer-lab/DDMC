@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 from ..plsr import R2Y_across_components
-from ..figures.figure1 import pca_dfs
+from .figure1 import pca_dfs
 from ..distances import DataFrameRipleysK
 import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
@@ -376,6 +376,7 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     cbar = ax.collections[0].colorbar
     cbar.ax.tick_params(labelsize=7)
     ax.set_ylabel("Frobenius Norm (motif vs kinase specifcity)")
+    ax.set_title("Upstream Kinase Inference")
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
