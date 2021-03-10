@@ -35,3 +35,32 @@ def pos_to_motif(genes, pos, motif_size=5):
         motif[motif_size] = motif[motif_size].lower()
         motifs.append("".join(motif))
     return motifs, del_GeneToPos
+
+
+def upstreamKin_and_pdts_perCluster(model):
+    """Find number of substrates per upstream kinases for each cluster determined by the putative downstream targets (PDTs) 
+    determined by Hijazi et al Nat Biotech 2020 (Sup Data Set 3)."""
+    pdts = pd.read_csv("msresist/data/Validations/ebdt/PDTs.csv")
+    ListOfUpKin = []
+    dictKinToSubNumber = {}
+    for i in range(1, model.ncl + 1):
+        members = pd.read_csv("msresist/data/cluster_members/ebdt_pam250_12CL_W5_members_C" + str(i) + ".csv")
+        gene_pos = list(zip(members["gene"], members["pos"]))
+        m = [g + "(" + p + ")" for g, p in gene_pos]
+        for substrate in m:
+            upK = pdts[pdts["Putative Downtream Target"] == substrate]
+            if upK.shape[0] == 0:
+                continue
+            for kin in upK["kinase"]:
+                if (kin, substrate) not in dictKinToSubNumber.keys():
+                    dictKinToSubNumber[(kin, substrate)] = 0
+                else:
+                    dictKinToSubNumber[(kin, substrate)] += 1
+
+        output = pd.DataFrame()
+        output["upstream_kinase"] = dictKinToSubNumber.keys()
+        output["num_pdts"] = dictKinToSubNumber.values()
+        output = output[output["num_pdts"] != 0]
+        ListOfUpKin.append(output.sort_values(by="num_pdts", ascending=False))
+
+    return ListOfUpKin
