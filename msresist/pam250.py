@@ -37,6 +37,31 @@ class PAM250(CustomDistribution):
         self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
 
 
+class fixedMotif(CustomDistribution):
+    def __init__(self, seqs, motif, SeqWeight):
+        # Compute all pairwise log-likelihood of each peptide for the motif
+        self.background = motifLL(seqs, motif)
+
+        super().__init__(self.background.shape[0])
+        self.seqs = seqs
+        self.motif = motif
+        self.name = "fixedMotif"
+        self.SeqWeight = SeqWeight
+        self.from_summaries()
+
+    def __reduce__(self):
+        """Serialize the distribution for pickle."""
+        return unpackPAM, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
+
+    def copy(self):
+        return fixedMotif(self.seqs, self.motif, self.SeqWeight)
+
+    def from_summaries(self, inertia=0.0):
+        """ Update the underlying distribution. No inertia used. """
+        self.logWeights[:] = self.SeqWeight * self.background
+        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+
+
 def unpackPAM(seqs, sw, lw, frozen):
     """Unpack from pickling."""
     clss = PAM250(seqs, sw)
