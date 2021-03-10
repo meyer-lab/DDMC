@@ -342,7 +342,7 @@ def plotMotifs(pssms, axes, titles=False, yaxis=False):
         else:
             logo.ax.set_title('Motif Cluster ' + str(i + 1))
         if yaxis:
-            logo.ax.set_ylim([yaxis[0], yaxis[1]])
+            logo.ax.set_ylim(yaxis)
 
 
 def plot_LassoCoef(ax, model, title=False):

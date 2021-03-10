@@ -42,20 +42,20 @@ def upstreamKin_and_pdts_perCluster(model):
     determined by Hijazi et al Nat Biotech 2020 (Sup Data Set 3)."""
     pdts = pd.read_csv("msresist/data/Validations/ebdt/PDTs.csv")
     ListOfUpKin = []
-    dictKinToSubNumber = {}
     for i in range(1, model.ncl + 1):
         members = pd.read_csv("msresist/data/cluster_members/ebdt_pam250_12CL_W5_members_C" + str(i) + ".csv")
         gene_pos = list(zip(members["gene"], members["pos"]))
-        m = [g + "(" + p + ")" for g, p in gene_pos]
-        for substrate in m:
+        members = [g + "(" + p + ")" for g, p in gene_pos]
+        dictKinToSubNumber = {}
+        for substrate in members:
             upK = pdts[pdts["Putative Downtream Target"] == substrate]
             if upK.shape[0] == 0:
                 continue
             for kin in upK["kinase"]:
-                if (kin, substrate) not in dictKinToSubNumber.keys():
-                    dictKinToSubNumber[(kin, substrate)] = 0
+                if kin not in list(dictKinToSubNumber.keys()):
+                    dictKinToSubNumber[kin] = 0
                 else:
-                    dictKinToSubNumber[(kin, substrate)] += 1
+                    dictKinToSubNumber[kin] += 1
 
         output = pd.DataFrame()
         output["upstream_kinase"] = dictKinToSubNumber.keys()
