@@ -327,7 +327,10 @@ def plotMotifs(pssms, axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     for i, ax in enumerate(axes):
         pssm = pssms[i].T
-        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+        if pssm.shape[0] == 11:
+            pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+        elif pssm.shape[0] == 9:
+            pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
         logo = lm.Logo(pssm,
                        font_name='Arial',
                        vpad=0.1,

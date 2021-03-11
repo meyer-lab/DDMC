@@ -47,7 +47,12 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)] + [seqDist.copy()]
+                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)]
+
+                if type(seqDist) == list:
+                    nDist.append(seqDist[ii])
+                else:
+                    nDist.append(seqDist.copy())
 
                 for jj in range(d.shape[1] - 1):
                     nDist[jj].fit(d[km.labels_ == ii, jj])
