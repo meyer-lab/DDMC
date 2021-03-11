@@ -20,7 +20,7 @@ def EM_clustering_repeat(nRepeats=3, *params):
     return output
 
 
-def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
+def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=None):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    pc = PCA(d, ncomp=ncl, missing="fill-em", standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=3, missing="fill-em", standardize=False, demean=False, normalize=False)
 
     # Solve for the KMeans clustering for initialization
     km = KMeans(ncl, tol=1e-9)
@@ -36,6 +36,11 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
 
     # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
+
+    # Setup weights for distributions
+    seqWarr = np.ones(d.shape[1])
+    seqWarr[-1] = seqWeight
+    seqWarr /= np.sum(seqWarr)
 
     for _ in range(10):
         if gmmIn is None:
@@ -53,13 +58,13 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
                 nDist[-1].summarize(d[:, -1], weights=weights)
                 nDist[-1].from_summaries()
 
-                dists.append(IndependentComponentsDistribution(nDist))
+                dists.append(IndependentComponentsDistribution(nDist, weights=seqWarr))
 
             gmm = GeneralMixtureModel(dists)
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=200, verbose=False, stop_threshold=1e-3)
+        gmm.fit(d, max_iterations=2000, verbose=False, stop_threshold=1e-9)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

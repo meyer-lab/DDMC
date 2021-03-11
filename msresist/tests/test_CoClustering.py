@@ -28,7 +28,7 @@ def test_wins(distance_method):
 
 
 @pytest.mark.parametrize("w", [0, 0.1, 0.3, 1])
-@pytest.mark.parametrize("ncl", [2, 3, 4])
+@pytest.mark.parametrize("ncl", [2, 4, 6])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
@@ -44,7 +44,7 @@ def test_pickle(distm):
     """ Test that EMclustering can be pickled and unpickled. """
     MSC = MassSpecClustering(info, 2, SeqWeight=2, distance_method=distm).fit(X=data)
     unpickled = pickle.loads(pickle.dumps(MSC))
-    _, scores, _, _ = EM_clustering(data, info, 2, gmmIn=unpickled.gmm_)
+    _, scores, _, _ = EM_clustering(data, info, 2, 2.0, gmmIn=unpickled.gmm_)
 
     assert np.all(np.isfinite(unpickled.scores_))
     np.testing.assert_allclose(MSC.scores_, scores, rtol=1e-2, atol=0.1)
