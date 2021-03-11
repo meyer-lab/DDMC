@@ -32,13 +32,13 @@ class MassSpecClustering(BaseEstimator):
         seqs = [s.upper() for s in info["Sequence"]]
 
         if distance_method == "PAM250":
-            self.dist = PAM250(seqs, SeqWeight)
+            self.dist = PAM250(seqs)
         elif distance_method == "Binomial":
-            self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
+            self.dist = Binomial(info["Sequence"], seqs)
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.SeqWeight, self.dist)
 
         return self
 
@@ -46,11 +46,8 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = self.dist.copy()
-        wDist.SeqWeight = 0.0
-        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
-        wDist.SeqWeight = 10.0
-        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, 0.0, self.dist)[1]
+        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, 10.0, self.dist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
