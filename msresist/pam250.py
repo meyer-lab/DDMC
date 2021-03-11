@@ -1,4 +1,7 @@
+"""PAM250 matrix to compute sequence distance between sequences and clusters."""
+
 import numpy as np
+import pandas as pd
 import scipy.stats as sp
 import scipy.special as sc
 from Bio.Align import substitution_matrices
@@ -21,7 +24,7 @@ class PAM250(CustomDistribution):
         self.from_summaries()
 
     def __reduce__(self):
-        """Serialize the distribution for pickle."""
+        """ Serialize the distribution for pickle. """
         return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
 
     def copy(self):
@@ -37,6 +40,34 @@ class PAM250(CustomDistribution):
         self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
 
 
+class fixedMotif(CustomDistribution):
+    def __init__(self, seqs, motif, SeqWeight):
+        # Compute log-likelihood of each peptide for the motif
+        self.background = np.zeros(seqs.shape[0])
+        for ii in range(seqs.shape[1]):
+            self.background += motif[seqs[:, ii], ii]
+        assert np.all(np.isfinite(self.background))
+
+        super().__init__(self.background.shape[0])
+        self.seqs = seqs
+        self.motif = motif
+        self.name = "fixedMotif"
+        self.SeqWeight = SeqWeight
+        self.from_summaries()
+
+    def __reduce__(self):
+        """Serialize the distribution for pickle."""
+        return unpackFixed, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
+
+    def copy(self):
+        return fixedMotif(self.seqs, self.motif, self.SeqWeight)
+
+    def from_summaries(self, inertia=0.0):
+        """ Update the underlying distribution. No inertia used. """
+        self.logWeights[:] = self.SeqWeight * self.background
+        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+
+
 def unpackPAM(seqs, sw, lw, frozen):
     """Unpack from pickling."""
     clss = PAM250(seqs, sw)
@@ -46,8 +77,17 @@ def unpackPAM(seqs, sw, lw, frozen):
     return clss
 
 
+def unpackFixed(seqs, motif, sw, lw, frozen):
+    """Unpack from pickling."""
+    clss = fixedMotif(seqs, motif, sw)
+    clss.frozen = frozen
+    clss.weightsIn[:] = np.exp(lw)
+    clss.logWeights[:] = lw
+    return clss
+
+
 def MotifPam250Scores(seqs):
-    """ Calculate and store all pairwise pam250 distances before starting """
+    """ Calculate and store all pairwise pam250 distances before starting. """
     pam250 = substitution_matrices.load("PAM250")
     seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
 
