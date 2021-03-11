@@ -132,7 +132,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 class Binomial(CustomDistribution):
     """Create a binomial distance distribution compatible with pomegranate. """
 
-    def __init__(self, seq, seqs, SeqWeight, background=None):
+    def __init__(self, seq, seqs, background=None):
         self.background = background
 
         if background is None:
@@ -144,17 +144,16 @@ class Binomial(CustomDistribution):
         self.seq = seq
         self.seqs = seqs
         self.name = "Binomial"
-        self.SeqWeight = SeqWeight
         self.from_summaries()
         assert np.all(np.isfinite(self.background[0]))
         assert np.all(np.isfinite(self.background[1]))
 
     def copy(self):
-        return Binomial(self.seq, self.seqs, self.SeqWeight, self.background)
+        return Binomial(self.seq, self.seqs, self.background)
 
     def __reduce__(self):
         """Serialize the distribution for pickle."""
-        return unpackBinomial, (self.seq, self.seqs, self.SeqWeight, self.logWeights, self.frozen)
+        return unpackBinomial, (self.seq, self.seqs, self.logWeights, self.frozen)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
@@ -164,13 +163,13 @@ class Binomial(CustomDistribution):
         betaA = np.sum(self.weightsIn) - k
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
-        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+        self.logWeights[:] = np.log(np.tensordot(self.background[1], probmat, axes=2))
+        self.logWeights[:] = self.logWeights - np.sum(self.logWeights)
 
 
-def unpackBinomial(seq, seqs, sw, lw, frozen):
+def unpackBinomial(seq, seqs, lw, frozen):
     """Unpack from pickling."""
-    clss = Binomial(seq, seqs, sw)
+    clss = Binomial(seq, seqs)
     clss.frozen = frozen
     clss.weightsIn[:] = np.exp(lw)
     clss.logWeights[:] = lw
