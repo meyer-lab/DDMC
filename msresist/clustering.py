@@ -8,10 +8,11 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
+from Bio.Align import substitution_matrices
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
-from .pam250 import PAM250, fixedMotif, PSPLdict
+from .pam250 import PAM250, fixedMotif
 
 
 # pylint: disable=W0201
@@ -34,11 +35,13 @@ class MassSpecClustering(BaseEstimator):
             self.dist = PAM250(seqs, SeqWeight)
 
         elif distance_method == "PAM250_fixed":
-            pam_fixed = []
+            pam250 = substitution_matrices.load("PAM250")
+            seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
+            seqs = np.delete(seqs, [5, 10], axis=1) # Delelte P0 and P+5 (not in PSPL motifs)
+            PSPLs = PSPLdict()
+
             self.pre_motifs = pre_motifs
-            for i in range(ncl):
-                pam_fixed.append(fixedMotif(seqs, pre_motifs[i], SeqWeight))
-            self.dist = pam_fixed
+            self.dist = [fixedMotif(seqs, PSPLs[pre_motifs[i]], SeqWeight) for i in range(ncl)]
 
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)

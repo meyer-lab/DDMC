@@ -8,7 +8,6 @@ import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
 from pomegranate.distributions import CustomDistribution
-from .binomial import AAlist
 
 
 class PAM250(CustomDistribution):
@@ -45,7 +44,7 @@ class PAM250(CustomDistribution):
 class fixedMotif(CustomDistribution):
     def __init__(self, seqs, motif, SeqWeight):
         # Compute all pairwise log-likelihood of each peptide for a motif per cluster
-        self.background = motifLL(seqs, motif)
+        self.background[:] = np.array([np.average([motif[seq, ii] for ii in range(len(seqs[0]))]) for seq in seqs])
 
         super().__init__(self.background.shape[0])
         self.seqs = seqs
@@ -65,19 +64,6 @@ class fixedMotif(CustomDistribution):
         """ Update the underlying distribution. No inertia used. """
         self.logWeights[:] = self.SeqWeight * self.background
         self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
-
-
-def motifLL(seqs, motif):
-    """ Take a peptide list and one PSPL per cluster, then return the log-likelihood for each of 
-    the peptides in the list for each of the PSPLs. """
-    pam250 = substitution_matrices.load("PAM250")
-    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
-    seqs = np.delete(seqs, [5, 10], axis=1) # Delelte P0 and P+5 (not in PSPL motifs)
-    PSPLs = PSPLdict()
-    pspl = PSPLs[motif]
-    motif_probs = np.zeros(seqs.shape[0])
-    motif_probs[:] = np.array([np.average([pspl[seq, ii] for ii in range(len(seqs[0]))]) for seq in seqs])
-    return motif_probs
 
 
 def unpackPAM(seqs, sw, lw, frozen):
