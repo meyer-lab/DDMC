@@ -9,10 +9,11 @@ from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
+from Bio.Align import substitution_matrices
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
-from .pam250 import PAM250
+from .pam250 import PAM250, fixedMotif
 
 
 # pylint: disable=W0201
@@ -23,7 +24,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, background=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, pre_motifs=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
@@ -33,6 +34,20 @@ class MassSpecClustering(BaseEstimator):
 
         if distance_method == "PAM250":
             self.dist = PAM250(seqs, SeqWeight)
+
+        elif distance_method == "PAM250_fixed":
+            assert len(pre_motifs) <= ncl
+            pam250 = substitution_matrices.load("PAM250")
+            seqsArr = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
+            seqsArr = np.delete(seqsArr, [5, 10], axis=1) # Delelte P0 and P+5 (not in PSPL motifs)
+            PSPLs = PSPLdict()
+
+            self.pre_motifs = pre_motifs
+            self.dist = [fixedMotif(seqsArr, PSPLs[mm], SeqWeight) for mm in pre_motifs]
+
+            while len(self.dist) < ncl:
+                self.dist.append(Binomial(info["Sequence"], seqs, SeqWeight))
+
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
@@ -46,10 +61,22 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = self.dist.copy()
-        wDist.SeqWeight = 0.0
+        if self.distance_method == "PAM250_fixed":
+            wDist = [dd.copy() for dd in self.dist]
+            for dd in wDist:
+                dd.SeqWeight = 0.0
+        else:
+            wDist = self.dist.copy()
+            wDist.SeqWeight = 0.0
+
         data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
-        wDist.SeqWeight = 10.0
+
+        if self.distance_method == "PAM250_fixed":
+            for dd in wDist:
+                dd.SeqWeight = 10.0
+        else:
+            wDist.SeqWeight = 10.0
+
         seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
@@ -134,8 +161,8 @@ class MassSpecClustering(BaseEstimator):
 
     def predict_UpstreamKinases(self, n_components=2, PsP_background=False):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
-        PSPLs = PSPSLdict()
-        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
+        PSPLs = PSPLdict()
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
         a = np.zeros((len(PSPLs), len(PSSMs)))
 
         for ii, spec_profile in enumerate(PSPLs.values()):
@@ -143,7 +170,7 @@ class MassSpecClustering(BaseEstimator):
                 a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
         table = pd.DataFrame(a)
-        table.insert(0, "Kinase", list(PSPSLdict().keys()))
+        table.insert(0, "Kinase", list(PSPLdict().keys()))
         return table
 
     def predict(self):
@@ -172,7 +199,7 @@ class MassSpecClustering(BaseEstimator):
         return self
 
 
-def PSPSLdict():
+def PSPLdict():
     """Generate dictionary with kinase name-specificity profile pairs"""
     pspl_dict = {}
     # individual files
