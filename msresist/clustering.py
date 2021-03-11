@@ -43,10 +43,10 @@ class MassSpecClustering(BaseEstimator):
             PSPLs = PSPLdict()
 
             self.pre_motifs = pre_motifs
-            self.dist = [fixedMotif(seqsArr, PSPLs[mm], SeqWeight) for mm in pre_motifs]
+            self.dist = [fixedMotif(seqsArr, PSPLs[mm]) for mm in pre_motifs]
 
             while len(self.dist) < ncl:
-                self.dist.append(Binomial(info["Sequence"], seqs, SeqWeight))
+                self.dist.append(Binomial(info["Sequence"], seqs))
 
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs)
