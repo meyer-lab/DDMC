@@ -7,7 +7,7 @@ from pomegranate.distributions import CustomDistribution
 
 
 class PAM250(CustomDistribution):
-    def __init__(self, seqs, SeqWeight, background=None):
+    def __init__(self, seqs, background=None):
         self.background = background
 
         if background is None:
@@ -17,29 +17,28 @@ class PAM250(CustomDistribution):
         super().__init__(self.background.shape[0])
         self.seqs = seqs
         self.name = "PAM250"
-        self.SeqWeight = SeqWeight
         self.from_summaries()
 
     def __reduce__(self):
         """Serialize the distribution for pickle."""
-        return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
+        return unpackPAM, (self.seqs, self.logWeights, self.frozen)
 
     def copy(self):
-        return PAM250(self.seqs, self.SeqWeight, self.background)
+        return PAM250(self.seqs, self.background)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
         if np.sum(self.weightsIn) == 0.0:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
+            self.logWeights[:] = np.average(self.background, axis=0)
         else:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
+            self.logWeights[:] = np.average(self.background, weights=self.weightsIn, axis=0)
 
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+        self.logWeights[:] = self.logWeights - np.sum(self.logWeights)
 
 
-def unpackPAM(seqs, sw, lw, frozen):
+def unpackPAM(seqs, lw, frozen):
     """Unpack from pickling."""
-    clss = PAM250(seqs, sw)
+    clss = PAM250(seqs)
     clss.frozen = frozen
     clss.weightsIn[:] = np.exp(lw)
     clss.logWeights[:] = lw
