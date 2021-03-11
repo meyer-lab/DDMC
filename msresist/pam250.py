@@ -1,6 +1,5 @@
 """PAM250 matrix to compute sequence distance between sequences and clusters."""
 
-import glob
 import numpy as np
 import pandas as pd
 import scipy.stats as sp
@@ -43,8 +42,11 @@ class PAM250(CustomDistribution):
 
 class fixedMotif(CustomDistribution):
     def __init__(self, seqs, motif, SeqWeight):
-        # Compute all pairwise log-likelihood of each peptide for a motif per cluster
-        self.background[:] = np.array([np.average([motif[seq, ii] for ii in range(len(seqs[0]))]) for seq in seqs])
+        # Compute log-likelihood of each peptide for the motif
+        self.background = np.zeros(seqs.shape[0])
+        for ii in range(seqs.shape[1]):
+            self.background += motif[seqs[:, ii], ii]
+        assert np.all(np.isfinite(self.background))
 
         super().__init__(self.background.shape[0])
         self.seqs = seqs
@@ -55,7 +57,7 @@ class fixedMotif(CustomDistribution):
 
     def __reduce__(self):
         """Serialize the distribution for pickle."""
-        return unpackPAM, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
+        return unpackFixed, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
 
     def copy(self):
         return fixedMotif(self.seqs, self.motif, self.SeqWeight)
@@ -69,6 +71,15 @@ class fixedMotif(CustomDistribution):
 def unpackPAM(seqs, sw, lw, frozen):
     """Unpack from pickling."""
     clss = PAM250(seqs, sw)
+    clss.frozen = frozen
+    clss.weightsIn[:] = np.exp(lw)
+    clss.logWeights[:] = lw
+    return clss
+
+
+def unpackFixed(seqs, motif, sw, lw, frozen):
+    """Unpack from pickling."""
+    clss = fixedMotif(seqs, motif, sw)
     clss.frozen = frozen
     clss.weightsIn[:] = np.exp(lw)
     clss.logWeights[:] = lw
