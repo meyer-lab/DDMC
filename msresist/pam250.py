@@ -1,9 +1,14 @@
+"""PAM250 matrix to compute sequence distance between sequences and clusters."""
+
+import glob
 import numpy as np
+import pandas as pd
 import scipy.stats as sp
 import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
 from pomegranate.distributions import CustomDistribution
+from .binomial import AAlist
 
 
 class PAM250(CustomDistribution):
@@ -21,7 +26,7 @@ class PAM250(CustomDistribution):
         self.from_summaries()
 
     def __reduce__(self):
-        """Serialize the distribution for pickle."""
+        """ Serialize the distribution for pickle. """
         return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
 
     def copy(self):
@@ -39,7 +44,7 @@ class PAM250(CustomDistribution):
 
 class fixedMotif(CustomDistribution):
     def __init__(self, seqs, motif, SeqWeight):
-        # Compute all pairwise log-likelihood of each peptide for the motif
+        # Compute all pairwise log-likelihood of each peptide for a motif per cluster
         self.background = motifLL(seqs, motif)
 
         super().__init__(self.background.shape[0])
@@ -62,6 +67,19 @@ class fixedMotif(CustomDistribution):
         self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
 
 
+def motifLL(seqs, motif):
+    """ Take a peptide list and one PSPL per cluster, then return the log-likelihood for each of 
+    the peptides in the list for each of the PSPLs. """
+    pam250 = substitution_matrices.load("PAM250")
+    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
+    seqs = np.delete(seqs, [5, 10], axis=1) # Delelte P0 and P+5 (not in PSPL motifs)
+    PSPLs = PSPLdict()
+    pspl = PSPLs[motif]
+    motif_probs = np.zeros(seqs.shape[0])
+    motif_probs[:] = np.array([np.average([pspl[seq, ii] for ii in range(len(seqs[0]))]) for seq in seqs])
+    return motif_probs
+
+
 def unpackPAM(seqs, sw, lw, frozen):
     """Unpack from pickling."""
     clss = PAM250(seqs, sw)
@@ -72,7 +90,7 @@ def unpackPAM(seqs, sw, lw, frozen):
 
 
 def MotifPam250Scores(seqs):
-    """ Calculate and store all pairwise pam250 distances before starting """
+    """ Calculate and store all pairwise pam250 distances before starting. """
     pam250 = substitution_matrices.load("PAM250")
     seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
 
@@ -101,3 +119,42 @@ def distanceCalc(out, seqs, pam250m):
                 out[ii, jj] += pam250m[seqs[ii, zz], seqs[jj, zz]]
 
     return out
+
+
+def PSPLdict():
+    """Generate dictionary with kinase name-specificity profile pairs"""
+    pspl_dict = {}
+    # individual files
+    PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
+    for sp in PSPLs:
+        if sp == "./msresist/data/PSPL/pssm_data.csv":
+            continue
+        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
+
+        if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
+            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
+            sp_mat = sp_mat.iloc[:-2, 1:].values
+        else:
+            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
+            sp_mat = sp_mat.iloc[:, 1:].values
+
+        if np.all(sp_mat >= 0):
+            sp_mat = np.log2(sp_mat)
+
+        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
+
+    # NetPhores PSPL results
+    f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
+    matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
+    for ii in matIDX:
+        kin = f.iloc[ii[0], 0]
+        mat = f.iloc[ii[1:], :].T
+        mat.columns = np.arange(mat.shape[1])
+        mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
+        mat = np.ma.log2(mat)
+        mat = mat.filled(0)
+        mat[mat > 3] = 3
+        mat[mat < -3] = -3
+        pspl_dict[kin] = mat
+
+    return pspl_dict

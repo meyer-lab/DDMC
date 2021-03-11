@@ -6,7 +6,7 @@ import os
 import pickle
 import pytest
 import numpy as np
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..expectation_maximization import EM_clustering
 from ..pre_processing import preprocessing
 

@@ -1,6 +1,5 @@
 """ Clustering functions. """
 
-import glob
 import itertools
 from copy import copy
 import numpy as np
@@ -12,18 +11,18 @@ from sklearn.decomposition import PCA
 from .expectation_maximization import EM_clustering_repeat
 from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
-from .pam250 import PAM250
+from .pam250 import PAM250, fixedMotif, PSPLdict
 
 
 # pylint: disable=W0201
 
 
-class MassSpecClustering(BaseEstimator):
+class DDMC(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, background=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, pre_motifs=False):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
@@ -33,6 +32,14 @@ class MassSpecClustering(BaseEstimator):
 
         if distance_method == "PAM250":
             self.dist = PAM250(seqs, SeqWeight)
+
+        elif distance_method == "PAM250_fixed":
+            pam_fixed = []
+            self.pre_motifs = pre_motifs
+            for i in range(ncl):
+                pam_fixed.append(fixedMotif(seqs, pre_motifs[i], SeqWeight))
+            self.dist = pam_fixed
+
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
@@ -134,8 +141,8 @@ class MassSpecClustering(BaseEstimator):
 
     def predict_UpstreamKinases(self, n_components=2, PsP_background=False):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
-        PSPLs = PSPSLdict()
-        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], 1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
+        PSPLs = PSPLdict()
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
         a = np.zeros((len(PSPLs), len(PSSMs)))
 
         for ii, spec_profile in enumerate(PSPLs.values()):
@@ -143,7 +150,7 @@ class MassSpecClustering(BaseEstimator):
                 a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
         table = pd.DataFrame(a)
-        table.insert(0, "Kinase", list(PSPSLdict().keys()))
+        table.insert(0, "Kinase", list(PSPLdict().keys()))
         return table
 
     def predict(self):
@@ -170,45 +177,6 @@ class MassSpecClustering(BaseEstimator):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         return self
-
-
-def PSPSLdict():
-    """Generate dictionary with kinase name-specificity profile pairs"""
-    pspl_dict = {}
-    # individual files
-    PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
-    for sp in PSPLs:
-        if sp == "./msresist/data/PSPL/pssm_data.csv":
-            continue
-        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
-
-        if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
-            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:-2, 1:].values
-        else:
-            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:, 1:].values
-
-        if np.all(sp_mat >= 0):
-            sp_mat = np.log2(sp_mat)
-
-        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
-
-    # NetPhores PSPL results
-    f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
-    matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
-    for ii in matIDX:
-        kin = f.iloc[ii[0], 0]
-        mat = f.iloc[ii[1:], :].T
-        mat.columns = np.arange(mat.shape[1])
-        mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
-        mat = np.ma.log2(mat)
-        mat = mat.filled(0)
-        mat[mat > 3] = 3
-        mat[mat < -3] = -3
-        pspl_dict[kin] = mat
-
-    return pspl_dict
 
 
 def background_pssm(bg_sequences):
