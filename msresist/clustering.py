@@ -39,7 +39,7 @@ class MassSpecClustering(BaseEstimator):
             assert len(pre_motifs) <= ncl
             pam250 = substitution_matrices.load("PAM250")
             seqsArr = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
-            seqsArr = np.delete(seqsArr, [5, 10], axis=1) # Delelte P0 and P+5 (not in PSPL motifs)
+            seqsArr = np.delete(seqsArr, [5, 10], axis=1)  # Delelte P0 and P+5 (not in PSPL motifs)
             PSPLs = PSPLdict()
 
             self.pre_motifs = pre_motifs

@@ -49,7 +49,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
             for ii in range(ncl):
                 nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)]
 
-                if type(seqDist) == list:
+                if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
