@@ -36,22 +36,25 @@ class PAM250(CustomDistribution):
         else:
             self.logWeights[:] = np.average(self.background, weights=self.weightsIn, axis=0)
 
-        self.logWeights[:] = self.logWeights - np.amax(self.logWeights)
+        self.logWeights[:] = self.logWeights - np.average(self.logWeights)
 
 
 class fixedMotif(CustomDistribution):
     def __init__(self, seqs, motif):
         # Compute log-likelihood of each peptide for the motif
-        self.background = np.zeros(seqs.shape[0])
+        super().__init__(seqs.shape[0])
         for ii in range(seqs.shape[1]):
-            self.background += motif[seqs[:, ii], ii]
-        assert np.all(np.isfinite(self.background))
+            self.logWeights[:] += motif[seqs[:, ii], ii]
 
-        super().__init__(self.background.shape[0])
+        assert np.all(np.isfinite(self.logWeights))
+
+        # Force the average distance to all peptides to be the same
+        self.logWeights[:] = self.logWeights - np.average(self.logWeights)
+
         self.seqs = seqs
         self.motif = motif
         self.name = "fixedMotif"
-        self.from_summaries()
+        self.frozen = True
 
     def __reduce__(self):
         """Serialize the distribution for pickle."""
@@ -61,9 +64,8 @@ class fixedMotif(CustomDistribution):
         return fixedMotif(self.seqs, self.motif)
 
     def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
-        self.logWeights[:] = self.background
-        self.logWeights[:] = self.logWeights - np.amax(self.logWeights)
+        """ Distribution is fixed. No need to update. """
+        return
 
 
 def unpackPAM(seqs, lw, frozen):
