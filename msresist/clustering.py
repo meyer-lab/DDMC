@@ -19,7 +19,7 @@ from .pam250 import PAM250, fixedMotif
 # pylint: disable=W0201
 
 
-class MassSpecClustering(BaseEstimator):
+class DDMC(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
@@ -53,6 +53,7 @@ class MassSpecClustering(BaseEstimator):
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
+        print("fit")
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.SeqWeight, self.dist)
 
         return self

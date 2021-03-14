@@ -28,11 +28,15 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
+    print("start PCA")
     pc = PCA(d, ncomp=3, missing="fill-em", standardize=False, demean=False, normalize=False)
+    print("PCA fit")
 
     # Solve for the KMeans clustering for initialization
+    print("start kmeans")
     km = KMeans(ncl, tol=1e-9)
     km.fit(pc._adjusted_data)
+    print("km fit:", km.labels_)
 
     # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
@@ -69,7 +73,9 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=2000, verbose=False, stop_threshold=1e-9)
+        print("distributions ready to fit GMM")
+        gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-9)
+        print("GMM fit")
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
