@@ -28,16 +28,8 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    print("start PCA")
-    print(d.shape)
-    pc = PCA(d, ncomp=3, missing="fill-em", method="nipals", standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=3, missing="fill-em", method="nipals", tol=1e-9, standardize=False, demean=False, normalize=False)
     print("PCA fit")
-
-    # Solve for the KMeans clustering for initialization
-    print("start kmeans")
-    km = KMeans(ncl, tol=1e-9)
-    km.fit(pc._adjusted_data)
-    print("km fit:", km.labels_)
 
     # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
@@ -48,6 +40,11 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
     seqWarr /= np.sum(seqWarr)
 
     for _ in range(10):
+        # Solve for the KMeans clustering for initialization
+        print("start kmeans")
+        km = KMeans(ncl, tol=1e-9)
+        km.fit(pc._adjusted_data)
+
         if gmmIn is None:
             # Initialize model
             dists = list()
