@@ -29,7 +29,8 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
 
     # In case we have missing data, use SVD-EM to fill it for initialization
     print("start PCA")
-    pc = PCA(d, ncomp=3, missing="fill-em", standardize=False, demean=False, normalize=False)
+    print(d.shape)
+    pc = PCA(d, ncomp=3, missing="fill-em", method="nipals", standardize=False, demean=False, normalize=False)
     print("PCA fit")
 
     # Solve for the KMeans clustering for initialization
