@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    pc = PCA(d, ncomp=3, missing="fill-em", method="nipals", tol=1e-9, standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=4, missing="fill-em", method="nipals", tol=1e-9, standardize=False, demean=False, normalize=False)
     print("PCA fit")
 
     # Add a dummy variable for the sequence information
@@ -49,23 +49,17 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)]
+                nDist = [NormalDistribution(1.0, 0.2, min_std=0.1) for _ in range(d.shape[1] - 1)]
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
 
-                for jj in range(d.shape[1] - 1):
-                    nDist[jj].fit(d[km.labels_ == ii, jj])
-
-                weights = np.array(km.labels_ == ii, dtype=float)
-                weights = 0.9 * weights + 0.01
-
-                nDist[-1].summarize(d[:, -1], weights=weights)
-                nDist[-1].from_summaries()
+                weights = np.array(km.labels_ == ii, dtype=float) + 0.001
 
                 dists.append(IndependentComponentsDistribution(nDist, weights=seqWarr))
+                dists[-1].fit(d, weights=weights)
 
             gmm = GeneralMixtureModel(dists)
         else:
