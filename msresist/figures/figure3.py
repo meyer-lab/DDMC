@@ -302,25 +302,25 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, centers, xlabels, title, yaxis=False):
+def plotCenters(ax, centers, xlabels, title=False, yaxis=False):
     centers = pd.DataFrame(centers).T
     centers.columns = xlabels
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax, linewidth=2)
-        ax.set_xticklabels(xlabels, rotation=45)
-        ax.set_xticks(np.arange(len(xlabels)))
-        ax.set_ylabel("$log_{10}$ p-signal")
-        ax.xaxis.set_tick_params(bottom=True)
-        ax.set_xlabel("")
+        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i], linewidth=2)
+        ax[i].set_xticklabels(xlabels, rotation=45)
+        ax[i].set_xticks(np.arange(len(xlabels)))
+        ax[i].set_ylabel("$log_{10}$ p-signal")
+        ax[i].xaxis.set_tick_params(bottom=True)
+        ax[i].set_xlabel("")
         if title:
-            ax.legend([title])
+            ax[i].legend([title])
         else:
-            ax.legend(["cluster " + str(i + 1)])
+            ax[i].legend(["cluster " + str(i + 1)])
         if yaxis:
-            ax.set_ylim([yaxis[0], yaxis[1]])
+            ax[i].set_ylim([yaxis[0], yaxis[1]])
 
 
 def plotMotifs(pssms, axes, titles=False, yaxis=False):
