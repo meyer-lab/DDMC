@@ -43,6 +43,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         # Solve for the KMeans clustering for initialization
         km = KMeans(ncl, tol=1e-9)
         km.fit(pc._adjusted_data)
+        print(km.cluster_centers_)
 
         if gmmIn is None:
             # Initialize model
@@ -64,7 +65,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=100, verbose=True, stop_threshold=1e-5)
+        gmm.fit(d, max_iterations=1, verbose=True, stop_threshold=1e-5)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

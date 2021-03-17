@@ -15,9 +15,10 @@ def makeFigure():
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
 
-    model = DDMC(i, ncl=30, SeqWeight=0, distance_method="PAM250").fit(d, "NA", nRepeats=1)
-    with open('msresist/data/pickled_models/pam250/CPTACmodel_pam250_CL30_W0', 'wb') as m:
+    model = DDMC(i, ncl=25, SeqWeight=0, distance_method="PAM250")
+    model.fit(d, "NA", nRepeats=1)
+    with open('msresist/data/pickled_models/pam250/CPTACmodel_pam250_CL25_W0', 'wb') as m:
         pickle.dump([model], m)
 
-    print("PAM250 W0 dumped")
+    print("model dumped.")
     raise SystemExit
