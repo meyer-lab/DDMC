@@ -49,24 +49,18 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(1.0, 0.2, min_std=0.1) for _ in range(d.shape[1] - 1)]
+                nDist = [NormalDistribution(km.cluster_centers_[ii, jj], 0.2, min_std=0.01) for jj in range(d.shape[1] - 1)]
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
 
-                weights = np.array(km.labels_ == ii, dtype=float) + 0.001
-
                 dists.append(IndependentComponentsDistribution(nDist, weights=seqWarr))
-                dists[-1].fit(d, weights=weights)
 
             gmm = GeneralMixtureModel(dists)
         else:
             gmm = gmmIn
-
-        # Make sure to run E first
-        gmm.summarize(d)
 
         gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-9)
         scores = gmm.predict_proba(d)
