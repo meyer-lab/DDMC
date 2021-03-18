@@ -65,12 +65,10 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         else:
             gmm = gmmIn
 
-        # Use to set the initial fitting in case it runs M first
-        scores = gmm.predict_proba(d)
+        # Make sure to run E first
+        gmm.summarize(d)
 
-        print("distributions ready to fit GMM")
-        gmm.fit(d, weights=scores, max_iterations=2000, verbose=True, stop_threshold=1e-9)
-        print("GMM fit")
+        gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-9)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
