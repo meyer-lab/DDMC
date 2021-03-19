@@ -29,7 +29,6 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
 
     # In case we have missing data, use SVD-EM to fill it for initialization
     pc = PCA(d, ncomp=4, missing="fill-em", method="nipals", tol=1e-9, standardize=False, demean=False, normalize=False)
-    print("PCA done")
 
     # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
