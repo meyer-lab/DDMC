@@ -66,7 +66,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-4)
+        gmm.fit(d, max_iterations=2000, verbose=False, stop_threshold=1e-4)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
