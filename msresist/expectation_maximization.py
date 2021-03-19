@@ -2,7 +2,7 @@
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
 from statsmodels.multivariate.pca import PCA
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
 
@@ -40,21 +40,25 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
     seqWarr /= np.sum(seqWarr)
 
     for _ in range(10):
-        # Solve for the KMeans clustering for initialization
-        km = KMeans(ncl, tol=1e-9)
+        # Solve with imputation first
+        km = GaussianMixture(ncl, tol=1e-9, covariance_type="diag")
         km.fit(pc._adjusted_data)
-        print(km.cluster_centers_)
+        gpp = km.predict_proba(pc._adjusted_data)
 
         if gmmIn is None:
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(km.cluster_centers_[ii, jj], 0.2, min_std=0.01) for jj in range(d.shape[1] - 1)]
+                nDist = [NormalDistribution(km.means_[ii, jj], km.covariances_[ii, jj], min_std=0.01) for jj in range(d.shape[1] - 1)]
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
+
+                # Setup sequence distribution
+                nDist[-1].weightsIn[:] = gpp[:, ii]
+                nDist[-1].from_summaries()
 
                 dists.append(IndependentComponentsDistribution(nDist, weights=seqWarr))
 
@@ -62,7 +66,7 @@ def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=No
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-9)
+        gmm.fit(d, max_iterations=2000, verbose=True, stop_threshold=1e-4)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
