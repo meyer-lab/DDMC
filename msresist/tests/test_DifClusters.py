@@ -14,6 +14,7 @@ d = X.select_dtypes(include=['float64']).T
 i = X.select_dtypes(include=['object'])
 preMotifSet = ["ABL", "EGFR", "ALK", "SRC", "YES"]
 
+
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial", "PAM250_fixed"])
 def test_ClusterVar(distance_method):
     """Test minimum variance of output cluster centers """
