@@ -312,14 +312,18 @@ def ripleys_import(replicate_number, folder_name, mutant_name, treatment_name):
 def treat_array_func(rep_list, Kest_func, radius, poisson_val, Kestbool=False):
     """Applies the Ripley's K function and returns the resulting values as an array"""
     Kests = []
-    for point_set in rep_list:
-        Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley") / poisson_val)
-    if Kestbool and len(Kests) < 2:
-        treat_array = Kests[0]
+    if Kestbool:
+        for point_set in rep_list:
+            Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley") / poisson_val)
+        if len(Kests) < 2:
+            treat_array = Kests[0]
+            return treat_array
     else:
-        treat_array = np.hstack((Kests[0], Kests[1]))
-        for i in range(2, len(Kests)):
-            treat_array = np.hstack((treat_array, Kests[i]))
+        for point_set in rep_list:
+            Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley"))
+    treat_array = np.hstack((Kests[0], Kests[1]))
+    for i in range(2, len(Kests)):
+        treat_array = np.hstack((treat_array, Kests[i]))
     return treat_array
 
 
