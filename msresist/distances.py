@@ -207,8 +207,9 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax, title=False):
     df = pd.melt(df, ["Radii"])
     df.columns = ["Radii", "Condition", "K Estimate"]
     sns.lineplot(x="Radii", y="K Estimate", hue="Condition", data=df, ci=68, ax=ax)
+    ax.legend(prop={'size':10})
     if title:
-       ax.set_title(title)
+        ax.set_title(title)
     else:
         ax.set_title(mutant)
 
@@ -231,10 +232,9 @@ def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, 
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     pal = sns.xkcd_palette(colors)
-    b = sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax, **{"linewidth": 0.5}, **{"edgecolor": "black"})
-    b.set_ylabel("K Estimate (radius=1.5)")
-    b.set_title("Island effect (t=48h)")
-    b.legend(loc=2)
+    sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax)
+    ax.set_title("Radius of " + str(r[0]) + " Normalized to Poisson")
+    ax.legend(prop={'size':10})
 
 
 def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
@@ -317,14 +317,18 @@ def ripleys_import(replicate_number, folder_name, mutant_name, treatment_name):
 def treat_array_func(rep_list, Kest_func, radius, poisson_val, Kestbool=False):
     """Applies the Ripley's K function and returns the resulting values as an array"""
     Kests = []
-    for point_set in rep_list:
-        Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley") / poisson_val)
-    if Kestbool and len(Kests) < 2:
-        treat_array = Kests[0]
+    if Kestbool:
+        for point_set in rep_list:
+            Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley") / poisson_val)
+        if len(Kests) < 2:
+            treat_array = Kests[0]
+            return treat_array
     else:
-        treat_array = np.hstack((Kests[0], Kests[1]))
-        for i in range(2, len(Kests)):
-            treat_array = np.hstack((treat_array, Kests[i]))
+        for point_set in rep_list:
+            Kests.append(Kest_func(data=point_set, radii=radius, mode="ripley"))
+    treat_array = np.hstack((Kests[0], Kests[1]))
+    for i in range(2, len(Kests)):
+        treat_array = np.hstack((treat_array, Kests[i]))
     return treat_array
 
 
