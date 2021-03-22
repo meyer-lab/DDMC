@@ -232,8 +232,8 @@ def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, 
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
     pal = sns.xkcd_palette(colors)
-    sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax)
-    ax.set_title("Radius of " + str(r[0]) + " Normalized to Poisson")
+    sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax,  **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    ax.set_title("Island effect")
     ax.legend(prop={'size':10})
 
 
