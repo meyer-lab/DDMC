@@ -71,16 +71,13 @@ def makeFigure():
     IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="KO", ax_=ax[13])
     IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="Y750F", ax_=ax[14])
 
-
     # Island Effect
     BarPlotRipleysK(ax[15], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors)
     PlotRipleysK('48hrs', 'M11', ['ut', 'e', 'ae'], 6, ax=ax[16], title="Y726F")
     PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[17], title="Y698F")
 
-    # Generate Y matrix
-    y = formatPhenotypesForModeling(cv, red, sw, c)
-
     # PCA phenotypes
+    y = formatPhenotypesForModeling(cv, red, sw, c)
     plotPCA(ax[18:20], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     return f
@@ -230,15 +227,10 @@ def IndividualTimeCourses(
         sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
         ax_.set_title(plot)
         ax_.set_ylabel(ylabel)
+        ax_.legend(prop={'size':10})
 
     if savefig:
         fig.savefig("TimeCourse.pdf", bbox_inches="tight")
-
-    if title:
-       ax_.set_title(title)
-    else:
-        ax_.set_title(plot)
-
 
 
 def TimePointFoldChange(d, itp):
@@ -322,89 +314,13 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=90)
-
-
-"""Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot"""
-
-
-def FCvsUT_TimeCourse(ax, ds, itp, ftp, lines, tr1, treatment, title, FC=False):
-    c = []
-    for i in range(len(ds)):
-        d = ds[i].copy()
-        d = d.drop(columns=["Elapsed"])
-        d.insert(0, "Elapsed", ds[0].iloc[:, 0])
-
-        if FC:
-            d = ComputeFoldChange(d, itp)
-        x = fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment)
-        c.append(x)
-    c = pd.concat(c)
-    b = sns.lineplot(x="Elapsed (h)", y="Change vs UT", hue="Lines", data=c, err_style="bars", err_kws={"capsize": 7}, ci=68, ax=ax)
-
-    ax.set_title(title)
-
-
-def fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment):
-    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
-    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(treatment)]], axis=1)
-    c = []
-    for time in range(itp, ftp + 1, 3):
-        ut_time = ut[ut["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-        x_time = x[x["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-
-        fc = pd.DataFrame(x_time.div(ut_time)).reset_index()
-        fc["Elapsed (h)"] = time
-        fc["Lines"] = lines
-        fc = fc[["index", "Elapsed (h)", "Lines", fc.columns[1]]]
-        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs UT"]
-        c.append(fc)
-    c = pd.concat(c)
-    return c
-
-
-def Phasenorm_Timecourse(ax, dphase, dtest, itp, ftp, treatment, lines, title, FC=False):
-    c = []
-    for i in range(len(dphase)):
-        dp = dphase[i].copy()
-        dt = dtest[i].copy()
-        dp = dp.drop(columns=["Elapsed"])
-        dt = dt.drop(columns=["Elapsed"])
-        dp.insert(0, "Elapsed", dphase[0].iloc[:, 0])
-        dt.insert(0, "Elapsed", dtest[0].iloc[:, 0])
-
-        if FC:
-            dp = ComputeFoldChange(dp, itp)
-            dt = ComputeFoldChange(dt, itp)
-        x = fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines)
-        c.append(x)
-    c = pd.concat(c)
-    b = sns.lineplot(x="Elapsed (h)", y="Change vs Phase", hue="Lines", data=c, err_style="bars", err_kws={"capsize": 7}, ci=68, ax=ax)
-
-    ax.set_title(title)
-
-
-def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
-    dp = pd.concat([dp.iloc[:, 0], dp.loc[:, dp.columns.str.contains(treatment)]], axis=1)
-    dt = pd.concat([dt.iloc[:, 0], dt.loc[:, dt.columns.str.contains(treatment)]], axis=1)
-    c = []
-    for time in range(itp, ftp + 1, 3):
-        dp_time = dp[dp["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-        dt_time = dt[dt["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-
-        fc = pd.DataFrame(dt_time.div(dp_time)).reset_index()
-        fc["Elapsed (h)"] = time
-        fc["Lines"] = lines
-        fc = fc[["index", "Elapsed (h)", "Lines", fc.columns[1]]]
-        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs Phase"]
-        c.append(fc)
-    c = pd.concat(c)
-    return c
+    ax.legend(prop={'size':10})
 
 
 # Plot Separately since makefigure can't add it as a subplot
-def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", yticklabels=False, figsize=(10, 10)):
+def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", yticklabels=False, xticklabels=False, figsize=(10, 10)):
     """ Clustergram plot. """
-    g = sns.clustermap(data, method="complete", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize, yticklabels=yticklabels)
+    g = sns.clustermap(data, method="centroid", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize, yticklabels=yticklabels, xticklabels=xticklabels)
     ax = g.ax_heatmap
     ax.set_ylabel(ylabel)
 
