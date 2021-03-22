@@ -90,7 +90,7 @@ def import_phenotype_data(phenotype="Cell Viability"):
         cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
         cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
         cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR4_Phase.csv")
-        res = [cv1, cv2, cv3, cv4]
+        res = FixColumnLabels([cv1, cv2, cv3, cv4])
 
     elif phenotype == "Cell Death":
         red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
@@ -98,8 +98,7 @@ def import_phenotype_data(phenotype="Cell Viability"):
         red3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR3_RedCount.csv")
         red4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR4_RedCount.csv")
         red4.columns = red3.columns
-        res = [red1, red2, red3, red4]
-        res = FixColumnLabels(res)
+        res = FixColumnLabels([red1, red2, red3, red4])
         res = normalize_cellsDead_to_cellsAlive(res)
 
     elif phenotype == "Migration":

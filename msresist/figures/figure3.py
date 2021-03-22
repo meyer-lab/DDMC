@@ -5,25 +5,19 @@ import os
 import pickle
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import scipy as sp
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
-from ..plsr import R2Y_across_components
-from ..figures.figure1 import plotPCA
-from ..distances import DataFrameRipleysK
-import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
+from ..plsr import R2Y_across_components
+from ..figures.figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
+import matplotlib.colors as colors
 import matplotlib.cm as cm
-import seaborn as sns
 import logomaker as lm
-from ..pre_processing import preprocessing, y_pre, FixColumnLabels, MeanCenter
-import warnings
-from Bio import BiopythonWarning
-
-warnings.simplefilter("ignore", BiopythonWarning)
+from ..pre_processing import MeanCenter
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,129 +25,51 @@ path = os.path.dirname(os.path.abspath(__file__))
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 20), (4, 3), multz={10: 1})
+    ax, f = getSetup((25, 20), (5, 5), multz={0:1, 20: 4})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # -------- Import and Preprocess Signaling Data -------- #
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-
-    d = X.select_dtypes(include=["float64"]).T
-
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    d.index = all_lines
-
-    # -------- Cell Phenotypes -------- #
-    # Cell Viability
-    cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
-    cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
-    cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-    cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-
-    itp = 24
-    ftp = 96
-
-    cv = [cv1, cv2, cv3, cv4]
-    cv = FixColumnLabels(cv)
-
-    v_ut = y_pre(cv, "UT", ftp, "Viability", all_lines, itp=itp)
-    v_e = y_pre(cv, "-E", ftp, "Viability", all_lines, itp=itp)
-    v_ae = y_pre(cv, "A/E", ftp, "Viability", all_lines, itp=itp)
-
-    # Cell Death
-    red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
-    red2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR2_RedCount.csv")
-    red3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR3_RedCount.csv")
-    red4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR4_RedCount.csv")
-    red4.columns = red3.columns
-
-    for jj in range(1, red1.columns.size):
-        red1.iloc[:, jj] /= cv1.iloc[:, jj]
-        red2.iloc[:, jj] /= cv2.iloc[:, jj]
-        red3.iloc[:, jj] /= cv3.iloc[:, jj]
-        red4.iloc[:, jj] /= cv4.iloc[:, jj]
-
-    cD = [red1, red2, red3, red4]
-    cD = FixColumnLabels(cD)
-    cd_ut = y_pre(cD, "UT", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_e = y_pre(cD, "-E", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_ae = y_pre(cD, "A/E", ftp, "Apoptosis", all_lines, itp=itp)
-
-    r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR1_RWD.csv")
-    r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR2_RWD.csv")
-    r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR3_RWD.csv")
-    r4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR4_RWD.csv")
-    ftp = 12
-    cm = [r1, r2, r3, r4]
-    m_ut = y_pre(cm, "UT", ftp, "Migration", all_lines)
-    m_e = y_pre(cm, " E", ftp, "Migration", all_lines)
-    m_ae = y_pre(cm, "A/E", ftp, "Migration", all_lines)
-
-    m_ut.index = v_ut.index
-    m_e.index = v_e.index
-    m_ae.index = v_ae.index
-
-    # Clustering Effect
-    mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
-    treatments = ['ut', 'e', 'ae']
-    replicates = 6
-    radius = np.linspace(1, 14.67, 1)
-    folder = '48hrs'
-    c = DataFrameRipleysK(folder, mutants, treatments, replicates, radius).reset_index().set_index("Mutant")
-    c.columns = ["Treatment", "Island"]
-    c_ut = c[c["Treatment"] == "ut"]
-    c_ut = c_ut.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ut.index = all_lines
-    c_ut = c_ut.reset_index()
-    c_ut["Treatment"] = "UT"
-
-    c_e = c[c["Treatment"] == "e"]
-    c_e = c_e.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_e.index = all_lines
-    c_e = c_e.reset_index()
-    c_e["Treatment"] = "E"
-
-    c_ae = c[c["Treatment"] == "ae"]
-    c_ae = c_ae.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ae.index = all_lines
-    c_ae = c_ae.reset_index()
-    c_ae["Treatment"] = "A/E"
-
-    # -------- PLOTS -------- #
-    # PCA analysis of phenotypes
-    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
-
-    y_c = pd.concat([y_ut, y_e, y_ae])
-    y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
-
-    plotPCA(ax[:2], y_c, 2, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
-
-    # MODEL
-    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
-
-    # -------- Cross-validation 1 -------- #
-    # R2Y/Q2Y
-
+    # Import model
     with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
         model = pickle.load(m)[0]
     centers = model.transform()
 
-    plsr = PLSRegression(n_components=2, scale=False)
+    # Import phenotypes
+    cv = import_phenotype_data(phenotype="Cell Viability")
+    red = import_phenotype_data(phenotype="Cell Death")
+    sw = import_phenotype_data(phenotype="Migration")
+    c = import_phenotype_data(phenotype="Island")
+    y = formatPhenotypesForModeling(cv, red, sw, c)
+    y = y[y["Treatment"] == "A/E"].drop("Treatment", axis=1).set_index("Lines")
+
+    # Pipeline diagram
+    ax[0].axis("off")
+
+    # Cross-validation diagram
+    ax[1].axis("off")
+
+    # R2Y/Q2Y
+    plsr = PLSRegression(n_components=2)
     plotR2YQ2Y(ax[2], plsr, centers, y, model.ncl + 1)
 
     # Plot Measured vs Predicted
+    plsr = PLSRegression(n_components=4)
     plotActualVsPredicted(ax[3:7], plsr, centers, y)
+
+    # Scores & Loadings
+    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    plotScoresLoadings(ax[7:9], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+
+    # Centers
+    plotCenters(ax[9:14], centers, lines, yaxis=False)
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
+    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[14:19], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
+    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[19])
 
     # Add subplot labels
     subplotLabel(ax)
@@ -272,25 +188,22 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, centers, xlabels, title, yaxis=False):
+def plotCenters(ax, centers, xlabels, yaxis=False):
     centers = pd.DataFrame(centers).T
     centers.columns = xlabels
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax, linewidth=2)
-        ax.set_xticklabels(xlabels, rotation=45)
-        ax.set_xticks(np.arange(len(xlabels)))
-        ax.set_ylabel("$log_{10}$ p-signal")
-        ax.xaxis.set_tick_params(bottom=True)
-        ax.set_xlabel("")
-        if title:
-            ax.legend([title])
-        else:
-            ax.legend(["cluster " + str(i + 1)])
+        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i], linewidth=2)
+        ax[i].set_xticklabels(xlabels, rotation=45)
+        ax[i].set_xticks(np.arange(len(xlabels)))
+        ax[i].set_ylabel("$log_{10}$ p-signal")
+        ax[i].xaxis.set_tick_params(bottom=True)
+        ax[i].set_xlabel("")
+        ax[i].set_title("Cluster " + str(i+1) + " Center")
         if yaxis:
-            ax.set_ylim([yaxis[0], yaxis[1]])
+            ax[i].set_ylim([yaxis[0], yaxis[1]])
 
 
 def plotMotifs(pssms, axes, titles=False, yaxis=False):
@@ -352,7 +265,8 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
-    """Add labels to data points"""
+    """Add labels to data points. Note not in use at the moment but could be helpful
+    in the future (e.g. PCA of mass spec in figure 2)"""
     if isinstance(clusters, int):
         clusters = [clusters]
     pspl_ = pspl.copy()
