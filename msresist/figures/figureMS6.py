@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
 from .common import subplotLabel, getSetup
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import Binomial
 from ..pam250 import PAM250
@@ -253,7 +253,7 @@ def ErrorAcrossNumberOfClusters(distance_method):
         missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
         for jj, cluster in enumerate(n_clusters):
             print(cluster)
-            model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=1)
+            model = DDMC(info, cluster, weight, distance_method).fit(data, nRepeats=1)
             idx1 = X.shape[0] * ((ii * len(n_clusters)) + jj)
             idx2 = X.shape[0] * ((ii * len(n_clusters)) + jj + 1)
             errors[idx1:idx2, 0] = ii

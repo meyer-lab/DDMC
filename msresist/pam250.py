@@ -64,7 +64,7 @@ class fixedMotif(CustomDistribution):
         return fixedMotif(self.seqs, self.motif)
 
     def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
+        """ Distribution is fixed. No need to update. """
         return
 
 
