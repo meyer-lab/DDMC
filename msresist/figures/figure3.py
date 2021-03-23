@@ -1,7 +1,7 @@
 """
-This creates Figure 2.
+This creates Figure 3: Model figure
 """
-import os
+
 import pickle
 import pandas as pd
 import numpy as np
@@ -13,19 +13,20 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import cross_val_predict
 from ..plsr import R2Y_across_components
-from ..figures.figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
+from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import logomaker as lm
 from ..pre_processing import MeanCenter
 
-path = os.path.dirname(os.path.abspath(__file__))
-
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((25, 20), (5, 5), multz={0:1, 20: 4})
+    ax, f = getSetup((18, 13), (4, 5), multz={0:2, 15: 4})
+
+    # Add subplot labels
+    subplotLabel(ax)
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -46,33 +47,20 @@ def makeFigure():
     # Pipeline diagram
     ax[0].axis("off")
 
-    # Cross-validation diagram
-    ax[1].axis("off")
-
-    # R2Y/Q2Y
-    plsr = PLSRegression(n_components=2)
-    plotR2YQ2Y(ax[2], plsr, centers, y, model.ncl + 1)
-
-    # Plot Measured vs Predicted
-    plsr = PLSRegression(n_components=4)
-    plotActualVsPredicted(ax[3:7], plsr, centers, y)
-
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
-    plotScoresLoadings(ax[7:9], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+    plsr = PLSRegression(n_components=4)
+    plotScoresLoadings(ax[1:3], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
     # Centers
-    plotCenters(ax[9:14], centers, lines, yaxis=False)
+    plotCenters(ax[3:8], model, lines, yaxis=False)
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[14:19], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"])
+    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[8:13], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[-55, 12])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[19])
-
-    # Add subplot labels
-    subplotLabel(ax)
+    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[13])
 
     return f
 
@@ -85,23 +73,24 @@ def plotGridSearch(ax, gs):
     ax.set_ylabel("Mean Squared Error")
 
 
-def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue"):
+def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue", title=False):
     """ Plot R2Y/Q2Y variance explained by each component. """
     Q2Y = R2Y_across_components(model, X, Y, b, crossval=True)
     R2Y = R2Y_across_components(model, X, Y, b)
 
     range_ = np.arange(1, b)
 
-    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color=color)
-    ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black")
-    ax.set_title("R2Y/Q2Y - Cross-validation", fontsize=12)
+    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color=color, **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black", **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax.set_xticks(range_)
-    ax.set_xlabel("Number of Components", fontsize=11)
-    ax.set_ylabel("Variance", fontsize=11)
+    ax.set_xlabel("Number of Components")
+    ax.set_ylabel("Variance")
     ax.legend(loc=0)
+    if title:
+        ax.set_title(title)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue", type="scatter", title=False):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
@@ -111,22 +100,26 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         ylabel = "Fit"
 
     if len(Y.columns) > 1:
-        for i, label in enumerate(Y.columns):
-            y = Y.iloc[:, i]
-            ypred = Y_predictions[:, i]
-            ax[i].scatter(y, ypred, color=color)
-            ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-            ax[i].set_xlabel("Actual")
-            ax[i].set_ylabel(ylabel)
-            ax[i].set_title(label)
+        if type == "scatter":
+            for i, label in enumerate(Y.columns):
+                y = Y.iloc[:, i]
+                ypred = Y_predictions[:, i]
+                ax[i].scatter(y, ypred, color=color)
+                ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+                ax[i].set_xlabel("Actual")
+                ax[i].set_ylabel(ylabel)
+                ax[i].set_title(label)
+                ax[i].set_aspect("equal", "datalim")
+                add_rBox(ypred, y, ax)
 
-            ax[i].set_aspect("equal", "datalim")
-
-            # Add correlation coefficient
-            coeff, _ = sp.stats.pearsonr(ypred, y)
-            textstr = "$r$ = " + str(np.round(coeff, 4))
-            props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-            ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+        elif type == "bar":
+            coeff = [sp.stats.pearsonr(Y_predictions[:, i], Y.iloc[:, i])[0] for i in range(len(Y.columns))]
+            data = pd.DataFrame()
+            data["Phenotype"]  = list(Y.columns)
+            data["r-score"] = coeff
+            sns.barplot(x="Phenotype", y="r-score", data=data, ax=ax, color=color, **{"linewidth": 0.5}, **{"edgecolor": "black"})
+            if title:
+                ax.set_title(title)
 
     elif len(Y.columns) == 1:
         y = Y.iloc[:, 0]
@@ -136,12 +129,15 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         ax.set_xlabel("Actual")
         ax.set_ylabel(ylabel)
         ax.set_title(Y.columns[0])
+        add_rBox(ypred, y, ax)
 
-        # Add correlation coefficient
-        coeff, _ = sp.stats.pearsonr(ypred, y)
-        textstr = "$r$ = " + str(np.round(coeff, 4))
-        props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-        ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
+def add_rBox(ypred, y, ax):
+    """Add correlation coefficient box onto scatter plot of Actual vs Predicted."""
+    coeff, _ = sp.stats.pearsonr(ypred, y)
+    textstr = "$r$ = " + str(np.round(coeff, 4))
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
+
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True):
@@ -188,9 +184,10 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, centers, xlabels, yaxis=False):
-    centers = pd.DataFrame(centers).T
+def plotCenters(ax, model, xlabels, yaxis=False):
+    centers = pd.DataFrame(model.transform()).T
     centers.columns = xlabels
+    num_peptides = [np.count_nonzero(model.labels() == i) for i in range(1, model.ncl + 1)]
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
@@ -201,7 +198,7 @@ def plotCenters(ax, centers, xlabels, yaxis=False):
         ax[i].set_ylabel("$log_{10}$ p-signal")
         ax[i].xaxis.set_tick_params(bottom=True)
         ax[i].set_xlabel("")
-        ax[i].set_title("Cluster " + str(i+1) + " Center")
+        ax[i].set_title("Cluster " + str(i+1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
         if yaxis:
             ax[i].set_ylim([yaxis[0], yaxis[1]])
 
