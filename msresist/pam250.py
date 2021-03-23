@@ -10,7 +10,7 @@ from pomegranate.distributions import CustomDistribution
 
 
 class PAM250(CustomDistribution):
-    def __init__(self, seqs, SeqWeight, background=None):
+    def __init__(self, seqs, background=None):
         self.background = background
 
         if background is None:
@@ -20,66 +20,66 @@ class PAM250(CustomDistribution):
         super().__init__(self.background.shape[0])
         self.seqs = seqs
         self.name = "PAM250"
-        self.SeqWeight = SeqWeight
-        self.from_summaries()
-
-    def __reduce__(self):
-        """ Serialize the distribution for pickle. """
-        return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
-
-    def copy(self):
-        return PAM250(self.seqs, self.SeqWeight, self.background)
-
-    def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
-        if np.sum(self.weightsIn) == 0.0:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
-        else:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
-
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
-
-
-class fixedMotif(CustomDistribution):
-    def __init__(self, seqs, motif, SeqWeight):
-        # Compute log-likelihood of each peptide for the motif
-        self.background = np.zeros(seqs.shape[0])
-        for ii in range(seqs.shape[1]):
-            self.background += motif[seqs[:, ii], ii]
-        assert np.all(np.isfinite(self.background))
-
-        super().__init__(self.background.shape[0])
-        self.seqs = seqs
-        self.motif = motif
-        self.name = "fixedMotif"
-        self.SeqWeight = SeqWeight
         self.from_summaries()
 
     def __reduce__(self):
         """Serialize the distribution for pickle."""
-        return unpackFixed, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
+        return unpackPAM, (self.seqs, self.logWeights, self.frozen)
 
     def copy(self):
-        return fixedMotif(self.seqs, self.motif, self.SeqWeight)
+        return PAM250(self.seqs, self.background)
 
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
-        self.logWeights[:] = self.SeqWeight * self.background
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+        if np.sum(self.weightsIn) == 0.0:
+            self.logWeights[:] = np.average(self.background, axis=0)
+        else:
+            self.logWeights[:] = np.average(self.background, weights=self.weightsIn, axis=0)
+
+        self.logWeights[:] = self.logWeights - np.amax(self.logWeights)
 
 
-def unpackPAM(seqs, sw, lw, frozen):
+class fixedMotif(CustomDistribution):
+    def __init__(self, seqs, motif):
+        # Compute log-likelihood of each peptide for the motif
+        super().__init__(seqs.shape[0])
+        for ii in range(seqs.shape[1]):
+            self.logWeights[:] += motif[seqs[:, ii], ii]
+
+        assert np.all(np.isfinite(self.logWeights))
+
+        # Force the average distance to all peptides to be the same
+        self.logWeights[:] = self.logWeights - np.average(self.logWeights)
+
+        self.seqs = seqs
+        self.motif = motif
+        self.name = "fixedMotif"
+        self.frozen = True
+
+    def __reduce__(self):
+        """Serialize the distribution for pickle."""
+        return unpackFixed, (self.seqs, self.motif, self.logWeights, self.frozen)
+
+    def copy(self):
+        return fixedMotif(self.seqs, self.motif)
+
+    def from_summaries(self, inertia=0.0):
+        """ Update the underlying distribution. No inertia used. """
+        return
+
+
+def unpackPAM(seqs, lw, frozen):
     """Unpack from pickling."""
-    clss = PAM250(seqs, sw)
+    clss = PAM250(seqs)
     clss.frozen = frozen
     clss.weightsIn[:] = np.exp(lw)
     clss.logWeights[:] = lw
     return clss
 
 
-def unpackFixed(seqs, motif, sw, lw, frozen):
+def unpackFixed(seqs, motif, lw, frozen):
     """Unpack from pickling."""
-    clss = fixedMotif(seqs, motif, sw)
+    clss = fixedMotif(seqs, motif)
     clss.frozen = frozen
     clss.weightsIn[:] = np.exp(lw)
     clss.logWeights[:] = lw

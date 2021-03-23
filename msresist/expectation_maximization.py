@@ -2,7 +2,7 @@
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
 from statsmodels.multivariate.pca import PCA
 from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
 
@@ -20,7 +20,7 @@ def EM_clustering_repeat(nRepeats=3, *params):
     return output
 
 
-def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
+def EM_clustering(data, info, ncl: int, seqWeight: float, seqDist=None, gmmIn=None):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
@@ -28,43 +28,44 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    pc = PCA(d, ncomp=ncl, missing="fill-em", standardize=False, demean=False, normalize=False)
-
-    # Solve for the KMeans clustering for initialization
-    km = KMeans(ncl, tol=1e-9)
-    km.fit(pc._adjusted_data)
+    pc = PCA(d, ncomp=4, missing="fill-em", method="nipals", tol=1e-9, standardize=False, demean=False, normalize=False)
 
     # Add a dummy variable for the sequence information
     d = np.hstack((d, idxx.T))
 
+    # Setup weights for distributions
+    seqWarr = np.ones(d.shape[1])
+    seqWarr[-1] = seqWeight
+    seqWarr /= np.sum(seqWarr)
+
     for _ in range(10):
+        # Solve with imputation first
+        km = GaussianMixture(ncl, tol=1e-9, covariance_type="diag")
+        km.fit(pc._adjusted_data)
+        gpp = km.predict_proba(pc._adjusted_data)
+
         if gmmIn is None:
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)]
+                nDist = [NormalDistribution(km.means_[ii, jj], km.covariances_[ii, jj], min_std=0.01) for jj in range(d.shape[1] - 1)]
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
 
-                for jj in range(d.shape[1] - 1):
-                    nDist[jj].fit(d[km.labels_ == ii, jj])
-
-                weights = np.array(km.labels_ == ii, dtype=float)
-                weights = 0.9 * weights + 0.01
-
-                nDist[-1].summarize(d[:, -1], weights=weights)
+                # Setup sequence distribution
+                nDist[-1].weightsIn[:] = gpp[:, ii]
                 nDist[-1].from_summaries()
 
-                dists.append(IndependentComponentsDistribution(nDist))
+                dists.append(IndependentComponentsDistribution(nDist, weights=seqWarr))
 
             gmm = GeneralMixtureModel(dists)
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=200, verbose=False, stop_threshold=1e-6)
+        gmm.fit(d, max_iterations=2000, verbose=False, stop_threshold=1e-4)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

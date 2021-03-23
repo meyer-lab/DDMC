@@ -19,7 +19,7 @@ from .pam250 import PAM250, fixedMotif
 # pylint: disable=W0201
 
 
-class MassSpecClustering(BaseEstimator):
+class DDMC(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
@@ -33,27 +33,27 @@ class MassSpecClustering(BaseEstimator):
         seqs = [s.upper() for s in info["Sequence"]]
 
         if distance_method == "PAM250":
-            self.dist = PAM250(seqs, SeqWeight)
+            self.dist = PAM250(seqs)
 
         elif distance_method == "PAM250_fixed":
             assert len(pre_motifs) <= ncl
             pam250 = substitution_matrices.load("PAM250")
             seqsArr = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
-            seqsArr = np.delete(seqsArr, [5, 10], axis=1)  # Delelte P0 and P+5 (not in PSPL motifs)
+            seqsArr = np.delete(seqsArr, [5, 10], axis=1)  # Delete P0 and P+5 (not in PSPL motifs)
             PSPLs = PSPLdict()
 
             self.pre_motifs = pre_motifs
-            self.dist = [fixedMotif(seqsArr, PSPLs[mm], SeqWeight) for mm in pre_motifs]
+            self.dist = [fixedMotif(seqsArr, PSPLs[mm]) for mm in pre_motifs]
 
             while len(self.dist) < ncl:
-                self.dist.append(Binomial(info["Sequence"], seqs, SeqWeight))
+                self.dist.append(Binomial(info["Sequence"], seqs))
 
         elif distance_method == "Binomial":
-            self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
+            self.dist = Binomial(info["Sequence"], seqs)
 
     def fit(self, X, y=None, nRepeats=3):
         """Compute EM clustering"""
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.SeqWeight, self.dist)
 
         return self
 
@@ -61,23 +61,8 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        if self.distance_method == "PAM250_fixed":
-            wDist = [dd.copy() for dd in self.dist]
-            for dd in wDist:
-                dd.SeqWeight = 0.0
-        else:
-            wDist = self.dist.copy()
-            wDist.SeqWeight = 0.0
-
-        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
-
-        if self.distance_method == "PAM250_fixed":
-            for dd in wDist:
-                dd.SeqWeight = 10.0
-        else:
-            wDist.SeqWeight = 10.0
-
-        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, 0.0, self.dist)[1]
+        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, 10.0, self.dist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
