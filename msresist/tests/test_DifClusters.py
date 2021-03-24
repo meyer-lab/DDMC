@@ -5,6 +5,7 @@ Testing file for minimum variance across clusters using CPTAC data.
 import pytest
 import numpy as np
 import pandas as pd
+from collections import Counter
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
 
@@ -20,4 +21,8 @@ def test_ClusterVar(distance_method):
     """Test minimum variance of output cluster centers """
     model = MassSpecClustering(i, 5, SeqWeight=3, distance_method=distance_method, pre_motifs=preMotifSet).fit(X=d)
     centers = model.transform()
-    assert np.mean(np.std(centers, axis=1)) > 0.2
+    nRows = 5
+    for row in range(nRows):
+        vals = np.round(centers[row, :], 3)
+        repeats = np.array(list(Counter(vals).values()))
+        assert np.all(repeats < 3), "More than 3 repeated values."
