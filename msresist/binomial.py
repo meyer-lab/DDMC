@@ -165,7 +165,7 @@ class Binomial(CustomDistribution):
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
         self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+        self.logWeights[:] = self.logWeights - np.average(self.logWeights)
 
 
 def unpackBinomial(seq, seqs, sw, lw, frozen):

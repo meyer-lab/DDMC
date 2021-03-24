@@ -37,7 +37,7 @@ class PAM250(CustomDistribution):
         else:
             self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
 
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
+        self.logWeights[:] = self.logWeights - np.average(self.logWeights)
 
 
 class fixedMotif(CustomDistribution):

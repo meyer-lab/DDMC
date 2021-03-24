@@ -27,8 +27,8 @@ def test_wins(distance_method):
     assert distances[0] < distances[1]
 
 
-@pytest.mark.parametrize("w", [0, 0.1, 0.3, 1])
-@pytest.mark.parametrize("ncl", [2, 3, 4])
+@pytest.mark.parametrize("w", [0.0, 1.0, 100.0])
+@pytest.mark.parametrize("ncl", [2, 5, 6])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial", "PAM250_fixed"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
