@@ -41,8 +41,7 @@ def makeFigure():
 
     # No clustering
     plotR2YQ2Y(ax[1], PLSRegression(n_components=2, scale=True), d, y, 6, color="grey", title="Raw data")
-    plsr = PLSRegression(n_components=3)
-    plotActualVsPredicted(ax[2], plsr, d, y, y_pred="cross-validation", color="grey", type="bar", title="Raw data")
+    plotActualVsPredicted(ax[2], PLSRegression(n_components=3), d, y, y_pred="cross-validation", color="grey", type="bar", title="Raw data")
 
     ncl = 5
     # k-means
@@ -50,32 +49,28 @@ def makeFigure():
     x_ = X.copy()
     x_["Cluster"] = labels
     c_kmeans = x_.groupby("Cluster").mean().T
-    plsr = PLSRegression(n_components=2)
-    plotR2YQ2Y(ax[3], plsr, c_kmeans, y, 6, color="darkred", title="k-means")
-    plotActualVsPredicted(ax[4], plsr, c_kmeans, y, y_pred="cross-validation", color="darkred", type="bar", title="k-means")
+    plotR2YQ2Y(ax[3], PLSRegression(n_components=2), c_kmeans, y, 6, color="darkred", title="k-means")
+    plotActualVsPredicted(ax[4], PLSRegression(n_components=2), c_kmeans, y, y_pred="cross-validation", color="darkred", type="bar", title="k-means")
 
     # GMM
     gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
     x_ = X.copy()
     x_["Cluster"] = gmm.predict(d.T)
     c_gmm = x_.groupby("Cluster").mean().T
-    plsr = PLSRegression(n_components=3)
-    plotR2YQ2Y(ax[5], plsr, c_gmm, y, 6, color="olive", title="GMM")
-    plotActualVsPredicted(ax[6], plsr, c_gmm, y, y_pred="cross-validation", color="olive", type="bar", title="GMM")
+    plotR2YQ2Y(ax[5], PLSRegression(n_components=3), c_gmm, y, 6, color="olive", title="GMM")
+    plotActualVsPredicted(ax[6], PLSRegression(n_components=3), c_gmm, y, y_pred="cross-validation", color="olive", type="bar", title="GMM")
 
     # DDMC (w=50)
     model = MassSpecClustering(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d, y)
     centers = model.transform()
-    plsr = PLSRegression(n_components=3)
-    plotR2YQ2Y(ax[7], plsr, centers, y, model.ncl + 1, title="DDMC Sequence", color="orange")
+    plotR2YQ2Y(ax[7], PLSRegression(n_components=3), centers, y, model.ncl + 1, title="DDMC Sequence", color="orange")
     plotActualVsPredicted(ax[8], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="orange", type="bar", title="DDMC Sequence")
 
     # DDMC (w=2)
     with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
         model = pickle.load(m)[0]
     centers = model.transform()
-    plsr = PLSRegression(n_components=4)
-    plotR2YQ2Y(ax[9], plsr, centers, y, model.ncl + 1, title="DDMC mix")
-    plotActualVsPredicted(ax[10], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="darkblue", type="bar", title="DDMC mix")
+    plotR2YQ2Y(ax[9], PLSRegression(n_components=4), centers, y, model.ncl + 1, title="DDMC mix")
+    plotActualVsPredicted(ax[10], PLSRegression(n_components=4), centers, y, y_pred="cross-validation", color="darkblue", type="bar", title="DDMC mix")
 
     return f
