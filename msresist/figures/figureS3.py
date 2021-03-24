@@ -12,10 +12,11 @@ from ..pre_processing import preprocessing
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
 from .figure3 import plotR2YQ2Y, plotActualVsPredicted
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 11), (3, 4), multz={0:1})
+    ax, f = getSetup((14, 11), (3, 4), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
