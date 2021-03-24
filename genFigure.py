@@ -31,3 +31,18 @@ if __name__ == "__main__":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
                        f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)
+
+    if sys.argv[1] == "2":
+        # Overlay Figure 2 heatmap
+        overlayCartoon(fdir + 'figure2.svg',
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 40, 10, scalee=0.12)
+
+    if sys.argv[1] == "3":
+        # Overlay Figure 3 computational pipeline
+        overlayCartoon(fdir + 'figure3.svg',
+                       f'{cartoon_dir}/pipeline.svg', 150, 0, scalee=0.045)
+
+    if sys.argv[1] == "S3":
+        # Overlay Figure 3 cross validation diagram
+        overlayCartoon(fdir + 'figureS3.svg',
+                       f'{cartoon_dir}/cross_validation.svg', 60, 0, scalee=0.21)

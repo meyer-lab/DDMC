@@ -56,8 +56,7 @@ def preprocessing(
     merging_indices.insert(3, "Position")
 
     if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.1)
-
+        X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.6)
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
@@ -293,7 +292,7 @@ def FilterByStdev(X, merging_indices, stdCut=0.4):
     """ Filter rows for those containing more than a standard deviation threshold. """
     Stds = X.iloc[:, X.columns.get_level_values(1) == "std"]
     StdMeans = list(np.round(Stds.mean(axis=1), decimals=2))
-    Xidx = np.all(Stds.values <= stdCut, axis=1)
+    Xidx = np.mean(Stds.values, axis=1) <= stdCut
     Means = pd.concat([X[merging_indices], X.iloc[:, X.columns.get_level_values(1) == "mean"]], axis=1)
     Means = Means.iloc[Xidx, :]
     Means.columns = Means.columns.droplevel(1)

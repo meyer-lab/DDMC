@@ -1,194 +1,68 @@
 """
-This creates Figure 2.
+This creates Figure 3: Model figure
 """
-import os
+
 import pickle
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import scipy as sp
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
-from ..plsr import R2Y_across_components
-from ..figures.figure1 import pca_dfs
-from ..distances import DataFrameRipleysK
-import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
+from ..plsr import R2Y_across_components
+from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
+import matplotlib.colors as colors
 import matplotlib.cm as cm
-import seaborn as sns
 import logomaker as lm
-from ..pre_processing import preprocessing, y_pre, FixColumnLabels, MeanCenter
-import warnings
-from Bio import BiopythonWarning
-
-warnings.simplefilter("ignore", BiopythonWarning)
-
-path = os.path.dirname(os.path.abspath(__file__))
+from ..pre_processing import MeanCenter
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 20), (4, 3), multz={10: 1})
-
-    # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
-
-    # -------- Import and Preprocess Signaling Data -------- #
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-
-    d = X.select_dtypes(include=["float64"]).T
-
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    d.index = all_lines
-
-    # -------- Cell Phenotypes -------- #
-    # Cell Viability
-    cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
-    cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
-    cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-    cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-
-    itp = 24
-    ftp = 96
-
-    cv = [cv1, cv2, cv3, cv4]
-    cv = FixColumnLabels(cv)
-
-    v_ut = y_pre(cv, "UT", ftp, "Viability", all_lines, itp=itp)
-    v_e = y_pre(cv, "-E", ftp, "Viability", all_lines, itp=itp)
-    v_ae = y_pre(cv, "A/E", ftp, "Viability", all_lines, itp=itp)
-
-    # Cell Death
-    red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
-    red2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR2_RedCount.csv")
-    red3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR3_RedCount.csv")
-    red4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR4_RedCount.csv")
-    red4.columns = red3.columns
-
-    for jj in range(1, red1.columns.size):
-        red1.iloc[:, jj] /= cv1.iloc[:, jj]
-        red2.iloc[:, jj] /= cv2.iloc[:, jj]
-        red3.iloc[:, jj] /= cv3.iloc[:, jj]
-        red4.iloc[:, jj] /= cv4.iloc[:, jj]
-
-    cD = [red1, red2, red3, red4]
-    cD = FixColumnLabels(cD)
-    cd_ut = y_pre(cD, "UT", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_e = y_pre(cD, "-E", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_ae = y_pre(cD, "A/E", ftp, "Apoptosis", all_lines, itp=itp)
-
-    r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR1_RWD.csv")
-    r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR2_RWD.csv")
-    r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR3_RWD.csv")
-    r4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR4_RWD.csv")
-    ftp = 12
-    cm = [r1, r2, r3, r4]
-    m_ut = y_pre(cm, "UT", ftp, "Migration", all_lines)
-    m_e = y_pre(cm, " E", ftp, "Migration", all_lines)
-    m_ae = y_pre(cm, "A/E", ftp, "Migration", all_lines)
-
-    m_ut.index = v_ut.index
-    m_e.index = v_e.index
-    m_ae.index = v_ae.index
-
-    # Clustering Effect
-    mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
-    treatments = ['ut', 'e', 'ae']
-    replicates = 6
-    radius = np.linspace(1, 14.67, 1)
-    folder = '48hrs'
-    c = DataFrameRipleysK(folder, mutants, treatments, replicates, radius).reset_index().set_index("Mutant")
-    c.columns = ["Treatment", "Island"]
-    c_ut = c[c["Treatment"] == "ut"]
-    c_ut = c_ut.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ut.index = all_lines
-    c_ut = c_ut.reset_index()
-    c_ut["Treatment"] = "UT"
-
-    c_e = c[c["Treatment"] == "e"]
-    c_e = c_e.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_e.index = all_lines
-    c_e = c_e.reset_index()
-    c_e["Treatment"] = "E"
-
-    c_ae = c[c["Treatment"] == "ae"]
-    c_ae = c_ae.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ae.index = all_lines
-    c_ae = c_ae.reset_index()
-    c_ae["Treatment"] = "A/E"
-
-    # -------- PLOTS -------- #
-    # PCA analysis of phenotypes
-    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
-
-    y_c = pd.concat([y_ut, y_e, y_ae])
-    y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
-
-    plotPCA(ax[:2], y_c, 2, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
-
-    # MODEL
-    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
-
-    # -------- Cross-validation 1 -------- #
-    # R2Y/Q2Y
-
-    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
-        model = pickle.load(m)[0]
-    centers = model.transform()
-
-    plsr = PLSRegression(n_components=2, scale=False)
-    plotR2YQ2Y(ax[2], plsr, centers, y, model.ncl + 1)
-
-    # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:7], plsr, centers, y)
-
-    # Plot motifs
-    pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
-
-    # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
+    ax, f = getSetup((18, 13), (4, 5), multz={0:2, 15: 4})
 
     # Add subplot labels
     subplotLabel(ax)
 
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    # Import model
+    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
+        model = pickle.load(m)[0]
+    centers = model.transform()
+
+    # Import phenotypes
+    cv = import_phenotype_data(phenotype="Cell Viability")
+    red = import_phenotype_data(phenotype="Cell Death")
+    sw = import_phenotype_data(phenotype="Migration")
+    c = import_phenotype_data(phenotype="Island")
+    y = formatPhenotypesForModeling(cv, red, sw, c)
+    y = y[y["Treatment"] == "A/E"].drop("Treatment", axis=1).set_index("Lines")
+
+    # Pipeline diagram
+    ax[0].axis("off")
+
+    # Scores & Loadings
+    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    plsr = PLSRegression(n_components=4)
+    plotScoresLoadings(ax[1:3], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+
+    # Centers
+    plotCenters(ax[3:8], model, lines, yaxis=False)
+
+    # Plot motifs
+    pssms = model.pssms(PsP_background=True)
+    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[8:13], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[-55, 12])
+
+    # Plot upstream kinases heatmap
+    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[13])
+
     return f
-
-
-def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
-    """ Plot PCA scores and loadings. """
-    pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
-    dLoad_ = pp.components_
-    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
-    varExp = np.round(pp.explained_variance_ratio_, 2)
-
-    # Scores
-    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
-    ax[0].set_title("PCA Scores")
-    ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-    ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    if legendOut:
-        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2)
-
-    # Loadings
-    if isinstance(pvals, np.ndarray):
-        dLoad_["p-value"] = pvals
-        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
-    else:
-        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
-
-    ax[1].set_title("PCA Loadings")
-    ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-    ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    for j, txt in enumerate(dLoad_[loadings_ind]):
-        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 
 
 def plotGridSearch(ax, gs):
@@ -199,23 +73,24 @@ def plotGridSearch(ax, gs):
     ax.set_ylabel("Mean Squared Error")
 
 
-def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue"):
+def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue", title=False):
     """ Plot R2Y/Q2Y variance explained by each component. """
     Q2Y = R2Y_across_components(model, X, Y, b, crossval=True)
     R2Y = R2Y_across_components(model, X, Y, b)
 
     range_ = np.arange(1, b)
 
-    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color=color)
-    ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black")
-    ax.set_title("R2Y/Q2Y - Cross-validation", fontsize=12)
+    ax.bar(range_ + 0.15, Q2Y, width=0.3, align="center", label="Q2Y", color=color, **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    ax.bar(range_ - 0.15, R2Y, width=0.3, align="center", label="R2Y", color="black", **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax.set_xticks(range_)
-    ax.set_xlabel("Number of Components", fontsize=11)
-    ax.set_ylabel("Variance", fontsize=11)
+    ax.set_xlabel("Number of Components")
+    ax.set_ylabel("Variance")
     ax.legend(loc=0)
+    if title:
+        ax.set_title(title)
 
 
-def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue"):
+def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue", type="scatter", title=False):
     """ Plot exprimentally-measured vs PLSR-predicted values. """
     if y_pred == "cross-validation":
         Y_predictions = cross_val_predict(plsr_model, X, Y, cv=Y.shape[0])
@@ -225,22 +100,26 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         ylabel = "Fit"
 
     if len(Y.columns) > 1:
-        for i, label in enumerate(Y.columns):
-            y = Y.iloc[:, i]
-            ypred = Y_predictions[:, i]
-            ax[i].scatter(y, ypred, color=color)
-            ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
-            ax[i].set_xlabel("Actual")
-            ax[i].set_ylabel(ylabel)
-            ax[i].set_title(label)
+        if type == "scatter":
+            for i, label in enumerate(Y.columns):
+                y = Y.iloc[:, i]
+                ypred = Y_predictions[:, i]
+                ax[i].scatter(y, ypred, color=color)
+                ax[i].plot(np.unique(y), np.poly1d(np.polyfit(y, ypred, 1))(np.unique(y)), color="r")
+                ax[i].set_xlabel("Actual")
+                ax[i].set_ylabel(ylabel)
+                ax[i].set_title(label)
+                ax[i].set_aspect("equal", "datalim")
+                add_rBox(ypred, y, ax)
 
-            ax[i].set_aspect("equal", "datalim")
-
-            # Add correlation coefficient
-            coeff, _ = sp.stats.pearsonr(ypred, y)
-            textstr = "$r$ = " + str(np.round(coeff, 4))
-            props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-            ax[i].text(0.75, 0.10, textstr, transform=ax[i].transAxes, verticalalignment="top", bbox=props)
+        elif type == "bar":
+            coeff = [sp.stats.pearsonr(Y_predictions[:, i], Y.iloc[:, i])[0] for i in range(len(Y.columns))]
+            data = pd.DataFrame()
+            data["Phenotype"]  = list(Y.columns)
+            data["r-score"] = coeff
+            sns.barplot(x="Phenotype", y="r-score", data=data, ax=ax, color=color, **{"linewidth": 0.5}, **{"edgecolor": "black"})
+            if title:
+                ax.set_title(title)
 
     elif len(Y.columns) == 1:
         y = Y.iloc[:, 0]
@@ -250,12 +129,15 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         ax.set_xlabel("Actual")
         ax.set_ylabel(ylabel)
         ax.set_title(Y.columns[0])
+        add_rBox(ypred, y, ax)
 
-        # Add correlation coefficient
-        coeff, _ = sp.stats.pearsonr(ypred, y)
-        textstr = "$r$ = " + str(np.round(coeff, 4))
-        props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-        ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
+def add_rBox(ypred, y, ax):
+    """Add correlation coefficient box onto scatter plot of Actual vs Predicted."""
+    coeff, _ = sp.stats.pearsonr(ypred, y)
+    textstr = "$r$ = " + str(np.round(coeff, 4))
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
+
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True):
@@ -302,25 +184,23 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, centers, xlabels, title, yaxis=False):
-    centers = pd.DataFrame(centers).T
+def plotCenters(ax, model, xlabels, yaxis=False):
+    centers = pd.DataFrame(model.transform()).T
     centers.columns = xlabels
+    num_peptides = [np.count_nonzero(model.labels() == i) for i in range(1, model.ncl + 1)]
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
         m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax, linewidth=2)
-        ax.set_xticklabels(xlabels, rotation=45)
-        ax.set_xticks(np.arange(len(xlabels)))
-        ax.set_ylabel("$log_{10}$ p-signal")
-        ax.xaxis.set_tick_params(bottom=True)
-        ax.set_xlabel("")
-        if title:
-            ax.legend([title])
-        else:
-            ax.legend(["cluster " + str(i + 1)])
+        sns.lineplot(x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i], linewidth=2)
+        ax[i].set_xticklabels(xlabels, rotation=45)
+        ax[i].set_xticks(np.arange(len(xlabels)))
+        ax[i].set_ylabel("$log_{10}$ p-signal")
+        ax[i].xaxis.set_tick_params(bottom=True)
+        ax[i].set_xlabel("")
+        ax[i].set_title("Cluster " + str(i+1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
         if yaxis:
-            ax.set_ylim([yaxis[0], yaxis[1]])
+            ax[i].set_ylim([yaxis[0], yaxis[1]])
 
 
 def plotMotifs(pssms, axes, titles=False, yaxis=False):
@@ -382,7 +262,8 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
-    """Add labels to data points"""
+    """Add labels to data points. Note not in use at the moment but could be helpful
+    in the future (e.g. PCA of mass spec in figure 2)"""
     if isinstance(clusters, int):
         clusters = [clusters]
     pspl_ = pspl.copy()

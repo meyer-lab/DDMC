@@ -1,16 +1,19 @@
 """
-This creates Figure 1.
+This creates Figure 1: Phenotypic characterization of PC9 AXL mutants
 """
-from .common import subplotLabel, getSetup
-from ..motifs import MapMotifs
-from ..pre_processing import preprocessing, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
-from sklearn.decomposition import PCA
+
 import os
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from .common import subplotLabel, getSetup
+from ..motifs import MapMotifs
+from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
+from ..distances import BarPlotRipleysK, DataFrameRipleysK, PlotRipleysK
 
 sns.set(color_codes=True)
 
@@ -18,50 +21,168 @@ sns.set(color_codes=True)
 path = os.path.dirname(os.path.abspath(__file__))
 pd.set_option("display.max_columns", 30)
 
+mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
+all_lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"] 
+lines = ["WT", "KO", "KI", "KD", "634", "643", "698", "726", "750", "821"]
+itp = 24
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 9), (2, 3))
-
-    # blank out first axis for cartoon
-    # ax[0].axis('off')
-
-    # Read in Cell Viability data
-    r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
-    r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
-    r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-    r4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR4_Phase.csv")
-
-    itp = 24
-    ftp = 72
-    lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-
-    # Read in Mass Spec data
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-    d = X.select_dtypes(include=['float64']).T
-
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    d.index = all_lines
-
-    # A: Cell Viability
-    ds = [r1, r2, r3, r4]
-    tr1 = ["-UT", "-E", "-A/E"]
-    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
-    ylabel = "fold-change to t=" + str(itp) + "h"
-    c = ["white", "windows blue", "scarlet"]
-    IndividualTimeCourses(ds, ftp, lines, tr1, tr2, ylabel, TimePointFC=itp, TreatmentFC=False, plot="WT", ax_=ax[0])
-    barplot_UtErlAF154(ax[0], lines, ds, ftp, tr1, tr2, "fold-change to t=0h", "Cell Viability - Erl + AF154 ", c, TimePointFC=itp)
+    ax, f = getSetup((20, 15), (4, 5))
 
     # Add subplot labels
     subplotLabel(ax)
 
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    # Read in phenotype data
+    cv = import_phenotype_data(phenotype="Cell Viability")
+    red = import_phenotype_data(phenotype="Cell Death")
+    sw = import_phenotype_data(phenotype="Migration")
+    c = import_phenotype_data(phenotype="Island")
+
+    # Labels
+    tr1 = ["-UT", "-E", "-A/E"]
+    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
+    colors = ["white", "windows blue", "scarlet"]
+
+    # Cell Viability
+    barplot_UtErlAF154(ax[0], lines, cv, 96, tr1, tr2, "fold-change to t=0h", "Cell Viability (t=96h)", colors, TimePointFC=itp)
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="WT", ax_=ax[1])
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[2])
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="KO", ax_=ax[3])
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[4])
+
+    # Cell Death
+    barplot_UtErlAF154(ax[5], lines, red, 72, tr1, tr2, "fold-change to UT", "Cell Death (t=72h)", TimePointFC=itp, colors=colors)
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="WT", ax_=ax[6])
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="Y821F", ax_=ax[7])
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="KO", ax_=ax[8])
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="Y750F", ax_=ax[9])
+
+    # Cell Migration
+    t1 = ["UT", "AF", "-E", "A/E"]
+    t2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
+    barplot_UtErlAF154(ax[10], lines, sw, 10, tr1, tr2, "RWD (%)", "Cell Migration (t=10h)", colors=colors)
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="WT", ax_=ax[11])
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="Y726F", ax_=ax[12])
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="KO", ax_=ax[13])
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="Y750F", ax_=ax[14])
+
+    # Island Effect
+    BarPlotRipleysK(ax[15], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors)
+    PlotRipleysK('48hrs', 'M11', ['ut', 'e', 'ae'], 6, ax=ax[16], title="Y726F")
+    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[17], title="Y698F")
+
+    # PCA phenotypes
+    y = formatPhenotypesForModeling(cv, red, sw, c)
+    plotPCA(ax[18:20], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+
     return f
 
 
+def import_phenotype_data(phenotype="Cell Viability"):
+    """Import all bioreplicates of a specific phenotype"""
+    if phenotype == "Cell Viability":
+        cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
+        cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
+        cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
+        cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR4_Phase.csv")
+        res = FixColumnLabels([cv1, cv2, cv3, cv4])
+
+    elif phenotype == "Cell Death":
+        red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
+        red2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR2_RedCount.csv")
+        red3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR3_RedCount.csv")
+        red4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR4_RedCount.csv")
+        red4.columns = red3.columns
+        res = FixColumnLabels([red1, red2, red3, red4])
+        res = normalize_cellsDead_to_cellsAlive(res)
+
+    elif phenotype == "Migration":
+        sw2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR2_RWD.csv")
+        sw3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR3_RWD.csv")
+        sw4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR4_RWD.csv")
+        res = fix_migration_columns(sw2, sw3, sw4)
+
+    elif phenotype == "Island":
+        res = DataFrameRipleysK('48hrs', mutants, ['ut', 'e', 'ae'], 6, np.linspace(1, 14.67, 1)).reset_index().set_index("Mutant")
+        res.columns = ["Treatment", "Island"]
+
+    return res
+
+
+def normalize_cellsDead_to_cellsAlive(red):
+    """Correct for number of alive cells to quantify dead cells"""
+    cv = import_phenotype_data("Cell Viability")
+    for jj in range(1, red[1].columns.size):
+        red[0].iloc[: , jj] /= cv[0].iloc[:, jj]
+        red[1].iloc[: , jj] /= cv[1].iloc[:, jj]
+        red[2].iloc[: , jj] /= cv[2].iloc[:, jj]
+        red[3].iloc[: , jj] /= cv[3].iloc[:, jj]
+    return red
+
+
+def formatPhenotypesForModeling(cv, red, sw, c):
+    """Format and merge phenotye data sets for modeling"""
+    # Cell Viability
+    v_ut = y_pre(cv, "UT", 96, "Viability", all_lines, itp=itp)
+    v_e = y_pre(cv, "-E", 96, "Viability", all_lines, itp=itp)
+    v_ae = y_pre(cv, "A/E", 96, "Viability", all_lines, itp=itp)
+
+    # Cell Death
+    cd_ut = y_pre(red, "UT", 96, "Apoptosis", all_lines, itp=itp)
+    cd_e = y_pre(red, "-E", 96, "Apoptosis", all_lines, itp=itp)
+    cd_ae = y_pre(red, "A/E", 96, "Apoptosis", all_lines, itp=itp)
+
+    # Migration
+    m_ut = y_pre(sw, "UT", 10, "Migration", all_lines)
+    m_e = y_pre(sw, "-E", 10, "Migration", all_lines)
+    m_ae = y_pre(sw, "A/E", 10, "Migration", all_lines)
+    m_ut.index = v_ut.index
+    m_e.index = v_e.index
+    m_ae.index = v_ae.index
+
+    # Island
+    c_ut = format_islands_byTreatments(c, "ut")
+    c_e = format_islands_byTreatments(c, "e")
+    c_ae = format_islands_byTreatments(c, "ae")
+
+    # Merge and Normalize
+    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
+    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
+    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
+    y = pd.concat([y_ut, y_e, y_ae])
+    y.iloc[:, 2:] = StandardScaler().fit_transform(y.iloc[:, 2:])
+
+    return y
+
+def format_islands_byTreatments(island_data, treatment):
+    """Find and format subset of data corresponding to each treatment"""
+    X = island_data[island_data["Treatment"] == treatment]
+    X = X.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
+    X.index = all_lines
+    X = X.reset_index()
+    X["Treatment"] = treatment
+    return X
+
+
+def fix_migration_columns(sw2, sw3, sw4):
+    """Format column labels of scratch wound data"""
+    cols = []
+    for label in sw2.columns:
+        cols.append(label.replace(" ", "-"))
+
+    sw2.columns = cols
+    sw3.columns = cols
+    sw4.columns = cols
+    return [sw2, sw3, sw4]
+
+
 def IndividualTimeCourses(
-    ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10)
+    ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10), title=False
 ):
     """ Plot time course data of each cell line across treatments individually. """
     ds = FixColumnLabels(ds)
@@ -105,6 +226,7 @@ def IndividualTimeCourses(
         sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
         ax_.set_title(plot)
         ax_.set_ylabel(ylabel)
+        ax_.legend(prop={'size':10})
 
     if savefig:
         fig.savefig("TimeCourse.pdf", bbox_inches="tight")
@@ -170,7 +292,7 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
     for d in ds:
         if TimePointFC:
             d = TimePointFoldChange(d, TimePointFC)
-        for t in t1:
+        for ii, t in enumerate(t1):
             r = d.copy()
             if TreatmentFC:
                 r = TreatmentFoldChange(r, TreatmentFC, t)
@@ -180,7 +302,7 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
                 c.append(r)
 
             r.insert(0, "Elapsed", ds[0].iloc[:, 0])
-            z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t, lines, ylabel)
+            z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t2[ii], lines, ylabel)
             c.append(z)
 
     c = pd.concat(c)
@@ -191,92 +313,15 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=90)
-
-
-"""Compute fold change to itp. Then for each time point between itp and ftp inclusive, compare to UT at that time. Then plot"""
-
-
-def FCvsUT_TimeCourse(ax, ds, itp, ftp, lines, tr1, treatment, title, FC=False):
-    c = []
-    for i in range(len(ds)):
-        d = ds[i].copy()
-        d = d.drop(columns=["Elapsed"])
-        d.insert(0, "Elapsed", ds[0].iloc[:, 0])
-
-        if FC:
-            d = ComputeFoldChange(d, itp)
-        x = fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment)
-        c.append(x)
-    c = pd.concat(c)
-    b = sns.lineplot(x="Elapsed (h)", y="Change vs UT", hue="Lines", data=c, err_style="bars", err_kws={"capsize": 7}, ci=68, ax=ax)
-
-    ax.set_title(title)
-
-
-def fc_TvsUT_Time(d, itp, ftp, lines, tr1, treatment):
-    ut = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(tr1[0])]], axis=1)
-    x = pd.concat([d.iloc[:, 0], d.loc[:, d.columns.str.contains(treatment)]], axis=1)
-    c = []
-    for time in range(itp, ftp + 1, 3):
-        ut_time = ut[ut["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-        x_time = x[x["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-
-        fc = pd.DataFrame(x_time.div(ut_time)).reset_index()
-        fc["Elapsed (h)"] = time
-        fc["Lines"] = lines
-        fc = fc[["index", "Elapsed (h)", "Lines", fc.columns[1]]]
-        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs UT"]
-        c.append(fc)
-    c = pd.concat(c)
-    return c
-
-
-def Phasenorm_Timecourse(ax, dphase, dtest, itp, ftp, treatment, lines, title, FC=False):
-    c = []
-    for i in range(len(dphase)):
-        dp = dphase[i].copy()
-        dt = dtest[i].copy()
-        dp = dp.drop(columns=["Elapsed"])
-        dt = dt.drop(columns=["Elapsed"])
-        dp.insert(0, "Elapsed", dphase[0].iloc[:, 0])
-        dt.insert(0, "Elapsed", dtest[0].iloc[:, 0])
-
-        if FC:
-            dp = ComputeFoldChange(dp, itp)
-            dt = ComputeFoldChange(dt, itp)
-        x = fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines)
-        c.append(x)
-    c = pd.concat(c)
-    b = sns.lineplot(x="Elapsed (h)", y="Change vs Phase", hue="Lines", data=c, err_style="bars", err_kws={"capsize": 7}, ci=68, ax=ax)
-
-    ax.set_title(title)
-
-
-def fc_ConditionvsPhase_Time(dp, dt, itp, ftp, treatment, lines):
-    dp = pd.concat([dp.iloc[:, 0], dp.loc[:, dp.columns.str.contains(treatment)]], axis=1)
-    dt = pd.concat([dt.iloc[:, 0], dt.loc[:, dt.columns.str.contains(treatment)]], axis=1)
-    c = []
-    for time in range(itp, ftp + 1, 3):
-        dp_time = dp[dp["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-        dt_time = dt[dt["Elapsed"] == time].iloc[0, 1:].reset_index(drop=True)
-
-        fc = pd.DataFrame(dt_time.div(dp_time)).reset_index()
-        fc["Elapsed (h)"] = time
-        fc["Lines"] = lines
-        fc = fc[["index", "Elapsed (h)", "Lines", fc.columns[1]]]
-        fc.columns = ["index", "Elapsed (h)", "Lines", "Change vs Phase"]
-        c.append(fc)
-    c = pd.concat(c)
-    return c
+    ax.legend(prop={'size':10})
 
 
 # Plot Separately since makefigure can't add it as a subplot
-def plotClustergram(data, title=False, lim=False, robust=True, figsize=(10, 10)):
+def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", yticklabels=False, xticklabels=False, figsize=(10, 10)):
     """ Clustergram plot. """
-    g = sns.clustermap(data, method="complete", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize)
-    g.fig.suptitle(title, fontsize=17)
+    g = sns.clustermap(data, method="centroid", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize, yticklabels=yticklabels, xticklabels=xticklabels)
     ax = g.ax_heatmap
-    ax.set_ylabel("")
+    ax.set_ylabel(ylabel)
 
 
 def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
@@ -292,6 +337,70 @@ def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
         dScor[j] = list(df[j])
     dLoad[lIDX] = df.select_dtypes(include=["float64"]).columns
     return dScor, dLoad
+
+
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
+    """ Plot PCA scores and loadings. """
+    pp = PCA(n_components=n_components)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
+    dLoad_ = pp.components_
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
+    varExp = np.round(pp.explained_variance_ratio_, 2)
+
+    # Scores
+    sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax[0], **{"linewidth": 0.5, "edgecolor": "k"})
+    ax[0].set_title("PCA Scores")
+    ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+    ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    if legendOut:
+        ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
+
+    # Loadings
+    if isinstance(pvals, np.ndarray):
+        dLoad_["p-value"] = pvals
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+    else:
+        sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax[1], **{"linewidth": 0.5, "edgecolor": "k"})
+
+    ax[1].set_title("PCA Loadings")
+    ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+    ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    for j, txt in enumerate(dLoad_[loadings_ind]):
+        ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
+
+
+def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores"):
+    """Plot PCA scores only"""
+    pp = PCA(n_components=n_components)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
+    dLoad_ = pp.components_
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
+    varExp = np.round(pp.explained_variance_ratio_, 2)
+
+    # Scores
+    if plot == "scores":
+        sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+        ax.set_title("PCA Scores")
+        ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+        ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+        if legendOut:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
+
+    # Loadings
+    elif plot == "loadings":
+        if isinstance(pvals, np.ndarray):
+            dLoad_["p-value"] = pvals
+            sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+        else:
+            sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+
+        ax.set_title("PCA Loadings")
+        ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+        ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+        for j, txt in enumerate(dLoad_[loadings_ind]):
+            ax.annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
+
+
 
 
 def plotpca_explained(ax, data, ncomp):
@@ -447,7 +556,7 @@ def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     data_headers = list(ABC.select_dtypes(include=["float64"]).columns)
     merging_indices = list(ABC.select_dtypes(include=["object"]).columns)
     FCto = data_headers[0]
-    NonRecPeptides, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
+    _, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     # Correlation of Duplicates, optionally filtering first
     DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
@@ -480,7 +589,7 @@ def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     ax[1].text(0.75, 0.96, textstr, transform=ax[1].transAxes, verticalalignment="top", bbox=props)
 
 
-def plot_AllSites(ax, x, prot, title):
+def plot_AllSites(ax, x, prot, title, ylim=False):
     """ Plot all phosphopeptides for a given protein. """
     x = x.set_index(["Gene"])
     peptides = pd.DataFrame(x.loc[prot])
@@ -496,34 +605,52 @@ def plot_AllSites(ax, x, prot, title):
     colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
     for i in range(peptides.shape[0]):
         if peptides.shape[0] == 1:
-            ax.plot(d.iloc[i, :], marker=".", label=positions, color=colors_[i])
+            label= positions
         else:
-            ax.plot(d.iloc[i, :], marker=".", label=positions[i], color=colors_[i])
+            label=positions[i]
+        ax.plot(d.iloc[i, :], label=label, color=colors_[i])
 
     ax.legend(loc=0)
-    ax.set_xticklabels(x.columns[4:], rotation=45)
+    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    ax.set_xticklabels(lines, rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
+    ax.legend(prop={'size':8})
+
+    if ylim:
+        ax.set_ylim(ylim)
 
 
-def plot_IdSites(ax, x, d, title, rn=False):
+def plot_IdSites(ax, x, d, title, rn=False, ylim=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
     x = x.set_index(["Gene", "Position"])
     n = list(d.keys())
     p = list(d.values())
-    colors_ = cm.rainbow(np.linspace(0, 1, len(n)))
+    dfs = []
     for i in range(len(n)):
-        c = x.loc[n[i], p[i]]
-        assert not (c is None), "Peptide not found."
-        if rn:
-            ax.plot(c[4:], marker=".", label=rn[n[i]], color=colors_[i])
-        if not rn:
-            ax.plot(c[4:], marker=".", label=n[i], color=colors_[i])
+        dfs.append(x.loc[n[i], p[i]].select_dtypes(include=float))
+
+    df = pd.concat(dfs)
+
+    if rn:
+        df = df.reset_index()
+        df["Gene"] = rn
+        df = df.set_index(["Gene", "Position"])
+
+    data = pd.melt(frame=df.reset_index(), id_vars=["Gene", "Position"], value_vars=df.columns, var_name="Line", value_name="p-signal")
+    data["GenePos"] = [g + ": " + p for g, p in zip(data["Gene"], data["Position"])]
+
+    ax = sns.lineplot(x="Line", y="p-signal", data=data, hue="GenePos", ax=ax)
 
     ax.legend(loc=0)
-    ax.set_xticklabels(c.index[3:], rotation=45)
+    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    ax.set_xticklabels(lines, rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
+    ax.legend(prop={'size':8})
+
+    if ylim:
+        ax.set_ylim(ylim)
 
 
 def selectpeptides(x, koi):
