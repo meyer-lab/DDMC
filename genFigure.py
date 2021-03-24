@@ -35,7 +35,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 40, 10, scalee=0.40)
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 40, 10, scalee=0.12)
 
     if sys.argv[1] == "3":
         # Overlay Figure 3 computational pipeline

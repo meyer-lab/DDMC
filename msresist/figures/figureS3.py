@@ -63,19 +63,19 @@ def makeFigure():
     plotR2YQ2Y(ax[5], plsr, c_gmm, y, 6, color="olive", title="GMM")
     plotActualVsPredicted(ax[6], plsr, c_gmm, y, y_pred="cross-validation", color="olive", type="bar", title="GMM")
 
+    # DDMC (w=50)
+    model = MassSpecClustering(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d, y)
+    centers = model.transform()
+    plsr = PLSRegression(n_components=3)
+    plotR2YQ2Y(ax[7], plsr, centers, y, model.ncl + 1, title="DDMC Sequence", color="orange")
+    plotActualVsPredicted(ax[8], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="orange", type="bar", title="DDMC Sequence")
+
     # DDMC (w=2)
     with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
         model = pickle.load(m)[0]
     centers = model.transform()
     plsr = PLSRegression(n_components=4)
-    plotR2YQ2Y(ax[7], plsr, centers, y, model.ncl + 1, title="DDMC mix")
-    plotActualVsPredicted(ax[8], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="darkblue", type="bar", title="DDMC mix")
-
-    # DDMC (w=50)
-    model = MassSpecClustering(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d, y)
-    centers = model.transform()
-    plsr = PLSRegression(n_components=3)
-    plotR2YQ2Y(ax[9], plsr, centers, y, model.ncl + 1, title="DDMC Sequence", color="orange")
-    plotActualVsPredicted(ax[10], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="orange", type="bar", title="DDMC Sequence")
+    plotR2YQ2Y(ax[9], plsr, centers, y, model.ncl + 1, title="DDMC mix")
+    plotActualVsPredicted(ax[10], PLSRegression(n_components=2), centers, y, y_pred="cross-validation", color="darkblue", type="bar", title="DDMC mix")
 
     return f

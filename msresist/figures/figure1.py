@@ -369,6 +369,40 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 
 
+def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores"):
+    """Plot PCA scores only"""
+    pp = PCA(n_components=n_components)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
+    dLoad_ = pp.components_
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
+    varExp = np.round(pp.explained_variance_ratio_, 2)
+
+    # Scores
+    if plot == "scores":
+        sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+        ax.set_title("PCA Scores")
+        ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+        ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+        if legendOut:
+            ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
+
+    # Loadings
+    elif plot == "loadings":
+        if isinstance(pvals, np.ndarray):
+            dLoad_["p-value"] = pvals
+            sns.scatterplot(x="PC1", y="PC2", data=dLoad_, hue="p-value", style=style_load, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+        else:
+            sns.scatterplot(x="PC1", y="PC2", data=dLoad_, style=style_load, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+
+        ax.set_title("PCA Loadings")
+        ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+        ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+        for j, txt in enumerate(dLoad_[loadings_ind]):
+            ax.annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
+
+
+
+
 def plotpca_explained(ax, data, ncomp):
     """ Cumulative variance explained for each principal component. """
     explained = PCA(n_components=ncomp).fit(data).explained_variance_ratio_
@@ -555,7 +589,7 @@ def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     ax[1].text(0.75, 0.96, textstr, transform=ax[1].transAxes, verticalalignment="top", bbox=props)
 
 
-def plot_AllSites(ax, x, prot, title):
+def plot_AllSites(ax, x, prot, title, ylim=False):
     """ Plot all phosphopeptides for a given protein. """
     x = x.set_index(["Gene"])
     peptides = pd.DataFrame(x.loc[prot])
@@ -583,8 +617,11 @@ def plot_AllSites(ax, x, prot, title):
     ax.set_title(title)
     ax.legend(prop={'size':8})
 
+    if ylim:
+        ax.set_ylim(ylim)
 
-def plot_IdSites(ax, x, d, title, rn=False):
+
+def plot_IdSites(ax, x, d, title, rn=False, ylim=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
     x = x.set_index(["Gene", "Position"])
     n = list(d.keys())
@@ -611,6 +648,9 @@ def plot_IdSites(ax, x, d, title, rn=False):
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
     ax.legend(prop={'size':8})
+
+    if ylim:
+        ax.set_ylim(ylim)
 
 
 def selectpeptides(x, koi):
