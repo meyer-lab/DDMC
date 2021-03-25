@@ -23,7 +23,7 @@ from ..pre_processing import MeanCenter
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((18, 13), (4, 5), multz={0:2, 15: 4})
+    ax, f = getSetup((18, 13), (4, 5), multz={0: 2, 15: 4})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -48,7 +48,7 @@ def makeFigure():
     ax[0].axis("off")
 
     # Scores & Loadings
-    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"] 
+    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
     plotScoresLoadings(ax[1:3], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
@@ -115,7 +115,7 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         elif type == "bar":
             coeff = [sp.stats.pearsonr(Y_predictions[:, i], Y.iloc[:, i])[0] for i in range(len(Y.columns))]
             data = pd.DataFrame()
-            data["Phenotype"]  = list(Y.columns)
+            data["Phenotype"] = list(Y.columns)
             data["r-score"] = coeff
             sns.barplot(x="Phenotype", y="r-score", data=data, ax=ax, color=color, **{"linewidth": 0.5}, **{"edgecolor": "black"})
             if title:
@@ -131,13 +131,13 @@ def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color
         ax.set_title(Y.columns[0])
         add_rBox(ypred, y, ax)
 
+
 def add_rBox(ypred, y, ax):
     """Add correlation coefficient box onto scatter plot of Actual vs Predicted."""
     coeff, _ = sp.stats.pearsonr(ypred, y)
     textstr = "$r$ = " + str(np.round(coeff, 4))
     props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
     ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
-
 
 
 def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True):
@@ -198,7 +198,7 @@ def plotCenters(ax, model, xlabels, yaxis=False):
         ax[i].set_ylabel("$log_{10}$ p-signal")
         ax[i].xaxis.set_tick_params(bottom=True)
         ax[i].set_xlabel("")
-        ax[i].set_title("Cluster " + str(i+1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
+        ax[i].set_title("Cluster " + str(i + 1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
         if yaxis:
             ax[i].set_ylim([yaxis[0], yaxis[1]])
 
