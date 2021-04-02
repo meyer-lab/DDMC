@@ -37,8 +37,6 @@ class PAM250(CustomDistribution):
         else:
             self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
 
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
-
 
 class fixedMotif(CustomDistribution):
     def __init__(self, seqs, motif, SeqWeight):
@@ -65,7 +63,6 @@ class fixedMotif(CustomDistribution):
     def from_summaries(self, inertia=0.0):
         """ Update the underlying distribution. No inertia used. """
         self.logWeights[:] = self.SeqWeight * self.background
-        self.logWeights[:] = self.logWeights - np.mean(self.logWeights)
 
 
 def unpackPAM(seqs, sw, lw, frozen):
