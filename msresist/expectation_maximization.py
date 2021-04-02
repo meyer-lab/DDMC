@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
 
     # In case we have missing data, use SVD-EM to fill it for initialization
-    pc = PCA(d, ncomp=ncl, missing="fill-em", standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=5, missing="fill-em", standardize=False, demean=False, normalize=False)
 
     # Solve for the KMeans clustering for initialization
     km = KMeans(ncl, tol=1e-9)
@@ -42,13 +42,14 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
             # Initialize model
             dists = list()
             for ii in range(ncl):
-                nDist = [NormalDistribution(1.0, 0.2) for _ in range(d.shape[1] - 1)]
+                nDist = [NormalDistribution(1.0, 0.2, min_std=0.01) for _ in range(d.shape[1] - 1)]
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
                 else:
                     nDist.append(seqDist.copy())
 
+                # Fit the data distributions using the KMeans assignments
                 for jj in range(d.shape[1] - 1):
                     nDist[jj].fit(d[km.labels_ == ii, jj])
 
@@ -64,7 +65,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=200, verbose=False, stop_threshold=1e-6)
+        gmm.fit(d, max_iterations=500, verbose=False, stop_threshold=1e-6)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
