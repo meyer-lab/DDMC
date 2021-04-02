@@ -178,23 +178,13 @@ def unpackBinomial(seq, seqs, sw, lw, frozen):
 
 def CountPsiteTypes(X, cA):
     """ Count number of different phosphorylation types in a MS data set."""
-    pS = 0
-    pT = 0
-    pY = 0
-    primed = 0
+    positionSeq = [seq[cA] for seq in X]
+    pS = positionSeq.count("s")
+    pT = positionSeq.count("t")
+    pY = positionSeq.count("y")
 
-    for seq in X:
-        if "s" in seq[cA]:
-            pS += 1
-        if "y" in seq[cA]:
-            pY += 1
-        if "t" in seq[cA]:
-            pT += 1
-        pp = 0
-        for i in seq:
-            if i.islower():
-                pp += 1
-        if pp > 1:
-            primed += 1
+    primed = 0
+    countt = [sum(map(str.islower, seq)) for seq in X]
+    primed = sum(map(lambda i: i > 1, countt))
 
     return pY, pS, pT, primed
