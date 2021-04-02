@@ -183,7 +183,6 @@ def CountPsiteTypes(X, cA):
     pT = positionSeq.count("t")
     pY = positionSeq.count("y")
 
-    primed = 0
     countt = [sum(map(str.islower, seq)) for seq in X]
     primed = sum(map(lambda i: i > 1, countt))
 
