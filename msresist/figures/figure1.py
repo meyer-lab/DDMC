@@ -22,9 +22,10 @@ path = os.path.dirname(os.path.abspath(__file__))
 pd.set_option("display.max_columns", 30)
 
 mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
-all_lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"] 
+all_lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 lines = ["WT", "KO", "KI", "KD", "634", "643", "698", "726", "750", "821"]
 itp = 24
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -118,10 +119,10 @@ def normalize_cellsDead_to_cellsAlive(red):
     """Correct for number of alive cells to quantify dead cells"""
     cv = import_phenotype_data("Cell Viability")
     for jj in range(1, red[1].columns.size):
-        red[0].iloc[: , jj] /= cv[0].iloc[:, jj]
-        red[1].iloc[: , jj] /= cv[1].iloc[:, jj]
-        red[2].iloc[: , jj] /= cv[2].iloc[:, jj]
-        red[3].iloc[: , jj] /= cv[3].iloc[:, jj]
+        red[0].iloc[:, jj] /= cv[0].iloc[:, jj]
+        red[1].iloc[:, jj] /= cv[1].iloc[:, jj]
+        red[2].iloc[:, jj] /= cv[2].iloc[:, jj]
+        red[3].iloc[:, jj] /= cv[3].iloc[:, jj]
     return red
 
 
@@ -152,12 +153,13 @@ def formatPhenotypesForModeling(cv, red, sw, c):
 
     # Merge and Normalize
     y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e =  pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
-    y_ut =  pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
+    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
+    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
     y = pd.concat([y_ut, y_e, y_ae])
     y.iloc[:, 2:] = StandardScaler().fit_transform(y.iloc[:, 2:])
 
     return y
+
 
 def format_islands_byTreatments(island_data, treatment):
     """Find and format subset of data corresponding to each treatment"""
@@ -406,8 +408,6 @@ def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_
             ax.annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 
 
-
-
 def plotpca_explained(ax, data, ncomp):
     """ Cumulative variance explained for each principal component. """
     explained = PCA(n_components=ncomp).fit(data).explained_variance_ratio_
@@ -610,9 +610,9 @@ def plot_AllSites(ax, x, prot, title, ylim=False):
     colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
     for i in range(peptides.shape[0]):
         if peptides.shape[0] == 1:
-            label= positions
+            label = positions
         else:
-            label=positions[i]
+            label = positions[i]
         ax.plot(d.iloc[i, :], label=label, color=colors_[i])
 
     ax.legend(loc=0)
@@ -620,7 +620,7 @@ def plot_AllSites(ax, x, prot, title, ylim=False):
     ax.set_xticklabels(lines, rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
-    ax.legend(prop={'size':8})
+    ax.legend(prop={'size': 8})
 
     if ylim:
         ax.set_ylim(ylim)
@@ -652,7 +652,7 @@ def plot_IdSites(ax, x, d, title, rn=False, ylim=False):
     ax.set_xticklabels(lines, rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)
-    ax.legend(prop={'size':8})
+    ax.legend(prop={'size': 8})
 
     if ylim:
         ax.set_ylim(ylim)

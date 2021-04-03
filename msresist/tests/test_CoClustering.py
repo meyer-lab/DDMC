@@ -27,11 +27,14 @@ def test_wins(distance_method):
     assert distances[0] < distances[1]
 
 
-@pytest.mark.parametrize("w", [0, 0.1, 0.3, 1])
-@pytest.mark.parametrize("ncl", [2, 3, 4])
+@pytest.mark.parametrize("w", [0, 0.1, 1.0, 10.0])
+@pytest.mark.parametrize("ncl", [2, 5, 20])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial", "PAM250_fixed"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
+    if (distance_method == "PAM250_fixed") and (ncl > 6):
+        return
+
     MSC = MassSpecClustering(info, ncl, SeqWeight=w, distance_method=distance_method, pre_motifs=preMotifSet[0:ncl]).fit(X=data)
 
     # Assert that we got a reasonable result

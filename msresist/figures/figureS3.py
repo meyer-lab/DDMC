@@ -7,6 +7,7 @@ from .common import subplotLabel, getSetup
 from .figure1 import IndividualTimeCourses, import_phenotype_data
 
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
