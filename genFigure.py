@@ -22,27 +22,46 @@ if __name__ == "__main__":
 
     logging.info("%s is done after %s seconds.", nameOut, time.time() - start)
 
-    if sys.argv[1] == 'MS6':
-        # Overlay Figure MS6 cartoon
-        overlayCartoon(fdir + 'figureMS6.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
+
+    if sys.argv[1] == "2":
+        # Overlay Figure 2 heatmap
+        overlayCartoon(fdir + 'figure2.svg',
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 50, 10, scalee=0.11)
+
+    if sys.argv[1] == "2":
+        # Overlay Figure 2 KSEA plot
+        overlayCartoon(fdir + 'figure2.svg',
+                       f'{cartoon_dir}/KSEA_WTvsKO.svg', 90, 520, scalee=0.27)
+
+    if sys.argv[1] == "3":
+        # Overlay Figure 3 computational pipeline
+        overlayCartoon(fdir + 'figure3.svg',
+                       f'{cartoon_dir}/pipeline.svg', 175, 0, scalee=0.01)
+
+    if sys.argv[1] == "4":
+        # Overlay Figure 4 YAP AXL vs KO blot
+        overlayCartoon(fdir + 'figure4.svg',
+                       f'{cartoon_dir}/YAP_WTvsKO_blot.svg', 700, 590, scalee=0.17)
+
+    if sys.argv[1] == "4":
+        # Overlay Figure 4 YAP dasatinib dose response
+        overlayCartoon(fdir + 'figure4.svg',
+                       f'{cartoon_dir}/YAP_DR_blot.svg', 50, 600, scalee=0.17)
+
+    if sys.argv[1] == "S6":
+        # Overlay Figure 3 cross validation diagram
+        overlayCartoon(fdir + 'figureS6.svg',
+                       f'{cartoon_dir}/cross_validation.svg', 60, 0, scalee=0.21)
 
     if sys.argv[1] == "M3":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
                        f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)
 
-    if sys.argv[1] == "2":
-        # Overlay Figure 2 heatmap
-        overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 40, 10, scalee=0.12)
+    if sys.argv[1] == 'MS6':
+        # Overlay Figure MS6 cartoon
+        overlayCartoon(fdir + 'figureMS6.svg',
+                       f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
 
-    if sys.argv[1] == "3":
-        # Overlay Figure 3 computational pipeline
-        overlayCartoon(fdir + 'figure3.svg',
-                       f'{cartoon_dir}/pipeline.svg', 150, 0, scalee=0.045)
 
-    if sys.argv[1] == "S3":
-        # Overlay Figure 3 cross validation diagram
-        overlayCartoon(fdir + 'figureS3.svg',
-                       f'{cartoon_dir}/cross_validation.svg', 60, 0, scalee=0.21)
+

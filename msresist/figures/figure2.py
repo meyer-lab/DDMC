@@ -15,7 +15,7 @@ all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F"
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 8), (2, 3), multz={0: 1})
+    ax, f = getSetup((12, 11), (3, 3), multz={0: 1, 6:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -42,4 +42,11 @@ def makeFigure():
     ax[3].legend(loc='upper left', prop={'size':8})
     plot_AllSites(ax[3], X.copy(), "EGFR", "EGFR", ylim=[-3, 2.5])
     plot_IdSites(ax[4], X.copy(), erk, "ERK1/2", rn=erk_rn, ylim=[-3, 2.5])
+
+    # KSEA
+    ax[5].axis("off")
+
+    # Volcano plot
+    # ax[6]
+
     return f

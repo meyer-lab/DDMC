@@ -1,25 +1,56 @@
 """
-This creates Figure 4.
+This creates Figure 4: ABL/SFK/YAP experimental validations
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from msresist.figures.figure1 import TimePointFoldChange
+from .common import subplotLabel, getSetup
+from .figure1 import TimePointFoldChange
+
+def makeFigure():
+    """Get a list of the axis objects and create a figure"""
+    # Get list of axis objects
+    ax, f = getSetup((15, 12), (3, 4), multz={8:1, 10:1})
+
+    # Add subplot labels
+    subplotLabel(ax)
+
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    # Dasatinib Dose Response Time Course
+    das = [pd.read_csv("msresist/data/Validations/Dasatinib.csv"), pd.read_csv("msresist/data/Validations/Dasatinib_2fixed.csv")]
+    das = transform_YAPviability_data(das)
+    plot_YAPinhibitorTimeLapse(ax[:8], das, ylim=[0, 14])
+
+    # YAP blot AXL vs KO
+    ax[8].axis("off")
+
+    # YAP blot dasatinib dose response
+    ax[9].axis("off")
+
+    return f
 
 
-def plot_YAPinhibitorTimeLapse(ax, X):
+def plot_YAPinhibitorTimeLapse(ax, X, ylim=False):
     lines = ["WT", "KO"]
     treatments = ["UT", "E", "E/R", "E/A"]
     for i, line in enumerate(lines):
         for j, treatment in enumerate(treatments):
+            if i > 0:
+                j += 4
             m = X[X["Lines"] == line]
             m = m[m["Condition"] == treatment]
-            sns.lineplot(x="Elapsed", y="Fold-change confluency", hue="Inh_concentration", data=m, ci=68, ax=ax[i][j])
-            ax[i][j].set_title(line + "-" + treatment)
+            sns.lineplot(x="Elapsed", y="Fold-change confluency", hue="Inh_concentration", data=m, ci=68, ax=ax[j])
+            ax[j].set_title(line + "-" + treatment)
+            if ylim:
+                ax[j].set_ylim(ylim)
             if i != 0 or j != 0:
-                ax[i][j].get_legend().remove()
+                ax[j].get_legend().remove()
+            else:
+                ax[j].legend(prop={'size':10})
 
 
 def transform_YAPviability_data(data, itp=12):

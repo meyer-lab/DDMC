@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 3: Cell Migration time course
+This creates Supplemental Figure 2: Cell M time course
 """
 
 import seaborn as sns
@@ -18,12 +18,12 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    cm = import_phenotype_data(phenotype="Migration")
+    cd = import_phenotype_data(phenotype="Cell Death")
     lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-    t1 = ["UT", "AF", "-E", "A/E"]
-    t2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
+    tr1 = ["-UT", "-E", "-A/E"]
+    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
 
     for i, line in enumerate(lines):
-        IndividualTimeCourses(cm, 24, lines, t1, t2, "fold-change RWD", plot=line, ax_=ax[i])
+        IndividualTimeCourses(cd, 96, lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=24, plot=line, ax_=ax[i], ylim=[0, 13])
 
     return f
