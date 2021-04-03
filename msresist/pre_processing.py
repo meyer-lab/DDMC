@@ -67,9 +67,7 @@ def preprocessing(
         if FCtoUT:
             X = LinearFoldChange(X, data_headers, FCto)
         if not FCtoUT:
-            print(data_headers)
             X = Linear(X, data_headers)
-            display(X.head())
 
     return X
 
