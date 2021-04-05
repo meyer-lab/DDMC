@@ -30,7 +30,7 @@ itp = 24
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (4, 5))
+    ax, f = getSetup((17, 10), (3, 5), multz={3:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -44,42 +44,47 @@ def makeFigure():
     sw = import_phenotype_data(phenotype="Migration")
     c = import_phenotype_data(phenotype="Island")
 
+    # AXL mutants cartoon
+    ax[0].axis("off")
+
+    # AXL expression data
+    axl = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/AXLexpression.csv")
+    axl = pd.melt(axl, value_vars=["AXL", "GFP"], id_vars="AXL mutants Y—>F", value_name="% Cells", var_name="Signal")
+    sns.barplot(data=axl, x="AXL mutants Y—>F", y="% Cells", hue="Signal", ax=ax[1], palette=sns.xkcd_palette(["white", "darkgreen"]), **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    ax[1].set_title("Ectopic AXL expression")
+    ax[1].legend(prop={'size':8})
+
+    # Migration images
+    ax[2].axis("off")
+
+    # Islands images
+    ax[3].axis("off")
+
+    # PCA phenotypes
+    y = formatPhenotypesForModeling(cv, red, sw, c)
+    plotPCA(ax[4:6], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+
     # Labels
     tr1 = ["-UT", "-E", "-A/E"]
     tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
-    colors = ["white", "windows blue", "scarlet"]
 
     # Cell Viability
-    barplot_UtErlAF154(ax[0], lines, cv, 96, tr1, tr2, "fold-change confluency", "Cell Viability (t=96h)", colors, TreatmentFC="-E", TimePointFC=itp, loc='upper right')
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="WT", ax_=ax[1], ylim=[0.8, 3.5])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[2], ylim=[0.8, 3.5])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="KO", ax_=ax[3], ylim=[0.8, 3.5])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[4], ylim=[0.8, 3.5])
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[6], ylim=[0.8, 3.5], title="Viability Y698F")
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[7], ylim=[0.8, 3.5], title="Viability Y821F")
 
     # Cell Death
-    barplot_UtErlAF154(ax[5], lines, red, 72, tr1, tr2, "fold-change apoptosis (YOYO+)", "Cell Death (t=72h)", TreatmentFC="-E", colors=colors, TimePointFC=itp, loc='lower center')
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="WT", ax_=ax[6], ylim=[0, 13])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y821F", ax_=ax[7], ylim=[0, 13])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="KO", ax_=ax[8], ylim=[0, 13])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y750F", ax_=ax[9], ylim=[0, 13])
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y821F", ax_=ax[8], ylim=[0, 13], title="Death Y821F")
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y750F", ax_=ax[9], ylim=[0, 13], title="Death Y750F")
 
     # Cell Migration
     t1 = ["UT", "AF", "-E", "A/E"]
     t2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="WT", ax_=ax[11])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y726F", ax_=ax[12])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="KO", ax_=ax[13])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y821F", ax_=ax[14])
-    barplot_UtErlAF154(ax[10], lines, sw, 14, tr1, tr2, "fold-change RWD", "Cell Migration (t=14h)", TreatmentFC="-E", colors=colors, TimePointFC=itp)
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y726F", ax_=ax[10], title="Migration Y726F")
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y821F", ax_=ax[11], title="Migration Y821F")
 
     # Island Effect
-    BarPlotRipleysK(ax[15], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors, TreatmentFC="Erlotinib", ylabel="fold-change K estimate")
-    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[16], title="Y698F")
-    PlotRipleysK('48hrs', 'M4', ['ut', 'e', 'ae'], 6, ax=ax[17], title="Y634F")
-
-    # PCA phenotypes
-    y = formatPhenotypesForModeling(cv, red, sw, c)
-    plotPCA(ax[18:20], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[12], title="Island Y726F")
+    PlotRipleysK('48hrs', 'M4', ['ut', 'e', 'ae'], 6, ax=ax[13], title="Island Y750F")
 
     return f
 
@@ -226,7 +231,10 @@ def IndividualTimeCourses(
     if plot != "Full":
         x = d[d["Lines"] == plot]
         sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
-        ax_.set_title(plot)
+        if title:
+            ax_.set_title(title)
+        else:
+            ax_.set_title(plot)
         ax_.set_ylabel(ylabel)
         ax_.legend(prop={'size':8})
         if ylim:
