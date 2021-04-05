@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotMotifs, plotUpstreamKinase_heatmap
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup

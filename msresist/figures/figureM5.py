@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from .figureM3 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
-from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
 from ..logistic_regression import plotROC, plotClusterCoefficients
 
 
