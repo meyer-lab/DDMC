@@ -4,7 +4,11 @@ This creates Supplemental Figure 2: Cluster motifs
 
 import pickle
 from .common import subplotLabel, getSetup
+<<<<<<< HEAD
 from .figure3 import plotMotifs
+=======
+from .figure2 import plotMotifs
+>>>>>>> master
 
 
 def makeFigure():

@@ -1,5 +1,5 @@
 ---
-title: "An immune complex binding model predicts effector cell response across diverse disease models"
+title: "AXL-mediated activation of ABL and SFK induces YAP signaling to confer bypass resistance to erlotinib in lung adenocarcinoma"
 keywords:
   - phosphoproteomics
   - bioinformatics
@@ -12,6 +12,10 @@ authors:
   -
     name: Marc Creixell
     initials: MC
+    orcid: 0000-0003-3981-934X
+    twitter: mcreixell_
+    email: creixell@g.ucla.edu
+    github: mcreixell
     affiliations:
       - Department of Bioengineering, University of California, Los Angeles
   -

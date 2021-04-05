@@ -1,30 +1,42 @@
 """
-This creates Supplemental Figure 1.
+This creates Supplemental Figure 1: Cell Viability and death
 """
 
-import pickle
 import numpy as np
-from ..figures.figure3 import plotMotifs, plotCenters
+import seaborn as sns
 from .common import subplotLabel, getSetup
+from .figure1 import IndividualTimeCourses, import_phenotype_data, barplot_UtErlAF154
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((8, 20), (5, 2))
-
-    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as p:
-        model = pickle.load(p)[0]
-
-    pssms = model.pssms(PsP_background=False)
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    for ii, jj in zip(range(0, 10, 2), range(5)):
-        cluster = "Cluster " + str(jj + 1)
-        plotMotifs([pssms[jj]], axes=[ax[ii]], titles=[cluster], yaxis=[-35, 12.5])
-        plotCenters(ax[ii + 1], model.transform()[:, jj], all_lines, title=cluster, yaxis=[-1, 1])
+    ax, f = getSetup((15, 10), (4, 6), multz={0:1, 12:1})
 
     # Add subplot labels
     subplotLabel(ax)
+
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    # Read in viability and apoptosis data
+    cv = import_phenotype_data(phenotype="Cell Viability")
+    red = import_phenotype_data(phenotype="Cell Death")
+
+    # Labels
+    lines = ["WT", "KO", "KI", "KD", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    tr1 = ["-UT", "-E", "-A/E"]
+    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
+    colors = ["white", "windows blue", "scarlet"]
+    itp = 24
+
+    # Bar plots
+    barplot_UtErlAF154(ax[0], lines, cv, 96, tr1, tr2, "fold-change confluency", "Cell Viability (t=96h)", colors, TreatmentFC="-E", TimePointFC=itp, loc='upper right')
+    barplot_UtErlAF154(ax[11], lines, red, 72, tr1, tr2, "fold-change YOYO+ cells", "Cell Death (t=72h)", TreatmentFC="-E", colors=colors, TimePointFC=itp, loc='lower center')
+
+    # Time courses
+    for i, line in enumerate(lines):
+        IndividualTimeCourses(cv, 96, lines, tr1, tr2, "fold-change confluency", TimePointFC=24, TreatmentFC="-E", plot=line, ax_=ax[i+1], ylim=[0.8, 3.5])
+        IndividualTimeCourses(red, 96, lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot=line, ax_=ax[i+12], ylim=[0, 13])
 
     return f

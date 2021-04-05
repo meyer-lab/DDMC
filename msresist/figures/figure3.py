@@ -1,10 +1,10 @@
 """
-This creates Figure 2.
+This creates Figure 3: ABL/SFK/YAP experimental validations
 """
-import os
-import pickle
+
 import pandas as pd
 import numpy as np
+<<<<<<< HEAD
 import scipy as sp
 from .common import subplotLabel, getSetup
 from sklearn.cross_decomposition import PLSRegression
@@ -17,147 +17,22 @@ from ..distances import DataFrameRipleysK
 import matplotlib.colors as colors
 from sklearn.model_selection import cross_val_predict
 import matplotlib.cm as cm
+=======
+import matplotlib.pyplot as plt
+>>>>>>> master
 import seaborn as sns
-import logomaker as lm
-from ..pre_processing import preprocessing, y_pre, FixColumnLabels, MeanCenter
-import warnings
-from Bio import BiopythonWarning
-
-warnings.simplefilter("ignore", BiopythonWarning)
-
-path = os.path.dirname(os.path.abspath(__file__))
-
+from .common import subplotLabel, getSetup
+from .figure1 import TimePointFoldChange
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 20), (4, 3), multz={10: 1})
-
-    # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
-
-    # -------- Import and Preprocess Signaling Data -------- #
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-
-    d = X.select_dtypes(include=["float64"]).T
-
-    all_lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    d.index = all_lines
-
-    # -------- Cell Phenotypes -------- #
-    # Cell Viability
-    cv1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR1_Phase.csv")
-    cv2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR2_Phase.csv")
-    cv3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-    cv4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Phase/BR3_Phase.csv")
-
-    itp = 24
-    ftp = 96
-
-    cv = [cv1, cv2, cv3, cv4]
-    cv = FixColumnLabels(cv)
-
-    v_ut = y_pre(cv, "UT", ftp, "Viability", all_lines, itp=itp)
-    v_e = y_pre(cv, "-E", ftp, "Viability", all_lines, itp=itp)
-    v_ae = y_pre(cv, "A/E", ftp, "Viability", all_lines, itp=itp)
-
-    # Cell Death
-    red1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR1_RedCount.csv")
-    red2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR2_RedCount.csv")
-    red3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR3_RedCount.csv")
-    red4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/CellViability/Red/BR4_RedCount.csv")
-    red4.columns = red3.columns
-
-    for jj in range(1, red1.columns.size):
-        red1.iloc[:, jj] /= cv1.iloc[:, jj]
-        red2.iloc[:, jj] /= cv2.iloc[:, jj]
-        red3.iloc[:, jj] /= cv3.iloc[:, jj]
-        red4.iloc[:, jj] /= cv4.iloc[:, jj]
-
-    cD = [red1, red2, red3, red4]
-    cD = FixColumnLabels(cD)
-    cd_ut = y_pre(cD, "UT", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_e = y_pre(cD, "-E", ftp, "Apoptosis", all_lines, itp=itp)
-    cd_ae = y_pre(cD, "A/E", ftp, "Apoptosis", all_lines, itp=itp)
-
-    r1 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR1_RWD.csv")
-    r2 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR2_RWD.csv")
-    r3 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR3_RWD.csv")
-    r4 = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/EMT/BR4_RWD.csv")
-    ftp = 12
-    cm = [r1, r2, r3, r4]
-    m_ut = y_pre(cm, "UT", ftp, "Migration", all_lines)
-    m_e = y_pre(cm, " E", ftp, "Migration", all_lines)
-    m_ae = y_pre(cm, "A/E", ftp, "Migration", all_lines)
-
-    m_ut.index = v_ut.index
-    m_e.index = v_e.index
-    m_ae.index = v_ae.index
-
-    # Clustering Effect
-    mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
-    treatments = ['ut', 'e', 'ae']
-    replicates = 6
-    radius = np.linspace(1, 14.67, 1)
-    folder = '48hrs'
-    c = DataFrameRipleysK(folder, mutants, treatments, replicates, radius).reset_index().set_index("Mutant")
-    c.columns = ["Treatment", "Island"]
-    c_ut = c[c["Treatment"] == "ut"]
-    c_ut = c_ut.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ut.index = all_lines
-    c_ut = c_ut.reset_index()
-    c_ut["Treatment"] = "UT"
-
-    c_e = c[c["Treatment"] == "e"]
-    c_e = c_e.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_e.index = all_lines
-    c_e = c_e.reset_index()
-    c_e["Treatment"] = "E"
-
-    c_ae = c[c["Treatment"] == "ae"]
-    c_ae = c_ae.reindex(list(mutants[:2]) + [mutants[3]] + [mutants[2]] + list(mutants[4:]))
-    c_ae.index = all_lines
-    c_ae = c_ae.reset_index()
-    c_ae["Treatment"] = "A/E"
-
-    # -------- PLOTS -------- #
-    # PCA analysis of phenotypes
-    y_ae = pd.concat([v_ae, cd_ae["Apoptosis"], m_ae["Migration"], c_ae["Island"]], axis=1)
-    y_e = pd.concat([v_e, cd_e["Apoptosis"], m_e["Migration"], c_e["Island"]], axis=1)
-    y_ut = pd.concat([v_ut, cd_ut["Apoptosis"], m_ut["Migration"], c_ut["Island"]], axis=1)
-
-    y_c = pd.concat([y_ut, y_e, y_ae])
-    y_c.iloc[:, 2:] = StandardScaler().fit_transform(y_c.iloc[:, 2:])
-
-    plotPCA(ax[:2], y_c, 2, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
-
-    # MODEL
-    y = y_ae.drop("Treatment", axis=1).set_index("Lines")
-
-    # -------- Cross-validation 1 -------- #
-    # R2Y/Q2Y
-
-    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
-        model = pickle.load(m)[0]
-    centers = model.transform()
-
-    plsr = PLSRegression(n_components=2, scale=False)
-    plotR2YQ2Y(ax[2], plsr, centers, y, model.ncl + 1)
-
-    # Plot Measured vs Predicted
-    plotActualVsPredicted(ax[3:7], plsr, centers, y)
-
-    # Plot motifs
-    pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[3], pssms[4]], axes=ax[7:10], titles=["Cluster 1", "Cluster 4", "Cluster 5"])
-
-    # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 4, 5], ax[10])
+    ax, f = getSetup((15, 12), (3, 4), multz={8:1, 10:1})
 
     # Add subplot labels
     subplotLabel(ax)
 
+<<<<<<< HEAD
     return f
 
 
@@ -355,17 +230,23 @@ def plot_LassoCoef(ax, model, title=False):
     sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
     if title:
         ax.set_title(title)
+=======
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+>>>>>>> master
 
+    # Dasatinib Dose Response Time Course
+    das = [pd.read_csv("msresist/data/Validations/Dasatinib.csv"), pd.read_csv("msresist/data/Validations/Dasatinib_2fixed.csv")]
+    das = transform_YAPviability_data(das)
+    plot_YAPinhibitorTimeLapse(ax[:8], das, ylim=[0, 14])
 
-def store_cluster_members(X, model, filename, cols):
-    """Save csv files with cluster members."""
-    X["Cluster"] = model.labels()
-    for i in range(model.ncl):
-        m = X[X["Cluster"] == i + 1][cols]
-        m.index = np.arange(m.shape[0])
-        m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
+    # YAP blot AXL vs KO
+    ax[8].axis("off")
 
+    # YAP blot dasatinib dose response
+    ax[9].axis("off")
 
+<<<<<<< HEAD
 def plotUpstreamKinase_heatmap(model, clusters, ax):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases()
@@ -377,22 +258,54 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     cbar.ax.tick_params(labelsize=7)
     ax.set_ylabel("Frobenius Norm (motif vs kinase specifcity)")
     ax.set_title("Upstream Kinase Inference")
+=======
+    return f
+>>>>>>> master
 
 
-def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
-    """Add labels to data points"""
-    if isinstance(clusters, int):
-        clusters = [clusters]
-    pspl_ = pspl.copy()
-    X_ = X.copy()
-    for cluster in clusters:
-        pssm = pd.DataFrame(X_.loc[cluster]).T.reset_index()
-        pssm.columns = ["Label"] + list(pssm.columns[1:])
-        XX = pd.concat([pspl_.reset_index(), pssm]).set_index("Label")
-        knn = NearestNeighbors(n_neighbors=n_neighbors)
-        knn.fit(XX.values)
-        idc = knn.kneighbors(XX.loc[cluster].values.reshape(1, 2), return_distance=False)
-        a = XX.iloc[idc.reshape(n_neighbors), :].reset_index()
-        a.columns = ["val", "x", "y"]
-        for _, point in a.iterrows():
-            ax.text(point['x'] + .02, point['y'], str(point['val']))
+def plot_YAPinhibitorTimeLapse(ax, X, ylim=False):
+    lines = ["WT", "KO"]
+    treatments = ["UT", "E", "E/R", "E/A"]
+    for i, line in enumerate(lines):
+        for j, treatment in enumerate(treatments):
+            if i > 0:
+                j += 4
+            m = X[X["Lines"] == line]
+            m = m[m["Condition"] == treatment]
+            sns.lineplot(x="Elapsed", y="Fold-change confluency", hue="Inh_concentration", data=m, ci=68, ax=ax[j])
+            ax[j].set_title(line + "-" + treatment)
+            if ylim:
+                ax[j].set_ylim(ylim)
+            if i != 0 or j != 0:
+                ax[j].get_legend().remove()
+            else:
+                ax[j].legend(prop={'size':10})
+
+
+def transform_YAPviability_data(data, itp=12):
+    """Transform to initial time point and convert into seaborn format"""
+    new = []
+    for i, mat in enumerate(data):
+        if i > 0:
+            mat = MeanTRs(mat)
+        new.append(TimePointFoldChange(mat, itp))
+
+    c = pd.concat(new, axis=0)
+    c = pd.melt(c, id_vars="Elapsed", value_vars=c.columns[1:], var_name="Lines", value_name="Fold-change confluency")
+    c["Condition"] = [s.split(" ")[1].split(" ")[0] for s in c["Lines"]]
+    c["Inh_concentration"] = [s[4:].split(" ")[1] for s in c["Lines"]]
+    c["Lines"] = [s.split(" ")[0] for s in c["Lines"]]
+    c = c[["Elapsed", "Lines", "Condition", "Inh_concentration", "Fold-change confluency"]]
+    c = c[c["Elapsed"] >= itp]
+    return c
+
+
+def MeanTRs(X):
+    """Merge technical replicates of 2 BR by taking the mean."""
+    idx = [np.arange(0, 6) + i for i in range(1, X.shape[1], 12)]
+    for i in idx:
+        for j in i:
+            X.iloc[:, j] = X.iloc[:, [j, j + 6]].mean(axis=1)
+            X.drop(X.columns[j + 6], axis="columns")
+
+    return X.drop(X.columns[[j + 6 for i in idx for j in i]], axis="columns")
