@@ -40,17 +40,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 50, 10, scalee=0.11)
-
-    if sys.argv[1] == "2":
-        # Overlay Figure 2 KSEA plot
-        overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/KSEA_WTvsKO.svg', 90, 520, scalee=0.27)
-
-    if sys.argv[1] == "3":
-        # Overlay Figure 3 computational pipeline
-        overlayCartoon(fdir + 'figure3.svg',
-                       f'{cartoon_dir}/pipeline.svg', 175, 0, scalee=0.01)
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 10, 0, scalee=0.10)
 
     if sys.argv[1] == "4":
         # Overlay Figure 4 YAP AXL vs KO blot

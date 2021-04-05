@@ -7,23 +7,26 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import scipy as sp
-from .common import subplotLabel, getSetup
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+import logomaker as lm
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import cross_val_predict
+from sklearn.cluster import KMeans
+from pomegranate import GeneralMixtureModel, NormalDistribution
+from .common import subplotLabel, getSetup
+from ..pre_processing import preprocessing, MeanCenter
+from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
-import matplotlib.colors as colors
-import matplotlib.cm as cm
-import logomaker as lm
-from ..pre_processing import MeanCenter
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((18, 13), (4, 5), multz={0: 2, 15: 4})
+    ax, f = getSetup((17, 10), (3, 5), multz={0:1, 13: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -47,20 +50,30 @@ def makeFigure():
     # Pipeline diagram
     ax[0].axis("off")
 
+    # Predictions
+    n_components = [3, 4, 2, 3, 4]
+    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    d = X.select_dtypes(include=['float64']).T
+    i = X.select_dtypes(include=['object'])
+    Xs, models = ComputeCenters(X, d, i, 5)
+    Xs.append(centers)
+    models.append("DDMC mix")
+    plotStripActualVsPred(ax[1], n_components, Xs, y, models)
+
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[1:3], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[2:4], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
     # Centers
-    plotCenters(ax[3:8], model, lines, yaxis=False)
+    plotCenters(ax[4:8], model, lines, drop=[1], yaxis=[-0.35, 0.25])
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[8:13], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[-55, 12])
+    plotMotifs([pssms[0], pssms[2], pssms[3], pssms[4]], axes=ax[8:12], titles=["Cluster 1", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[-55, 12])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[13])
+    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[12])
 
     return f
 
@@ -88,6 +101,48 @@ def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue", title=False):
     ax.legend(loc=0)
     if title:
         ax.set_title(title)
+
+
+def ComputeCenters(X, d, i, ncl):
+    """Calculate cluster centers of  different algorithms."""
+    # k-means
+    labels = KMeans(n_clusters=ncl).fit(d.T).labels_
+    x_ = X.copy()
+    x_["Cluster"] = labels
+    c_kmeans = x_.groupby("Cluster").mean().T
+
+    # GMM
+    gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
+    x_ = X.copy()
+    x_["Cluster"] = gmm.predict(d.T)
+    c_gmm = x_.groupby("Cluster").mean().T
+
+    # DDMC seq
+    ddmc_seq = MassSpecClustering(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d)
+    ddmc_seq_c = ddmc_seq.transform()
+
+    # DDMC mix
+    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
+        ddmc = pickle.load(m)[0]
+    ddmc_c = ddmc.transform()
+    return [c_kmeans, c_gmm, ddmc_seq_c, ddmc_c], ["Unclustered", "k-means", "GMM", "DDMC seq", "DDMC mix"]
+
+
+def plotStripActualVsPred(ax, n_components, Xs, Y, models):
+    """Actual vs Predicted of different PLSR models"""
+    datas = []
+    for ii, X in enumerate(Xs):
+        data = pd.DataFrame()
+        Y_predictions = cross_val_predict(PLSRegression(n_components=n_components[ii]), X, Y, cv=Y.shape[0])
+        coeff = [sp.stats.pearsonr(Y_predictions[:, jj], Y.iloc[:, jj])[0] for jj in range(len(Y.columns))]
+        data["Phenotype"] = list(Y.columns)
+        data["r-score"] = coeff
+        data["Model"] = models[ii]
+        datas.append(data)
+    res = pd.concat(datas)
+    sns.stripplot(x="Phenotype", y="r-score", data=res, ax=ax, hue="Model")
+    ax.set_title("Actual vs Predicted")
+    ax.legend(prop={'size':8})
 
 
 def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue", type="scatter", title=False):
@@ -184,10 +239,12 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, model, xlabels, yaxis=False):
+def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
     centers = pd.DataFrame(model.transform()).T
     centers.columns = xlabels
-    num_peptides = [np.count_nonzero(model.labels() == i) for i in range(1, model.ncl + 1)]
+    if drop:
+        centers = centers.drop(drop)
+    num_peptides = [np.count_nonzero(model.labels() == jj) for jj in range(1, model.ncl + 1)]
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
@@ -198,7 +255,7 @@ def plotCenters(ax, model, xlabels, yaxis=False):
         ax[i].set_ylabel("$log_{10}$ p-signal")
         ax[i].xaxis.set_tick_params(bottom=True)
         ax[i].set_xlabel("")
-        ax[i].set_title("Cluster " + str(i + 1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
+        ax[i].set_title("Cluster " + str(centers.index[i] + 1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
         if yaxis:
             ax[i].set_ylim([yaxis[0], yaxis[1]])
 

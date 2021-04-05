@@ -10,7 +10,7 @@ from sklearn.cross_decomposition import PLSRegression
 from ..clustering import MassSpecClustering
 from ..pre_processing import preprocessing
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
-from .figure3 import plotR2YQ2Y, plotActualVsPredicted
+from .figure2 import plotR2YQ2Y, plotActualVsPredicted
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
