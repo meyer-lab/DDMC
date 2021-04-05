@@ -25,7 +25,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "1":
         # Overlay Figure 1 AXL mutants diagram
         overlayCartoon(fdir + 'figure1.svg',
-                       f'{cartoon_dir}/AXLmuts_diagram.svg', 10, 23, scalee=0.26)
+                       f'{cartoon_dir}/AXLmuts_diagram.svg', 35, 0, scalee=0.06)
 
     if sys.argv[1] == "1":
         # Overlay Figure 1 Migration

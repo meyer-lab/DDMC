@@ -33,13 +33,13 @@ def makeFigure():
     mutants = ['PC9', 'KO', 'KIN', 'KD', 'M4', 'M5', 'M7', 'M10', 'M11', 'M15']
     itp = 24
 
-    # Bar plots
-    barplot_UtErlAF154(ax[0], lines, sw, 14, tr1, tr2, "fold-change RWD", "Cell Migration (t=14h)", TreatmentFC="-E", colors=colors, TimePointFC=itp)
-    BarPlotRipleysK(ax[11], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors, TreatmentFC="Erlotinib", ylabel="fold-change K estimate")
-
     # Time courses
     for i, line in enumerate(lines):
         IndividualTimeCourses(sw, 24, lines, t1, t2, "RWD %", plot=line, ax_=ax[i+1])
         PlotRipleysK('48hrs', mutants[i], ['ut', 'e', 'ae'], 6, ax=ax[i+12], title=line)
+
+    # Bar plots
+    barplot_UtErlAF154(ax[0], lines, sw, 14, tr1, tr2, "fold-change RWD", "Cell Migration (t=14h)", TreatmentFC="-E", colors=colors, TimePointFC=itp)
+    BarPlotRipleysK(ax[11], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors, TreatmentFC="Erlotinib", ylabel="fold-change K estimate")
 
     return f
