@@ -27,10 +27,10 @@ if __name__ == "__main__":
         overlayCartoon(fdir + 'figure1.svg',
                        f'{cartoon_dir}/AXLmuts_diagram.svg', 10, 23, scalee=0.26)
 
-    # if sys.argv[1] == "1":
-    #     # Overlay Figure 1 Migration
-    #     overlayCartoon(fdir + 'figure1.svg',
-    #                    f'{cartoon_dir}/Migration.svg', 550, 10, scalee=0.40)
+    if sys.argv[1] == "1":
+        # Overlay Figure 1 Migration
+        overlayCartoon(fdir + 'figure1.svg',
+                       f'{cartoon_dir}/Migration.svg', 550, 10, scalee=0.40)
 
     if sys.argv[1] == "1":
         # Overlay Figure 1 Island effect
