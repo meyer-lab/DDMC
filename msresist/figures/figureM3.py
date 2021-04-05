@@ -14,11 +14,7 @@ from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from .figureMS6 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotROC
-<<<<<<< HEAD
-from .figure3 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
-=======
 from ..figures.figure2 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
->>>>>>> master
 
 
 def makeFigure():

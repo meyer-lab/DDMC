@@ -4,13 +4,6 @@ This creates Figure 2: Model figure
 
 import pickle
 import pandas as pd
-<<<<<<< HEAD
-from msresist.pre_processing import preprocessing
-from .figure1 import IndividualTimeCourses, barplot_UtErlAF154
-
-pd.set_option("display.max_columns", 30)
-endpointcolors = ["light grey", "dark grey", "light navy blue", "jungle green"]
-=======
 import numpy as np
 import seaborn as sns
 import scipy as sp
@@ -28,7 +21,6 @@ from ..pre_processing import preprocessing, MeanCenter
 from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
->>>>>>> master
 
 
 def makeFigure():
