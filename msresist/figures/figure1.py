@@ -30,7 +30,7 @@ itp = 24
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((20, 15), (4, 5))
+    ax, f = getSetup((17, 10), (3, 5), multz={3:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -44,42 +44,47 @@ def makeFigure():
     sw = import_phenotype_data(phenotype="Migration")
     c = import_phenotype_data(phenotype="Island")
 
+    # AXL mutants cartoon
+    ax[0].axis("off")
+
+    # AXL expression data
+    axl = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/AXLexpression.csv")
+    axl = pd.melt(axl, value_vars=["AXL", "GFP"], id_vars="AXL mutants Y—>F", value_name="% Cells", var_name="Signal")
+    sns.barplot(data=axl, x="AXL mutants Y—>F", y="% Cells", hue="Signal", ax=ax[1], palette=sns.xkcd_palette(["white", "darkgreen"]), **{"linewidth": 0.5}, **{"edgecolor": "black"})
+    ax[1].set_title("Ectopic AXL expression")
+    ax[1].legend(prop={'size':8})
+
+    # Migration images
+    ax[2].axis("off")
+
+    # Islands images
+    ax[3].axis("off")
+
+    # PCA phenotypes
+    y = formatPhenotypesForModeling(cv, red, sw, c)
+    plotPCA(ax[4:6], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+
     # Labels
     tr1 = ["-UT", "-E", "-A/E"]
     tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
-    colors = ["white", "windows blue", "scarlet"]
 
     # Cell Viability
-    barplot_UtErlAF154(ax[0], lines, cv, 96, tr1, tr2, "fold-change to t=0h", "Cell Viability (t=96h)", colors, TimePointFC=itp)
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="WT", ax_=ax[1])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[2])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="KO", ax_=ax[3])
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency to Erlotinib", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[4])
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[6], ylim=[0.8, 3.5], title="Viability Y698F")
+    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[7], ylim=[0.8, 3.5], title="Viability Y821F")
 
     # Cell Death
-    barplot_UtErlAF154(ax[5], lines, red, 72, tr1, tr2, "fold-change to UT", "Cell Death (t=72h)", TimePointFC=itp, colors=colors)
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="WT", ax_=ax[6])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="Y821F", ax_=ax[7])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="KO", ax_=ax[8])
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "Apoptotic cells", TimePointFC=itp, plot="Y750F", ax_=ax[9])
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y821F", ax_=ax[8], ylim=[0, 13], title="Death Y821F")
+    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y750F", ax_=ax[9], ylim=[0, 13], title="Death Y750F")
 
     # Cell Migration
     t1 = ["UT", "AF", "-E", "A/E"]
     t2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
-    barplot_UtErlAF154(ax[10], lines, sw, 10, tr1, tr2, "RWD (%)", "Cell Migration (t=10h)", colors=colors)
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="WT", ax_=ax[11])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="Y726F", ax_=ax[12])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="KO", ax_=ax[13])
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "Relative Wound Density", TimePointFC=0, plot="Y750F", ax_=ax[14])
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y726F", ax_=ax[10], title="Migration Y726F")
+    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y821F", ax_=ax[11], title="Migration Y821F")
 
     # Island Effect
-    BarPlotRipleysK(ax[15], '48hrs', mutants, lines, ['ut', 'e', 'ae'], tr2, 6, np.linspace(1.5, 14.67, 1), colors)
-    PlotRipleysK('48hrs', 'M11', ['ut', 'e', 'ae'], 6, ax=ax[16], title="Y726F")
-    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[17], title="Y698F")
-
-    # PCA phenotypes
-    y = formatPhenotypesForModeling(cv, red, sw, c)
-    plotPCA(ax[18:20], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
+    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[12], title="Island Y726F")
+    PlotRipleysK('48hrs', 'M4', ['ut', 'e', 'ae'], 6, ax=ax[13], title="Island Y750F")
 
     return f
 
@@ -184,7 +189,7 @@ def fix_migration_columns(sw2, sw3, sw4):
 
 
 def IndividualTimeCourses(
-    ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10), title=False
+    ds, ftp, lines, t1, t2, ylabel, TimePointFC=False, TreatmentFC=False, savefig=False, plot="Full", ax_=False, figsize=(20, 10), title=False, ylim=False
 ):
     """ Plot time course data of each cell line across treatments individually. """
     ds = FixColumnLabels(ds)
@@ -226,9 +231,14 @@ def IndividualTimeCourses(
     if plot != "Full":
         x = d[d["Lines"] == plot]
         sns.lineplot(x="Elapsed (h)", y=ylabel, hue="Treatments", data=x, err_style="bars", ci=68, ax=ax_)
-        ax_.set_title(plot)
+        if title:
+            ax_.set_title(title)
+        else:
+            ax_.set_title(plot)
         ax_.set_ylabel(ylabel)
-        ax_.legend(prop={'size': 10})
+        ax_.legend(prop={'size':8})
+        if ylim:
+            ax_.set_ylim(ylim)
 
     if savefig:
         fig.savefig("TimeCourse.pdf", bbox_inches="tight")
@@ -286,7 +296,7 @@ def FormatDf(cv, t, l, ylabel):
     return dfc
 
 
-def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePointFC=False, TreatmentFC=False):
+def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePointFC=False, TreatmentFC=False, loc='best'):
     """ Cell viability bar plot at a specific end point across conditions, with error bars.
     Note that ds should be a list containing all biological replicates."""
     ds = FixColumnLabels(ds)
@@ -298,27 +308,30 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
             r = d.copy()
             if TreatmentFC:
                 r = TreatmentFoldChange(r, TreatmentFC, t)
-                c.append(r)
             else:
                 r = r.loc[:, r.columns.str.contains(t)]
-                c.append(r)
 
             r.insert(0, "Elapsed", ds[0].iloc[:, 0])
             z = FormatDf(r[r["Elapsed"] == ftp].iloc[0, 1:], t2[ii], lines, ylabel)
-            c.append(z)
+            c.append(z.reset_index(drop=True))
 
-    c = pd.concat(c)
+    c = pd.concat(c, axis=0)
     pal = sns.xkcd_palette(colors)
+
+    if TreatmentFC:
+        c = c[~c["Treatment"].str.contains("Erlotinib")]
+        ax.axhline(1, ls='--', label="Erlotinib", color="red", linewidth=1)
+
     ax = sns.barplot(
         x="AXL mutants Y->F", y=ylabel, hue="Treatment", data=c, ci=68, ax=ax, palette=pal, **{"linewidth": 0.5}, **{"edgecolor": "black"}
     )
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=90)
-    ax.legend(prop={'size': 10})
+    ax.legend(prop={'size':8}, loc=loc)
 
 
-# Plot Separately since makefigure can't add it as a subplot
+# Add clustergram to manuscript as an svg file since makefigure can't add it as a subplot object
 def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", yticklabels=False, xticklabels=False, figsize=(10, 10)):
     """ Clustergram plot. """
     g = sns.clustermap(data, method="centroid", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize, yticklabels=yticklabels, xticklabels=xticklabels)

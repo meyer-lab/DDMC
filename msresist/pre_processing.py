@@ -40,14 +40,13 @@ def preprocessing(
 
     if mc_row or mc_col:
         X = MeanCenter(Log2T(pd.concat(filesin)), mc_row, mc_col)
-        fullnames, genes = FormatName(X)
-        X["Protein"] = fullnames
-        X.insert(3, "Gene", genes)
-        merging_indices = list(X.select_dtypes(include=["object"]).columns)
     else:
         X = pd.concat(filesin)
-        genes = list(X["Gene"])
-        merging_indices = list(X.select_dtypes(include=["object"]).columns)
+
+    fullnames, genes = FormatName(X)
+    X["Protein"] = fullnames
+    X.insert(3, "Gene", genes)
+    merging_indices = list(X.select_dtypes(include=["object"]).columns)
 
     if rawdata:
         return X
@@ -57,6 +56,7 @@ def preprocessing(
 
     if Vfilter:
         X = VFilter(X, merging_indices, data_headers, corrCut=0.6, stdCut=0.6)
+
     X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[merging_indices + data_headers]
 
     if FCfilter:
