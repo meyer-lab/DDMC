@@ -1,4 +1,4 @@
-flist = 1 2 3 S3 M2 M3 M4 M5 MS2 MS3 MS4 MS5 MS6 MS7
+flist = 1 2 3 S1 S2 S3 M2 M3 M4 M5 MS2 MS3 MS4 MS5 MS6 MS7
 
 all: $(patsubst %, figure%.svg, $(flist))
 
