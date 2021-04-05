@@ -207,14 +207,14 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax, title=False):
     df = pd.melt(df, ["Radii"])
     df.columns = ["Radii", "Condition", "K Estimate"]
     sns.lineplot(x="Radii", y="K Estimate", hue="Condition", data=df, ci=68, ax=ax)
-    ax.legend(prop={'size': 10})
+    ax.legend(prop={'size':8})
     if title:
         ax.set_title(title)
     else:
         ax.set_title(mutant)
 
 
-def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, replicates, r, colors):
+def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, replicates, r, colors, TreatmentFC=False, ylabel=False):
     """Plots a bar graph of the Ripley's K Estimate values for all mutants and conditions in comparison to the Poisson at a discrete radius.
     Note that radius needs to be input as a 1D array for the RipleysKEstimator to work"""
     Kest = RipleysKEstimator(area=158.8761, x_max=14.67, y_max=10.83, x_min=0, y_min=0)
@@ -228,13 +228,26 @@ def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, 
             df.columns = ["K Estimate"]
             df["AXL mutants Y->F"] = xticklabels[z]
             df["Treatment"] = legendlabels[j]
-            # add_poisson(poisson, mutant, df)
             mutant_dfs.append(df)
     df = pd.concat(mutant_dfs)
+
+    if TreatmentFC:
+        ut = df[df["Treatment"].str.contains("Untreated")]
+        af = df[df["Treatment"].str.contains("AF154")]
+        e = df[df["Treatment"].str.contains("Erlotinib")]["K Estimate"]
+        ut["K Estimate"] /= e
+        af["K Estimate"] /= e
+        df = pd.concat([ut, af])
+        ax.axhline(1, ls='--', label="Erlotinib", color="red", linewidth=1)
+
     pal = sns.xkcd_palette(colors)
     sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax, **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax.set_title("Island effect")
-    ax.legend(prop={'size': 10})
+    ax.set_xticklabels(xticklabels, rotation=90)
+    ax.legend(prop={'size':8})
+
+    if ylabel:
+        ax.set_ylabel(ylabel)
 
 
 def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
@@ -255,6 +268,8 @@ def BarPlotRipleysK_TimePlots(folder, mutant, extensions, treatments, r, ax):
         treatment_dfs.append(df)
     df = pd.concat(treatment_dfs)
     sns.barplot(x="Mutant", y="K Estimate", hue="Treatment", data=df, ci=68, ax=ax)
+    ax.set_xlabel("")
+    ax.legend(loc=4, frameon=False)
 
 
 def DataFrameRipleysK(folder, mutants, treatments, replicates, r):

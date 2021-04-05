@@ -50,4 +50,4 @@ def test_pickle(distm):
     _, scores, _, _ = EM_clustering(data, info, 5, gmmIn=unpickled.gmm_)
 
     assert np.all(np.isfinite(unpickled.scores_))
-    np.testing.assert_allclose(MSC.scores_, scores, rtol=1e-2, atol=0.1)
+    np.testing.assert_allclose(MSC.scores_, scores, rtol=0.2, atol=0.2)

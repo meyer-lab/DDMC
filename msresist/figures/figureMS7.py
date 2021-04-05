@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC, plotClusterCoefficients
-from .figure3 import plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotMotifs, plotUpstreamKinase_heatmap
 
 
 def makeFigure():
