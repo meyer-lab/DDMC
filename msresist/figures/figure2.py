@@ -18,7 +18,7 @@ from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 
@@ -118,7 +118,7 @@ def ComputeCenters(X, d, i, ncl):
     c_gmm = x_.groupby("Cluster").mean().T
 
     # DDMC seq
-    ddmc_seq = MassSpecClustering(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d)
+    ddmc_seq = DDMC(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix
@@ -312,10 +312,11 @@ def plotUpstreamKinase_heatmap(model, clusters, ax):
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
-    sns.heatmap(data.T, ax=ax, xticklabels=data.index, cbar_kws={"shrink": 0.75})
+    sns.heatmap(data.T, ax=ax, xticklabels=data.index)
     cbar = ax.collections[0].colorbar
     cbar.ax.tick_params(labelsize=7)
-    ax.set_ylabel("Frobenius Norm (motif vs kinase specifcity)")
+    ax.set_ylabel("Cluster")
+    ax.set_title("Frobenius distance—Upstream Kinase vs Cluster Motif")
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
