@@ -36,7 +36,7 @@ def makeFigure():
 
     # Import model
     with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
-        model = pickle.load(m)[0]
+        model = pickle.load(m)
     centers = model.transform()
 
     # Import phenotypes
@@ -55,7 +55,7 @@ def makeFigure():
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
-    Xs, models = ComputeCenters(X, d, i, 5)
+    Xs, models = ComputeCenters(X, d, i, model, 5)
     Xs.append(centers)
     models.append("DDMC mix")
     plotStripActualVsPred(ax[1], n_components, Xs, y, models)
@@ -103,7 +103,7 @@ def plotR2YQ2Y(ax, model, X, Y, b=3, color="darkblue", title=False):
         ax.set_title(title)
 
 
-def ComputeCenters(X, d, i, ncl):
+def ComputeCenters(X, d, i, ddmc, ncl):
     """Calculate cluster centers of  different algorithms."""
     # k-means
     labels = KMeans(n_clusters=ncl).fit(d.T).labels_
@@ -122,8 +122,6 @@ def ComputeCenters(X, d, i, ncl):
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix
-    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
-        ddmc = pickle.load(m)[0]
     ddmc_c = ddmc.transform()
     return [c_kmeans, c_gmm, ddmc_seq_c, ddmc_c], ["Unclustered", "k-means", "GMM", "DDMC seq", "DDMC mix"]
 
