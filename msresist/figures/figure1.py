@@ -30,7 +30,7 @@ itp = 24
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={3:1})
+    ax, f = getSetup((17, 10), (3, 5), multz={3: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -52,7 +52,7 @@ def makeFigure():
     axl = pd.melt(axl, value_vars=["AXL", "GFP"], id_vars="AXL mutants Y—>F", value_name="% Cells", var_name="Signal")
     sns.barplot(data=axl, x="AXL mutants Y—>F", y="% Cells", hue="Signal", ax=ax[1], palette=sns.xkcd_palette(["white", "darkgreen"]), **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax[1].set_title("Ectopic AXL expression")
-    ax[1].legend(prop={'size':8})
+    ax[1].legend(prop={'size': 8})
 
     # Migration images
     ax[2].axis("off")
@@ -236,7 +236,7 @@ def IndividualTimeCourses(
         else:
             ax_.set_title(plot)
         ax_.set_ylabel(ylabel)
-        ax_.legend(prop={'size':8})
+        ax_.legend(prop={'size': 8})
         if ylim:
             ax_.set_ylim(ylim)
 
@@ -328,7 +328,7 @@ def barplot_UtErlAF154(ax, lines, ds, ftp, t1, t2, ylabel, title, colors, TimePo
 
     ax.set_title(title)
     ax.set_xticklabels(lines, rotation=90)
-    ax.legend(prop={'size':8}, loc=loc)
+    ax.legend(prop={'size': 8}, loc=loc)
 
 
 # Add clustergram to manuscript as an svg file since makefigure can't add it as a subplot object

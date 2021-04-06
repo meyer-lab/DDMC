@@ -9,10 +9,11 @@ import seaborn as sns
 from .common import subplotLabel, getSetup
 from .figure1 import TimePointFoldChange
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 4), multz={8:1, 10:1})
+    ax, f = getSetup((15, 12), (3, 4), multz={8: 1, 10: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -50,7 +51,7 @@ def plot_YAPinhibitorTimeLapse(ax, X, ylim=False):
             if i != 0 or j != 0:
                 ax[j].get_legend().remove()
             else:
-                ax[j].legend(prop={'size':10})
+                ax[j].legend(prop={'size': 10})
 
 
 def transform_YAPviability_data(data, itp=12):
