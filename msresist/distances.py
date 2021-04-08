@@ -207,7 +207,7 @@ def PlotRipleysK(folder, mutant, treatments, replicates, ax, title=False):
     df = pd.melt(df, ["Radii"])
     df.columns = ["Radii", "Condition", "K Estimate"]
     sns.lineplot(x="Radii", y="K Estimate", hue="Condition", data=df, ci=68, ax=ax)
-    ax.legend(prop={'size':8})
+    ax.legend(prop={'size': 8})
     if title:
         ax.set_title(title)
     else:
@@ -244,7 +244,7 @@ def BarPlotRipleysK(ax, folder, mutants, xticklabels, treatments, legendlabels, 
     sns.barplot(x="AXL mutants Y->F", y="K Estimate", hue="Treatment", data=df, ci=68, palette=pal, ax=ax, **{"linewidth": 0.5}, **{"edgecolor": "black"})
     ax.set_title("Island effect")
     ax.set_xticklabels(xticklabels, rotation=90)
-    ax.legend(prop={'size':8})
+    ax.legend(prop={'size': 8})
 
     if ylabel:
         ax.set_ylabel(ylabel)

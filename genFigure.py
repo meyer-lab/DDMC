@@ -66,6 +66,3 @@ if __name__ == "__main__":
         # Overlay Figure MS6 cartoon
         overlayCartoon(fdir + 'figureMS6.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
-
-
-
