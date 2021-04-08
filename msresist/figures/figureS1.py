@@ -11,7 +11,7 @@ from .figure1 import IndividualTimeCourses, import_phenotype_data, barplot_UtErl
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (4, 6), multz={0:1, 12:1})
+    ax, f = getSetup((15, 10), (4, 6), multz={0: 1, 12: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -36,7 +36,7 @@ def makeFigure():
 
     # Time courses
     for i, line in enumerate(lines):
-        IndividualTimeCourses(cv, 96, lines, tr1, tr2, "fold-change confluency", TimePointFC=24, TreatmentFC="-E", plot=line, ax_=ax[i+1], ylim=[0.8, 3.5])
-        IndividualTimeCourses(red, 96, lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot=line, ax_=ax[i+12], ylim=[0, 13])
+        IndividualTimeCourses(cv, 96, lines, tr1, tr2, "fold-change confluency", TimePointFC=24, TreatmentFC="-E", plot=line, ax_=ax[i + 1], ylim=[0.8, 3.5])
+        IndividualTimeCourses(red, 96, lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot=line, ax_=ax[i + 12], ylim=[0, 13])
 
     return f
