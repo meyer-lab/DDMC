@@ -26,7 +26,7 @@ from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={0:1, 13: 1})
+    ax, f = getSetup((17, 10), (3, 5), multz={0: 1, 13: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -142,7 +142,7 @@ def plotStripActualVsPred(ax, n_components, Xs, Y, models):
     res = pd.concat(datas)
     sns.stripplot(x="Phenotype", y="r-score", data=res, ax=ax, hue="Model")
     ax.set_title("Actual vs Predicted")
-    ax.legend(prop={'size':8})
+    ax.legend(prop={'size': 8})
 
 
 def plotActualVsPredicted(ax, plsr_model, X, Y, y_pred="cross-validation", color="darkblue", type="scatter", title=False):
