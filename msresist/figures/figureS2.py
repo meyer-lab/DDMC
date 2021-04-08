@@ -12,7 +12,7 @@ from ..distances import BarPlotRipleysK, PlotRipleysK
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 10), (4, 6), multz={0:1, 12:1})
+    ax, f = getSetup((15, 10), (4, 6), multz={0: 1, 12: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -35,8 +35,8 @@ def makeFigure():
 
     # Time courses
     for i, line in enumerate(lines):
-        IndividualTimeCourses(sw, 24, lines, t1, t2, "RWD %", plot=line, ax_=ax[i+1])
-        PlotRipleysK('48hrs', mutants[i], ['ut', 'e', 'ae'], 6, ax=ax[i+12], title=line)
+        IndividualTimeCourses(sw, 24, lines, t1, t2, "RWD %", plot=line, ax_=ax[i + 1])
+        PlotRipleysK('48hrs', mutants[i], ['ut', 'e', 'ae'], 6, ax=ax[i + 12], title=line)
 
     # Bar plots
     barplot_UtErlAF154(ax[0], lines, sw, 14, tr1, tr2, "fold-change RWD", "Cell Migration (t=14h)", TreatmentFC="-E", colors=colors, TimePointFC=itp)
