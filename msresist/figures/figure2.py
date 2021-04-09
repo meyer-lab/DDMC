@@ -51,14 +51,13 @@ def makeFigure():
     ax[0].axis("off")
 
     # Predictions
-    n_components = [3, 4, 2, 3, 4]
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
     Xs, models = ComputeCenters(X, d, i, model, 5)
     Xs.append(centers)
     models.append("DDMC mix")
-    plotStripActualVsPred(ax[1], n_components, Xs, y, models)
+    plotStripActualVsPred(ax[1], [3, 4, 2, 3, 4], Xs, y, models)
 
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
@@ -118,7 +117,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_gmm = x_.groupby("Cluster").mean().T
 
     # DDMC seq
-    ddmc_seq = DDMC(i, ncl=5, SeqWeight=20, distance_method="PAM250").fit(d)
+    ddmc_seq = DDMC(i, ncl=ncl, SeqWeight=20, distance_method="PAM250").fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix
@@ -304,16 +303,29 @@ def store_cluster_members(X, model, filename, cols):
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
-def plotUpstreamKinase_heatmap(model, clusters, ax):
+def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases()
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
-    sns.heatmap(data.T, ax=ax, xticklabels=data.index)
-    cbar = ax.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=7)
-    ax.set_ylabel("Cluster")
+    if kind == "heatmap":
+        sns.heatmap(data.T, ax=ax, xticklabels=data.index)
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=7)
+        ax.set_ylabel("Cluster")
+
+    elif kind == "strip":
+        data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
+        sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
+        datas = []
+        for ii, cluster in enumerate(clusters, start=1):
+            cluster = data[data["Cluster"] == cluster]
+            hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
+            hits.index = np.arange(hits.shape[0])
+            for jj in range(num_hits):
+                ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.1))
+        ax.legend().remove()
     ax.set_title("Frobenius distance—Upstream Kinase vs Cluster Motif")
 
 

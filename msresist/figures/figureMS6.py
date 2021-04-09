@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
 from .common import subplotLabel, getSetup
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import Binomial
 from ..pam250 import PAM250
