@@ -12,21 +12,26 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from ..figures.figureMS6 import TumorType
+from .figureMS6 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure2 import plotPCA, plotMotifs, plotUpstreamKinase_heatmap
+from ..figures.figure2 import plotPCA, plotMotifs, plotDistanceToUpstreamKinase
+from ..pre_processing import MeanCenter
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 14), (4, 3), multz={3: 1, 10: 1})
+    ax, f = getSetup((13, 10), (3, 3), multz={0:1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    import pandas as pd
+    from msresist.clustering import MassSpecClustering
+    from msresist.validations import preprocess_ebdt_mcf7
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 
@@ -62,13 +67,8 @@ def makeFigure():
     plotROC(ax[4], lr, c.values, tt, cv_folds=4)
     plotClusterCoefficients(ax[5], lr)
 
-    # plot Cluster Motifs
-    pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[10], pssms[11], pssms[22]]
-    plotMotifs(motifs, titles=["Cluster 11", "Cluster 12", "Cluster 23"], axes=ax[6:9])
-
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [11, 12, 23], ax[9])
+    plotDistanceToUpstreamKinase(model, [11, 12, 23], ax[6], num_hits=3)
 
     return f
 
@@ -80,7 +80,7 @@ def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
     sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
     handles, _ = ax.get_legend_handles_labels()
-    ax.legend(title=id_var, labels=labels, handles=handles[2:])
+    ax.legend(title=id_var, labels=labels, handles=handles[2:], prop={'size':8})
     if not isinstance(pvals, bool):
         for ii, s in enumerate(pvals["Significant"]):
             y, h, col = data['p-signal'].max(), .05, 'k'

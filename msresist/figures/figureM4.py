@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .figure2 import plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotDistanceToUpstreamKinase
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 3), multz={0: 1, 7: 1})
+    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -46,6 +46,7 @@ def makeFigure():
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
     plot_clusters_binaryfeatures(centers, "STK11", ["WT", "Mutant"], ax[0], pvals=pvals)
+    ax[0].legend(loc='lower left')
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
     centers = centers.reset_index().set_index("STK11")
@@ -63,14 +64,10 @@ def makeFigure():
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
-
-    # Cluster Motifs
-    pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[7], pssms[13], pssms[21]]
-    plotMotifs(motifs, titles=["Cluster 8", "Cluster 14", "Cluster 22"], axes=ax[3:6])
+    ax[2].legend(loc='lower right', prop={'size':8})
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [8, 14, 22], ax[6])
+    plotDistanceToUpstreamKinase(model, [1, 8, 9, 14, 22], ax[3], num_hits=3)
 
     return f
 

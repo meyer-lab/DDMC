@@ -51,7 +51,7 @@ class MassSpecClustering(BaseEstimator):
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
-    def fit(self, X, y=None, nRepeats=3):
+    def fit(self, X, y=None, nRepeats=1):
         """Compute EM clustering"""
         self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist)
 

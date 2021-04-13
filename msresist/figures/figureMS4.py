@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
-from .figure2 import plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotMotifs, plotDistanceToUpstreamKinase
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
@@ -17,7 +17,7 @@ from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 3), multz={0: 1, 7: 1})
+    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -65,12 +65,7 @@ def makeFigure():
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["EGFRm/ALKf"].values), list(centers.columns[:-1]), title="EGFRm/ALKf")
 
-    # Cluster Motifs
-    pssms = model.pssms(PsP_background=False)
-    motifs = [pssms[1], pssms[12], pssms[19]]
-    plotMotifs(motifs, titles=["Cluster 2", "Cluster 13", "Cluster 20"], axes=ax[3:6])
-
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [1, 13, 20], ax[6])
+    plotDistanceToUpstreamKinase(model, [2, 13, 20], ax[3])
 
     return f
