@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
-from .figure2 import plotMotifs, plotUpstreamKinase_heatmap
+from .figure2 import plotMotifs, plotDistanceToUpstreamKinase
 from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 
@@ -71,6 +71,6 @@ def makeFigure():
     plotMotifs(motifs, titles=["Cluster 2", "Cluster 13", "Cluster 20"], axes=ax[3:6])
 
     # plot Upstream Kinases
-    plotUpstreamKinase_heatmap(model, [2, 13, 20], ax[6])
+    plotDistanceToUpstreamKinase(model, [2, 13, 20], ax[6])
 
     return f
