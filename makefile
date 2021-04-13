@@ -1,4 +1,4 @@
-flist = 1 2 3 S1 M2 M3 M4 M5 MS2 MS3 MS4 MS5 MS6 MS7
+flist = 1 2 3 S1 S2 S3 M2 M3 M4 M5 MS2 MS3 MS4 MS5 MS6 MS7
 
 all: $(patsubst %, figure%.svg, $(flist))
 
@@ -10,7 +10,7 @@ venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
 	test -d venv || virtualenv venv
-	. venv/bin/activate && pip install Cython scipy==1.6.0 numpy==1.20.1
+	. venv/bin/activate && pip install Cython scipy==1.6.2 numpy==1.20.2
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
 
