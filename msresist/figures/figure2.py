@@ -18,7 +18,7 @@ from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import DDMC
+from ..clustering import MassSpecClustering
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 
@@ -26,7 +26,7 @@ from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={0: 1, 13: 1})
+    ax, f = getSetup((17, 10), (3, 5), multz={1: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -34,8 +34,8 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Import model
-    with open('msresist/data/pickled_models/AXLmodel_PAM250_W2_5CL', 'rb') as m:
+    # Load DDMC
+    with open("msresist/data/pickled_models/AXLmodel_PAM250_W2-5_5CL", "rb") as m:
         model = pickle.load(m)
     centers = model.transform()
 
@@ -50,6 +50,9 @@ def makeFigure():
     # Pipeline diagram
     ax[0].axis("off")
 
+    # Mass spec clustermap
+    ax[1].axis("off")
+
     # Predictions
     X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
@@ -57,22 +60,22 @@ def makeFigure():
     Xs, models = ComputeCenters(X, d, i, model, 5)
     Xs.append(centers)
     models.append("DDMC mix")
-    plotStripActualVsPred(ax[1], [3, 4, 2, 3, 4], Xs, y, models)
+    plotStripActualVsPred(ax[2], [3, 4, 2, 3, 4], Xs, y, models)
 
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[2:4], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
     # Centers
-    plotCenters(ax[4:8], model, lines, drop=[1], yaxis=[-0.35, 0.25])
+    plotCenters(ax[5:9], model, lines, drop=[2], yaxis=[-0.40, 0.30])
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[2], pssms[3], pssms[4]], axes=ax[8:12], titles=["Cluster 1", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[-55, 12])
+    plotMotifs([pssms[0], pssms[1], pssms[3], pssms[4]], axes=ax[9:13], titles=["Cluster 1", "Cluster 2", "Cluster 4", "Cluster 5"], yaxis=[-35, 12])
 
     # Plot upstream kinases heatmap
-    plotUpstreamKinase_heatmap(model, [1, 2, 3, 4, 5], ax[12])
+    plotDistanceToUpstreamKinase(model, [1, 2, 4, 5], ax[13])
 
     return f
 
@@ -117,7 +120,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_gmm = x_.groupby("Cluster").mean().T
 
     # DDMC seq
-    ddmc_seq = DDMC(i, ncl=ncl, SeqWeight=20, distance_method="PAM250").fit(d)
+    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=20, distance_method="PAM250").fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix
@@ -203,7 +206,7 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     # Scores
     ax[0].scatter(PC1_scores, PC2_scores)
     for j, txt in enumerate(treatments):
-        ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]))
+        ax[0].annotate(txt, (PC1_scores[j], PC2_scores[j]), fontsize=10)
     ax[0].set_title("PLSR Model Scores", fontsize=12)
     ax[0].set_xlabel("Principal Component 1", fontsize=11)
     ax[0].set_ylabel("Principal Component 2", fontsize=11)
@@ -223,10 +226,10 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
         numbered = []
         list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
         for i, txt in enumerate(numbered):
-            ax[1].annotate(txt, (PC1_xload[i], PC2_xload[i]))
+            ax[1].annotate(txt, (PC1_xload[i] + 0.05, PC2_xload[i] - 0.05), fontsize=10)
     markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
-        ax[1].annotate(label, (PC1_yload[i] + 0.001, PC2_yload[i] - 0.001))
+        ax[1].annotate(label, (PC1_yload[i] + 0.05, PC2_yload[i] - 0.05), fontsize=10)
         ax[1].scatter(PC1_yload[i], PC2_yload[i], color="black", marker=markers[i])
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].set_title("PLSR Model Loadings", fontsize=12)
@@ -324,9 +327,9 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5):
             hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
             hits.index = np.arange(hits.shape[0])
             for jj in range(num_hits):
-                ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.1))
+                ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01), fontsize=8)
         ax.legend().remove()
-    ax.set_title("Frobenius distance—Upstream Kinase vs Cluster Motif")
+    ax.set_title("Kinase vs Cluster Motif")
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):

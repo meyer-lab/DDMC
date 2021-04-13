@@ -6,7 +6,7 @@ from msresist.motifs import DictProteomeNameToSeq
 
 def preprocess_ebdt_mcf7():
     """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
-    x = pd.read_csv("msresist/data/Validations/ebdt/mcf7_ebdt.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
+    x = pd.read_csv("msresist/data/Validations/ebdt/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
     x.insert(0, "gene", [s.split("(")[0] for s in x["sh.index.sites"]])
     x.insert(1, "pos", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)  for s in x["sh.index.sites"]])
     x = x.drop("sh.index.sites", axis=1)

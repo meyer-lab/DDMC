@@ -19,7 +19,7 @@ from .pam250 import PAM250, fixedMotif
 # pylint: disable=W0201
 
 
-class DDMC(BaseEstimator):
+class MassSpecClustering(BaseEstimator):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
