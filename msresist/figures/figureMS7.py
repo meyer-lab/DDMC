@@ -13,7 +13,7 @@ def makeFigure():
     ax, f = getSetup((10, 8), (3, 4))
 
     with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
-        model = pickle.load(m)[0]
+        model = pickle.load(m)
 
     pssms = model.pssms(PsP_background=False)
     for ii in range(model.ncl):
