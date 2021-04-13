@@ -10,7 +10,7 @@ from .figure2 import plotMotifs
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 8), (3, 4))
+    ax, f = getSetup((12, 10), (4, 5))
 
     with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
         model = pickle.load(m)
@@ -18,7 +18,7 @@ def makeFigure():
     pssms = model.pssms(PsP_background=False)
     for ii in range(model.ncl):
         cluster = "Cluster " + str(ii + 1)
-        plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[-50, 20])
+        plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[-30, 10])
 
     # Add subplot labels
     subplotLabel(ax)
