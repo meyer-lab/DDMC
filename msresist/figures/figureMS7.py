@@ -4,7 +4,7 @@ This creates Supplemental Figure 8: Cluster motifs of MCF7 cells ((Hijazi et al 
 
 import pickle
 from .common import subplotLabel, getSetup
-from .figure3 import plotMotifs
+from .figure2 import plotMotifs
 
 
 def makeFigure():

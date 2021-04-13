@@ -9,7 +9,7 @@ import seaborn as sns
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from .figure1 import plotPCA_scoresORloadings
-from .figure2 import plotPCA, plotMotifs, plotDistanceToUpstreamKinase
+from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
