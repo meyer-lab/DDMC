@@ -12,7 +12,7 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((10, 8), (3, 4))
 
-    with open('msresist/data/pickled_models/ebdt_mcf7_pam250_CL12_W5', 'rb') as m:
+    with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
         model = pickle.load(m)[0]
 
     pssms = model.pssms(PsP_background=False)
