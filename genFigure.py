@@ -40,7 +40,12 @@ if __name__ == "__main__":
     if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 10, 0, scalee=0.10)
+                       f'{cartoon_dir}/pipeline.svg', 5, 30, scalee=0.14)
+
+    if sys.argv[1] == "2":
+        # Overlay Figure 2 heatmap
+        overlayCartoon(fdir + 'figure2.svg',
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 320, 5, scalee=0.10)
 
     if sys.argv[1] == "3":
         # Overlay Figure 3 YAP AXL vs KO blot
@@ -60,7 +65,12 @@ if __name__ == "__main__":
     if sys.argv[1] == "M3":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
-                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)
+                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.40)
+
+    if sys.argv[1] == "M6":
+        # Overlay Figure M6 heatmap
+        overlayCartoon(fdir + 'figureM6.svg',
+                       f'{cartoon_dir}/heatmap_mcf7.svg', 25, 285, scalee=0.45)
 
     if sys.argv[1] == 'MS6':
         # Overlay Figure MS6 cartoon

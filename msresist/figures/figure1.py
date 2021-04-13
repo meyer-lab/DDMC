@@ -367,6 +367,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[0].set_title("PCA Scores")
     ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    ax[0].legend(prop={'size': 8})
     if legendOut:
         ax[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
 
@@ -380,6 +381,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[1].set_title("PCA Loadings")
     ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
     ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    ax[1].legend(prop={'size': 8})
     for j, txt in enumerate(dLoad_[loadings_ind]):
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 

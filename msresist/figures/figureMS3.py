@@ -18,7 +18,7 @@ from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 8), (4, 3), multz={4: 3, 11: 1})
+    ax, f = getSetup((15, 15), (3, 4), multz={1:2, 6: 1, 10: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=0.8, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -41,7 +41,7 @@ def makeFigure():
 
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
-    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z, title="p-sites explaining tumor vs NATs")
+    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
 
     # Tumor vs NAT k-means
     ncl = 24
@@ -82,13 +82,13 @@ def makeFigure():
 
 def plot_unclustered_LRcoef(ax, lr, d, title=False):
     """Plot logistic regression coefficients of unclustered data"""
-    cdic = dict(zip(lr.coef_[0], d.columns))
+    ws = lr.coef_[0]
+    cdic = dict(zip(ws, d.columns))
     coefs = pd.DataFrame()
     coefs["Coefficients"] = list(cdic.keys())
     coefs["p-sites"] = list(cdic.values())
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
-    sliced_coefs = coefs.head(5)
-    coefs = sliced_coefs.append(coefs.tail(5))
     sns.barplot(data=coefs, x="p-sites", y="Coefficients", ax=ax, color="darkblue")
-    ax.set_title(title)
+    ax.set_title("p-sites explaining tumor vs NATs ")
     ax.set_xticklabels(list(set(coefs["p-sites"])), rotation=90)
+    ax.set_xlabel("p-sites ")
