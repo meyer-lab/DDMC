@@ -11,10 +11,11 @@ from .common import subplotLabel, getSetup
 from .figure1 import plotPCA_scoresORloadings
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 6), (2, 3), multz={3:1})
+    ax, f = getSetup((12, 6), (2, 3), multz={3: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -29,7 +30,7 @@ def makeFigure():
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])
-    centers["Inhibitor"] = [s.split(".")[1].split(".")[0]  for s in centers["Inhibitor"]]
+    centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
 
     # PCA
     AKTi = ["Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X"]
@@ -46,7 +47,7 @@ def makeFigure():
     # Substrates bar plot
     plotSubstratesPerCluster(x, model, "Akt1", ax[4])
 
-    return f 
+    return f
 
 
 def plotSubstratesPerCluster(x, model, kinase, ax):
@@ -54,11 +55,11 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     # Refine PsP K-S data set
     ks = pd.read_csv("msresist/data/Validations/Kinase_Substrate_Dataset.csv")
     ks = ks[
-    (ks["KINASE"] == "Akt1") & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["KIN_ORGANISM"] == "human") &
-    (ks["SUB_ORGANISM"] == "human")
+        (ks["KINASE"] == "Akt1") &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["KIN_ORGANISM"] == "human") &
+        (ks["SUB_ORGANISM"] == "human")
     ]
 
     # Count matching substrates per cluster and normalize by cluster size
@@ -80,5 +81,3 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     data["Normalized substrate count"] = counters.values()
     sns.barplot(data=data, x="Cluster", y="Normalized substrate count", color="darkblue", ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
     ax.set_title(kinase + " Substrate Enrichment")
-
-
