@@ -26,7 +26,7 @@ from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={1: 1})
+    ax, f = getSetup((17, 8), (3, 6), multz={0: 1, 2: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -68,14 +68,14 @@ def makeFigure():
     plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
     # Centers
-    plotCenters(ax[5:9], model, lines, drop=[2], yaxis=[-0.40, 0.30])
+    plotCenters(ax[5:10], model, lines)
 
     # Plot motifs
     pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[1], pssms[3], pssms[4]], axes=ax[9:13], titles=["Cluster 1", "Cluster 2", "Cluster 4", "Cluster 5"], yaxis=[-35, 12])
+    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[10:15], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[0, 11])
 
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(model, [1, 2, 4, 5], ax[13])
+    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[15])
 
     return f
 
@@ -306,11 +306,14 @@ def store_cluster_members(X, model, filename, cols):
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
-def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5):
+def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, additional_labels=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases()
+    ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ukin_mc.columns = ["Kinase"] + list(np.arange(1, model.ncl + 1))
+    cols = ["Kinase"] + list(np.arange(1, model.ncl + 1))
+    if not isinstance(additional_pssms, bool):
+        cols.append(additional_labels)
+    ukin_mc.columns = cols
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
         sns.heatmap(data.T, ax=ax, xticklabels=data.index)
