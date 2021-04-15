@@ -109,14 +109,14 @@ class MassSpecClustering(BaseEstimator):
 
         return np.argmax(self.scores_, axis=1) + 1
 
-    def pssms(self, PsP_background=False):
+    def pssms(self, PsP_background=False, erk_control=False):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
         pssms = []
         if PsP_background:
             bg_seqs = BackgroundSeqs(self.info["Sequence"])
-            back_pssm = background_pssm(bg_seqs)
+            back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
         for ii in range(self.ncl):
@@ -154,17 +154,23 @@ class MassSpecClustering(BaseEstimator):
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
-            pssm[pssm < -3] = -3
+            pssm[pssm < 0] = 0
             pssms.append(pssm)
 
         return pssms
 
-    def predict_UpstreamKinases(self, n_components=2, PsP_background=False):
+    def predict_UpstreamKinases(self, PsP_background=False, additional_pssms=False):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
-        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in self.pssms(PsP_background=True)]  # Remove P0 and P+5 from pssms
-        a = np.zeros((len(PSPLs), len(PSSMs)))
+        PSSMs = self.pssms(PsP_background=True)
+        if not isinstance(additional_pssms, bool):
+            if isinstance(additional_pssms, list):
+                PSSMs += additional_pssms
+            else:
+                PSSMs.append(additional_pssms)
+        PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
 
+        a = np.zeros((len(PSPLs), len(PSSMs)))
         for ii, spec_profile in enumerate(PSPLs.values()):
             for jj, pssm in enumerate(PSSMs):
                 a[ii, jj] = np.linalg.norm(pssm - spec_profile)
@@ -232,13 +238,13 @@ def PSPLdict():
         mat = np.ma.log2(mat)
         mat = mat.filled(0)
         mat[mat > 3] = 3
-        mat[mat < -3] = -3
+        mat[mat < 0] = 0
         pspl_dict[kin] = mat
 
     return pspl_dict
 
 
-def background_pssm(bg_sequences):
+def compute_control_pssm(bg_sequences):
     """Generate PSSM of PhosphoSitePlus phosphosite sequences."""
     back_pssm = np.zeros((len(AAlist), 11), dtype=float)
     for _, seq in enumerate(bg_sequences):
