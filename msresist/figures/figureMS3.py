@@ -18,7 +18,7 @@ from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (3, 4), multz={1:2, 6: 1, 10: 1})
+    ax, f = getSetup((15, 15), (3, 4), multz={1: 2, 6: 1, 10: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=0.8, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
