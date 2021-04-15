@@ -154,8 +154,7 @@ class MassSpecClustering(BaseEstimator):
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
-            pssm[pssm < 0] = 0
-            pssms.append(pssm)
+            pssms.append(np.clip(pssm, a_min=0, a_max=None))
 
         return pssms
 
@@ -237,8 +236,7 @@ def PSPLdict():
         mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
         mat = np.ma.log2(mat)
         mat = mat.filled(0)
-        mat[mat > 3] = 3
-        mat[mat < 0] = 0
+        mat = np.clip(mat, a_min=0, a_max=3)
         pspl_dict[kin] = mat
 
     return pspl_dict
