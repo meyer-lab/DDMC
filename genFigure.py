@@ -38,19 +38,24 @@ if __name__ == "__main__":
                        f'{cartoon_dir}/island.svg', 765, 20, scalee=0.37)
 
     if sys.argv[1] == "2":
+        # Overlay Figure 2 pipeline
+        overlayCartoon(fdir + 'figure2.svg',
+                       f'{cartoon_dir}/pipeline.svg', 50, 10, scalee=0.14)
+
+    if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 10, 0, scalee=0.10)
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 470, 5, scalee=0.08)
 
     if sys.argv[1] == "3":
         # Overlay Figure 3 YAP AXL vs KO blot
         overlayCartoon(fdir + 'figure3.svg',
-                       f'{cartoon_dir}/YAP_WTvsKO_blot.svg', 700, 590, scalee=0.17)
+                       'msresist/data/Validations/Experimental/WesternBlots/YAP_WTvsKO_blot.svg', 700, 590, scalee=0.17)
 
     if sys.argv[1] == "3":
         # Overlay Figure 3 YAP dasatinib dose response
         overlayCartoon(fdir + 'figure3.svg',
-                       f'{cartoon_dir}/YAP_DR_blot.svg', 50, 600, scalee=0.17)
+                       'msresist/data/Validations/Experimental/WesternBlots/YAP_DR_blot.svg', 50, 600, scalee=0.17)
 
     if sys.argv[1] == "S6":
         # Overlay Figure 3 cross validation diagram
@@ -60,7 +65,12 @@ if __name__ == "__main__":
     if sys.argv[1] == "M3":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM3.svg',
-                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.32)
+                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.40)
+
+    if sys.argv[1] == "M6":
+        # Overlay Figure M6 heatmap
+        overlayCartoon(fdir + 'figureM6.svg',
+                       f'{cartoon_dir}/heatmap_mcf7.svg', 25, 285, scalee=0.45)
 
     if sys.argv[1] == 'MS6':
         # Overlay Figure MS6 cartoon
