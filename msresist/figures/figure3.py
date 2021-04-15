@@ -22,7 +22,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Dasatinib Dose Response Time Course
-    das = [pd.read_csv("msresist/data/Validations/Dasatinib.csv"), pd.read_csv("msresist/data/Validations/Dasatinib_2fixed.csv")]
+    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"), pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
     das = transform_YAPviability_data(das)
     plot_YAPinhibitorTimeLapse(ax[:8], das, ylim=[0, 14])
 

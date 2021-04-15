@@ -6,7 +6,7 @@ from msresist.motifs import DictProteomeNameToSeq
 
 def preprocess_ebdt_mcf7():
     """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
-    x = pd.read_csv("msresist/data/Validations/ebdt/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
+    x = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
     x.insert(0, "gene", [s.split("(")[0] for s in x["sh.index.sites"]])
     x.insert(1, "pos", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)  for s in x["sh.index.sites"]])
     x = x.drop("sh.index.sites", axis=1)
@@ -64,3 +64,36 @@ def upstreamKin_and_pdts_perCluster(model):
         ListOfUpKin.append(output.sort_values(by="num_pdts", ascending=False))
 
     return ListOfUpKin
+
+
+def plotSubstratesPerCluster(x, model, kinase, ax):
+    """Plot normalized number of substrates of a given kinase per cluster."""
+    # Refine PsP K-S data set
+    ks = pd.read_csv("msresist/data/Validations/Computational/Kinase_Substrate_Dataset.csv")
+    ks = ks[
+    (ks["KINASE"] == "Akt1") & 
+    (ks["IN_VIVO_RXN"] == "X") & 
+    (ks["IN_VIVO_RXN"] == "X") & 
+    (ks["KIN_ORGANISM"] == "human") &
+    (ks["SUB_ORGANISM"] == "human")
+    ]
+
+    # Count matching substrates per cluster and normalize by cluster size
+    x["cluster"] = model.labels()
+    counters = {}
+    for i in range(1, max(x["cluster"]) + 1):
+        counter = 0
+        cl = x[x["cluster"] == i]
+        put_sub = list(zip(list(cl["gene"]), list(list(cl["pos"]))))
+        psp = list(zip(list(ks["SUB_GENE"]), list(ks["SUB_MOD_RSD"])))
+        for sub_pos in put_sub:
+            if sub_pos in psp:
+                counter += 1
+        counters[i] = counter / cl.shape[0]
+
+    # Plot
+    data = pd.DataFrame()
+    data["Cluster"] = counters.keys()
+    data["Normalized substrate count"] = counters.values()
+    sns.barplot(data=data, x="Cluster", y="Normalized substrate count", color="darkblue", ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+    ax.set_title(kinase + " Substrate Enrichment")
