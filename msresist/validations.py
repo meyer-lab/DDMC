@@ -73,11 +73,11 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     # Refine PsP K-S data set
     ks = pd.read_csv("msresist/data/Validations/Computational/Kinase_Substrate_Dataset.csv")
     ks = ks[
-    (ks["KINASE"] == "Akt1") & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["KIN_ORGANISM"] == "human") &
-    (ks["SUB_ORGANISM"] == "human")
+        (ks["KINASE"] == "Akt1") &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["KIN_ORGANISM"] == "human") &
+        (ks["SUB_ORGANISM"] == "human")
     ]
 
     # Count matching substrates per cluster and normalize by cluster size
