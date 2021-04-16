@@ -7,6 +7,7 @@ import seaborn as sns
 from .motifs import DictProteomeNameToSeq
 from .pre_processing import MeanCenter
 
+
 def preprocess_ebdt_mcf7():
     """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
     x = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
@@ -18,6 +19,7 @@ def preprocess_ebdt_mcf7():
     x.insert(0, "Sequence", motifs)
     return x
 
+
 def pos_to_motif(genes, pos, motif_size=5):
     """Map p-site sequence position to uniprot's proteome and extract motifs."""
     proteome = open("msresist/data/Sequence_analysis/proteome_uniprot2019.fa", "r")
@@ -27,12 +29,12 @@ def pos_to_motif(genes, pos, motif_size=5):
     for gene, pos in list(zip(genes, pos)):
         try:
             UP_seq = ProteomeDict[gene]
-        except:
+        except BaseException:
             del_GeneToPos.append([gene, pos])
             continue
         idx = int(pos[1:]) - 1
         motif = list(UP_seq[max(0, idx - motif_size): idx + motif_size + 1])
-        if len(motif) != motif_size*2+1 or pos[0] != motif[motif_size] or pos[0] not in ["S", "T", "Y"]:
+        if len(motif) != motif_size * 2 + 1 or pos[0] != motif[motif_size] or pos[0] not in ["S", "T", "Y"]:
             del_GeneToPos.append([gene, pos])
             continue
         motif[motif_size] = motif[motif_size].lower()
