@@ -154,7 +154,7 @@ class MassSpecClustering(BaseEstimator):
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
-            pssms.append(np.clip(pssm, a_min=0, a_max=None))
+            pssms.append(np.clip(pssm, a_min=0, a_max=3))
 
         return pssms
 
@@ -162,11 +162,10 @@ class MassSpecClustering(BaseEstimator):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
         PSSMs = self.pssms(PsP_background=True)
+
+        # Optionally add external pssms 
         if not isinstance(additional_pssms, bool):
-            if isinstance(additional_pssms, list):
-                PSSMs += additional_pssms
-            else:
-                PSSMs.append(additional_pssms)
+            PSSMs += additional_pssms
         PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
 
         a = np.zeros((len(PSPLs), len(PSSMs)))
@@ -243,7 +242,7 @@ def PSPLdict():
 
 
 def compute_control_pssm(bg_sequences):
-    """Generate PSSM of PhosphoSitePlus phosphosite sequences."""
+    """Generate PSSM."""
     back_pssm = np.zeros((len(AAlist), 11), dtype=float)
     for _, seq in enumerate(bg_sequences):
         for kk, aa in enumerate(seq):
