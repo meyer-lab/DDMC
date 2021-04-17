@@ -2,17 +2,20 @@
 
 import re
 import pandas as pd
-from msresist.motifs import DictProteomeNameToSeq
+import numpy as np
+import seaborn as sns
+from .motifs import DictProteomeNameToSeq
+from .pre_processing import MeanCenter
 
 
 def preprocess_ebdt_mcf7():
     """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
     x = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
-    x.insert(0, "gene", [s.split("(")[0] for s in x["sh.index.sites"]])
-    x.insert(1, "pos", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1) for s in x["sh.index.sites"]])
+    x.insert(0, "Gene", [s.split("(")[0] for s in x["sh.index.sites"]])
+    x.insert(1, "Position", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)  for s in x["sh.index.sites"]])
     x = x.drop("sh.index.sites", axis=1)
-    motifs, del_ids = pos_to_motif(x["gene"], x["pos"], motif_size=5)
-    x = x.set_index(["gene", "pos"]).drop(del_ids).reset_index()
+    motifs, del_ids = pos_to_motif(x["Gene"], x["Position"], motif_size=5)
+    x = x.set_index(["Gene", "Position"]).drop(del_ids).reset_index()
     x.insert(0, "Sequence", motifs)
     return x
 
@@ -39,45 +42,16 @@ def pos_to_motif(genes, pos, motif_size=5):
     return motifs, del_GeneToPos
 
 
-def upstreamKin_and_pdts_perCluster(model):
-    """Find number of substrates per upstream kinases for each cluster determined by the putative downstream targets (PDTs)
-    determined by Hijazi et al Nat Biotech 2020 (Sup Data Set 3)."""
-    pdts = pd.read_csv("msresist/data/Validations/ebdt/PDTs.csv")
-    ListOfUpKin = []
-    for i in range(1, model.ncl + 1):
-        members = pd.read_csv("msresist/data/cluster_members/ebdt_pam250_12CL_W5_members_C" + str(i) + ".csv")
-        gene_pos = list(zip(members["gene"], members["pos"]))
-        members = [g + "(" + p + ")" for g, p in gene_pos]
-        dictKinToSubNumber = {}
-        for substrate in members:
-            upK = pdts[pdts["Putative Downtream Target"] == substrate]
-            if upK.shape[0] == 0:
-                continue
-            for kin in upK["kinase"]:
-                if kin not in list(dictKinToSubNumber.keys()):
-                    dictKinToSubNumber[kin] = 0
-                else:
-                    dictKinToSubNumber[kin] += 1
-
-        output = pd.DataFrame()
-        output["upstream_kinase"] = dictKinToSubNumber.keys()
-        output["num_pdts"] = dictKinToSubNumber.values()
-        output = output[output["num_pdts"] != 0]
-        ListOfUpKin.append(output.sort_values(by="num_pdts", ascending=False))
-
-    return ListOfUpKin
-
-
 def plotSubstratesPerCluster(x, model, kinase, ax):
     """Plot normalized number of substrates of a given kinase per cluster."""
     # Refine PsP K-S data set
     ks = pd.read_csv("msresist/data/Validations/Computational/Kinase_Substrate_Dataset.csv")
     ks = ks[
-        (ks["KINASE"] == "Akt1") &
-        (ks["IN_VIVO_RXN"] == "X") &
-        (ks["IN_VIVO_RXN"] == "X") &
-        (ks["KIN_ORGANISM"] == "human") &
-        (ks["SUB_ORGANISM"] == "human")
+    (ks["KINASE"] == kinase) & 
+    (ks["IN_VIVO_RXN"] == "X") & 
+    (ks["IN_VIVO_RXN"] == "X") & 
+    (ks["KIN_ORGANISM"] == "human") &
+    (ks["SUB_ORGANISM"] == "human")
     ]
 
     # Count matching substrates per cluster and normalize by cluster size
@@ -86,7 +60,7 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     for i in range(1, max(x["cluster"]) + 1):
         counter = 0
         cl = x[x["cluster"] == i]
-        put_sub = list(zip(list(cl["gene"]), list(list(cl["pos"]))))
+        put_sub = list(zip(list(cl["Gene"]), list(list(cl["Position"]))))
         psp = list(zip(list(ks["SUB_GENE"]), list(ks["SUB_MOD_RSD"])))
         for sub_pos in put_sub:
             if sub_pos in psp:
@@ -99,3 +73,30 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     data["Normalized substrate count"] = counters.values()
     sns.barplot(data=data, x="Cluster", y="Normalized substrate count", color="darkblue", ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
     ax.set_title(kinase + " Substrate Enrichment")
+
+
+def plotAKTprediction_EBDTvsCPTAC(ax, model, mcf7_model):
+    """Plot frobenius distance between AKT and clusters 1 and 4 from the EBDT MCF7 and CPTAC models, respectively"""
+    akt_ddmc = MeanCenter(model.predict_UpstreamKinases(), mc_col=True, mc_row=True)
+    akt_ddmc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1)
+    akt_ddmc = akt_ddmc.sort_values(by="Kinase").set_index("Kinase")[4]
+    akt_ebdt = MeanCenter(mcf7_model.predict_UpstreamKinases(), mc_col=True, mc_row=True)
+    akt_ebdt.columns = ["Kinase"] + list(np.arange(mcf7_model.ncl) + 1)
+    akt_ebdt = akt_ebdt.sort_values(by="Kinase").set_index("Kinase")[1]
+    data = pd.concat([akt_ddmc, akt_ebdt], axis=1)
+    data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
+
+    # Plot
+    sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
+
+    # Annotate
+    for ii, cluster in enumerate([1, 4], start=1):
+        cluster = data[data["Cluster"] == cluster]
+        hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
+        hits.index = np.arange(hits.shape[0])
+        for jj in range(1):
+            ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.07), fontsize=8)
+    ax.legend().remove()
+    ax.set_title("Kinase vs Cluster Motif")
+    ax.set_xticklabels(["EBDT cluster 1", "CPTAC cluster 4"])
+    ax.set_xlabel("")
