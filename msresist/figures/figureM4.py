@@ -1,103 +1,123 @@
 """
-This creates Figure 4: STK11 analysis
+This creates Figure 3: Tumor vs NAT analysis
 """
-import pickle
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import pickle
+from scipy.stats import mannwhitneyu
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .figure2 import plotDistanceToUpstreamKinase
-from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
-from ..logistic_regression import plotROC, plotClusterCoefficients
+from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
+from .figureMS6 import TumorType
+from ..logistic_regression import plotClusterCoefficients, plotROC
+from ..figures.figure2 import plotPCA, plotMotifs, plotDistanceToUpstreamKinase
+from ..pre_processing import MeanCenter
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4: 1})
+    ax, f = getSetup((13, 10), (3, 3), multz={0:1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
 
-    # Phosphoproteomic aberrations associated with molecular signatures
+    # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Load Clustering Model from Figure 2
+    import pandas as pd
+    from msresist.clustering import MassSpecClustering
+    from msresist.validations import preprocess_ebdt_mcf7
+
+    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
         model = pickle.load(p)[0]
 
-    # Import Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-
-    # Find centers
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers = centers.set_index("Patient_ID")
-
-    # Hypothesis Testing
-    assert np.all(y['Sample.ID'] == centers.index)
-    centers["STK11"] = y["STK11.mutation.status"].values
-    pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "STK11", ["WT", "Mutant"], ax[0], pvals=pvals)
-    ax[0].legend(loc='lower left')
-
-    # Reshape data (Patients vs NAT and tumor sample per cluster)
-    centers = centers.reset_index().set_index("STK11")
-    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
+    # first plot heatmap of clusters
+    ax[0].axis("off")
 
     # Normalize
-    centers = centers.T
+    centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
+    centers.columns = np.arange(model.ncl) + 1
+    centers["Patient_ID"] = X.columns[4:]
+    centers = TumorType(centers).set_index("Patient_ID")
+    centers["Type"] = centers["Type"].replace("Normal", "NAT")
+
+    # PCA and Hypothesis Testing
+    pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
+    pvals = build_pval_matrix(model.ncl, pvals)
+    plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
+    plot_clusters_binaryfeatures(centers, "Type", ["Tumor", "NAT"], ax[3], pvals=pvals)
+
+    # Transform to Binary
+    c = centers.select_dtypes(include=['float64'])
+    tt = centers.iloc[:, -1]
+    tt = tt.replace("NAT", 0)
+    tt = tt.replace("Tumor", 1)
 
     # Logistic Regression
-    centers["STK11"] = y["STK11.mutation.status"].values
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
-    ax[2].legend(loc='lower right', prop={'size': 8})
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    plotROC(ax[4], lr, c.values, tt, cv_folds=4)
+    plotClusterCoefficients(ax[5], lr)
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [1, 8, 9, 14, 22], ax[3], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [11, 12, 23], ax[6], num_hits=3)
 
     return f
 
 
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
+def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
+    """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
+    ncl = centers.shape[1] - 1
+    data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
+    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
+    sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
+    handles, _ = ax.get_legend_handles_labels()
+    ax.legend(title=id_var, labels=labels, handles=handles[2:], prop={'size':8})
+    if not isinstance(pvals, bool):
+        for ii, s in enumerate(pvals["Significant"]):
+            y, h, col = data['p-signal'].max(), .05, 'k'
+            if s == "Not Significant":
+                continue
+            elif s == "<0.05":
+                mark = "*"
+            else:
+                mark = "**"
+            ax.text(ii, y + h, mark, ha='center', va='bottom', color=col, fontsize=20)
 
 
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
+def calculate_mannW_pvals(centers, col, feature1, feature2):
+    """Compute Mann Whitney rank test p-values"""
+    pvals = []
+    for ii in range(centers.shape[1] - 1):
+        x = centers.iloc[:, [ii, -1]]
+        x1 = x[x[col] == feature1].iloc[:, 0]
+        x2 = x[x[col] == feature2].iloc[:, 0]
+        pval = mannwhitneyu(x1, x2)[1]
+        pvals.append(pval)
+    pvals = multipletests(pvals)[1]  # p-value correction for multiple tests
+    return pvals
 
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X
+
+def build_pval_matrix(ncl, pvals):
+    """Build data frame with pvalues per cluster"""
+    data = pd.DataFrame()
+    data["Clusters"] = np.arange(ncl) + 1
+    data["p-value"] = pvals
+    signif = []
+    for val in pvals:
+        if 0.01 < val < 0.05:
+            signif.append("<0.05")
+        elif val < 0.01:
+            signif.append("<0.01")
+        else:
+            signif.append("Not Significant")
+    data["Significant"] = signif
+    return data
