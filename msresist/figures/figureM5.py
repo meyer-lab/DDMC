@@ -1,5 +1,5 @@
 """
-This creates Figure 4: STK11 analysis
+This creates Figure 5: STK11 analysis
 """
 import pickle
 import numpy as np
