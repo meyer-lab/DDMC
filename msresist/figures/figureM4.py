@@ -12,7 +12,6 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
-from .figureMS6 import TumorType
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure2 import plotPCA, plotMotifs, plotDistanceToUpstreamKinase
 from ..pre_processing import MeanCenter
@@ -71,6 +70,18 @@ def makeFigure():
     plotDistanceToUpstreamKinase(model, [11, 12, 23], ax[6], num_hits=3)
 
     return f
+
+
+def TumorType(X):
+    """Add Normal vs Tumor column."""
+    tumortype = []
+    for i in range(X.shape[0]):
+        if ".N" in X["Patient_ID"][i]:
+            tumortype.append("Normal")
+        else:
+            tumortype.append("Tumor")
+    X["Type"] = tumortype
+    return X
 
 
 def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
