@@ -18,7 +18,7 @@ from .figure2 import plotMotifs
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((11, 12), (3, 3), multz={0:1})
+    ax, f = getSetup((11, 12), (3, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -28,13 +28,13 @@ def makeFigure():
 
     # Signaling
 
-    # Plot mean AUCs per model 
+    # Plot mean AUCs per model
     models = plotAUCs(ax[0], return_models=True)
 
     # Center to peptide distance
     barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
-    # Position Enrichment 
+    # Position Enrichment
     boxplot_PositionEnrichment(models, ax[2])
 
     # Motifs
@@ -86,7 +86,7 @@ def plotAUCs(ax, return_models=False):
     res = pd.DataFrame(aucs)
     res.columns = [str(w) for w in weights]
     res["Phenotype"] = ["STK11m", "EGFRm/ALKf", "Infiltration"]
-    data = pd.melt(frame=res, id_vars="Phenotype", value_vars = res.columns[:-1], var_name="Weight", value_name="mean AUC")
+    data = pd.melt(frame=res, id_vars="Phenotype", value_vars=res.columns[:-1], var_name="Weight", value_name="mean AUC")
     sns.lineplot(data=data, x="Weight", y="mean AUC", hue="Phenotype", ax=ax)
     ax.set_title("Predictive performance by Weight")
 
@@ -111,8 +111,8 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
     for ii, model in enumerate(models):
         for jj in range(d.shape[0]):
             # Data distance
-            center = model.transform()[:, labels[ii, jj] - 1] 
-            idx_values = np.argwhere(~np.isnan(d[jj, :])) 
+            center = model.transform()[:, labels[ii, jj] - 1]
+            idx_values = np.argwhere(~np.isnan(d[jj, :]))
             psDist[ii, jj] = mean_squared_error(d[jj, idx_values], center[idx_values])
 
     psDist = pd.DataFrame(psDist).T
@@ -120,6 +120,7 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
     ps_data = pd.melt(psDist, value_vars=["Data", "Mix", "Sequence"], var_name="Model", value_name="p-signal MSE")
     sns.barplot(data=ps_data, x="Model", y="p-signal MSE", ci=None, ax=ax)
     ax.set_title("Peptide-to-Cluster signal MSE")
+
 
 def boxplot_PositionEnrichment(models, ax):
     """Position enrichment of cluster PSSMs"""
