@@ -1,5 +1,5 @@
 """
-This creates Figure 4: STK11 analysis
+This creates Figure 5: STK11 analysis
 """
 import pickle
 import numpy as np
@@ -8,6 +8,7 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .figure2 import plotDistanceToUpstreamKinase
+from .figureM3 import find_patients_with_NATandTumor, merge_binary_vectors
 from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
@@ -70,34 +71,3 @@ def makeFigure():
     plotDistanceToUpstreamKinase(model, [1, 8, 9, 14, 22], ax[3], num_hits=3)
 
     return f
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
-
-
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
-
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X

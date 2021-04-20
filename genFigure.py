@@ -62,17 +62,17 @@ if __name__ == "__main__":
         overlayCartoon(fdir + 'figureS6.svg',
                        f'{cartoon_dir}/cross_validation.svg', 60, 0, scalee=0.21)
 
+    if sys.argv[1] == "M2":
+        # Overlay Figure M6 heatmap
+        overlayCartoon(fdir + 'figureM2.svg',
+                       f'{cartoon_dir}/heatmap_mcf7.svg', 25, 320, scalee=0.45)
+
     if sys.argv[1] == "M4":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM4.svg',
                        f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.40)
 
-    if sys.argv[1] == "M3":
-        # Overlay Figure M6 heatmap
-        overlayCartoon(fdir + 'figureM3.svg',
-                       f'{cartoon_dir}/heatmap_mcf7.svg', 25, 400, scalee=0.45)
-
-    if sys.argv[1] == 'MS6':
+    if sys.argv[1] == 'MS7':
         # Overlay Figure MS6 cartoon
-        overlayCartoon(fdir + 'figureMS6.svg',
+        overlayCartoon(fdir + 'figureMS7.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
