@@ -1,71 +1,93 @@
 """
-This creates Supplemental Figure 4: Predicting EGFRm/ALKf using DDMC clusters.
+This creates Supplemental Figure 4: Predicting sample type with different modeling strategies
 """
-import pickle
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
-from ..logistic_regression import plotClusterCoefficients, plotROC
+from sklearn.cluster import KMeans
+from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
-from .figure2 import plotMotifs, plotDistanceToUpstreamKinase
-from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
-from .figureM5 import merge_binary_vectors, find_patients_with_NATandTumor
+from ..pre_processing import filter_NaNpeptides
+from ..logistic_regression import plotClusterCoefficients, plotROC
+from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, TumorType
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4: 1})
+    ax, f = getSetup((15, 15), (3, 4), multz={1: 2, 6: 1, 10: 1})
+
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=0.8, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)
 
-    # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
-
-    # Load Clustering Model from Figure 2
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
-
-    # Import Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-
-    # Find centers
+    # Tumor vs NAT unclustered
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers = centers.set_index("Patient_ID")
+    X = filter_NaNpeptides(X, cut=1)
+    X["Gene/Pos"] = X["Gene"] + ": " + X["Position"]
+    d = X.set_index("Gene/Pos").select_dtypes(include=["float64"]).T.reset_index()
+    d.rename(columns={"index": "Patient_ID"}, inplace=True)
+    z = TumorType(d)
+    z.iloc[:, -1] = z.iloc[:, -1].replace("Normal", "NAT")
+    d = z.iloc[:, 1:-1]
+    y = z.iloc[:, -1]
+    y = y.replace("NAT", 0)
+    y = y.replace("Tumor", 1)
 
-    # Hypothesis Testing
-    assert np.all(y['Sample.ID'] == centers.index)
-    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
-    pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ["WT", "Mutant"], ax[0], pvals=pvals)
+    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
+    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
 
-    # Reshape data (Patients vs NAT and tumor sample per cluster)
-    centers = centers.reset_index().set_index("EGFRm/ALKf")
-    centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
+    # Tumor vs NAT k-means
+    ncl = 24
+    labels = KMeans(n_clusters=ncl).fit(d.T).labels_
+    x_ = X.copy()
+    x_["Cluster"] = labels
+    c_kmeans = x_.groupby("Cluster").mean().T
+    c_kmeans.columns = list(np.arange(ncl) + 1)
+    km_lr = lr.fit(c_kmeans, y)
+    plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
+    plotClusterCoefficients(ax[3], lr, title="k-means")
+    c_kmeans["Type"] = z.iloc[:, -1].values
+    pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
+    pvals = build_pval_matrix(ncl, pvals)
+    plot_clusters_binaryfeatures(c_kmeans, "Type", ["Tumor", "NAT"], ax[4], pvals=pvals)
 
-    # Normalize
-    centers = centers.T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
-
-    # Logistic Regression
-    centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
-    lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["EGFRm/ALKf"].values), list(centers.columns[:-1]), title="EGFRm/ALKf")
-
-    # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [2, 13, 20], ax[3])
+    # Tumor vs NAT GMM
+    ncl = 15
+    for _ in range(10):
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
+        scores = gmm.predict_proba(d.T)
+        if np.all(np.isfinite(scores)):
+            break
+    x_ = X.copy()
+    x_["Cluster"] = gmm.predict(d.T)
+    c_gmm = x_.groupby("Cluster").mean().T
+    c_gmm.columns = list(np.arange(ncl) + 1)
+    gmm_lr = lr.fit(c_gmm, y)
+    plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
+    plotClusterCoefficients(ax[6], gmm_lr, title="GMM")
+    c_gmm["Type"] = z.iloc[:, -1].values
+    pvals = calculate_mannW_pvals(c_gmm, "Type", "NAT", "Tumor")
+    pvals = build_pval_matrix(ncl, pvals)
+    plot_clusters_binaryfeatures(c_gmm, "Type", ["Tumor", "NAT"], ax[7], pvals=pvals)
 
     return f
+
+
+def plot_unclustered_LRcoef(ax, lr, d, title=False):
+    """Plot logistic regression coefficients of unclustered data"""
+    ws = lr.coef_[0]
+    cdic = dict(zip(ws, d.columns))
+    coefs = pd.DataFrame()
+    coefs["Coefficients"] = list(cdic.keys())
+    coefs["p-sites"] = list(cdic.values())
+    coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
+    sns.barplot(data=coefs, x="p-sites", y="Coefficients", ax=ax, color="darkblue")
+    ax.set_title("p-sites explaining tumor vs NATs ")
+    ax.set_xticklabels(list(set(coefs["p-sites"])), rotation=90)
+    ax.set_xlabel("p-sites ")

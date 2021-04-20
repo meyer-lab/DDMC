@@ -56,7 +56,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha='center', va='center', color='white')
 
 
-def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
+def plotROC(ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values
     cv = StratifiedKFold(n_splits=cv_folds)
@@ -73,10 +73,14 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False):
         tprs.append(interp_tpr)
         aucs.append(viz.roc_auc)
 
-    ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Chance', alpha=.8)
     mean_tpr = np.mean(tprs, axis=0)
     mean_tpr[-1] = 1.0
     mean_auc = auc(mean_fpr, mean_tpr)
+
+    if return_mAUC:
+        return mean_auc
+
+    ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Chance', alpha=.8)
     sem_auc = sem(aucs)
     ax.plot(mean_fpr, mean_tpr, color='b',
             label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, sem_auc),
