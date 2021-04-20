@@ -16,7 +16,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4:1})
+    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -64,7 +64,7 @@ def makeFigure():
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
-    ax[2].legend(loc='lower right', prop={'size':8})
+    ax[2].legend(loc='lower right', prop={'size': 8})
 
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [1, 8, 9, 14, 22], ax[3], num_hits=3)

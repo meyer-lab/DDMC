@@ -163,7 +163,7 @@ class MassSpecClustering(BaseEstimator):
         PSPLs = PSPLdict()
         PSSMs = self.pssms(PsP_background=True)
 
-        # Optionally add external pssms 
+        # Optionally add external pssms
         if not isinstance(additional_pssms, bool):
             PSSMs += additional_pssms
         PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs]  # Remove P0 and P+5 from pssms

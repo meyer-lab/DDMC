@@ -15,10 +15,11 @@ from ..clustering import compute_control_pssm
 from ..binomial import AAlist
 from ..pre_processing import filter_NaNpeptides
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 12), (3, 3), multz={3:1})
+    ax, f = getSetup((12, 12), (3, 3), multz={3: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -33,7 +34,7 @@ def makeFigure():
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])
-    centers["Inhibitor"] = [s.split(".")[1].split(".")[0]  for s in centers["Inhibitor"]]
+    centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
     # PCA AKT
     AKTi = ["Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X"]
     centers["AKTi"] = [drug in AKTi for drug in centers["Inhibitor"]]
@@ -61,7 +62,4 @@ def makeFigure():
     # ERK2 prediction
     plotDistanceToUpstreamKinase(model_cptac, [7, 9, 13, 21, "ERK2+"], additional_pssms=[erk2], shuffle={"ERK2": [7, 9, 13, 21]}, ax=ax[6:8], num_hits=1)
 
-    return f 
-
-
-
+    return f
