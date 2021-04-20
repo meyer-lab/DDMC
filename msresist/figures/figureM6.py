@@ -1,5 +1,5 @@
 """
-This creates Figure 5: Tumor infiltrating immune cells
+This creates Figure 6: Tumor infiltrating immune cells
 """
 
 import pickle

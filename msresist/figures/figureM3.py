@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure M3: Predictive performance of DDMC clusters using different weights
+This creates Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
 import pickle
@@ -13,6 +13,7 @@ from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotMotifs
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -40,8 +41,6 @@ def makeFigure():
     plot_SpecificPeptide(models, ax[3:8], peptide="MGRKEsEEELE", yaxis=[0, 7])
 
     return f
-
-
 
 
 def plotAUCs(ax, return_models=False):
