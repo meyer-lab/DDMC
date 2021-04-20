@@ -310,7 +310,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1) + [s for s in clusters if type(s) == str]
+    ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1) + [s for s in clusters if isinstance(s, str)]
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
         sns.heatmap(data.T, ax=ax, xticklabels=data.index)
@@ -321,7 +321,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
     elif kind == "strip":
         data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
         if not isinstance(shuffle, bool):
-            data_shuff = DistanceToShuffled(shuffle, model, additional_pssms, clusters) 
+            data_shuff = DistanceToShuffled(shuffle, model, additional_pssms, clusters)
             clusters_shuff = list(data_shuff["Shuffled Cluster"])
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax[0])
             sns.stripplot(data=data_shuff, x="Shuffled Cluster", y="Frobenius Distance", ax=ax[1])
@@ -333,6 +333,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
         else:
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
             AnnotateUpstreamKinases(clusters, ax, data, num_hits)
+
 
 def AnnotateUpstreamKinases(clusters, ax, data, num_hits):
     """Annotate upstream kinase predictions"""

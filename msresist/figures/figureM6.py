@@ -14,7 +14,6 @@ from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 from ..logistic_regression import plotROC, plotClusterCoefficients
 
 
-
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects

@@ -12,7 +12,7 @@ def preprocess_ebdt_mcf7():
     """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
     x = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv").drop("FDR", axis=1).set_index("sh.index.sites").drop("ARPC2_HUMAN;").reset_index()
     x.insert(0, "Gene", [s.split("(")[0] for s in x["sh.index.sites"]])
-    x.insert(1, "Position", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)  for s in x["sh.index.sites"]])
+    x.insert(1, "Position", [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1) for s in x["sh.index.sites"]])
     x = x.drop("sh.index.sites", axis=1)
     motifs, del_ids = pos_to_motif(x["Gene"], x["Position"], motif_size=5)
     x = x.set_index(["Gene", "Position"]).drop(del_ids).reset_index()
@@ -47,11 +47,11 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     # Refine PsP K-S data set
     ks = pd.read_csv("msresist/data/Validations/Computational/Kinase_Substrate_Dataset.csv")
     ks = ks[
-    (ks["KINASE"] == kinase) & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["IN_VIVO_RXN"] == "X") & 
-    (ks["KIN_ORGANISM"] == "human") &
-    (ks["SUB_ORGANISM"] == "human")
+        (ks["KINASE"] == kinase) &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["IN_VIVO_RXN"] == "X") &
+        (ks["KIN_ORGANISM"] == "human") &
+        (ks["SUB_ORGANISM"] == "human")
     ]
 
     # Count matching substrates per cluster and normalize by cluster size

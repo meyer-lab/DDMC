@@ -21,7 +21,7 @@ from ..pre_processing import MeanCenter
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((13, 10), (3, 3), multz={0:1, 4: 1})
+    ax, f = getSetup((13, 10), (3, 3), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -80,7 +80,7 @@ def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
     sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
     sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
     handles, _ = ax.get_legend_handles_labels()
-    ax.legend(title=id_var, labels=labels, handles=handles[2:], prop={'size':8})
+    ax.legend(title=id_var, labels=labels, handles=handles[2:], prop={'size': 8})
     if not isinstance(pvals, bool):
         for ii, s in enumerate(pvals["Significant"]):
             y, h, col = data['p-signal'].max(), .05, 'k'
