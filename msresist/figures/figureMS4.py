@@ -11,8 +11,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from .figureMS6 import TumorType
-from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, TumorType
 
 
 def makeFigure():
