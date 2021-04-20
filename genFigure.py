@@ -72,7 +72,7 @@ if __name__ == "__main__":
         overlayCartoon(fdir + 'figureM4.svg',
                        f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.40)
 
-    if sys.argv[1] == 'MS6':
+    if sys.argv[1] == 'MS7':
         # Overlay Figure MS6 cartoon
-        overlayCartoon(fdir + 'figureMS6.svg',
+        overlayCartoon(fdir + 'figureMS7.svg',
                        f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
