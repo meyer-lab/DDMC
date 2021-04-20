@@ -8,8 +8,8 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .figure2 import plotDistanceToUpstreamKinase
-from .figureM2 import find_patients_with_NATandTumor, merge_binary_vectors
-from .figureM3 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from .figureM3 import find_patients_with_NATandTumor, merge_binary_vectors
+from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 

@@ -42,8 +42,6 @@ def makeFigure():
     return f
 
 
-
-
 def plotAUCs(ax, return_models=False):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
