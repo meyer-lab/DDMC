@@ -321,14 +321,21 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
     elif kind == "strip":
         data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
         if not isinstance(shuffle, bool):
-            data_shuff = DistanceToShuffled(shuffle, model, additional_pssms, clusters)
-            clusters_shuff = list(data_shuff["Shuffled Cluster"])
+            # Actual ERK predictions
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax[0])
-            sns.stripplot(data=data_shuff, x="Shuffled Cluster", y="Frobenius Distance", ax=ax[1])
-            dd = [data, data_shuff]
-            cc = [clusters, clusters_shuff]
-            for idx, x in enumerate(ax):
-                AnnotateUpstreamKinases(cc[idx], x, dd[idx], num_hits)
+            AnnotateUpstreamKinases(clusters, ax[0], data, 1)
+
+            # Shuffled
+            actual_erks = data[data["Kinase"] == "ERK2"]
+            data_shuff = DistanceToShuffled(shuffle, model, additional_pssms, clusters)
+            data_shuff["Shuffled"] = [True] * 5
+            actual_erks["Shuffled"] = [False] * 5
+            dataS = pd.concat([actual_erks, data_shuff]).drop("Kinase", axis=1)
+            dataS["Cluster"] = dataS["Cluster"].astype(str)
+            clusters_shuff = list(data_shuff["Cluster"])
+            sns.stripplot(data=dataS, x="Cluster", y="Frobenius Distance", hue="Shuffled", ax=ax[1], size=10)
+            DrawArrows(ax[1], data_shuff, actual_erks)
+            ax[1].set_title("Shuffled Peptide Positions")
 
         else:
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
@@ -343,11 +350,23 @@ def AnnotateUpstreamKinases(clusters, ax, data, num_hits):
         hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
         hits.index = np.arange(hits.shape[0])
         for jj in range(num_hits):
-            if "Shuffled" in str(c):
-                jj = 0
             ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01), fontsize=8)
     ax.legend().remove()
     ax.set_title("Kinase vs Cluster Motif")
+
+
+def DrawArrows(ax, data_shuff, actual_erks):
+    arrow_lengths = np.add(data_shuff["Frobenius Distance"].values, abs(actual_erks["Frobenius Distance"].values)) * -1
+    for dp in range(data_shuff.shape[0]):
+        ax.arrow(dp,
+                data_shuff["Frobenius Distance"].iloc[dp] - 1,
+                0,
+                arrow_lengths[dp] + 2,
+                head_width=0.25,
+                head_length=0.45,
+                width=0.025,
+                fc='black',
+                ec='black')
 
 
 def DistanceToShuffled(shuffle, model, additional_pssms=False, clusters=False):
@@ -371,7 +390,7 @@ def DistanceToShuffled(shuffle, model, additional_pssms=False, clusters=False):
 
     res = pd.DataFrame()
     res["Kinase"] = [upK] * len(ClustersToShuffle)
-    res["Shuffled Cluster"] = [str(c) for c in ClustersToShuffle]
+    res["Cluster"] = [str(c) for c in ClustersToShuffle]
     res["Frobenius Distance"] = fds
     return res
 
