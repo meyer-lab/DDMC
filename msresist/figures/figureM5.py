@@ -46,7 +46,9 @@ def makeFigure():
     centers["STK11"] = y["STK11.mutation.status"].values
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "STK11", ["WT", "Mutant"], ax[0], pvals=pvals)
+    centers["STK11"] = centers["STK11"].replace(0, "STK11 WT")
+    centers["STK11"] = centers["STK11"].replace(1, "STK11m")
+    plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
     ax[0].legend(loc='lower left')
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)

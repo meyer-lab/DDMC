@@ -55,7 +55,7 @@ def makeFigure():
     c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_kmeans, "Type", ["Tumor", "NAT"], ax[4], pvals=pvals)
+    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals)
 
     # Tumor vs NAT GMM
     ncl = 15

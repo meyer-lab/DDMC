@@ -53,7 +53,7 @@ def makeFigure():
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(model.ncl, pvals)
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
-    plot_clusters_binaryfeatures(centers, "Type", ["Tumor", "NAT"], ax[3], pvals=pvals)
+    plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals, loc='lower left')
 
     # Transform to Binary
     c = centers.select_dtypes(include=['float64'])
@@ -84,14 +84,13 @@ def TumorType(X):
     return X
 
 
-def plot_clusters_binaryfeatures(centers, id_var, labels, ax, pvals=False):
+def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 1
     data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
-    sns.stripplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, alpha=0.2)
-    sns.boxplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, color="white", linewidth=2)
-    handles, _ = ax.get_legend_handles_labels()
-    ax.legend(title=id_var, labels=labels, handles=handles[2:], prop={'size': 8})
+    sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
+    ax.legend(prop={'size': 8}, loc=loc)
+
     if not isinstance(pvals, bool):
         for ii, s in enumerate(pvals["Significant"]):
             y, h, col = data['p-signal'].max(), .05, 'k'
