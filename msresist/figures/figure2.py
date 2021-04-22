@@ -359,14 +359,14 @@ def DrawArrows(ax, data_shuff, actual_erks):
     arrow_lengths = np.add(data_shuff["Frobenius Distance"].values, abs(actual_erks["Frobenius Distance"].values)) * -1
     for dp in range(data_shuff.shape[0]):
         ax.arrow(dp,
-                data_shuff["Frobenius Distance"].iloc[dp] - 1,
-                0,
-                arrow_lengths[dp] + 2,
-                head_width=0.25,
-                head_length=0.45,
-                width=0.025,
-                fc='black',
-                ec='black')
+                 data_shuff["Frobenius Distance"].iloc[dp] - 1,
+                 0,
+                 arrow_lengths[dp] + 2,
+                 head_width=0.25,
+                 head_length=0.45,
+                 width=0.025,
+                 fc='black',
+                 ec='black')
 
 
 def DistanceToShuffled(shuffle, model, additional_pssms=False, clusters=False):
