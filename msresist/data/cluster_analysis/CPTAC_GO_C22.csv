@@ -1,0 +1,55 @@
+﻿GO biological process complete,Homo sapiens - REFLIST (20595),upload_1 (306),upload_1 (expected),upload_1 (over/under),upload_1 (fold Enrichment),upload_1 (raw P-value),upload_1 (FDR)
+intermediate filament organization (GO:0045109),24,6,0.36,+,16.83,4.14E-06,2.84E-03
+cornification (GO:0070268),113,16,1.68,+,9.53,7.25E-11,3.81E-07
+intermediate filament cytoskeleton organization (GO:0045104),51,7,0.76,+,9.24,2.14E-05,9.10E-03
+intermediate filament-based process (GO:0045103),52,7,0.77,+,9.06,2.39E-05,9.68E-03
+apical junction assembly (GO:0043297),67,7,1,+,7.03,1.05E-04,3.59E-02
+cell-cell junction assembly (GO:0007043),127,11,1.89,+,5.83,6.12E-06,3.22E-03
+regulation of ERBB signaling pathway (GO:1901184),94,8,1.4,+,5.73,1.28E-04,3.89E-02
+keratinization (GO:0031424),226,17,3.36,+,5.06,1.22E-07,1.92E-04
+cell-cell junction organization (GO:0045216),186,13,2.76,+,4.7,7.99E-06,3.94E-03
+cytosolic transport (GO:0016482),148,10,2.2,+,4.55,1.16E-04,3.81E-02
+keratinocyte differentiation (GO:0030216),268,18,3.98,+,4.52,2.52E-07,2.65E-04
+regulation of RNA splicing (GO:0043484),149,10,2.21,+,4.52,1.22E-04,3.85E-02
+RNA splicing (GO:0008380),407,26,6.05,+,4.3,1.37E-09,2.70E-06
+epidermal cell differentiation (GO:0009913),316,19,4.7,+,4.05,5.76E-07,5.05E-04
+actin filament organization (GO:0007015),270,16,4.01,+,3.99,5.41E-06,3.05E-03
+actin cytoskeleton organization (GO:0030036),524,31,7.79,+,3.98,1.99E-10,7.83E-07
+"RNA splicing, via transesterification reactions (GO:0000375)",305,18,4.53,+,3.97,1.47E-06,1.11E-03
+cell junction assembly (GO:0034329),280,16,4.16,+,3.85,8.34E-06,3.87E-03
+actin filament-based process (GO:0030029),598,34,8.89,+,3.83,6.78E-11,5.35E-07
+"mRNA splicing, via spliceosome (GO:0000398)",302,17,4.49,+,3.79,5.26E-06,3.19E-03
+"RNA splicing, via transesterification reactions with bulged adenosine as nucleophile (GO:0000377)",302,17,4.49,+,3.79,5.26E-06,3.07E-03
+epidermis development (GO:0008544),417,21,6.2,+,3.39,2.22E-06,1.59E-03
+regulation of mRNA metabolic process (GO:1903311),340,17,5.05,+,3.37,2.27E-05,9.41E-03
+skin development (GO:0043588),383,19,5.69,+,3.34,8.32E-06,3.98E-03
+mRNA processing (GO:0006397),484,24,7.19,+,3.34,5.34E-07,5.27E-04
+cytoskeleton organization (GO:0007010),1204,58,17.89,+,3.24,5.28E-15,8.33E-11
+epithelial cell differentiation (GO:0030855),674,30,10.01,+,3,1.82E-07,2.61E-04
+cell junction organization (GO:0034330),501,21,7.44,+,2.82,3.16E-05,1.25E-02
+supramolecular fiber organization (GO:0097435),597,25,8.87,+,2.82,5.62E-06,3.06E-03
+cell death (GO:0008219),1079,40,16.03,+,2.5,2.12E-07,2.79E-04
+programmed cell death (GO:0012501),1044,38,15.51,+,2.45,6.27E-07,5.21E-04
+mRNA metabolic process (GO:0016071),694,25,10.31,+,2.42,8.32E-05,2.98E-02
+RNA processing (GO:0006396),923,32,13.71,+,2.33,1.26E-05,5.67E-03
+epithelium development (GO:0060429),1097,37,16.3,+,2.27,5.02E-06,3.30E-03
+regulation of cellular component organization (GO:0051128),2360,66,35.06,+,1.88,5.36E-07,4.97E-04
+organelle organization (GO:0006996),3574,98,53.1,+,1.85,7.50E-10,1.97E-06
+tissue development (GO:0009888),1732,46,25.73,+,1.79,1.69E-04,4.93E-02
+macromolecule localization (GO:0033036),2550,66,37.89,+,1.74,7.51E-06,3.82E-03
+protein localization (GO:0008104),2158,55,32.06,+,1.72,1.05E-04,3.54E-02
+cellular component assembly (GO:0022607),2438,60,36.22,+,1.66,1.17E-04,3.76E-02
+establishment of localization in cell (GO:0051649),2365,58,35.14,+,1.65,1.44E-04,4.27E-02
+cellular component biogenesis (GO:0044085),2701,66,40.13,+,1.64,5.59E-05,2.05E-02
+cellular localization (GO:0051641),3003,73,44.62,+,1.64,2.03E-05,8.91E-03
+cellular component organization or biogenesis (GO:0071840),5999,141,89.13,+,1.58,5.60E-10,1.77E-06
+cellular component organization (GO:0016043),5775,135,85.8,+,1.57,2.80E-09,4.90E-06
+system development (GO:0048731),4279,98,63.58,+,1.54,5.07E-06,3.20E-03
+negative regulation of cellular process (GO:0048523),4909,111,72.94,+,1.52,1.42E-06,1.12E-03
+multicellular organism development (GO:0007275),4877,103,72.46,+,1.42,8.38E-05,2.94E-02
+negative regulation of biological process (GO:0048519),5541,115,82.33,+,1.4,5.43E-05,2.09E-02
+anatomical structure development (GO:0048856),5266,109,78.24,+,1.39,1.23E-04,3.82E-02
+cellular process (GO:0009987),15487,273,230.11,+,1.19,1.15E-09,2.60E-06
+biological regulation (GO:0065007),12571,221,186.78,+,1.18,5.51E-05,2.07E-02
+biological_process (GO:0008150),17850,293,265.21,+,1.1,2.25E-07,2.73E-04
+Unclassified (UNCLASSIFIED),2745,13,40.79,-,0.32,2.25E-07,2.53E-04

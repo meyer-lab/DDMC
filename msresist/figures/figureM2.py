@@ -35,6 +35,7 @@ def makeFigure():
     centers.columns = np.arange(model.ncl) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])
     centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
+
     # PCA AKT
     AKTi = ["Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X"]
     centers["AKTi"] = [drug in AKTi for drug in centers["Inhibitor"]]

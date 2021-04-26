@@ -70,7 +70,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "M4":
         # Overlay Figure M3 heatmap
         overlayCartoon(fdir + 'figureM4.svg',
-                       f'{cartoon_dir}/heatmap_fM3.svg', 110, 10, scalee=0.40)
+                       f'{cartoon_dir}/heatmap_fM3.svg', 50, 0, scalee=0.40)
 
     if sys.argv[1] == 'MS7':
         # Overlay Figure MS6 cartoon

@@ -1,0 +1,457 @@
+﻿GO biological process complete,Homo sapiens - REFLIST (20595),upload_1 (699),upload_1 (expected),upload_1 (over/under),upload_1 (fold Enrichment),upload_1 (raw P-value),upload_1 (FDR)
+"negative regulation of wound healing, spreading of epidermal cells (GO:1903690)",4,3,0.14,+,22.1,1.12E-03,3.98E-02
+positive regulation of miRNA mediated inhibition of translation (GO:1905618),7,4,0.24,+,16.84,3.16E-04,1.37E-02
+regulation of miRNA mediated inhibition of translation (GO:1905616),7,4,0.24,+,16.84,3.16E-04,1.37E-02
+nuclear pore complex assembly (GO:0051292),9,5,0.31,+,16.37,5.88E-05,3.16E-03
+nuclear pore organization (GO:0006999),14,7,0.48,+,14.73,3.10E-06,2.45E-04
+"regulation of wound healing, spreading of epidermal cells (GO:1903689)",8,4,0.27,+,14.73,4.62E-04,1.91E-02
+primary miRNA processing (GO:0031053),11,5,0.37,+,13.39,1.21E-04,6.12E-03
+rDNA heterochromatin assembly (GO:0000183),12,5,0.41,+,12.28,1.67E-04,8.03E-03
+spliceosomal tri-snRNP complex assembly (GO:0000244),13,5,0.44,+,11.33,2.26E-04,1.03E-02
+tRNA-containing ribonucleoprotein complex export from nucleus (GO:0071431),34,11,1.15,+,9.53,1.62E-07,1.84E-05
+tRNA export from nucleus (GO:0006409),34,11,1.15,+,9.53,1.62E-07,1.82E-05
+pore complex assembly (GO:0046931),20,6,0.68,+,8.84,1.61E-04,7.78E-03
+production of miRNAs involved in gene silencing by miRNA (GO:0035196),30,9,1.02,+,8.84,3.68E-06,2.85E-04
+tRNA transport (GO:0051031),37,11,1.26,+,8.76,3.29E-07,3.44E-05
+production of small RNA involved in gene silencing by RNA (GO:0070918),34,10,1.15,+,8.67,1.23E-06,1.14E-04
+dsRNA processing (GO:0031050),34,10,1.15,+,8.67,1.23E-06,1.13E-04
+ncRNA export from nucleus (GO:0097064),38,11,1.29,+,8.53,4.12E-07,4.11E-05
+protein localization to cell-cell junction (GO:0150105),18,5,0.61,+,8.18,7.73E-04,3.01E-02
+gene silencing by miRNA (GO:0035195),48,13,1.63,+,7.98,7.07E-08,8.38E-06
+regulation of microtubule polymerization (GO:0031113),53,14,1.8,+,7.78,2.90E-08,3.66E-06
+histone H3-K9 modification (GO:0061647),19,5,0.64,+,7.75,9.50E-04,3.53E-02
+positive regulation of microtubule polymerization (GO:0031116),31,8,1.05,+,7.6,3.23E-05,1.88E-03
+posttranscriptional gene silencing (GO:0016441),63,16,2.14,+,7.48,4.82E-09,6.73E-07
+microtubule nucleation (GO:0007020),24,6,0.81,+,7.37,3.71E-04,1.58E-02
+post-transcriptional gene silencing by RNA (GO:0035194),58,14,1.97,+,7.11,7.61E-08,8.96E-06
+regulation of cardiac muscle cell action potential (GO:0098901),26,6,0.88,+,6.8,5.35E-04,2.18E-02
+microtubule anchoring (GO:0034453),26,6,0.88,+,6.8,5.35E-04,2.17E-02
+spliceosomal snRNP assembly (GO:0000387),39,9,1.32,+,6.8,2.24E-05,1.36E-03
+positive regulation of microtubule polymerization or depolymerization (GO:0031112),35,8,1.19,+,6.73,6.79E-05,3.63E-03
+regulation of gene silencing by RNA (GO:0060966),97,22,3.29,+,6.68,4.24E-11,7.97E-09
+regulation of microtubule depolymerization (GO:0031114),31,7,1.05,+,6.65,2.07E-04,9.61E-03
+negative regulation of microtubule depolymerization (GO:0007026),27,6,0.92,+,6.55,6.36E-04,2.54E-02
+regulation of posttranscriptional gene silencing (GO:0060147),96,21,3.26,+,6.45,2.09E-10,3.55E-08
+heterochromatin assembly (GO:0031507),28,6,0.95,+,6.31,7.51E-04,2.94E-02
+regulation of gene silencing by miRNA (GO:0060964),94,20,3.19,+,6.27,8.59E-10,1.34E-07
+histone H3-K4 methylation (GO:0051568),33,7,1.12,+,6.25,2.89E-04,1.26E-02
+spleen development (GO:0048536),33,7,1.12,+,6.25,2.89E-04,1.26E-02
+positive regulation of mRNA catabolic process (GO:0061014),53,11,1.8,+,6.12,6.72E-06,4.59E-04
+positive regulation of gene silencing by miRNA (GO:2000637),29,6,0.98,+,6.1,8.81E-04,3.35E-02
+beta-catenin-TCF complex assembly (GO:1904837),29,6,0.98,+,6.1,8.81E-04,3.34E-02
+regulation of gene silencing (GO:0060968),116,24,3.94,+,6.1,2.95E-11,5.67E-09
+regulation of cardiac muscle cell contraction (GO:0086004),34,7,1.15,+,6.07,3.39E-04,1.46E-02
+DNA replication-independent nucleosome assembly (GO:0006336),39,8,1.32,+,6.04,1.31E-04,6.53E-03
+heterochromatin organization (GO:0070828),39,8,1.32,+,6.04,1.31E-04,6.51E-03
+intracellular transport of virus (GO:0075733),54,11,1.83,+,6,7.86E-06,5.25E-04
+positive regulation of posttranscriptional gene silencing (GO:0060148),30,6,1.02,+,5.89,1.03E-03,3.73E-02
+establishment of mitotic spindle localization (GO:0040001),35,7,1.19,+,5.89,3.95E-04,1.68E-02
+protein sumoylation (GO:0016925),65,13,2.21,+,5.89,1.42E-06,1.28E-04
+histone phosphorylation (GO:0016572),30,6,1.02,+,5.89,1.03E-03,3.72E-02
+DNA replication-independent nucleosome organization (GO:0034724),40,8,1.36,+,5.89,1.53E-04,7.45E-03
+transport of virus (GO:0046794),61,12,2.07,+,5.8,4.18E-06,3.13E-04
+mitotic nuclear envelope reassembly (GO:0007084),51,10,1.73,+,5.78,2.71E-05,1.62E-03
+mitotic nuclear membrane organization (GO:0101024),51,10,1.73,+,5.78,2.71E-05,1.62E-03
+gene silencing by RNA (GO:0031047),87,17,2.95,+,5.76,4.71E-08,5.71E-06
+establishment of spindle orientation (GO:0051294),36,7,1.22,+,5.73,4.59E-04,1.90E-02
+regulation of androgen receptor signaling pathway (GO:0060765),36,7,1.22,+,5.73,4.59E-04,1.90E-02
+centrosome localization (GO:0051642),31,6,1.05,+,5.7,1.19E-03,4.20E-02
+multi-organism localization (GO:1902579),63,12,2.14,+,5.61,5.60E-06,3.91E-04
+multi-organism transport (GO:0044766),63,12,2.14,+,5.61,5.60E-06,3.89E-04
+cytoplasmic microtubule organization (GO:0031122),63,12,2.14,+,5.61,5.60E-06,3.87E-04
+regulation of glycolytic process (GO:0006110),79,15,2.68,+,5.59,4.00E-07,4.02E-05
+microtubule organizing center localization (GO:0061842),32,6,1.09,+,5.52,1.38E-03,4.81E-02
+nuclear envelope reassembly (GO:0031468),54,10,1.83,+,5.46,4.16E-05,2.33E-03
+regulation of microtubule polymerization or depolymerization (GO:0031110),83,15,2.82,+,5.32,6.96E-07,6.78E-05
+regulation of carbohydrate catabolic process (GO:0043470),89,16,3.02,+,5.3,3.17E-07,3.33E-05
+regulation of actin filament-based movement (GO:1903115),39,7,1.32,+,5.29,7.00E-04,2.77E-02
+histone ubiquitination (GO:0016574),39,7,1.32,+,5.29,7.00E-04,2.76E-02
+negative regulation of microtubule polymerization or depolymerization (GO:0031111),39,7,1.32,+,5.29,7.00E-04,2.75E-02
+regulation of cellular response to heat (GO:1900034),79,14,2.68,+,5.22,2.00E-06,1.71E-04
+nuclear membrane organization (GO:0071763),58,10,1.97,+,5.08,7.10E-05,3.77E-03
+positive regulation of axon extension (GO:0045773),41,7,1.39,+,5.03,9.10E-04,3.43E-02
+endosome to lysosome transport (GO:0008333),53,9,1.8,+,5,1.80E-04,8.52E-03
+nuclear envelope organization (GO:0006998),83,14,2.82,+,4.97,3.34E-06,2.62E-04
+negative regulation of protein depolymerization (GO:1901880),68,11,2.31,+,4.77,5.23E-05,2.85E-03
+histone lysine methylation (GO:0034968),68,11,2.31,+,4.77,5.23E-05,2.84E-03
+establishment of spindle localization (GO:0051293),50,8,1.7,+,4.71,5.83E-04,2.36E-02
+nucleus organization (GO:0006997),145,23,4.92,+,4.67,7.22E-09,9.73E-07
+spliceosomal complex assembly (GO:0000245),57,9,1.93,+,4.65,2.92E-04,1.27E-02
+positive regulation of mRNA metabolic process (GO:1903313),85,13,2.88,+,4.51,1.90E-05,1.17E-03
+vesicle coating (GO:0006901),67,10,2.27,+,4.4,2.06E-04,9.59E-03
+negative regulation of viral genome replication (GO:0045071),54,8,1.83,+,4.36,9.16E-04,3.44E-02
+import into nucleus (GO:0051170),115,17,3.9,+,4.36,1.57E-06,1.40E-04
+actin filament bundle organization (GO:0061572),61,9,2.07,+,4.35,4.57E-04,1.90E-02
+"regulation of mRNA splicing, via spliceosome (GO:0048024)",102,15,3.46,+,4.33,6.76E-06,4.58E-04
+regulation of ATP metabolic process (GO:1903578),116,17,3.94,+,4.32,1.74E-06,1.53E-04
+regulation of protein depolymerization (GO:1901879),89,13,3.02,+,4.3,2.93E-05,1.74E-03
+protein import into nucleus (GO:0006606),96,14,3.26,+,4.3,1.48E-05,9.36E-04
+spindle localization (GO:0051653),55,8,1.87,+,4.29,1.02E-03,3.72E-02
+chromatin remodeling (GO:0006338),172,25,5.84,+,4.28,7.83E-09,1.05E-06
+mRNA export from nucleus (GO:0006406),111,16,3.77,+,4.25,4.23E-06,3.13E-04
+mRNA-containing ribonucleoprotein complex export from nucleus (GO:0071427),111,16,3.77,+,4.25,4.23E-06,3.12E-04
+regulation of viral genome replication (GO:0045069),84,12,2.85,+,4.21,7.15E-05,3.78E-03
+"vesicle targeting, to, from or within Golgi (GO:0048199)",70,10,2.38,+,4.21,2.83E-04,1.24E-02
+ATP-dependent chromatin remodeling (GO:0043044),77,11,2.61,+,4.21,1.42E-04,7.02E-03
+vesicle targeting (GO:0006903),92,13,3.12,+,4.16,4.00E-05,2.24E-03
+"RNA splicing, via transesterification reactions (GO:0000375)",305,43,10.35,+,4.15,7.93E-14,2.84E-11
+ribonucleoprotein complex localization (GO:0071166),128,18,4.34,+,4.14,1.48E-06,1.33E-04
+gene silencing (GO:0016458),150,21,5.09,+,4.12,2.16E-07,2.38E-05
+histone methylation (GO:0016571),86,12,2.92,+,4.11,8.76E-05,4.58E-03
+negative regulation of protein-containing complex disassembly (GO:0043242),79,11,2.68,+,4.1,1.74E-04,8.29E-03
+"mRNA splicing, via spliceosome (GO:0000398)",302,42,10.25,+,4.1,2.34E-13,7.54E-11
+"RNA splicing, via transesterification reactions with bulged adenosine as nucleophile (GO:0000377)",302,42,10.25,+,4.1,2.34E-13,7.39E-11
+"regulation of alternative mRNA splicing, via spliceosome (GO:0000381)",58,8,1.97,+,4.06,1.39E-03,4.83E-02
+actin filament bundle assembly (GO:0051017),58,8,1.97,+,4.06,1.39E-03,4.82E-02
+vesicle budding from membrane (GO:0006900),103,14,3.5,+,4,3.01E-05,1.78E-03
+post-Golgi vesicle-mediated transport (GO:0006892),134,18,4.55,+,3.96,2.67E-06,2.16E-04
+ribonucleoprotein complex export from nucleus (GO:0071426),127,17,4.31,+,3.94,5.24E-06,3.74E-04
+neural tube closure (GO:0001843),90,12,3.05,+,3.93,1.29E-04,6.46E-03
+Golgi organization (GO:0007030),135,18,4.58,+,3.93,2.93E-06,2.33E-04
+nuclear export (GO:0051168),166,22,5.63,+,3.9,2.62E-07,2.81E-05
+cellular response to ionizing radiation (GO:0071479),68,9,2.31,+,3.9,9.25E-04,3.47E-02
+tube closure (GO:0060606),91,12,3.09,+,3.89,1.42E-04,7.00E-03
+peptidyl-lysine methylation (GO:0018022),84,11,2.85,+,3.86,2.82E-04,1.24E-02
+lysosome organization (GO:0007040),69,9,2.34,+,3.84,1.02E-03,3.73E-02
+lytic vacuole organization (GO:0080171),69,9,2.34,+,3.84,1.02E-03,3.72E-02
+RNA splicing (GO:0008380),407,53,13.81,+,3.84,1.81E-15,1.02E-12
+microtubule cytoskeleton organization involved in mitosis (GO:1902850),185,24,6.28,+,3.82,1.08E-07,1.24E-05
+COPII-coated vesicle budding (GO:0090114),70,9,2.38,+,3.79,1.11E-03,3.98E-02
+regulation of microtubule cytoskeleton organization (GO:0070507),141,18,4.79,+,3.76,5.08E-06,3.68E-04
+regulation of mRNA processing (GO:0050684),141,18,4.79,+,3.76,5.08E-06,3.66E-04
+regulation of nucleocytoplasmic transport (GO:0046822),110,14,3.73,+,3.75,5.76E-05,3.11E-03
+regulation of purine nucleotide metabolic process (GO:1900542),118,15,4,+,3.75,3.21E-05,1.87E-03
+ribonucleoprotein complex assembly (GO:0022618),190,24,6.45,+,3.72,1.69E-07,1.89E-05
+RNA export from nucleus (GO:0006405),135,17,4.58,+,3.71,1.09E-05,7.08E-04
+mRNA transport (GO:0051028),159,20,5.4,+,3.71,1.89E-06,1.63E-04
+primary neural tube formation (GO:0014020),96,12,3.26,+,3.68,2.23E-04,1.03E-02
+regulation of nucleotide metabolic process (GO:0006140),120,15,4.07,+,3.68,3.82E-05,2.16E-03
+histone modification (GO:0016570),356,44,12.08,+,3.64,2.38E-12,5.78E-10
+covalent chromatin modification (GO:0016569),360,44,12.22,+,3.6,3.35E-12,7.65E-10
+mitotic spindle organization (GO:0007052),164,20,5.57,+,3.59,2.90E-06,2.32E-04
+ribonucleoprotein complex subunit organization (GO:0071826),197,24,6.69,+,3.59,3.08E-07,3.26E-05
+nucleosome organization (GO:0034728),156,19,5.29,+,3.59,5.20E-06,3.73E-04
+viral transcription (GO:0019083),116,14,3.94,+,3.56,9.67E-05,5.02E-03
+mitotic prometaphase (GO:0000236),167,20,5.67,+,3.53,3.72E-06,2.85E-04
+mitotic nuclear division (GO:0140014),209,25,7.09,+,3.52,2.40E-07,2.59E-05
+protein export from nucleus (GO:0006611),152,18,5.16,+,3.49,1.29E-05,8.34E-04
+regulation of generation of precursor metabolites and energy (GO:0043467),161,19,5.46,+,3.48,7.84E-06,5.26E-04
+establishment of cell polarity (GO:0030010),119,14,4.04,+,3.47,1.24E-04,6.21E-03
+regulation of mRNA metabolic process (GO:1903311),340,40,11.54,+,3.47,9.38E-11,1.70E-08
+regulation of protein polymerization (GO:0032271),232,27,7.87,+,3.43,1.32E-07,1.51E-05
+protein localization to nucleus (GO:0034504),164,19,5.57,+,3.41,9.96E-06,6.52E-04
+mRNA processing (GO:0006397),484,56,16.43,+,3.41,2.71E-14,1.16E-11
+neural tube formation (GO:0001841),104,12,3.53,+,3.4,4.34E-04,1.83E-02
+positive regulation of chromosome organization (GO:2001252),174,20,5.91,+,3.39,6.52E-06,4.49E-04
+regulation of intracellular steroid hormone receptor signaling pathway (GO:0033143),87,10,2.95,+,3.39,1.31E-03,4.61E-02
+cytosolic transport (GO:0016482),148,17,5.02,+,3.38,3.19E-05,1.86E-03
+protein polymerization (GO:0051258),96,11,3.26,+,3.38,7.84E-04,3.04E-02
+regulation of axon extension (GO:0030516),96,11,3.26,+,3.38,7.84E-04,3.03E-02
+nuclear transport (GO:0051169),262,30,8.89,+,3.37,3.70E-08,4.60E-06
+regulation of chromatin organization (GO:1902275),203,23,6.89,+,3.34,1.69E-06,1.49E-04
+endomembrane system organization (GO:0010256),488,55,16.56,+,3.32,1.24E-13,4.25E-11
+peptidyl-lysine modification (GO:0018205),302,34,10.25,+,3.32,6.72E-09,9.14E-07
+chromatin assembly or disassembly (GO:0006333),169,19,5.74,+,3.31,1.47E-05,9.32E-04
+regulation of mRNA catabolic process (GO:0061013),214,24,7.26,+,3.3,1.19E-06,1.10E-04
+positive regulation of chromatin organization (GO:1905269),116,13,3.94,+,3.3,3.29E-04,1.42E-02
+nucleocytoplasmic transport (GO:0006913),259,29,8.79,+,3.3,9.66E-08,1.12E-05
+negative regulation of cytoskeleton organization (GO:0051494),152,17,5.16,+,3.3,4.33E-05,2.41E-03
+chromatin organization (GO:0006325),697,77,23.66,+,3.25,2.98E-18,2.94E-15
+regulation of extent of cell growth (GO:0061387),109,12,3.7,+,3.24,6.37E-04,2.54E-02
+microtubule organizing center organization (GO:0031023),100,11,3.39,+,3.24,1.06E-03,3.82E-02
+negative regulation of translation (GO:0017148),137,15,4.65,+,3.23,1.49E-04,7.27E-03
+RNA transport (GO:0050658),201,22,6.82,+,3.22,4.70E-06,3.43E-04
+nucleic acid transport (GO:0050657),201,22,6.82,+,3.22,4.70E-06,3.42E-04
+establishment of RNA localization (GO:0051236),203,22,6.89,+,3.19,5.43E-06,3.83E-04
+regulation of RNA splicing (GO:0043484),149,16,5.06,+,3.16,1.11E-04,5.69E-03
+chromatin assembly (GO:0031497),149,16,5.06,+,3.16,1.11E-04,5.67E-03
+negative regulation of cellular amide metabolic process (GO:0034249),159,17,5.4,+,3.15,7.22E-05,3.81E-03
+spindle organization (GO:0007051),225,24,7.64,+,3.14,2.65E-06,2.15E-04
+negative regulation of dephosphorylation (GO:0035305),114,12,3.87,+,3.1,9.14E-04,3.44E-02
+biological phase (GO:0044848),257,27,8.72,+,3.1,8.33E-07,8.01E-05
+mitotic cell cycle phase (GO:0098763),257,27,8.72,+,3.1,8.33E-07,7.96E-05
+cell cycle phase (GO:0022403),257,27,8.72,+,3.1,8.33E-07,7.92E-05
+regulation of protein-containing complex disassembly (GO:0043244),124,13,4.21,+,3.09,5.88E-04,2.37E-02
+establishment of vesicle localization (GO:0051650),201,21,6.82,+,3.08,1.47E-05,9.30E-04
+positive regulation of protein polymerization (GO:0032273),125,13,4.24,+,3.06,6.30E-04,2.52E-02
+negative regulation of supramolecular fiber organization (GO:1902904),154,16,5.23,+,3.06,1.58E-04,7.67E-03
+RNA localization (GO:0006403),222,23,7.53,+,3.05,6.61E-06,4.53E-04
+activation of GTPase activity (GO:0090630),116,12,3.94,+,3.05,1.05E-03,3.79E-02
+stem cell population maintenance (GO:0019827),126,13,4.28,+,3.04,6.75E-04,2.68E-02
+nucleosome assembly (GO:0006334),117,12,3.97,+,3.02,1.12E-03,3.99E-02
+protein import (GO:0017038),156,16,5.29,+,3.02,1.81E-04,8.55E-03
+posttranscriptional regulation of gene expression (GO:0010608),547,56,18.57,+,3.02,2.60E-12,6.12E-10
+positive regulation of intracellular protein transport (GO:0090316),186,19,6.31,+,3.01,4.90E-05,2.68E-03
+anaphase (GO:0051322),157,16,5.33,+,3,1.94E-04,9.09E-03
+mitotic anaphase (GO:0000090),157,16,5.33,+,3,1.94E-04,9.06E-03
+maintenance of cell number (GO:0098727),128,13,4.34,+,2.99,7.72E-04,3.02E-02
+regulation of translation (GO:0006417),368,37,12.49,+,2.96,2.26E-08,2.90E-06
+M phase (GO:0000279),160,16,5.43,+,2.95,2.36E-04,1.07E-02
+mitotic M phase (GO:0000087),160,16,5.43,+,2.95,2.36E-04,1.07E-02
+vesicle organization (GO:0016050),310,31,10.52,+,2.95,3.49E-07,3.58E-05
+vesicle localization (GO:0051648),211,21,7.16,+,2.93,2.85E-05,1.69E-03
+regulation of phosphatase activity (GO:0010921),181,18,6.14,+,2.93,1.05E-04,5.39E-03
+mRNA metabolic process (GO:0016071),694,68,23.55,+,2.89,6.94E-14,2.61E-11
+mitotic cell cycle (GO:0000278),761,74,25.83,+,2.87,7.14E-15,3.31E-12
+Golgi vesicle transport (GO:0048193),396,38,13.44,+,2.83,4.52E-08,5.52E-06
+microtubule cytoskeleton organization (GO:0000226),566,54,19.21,+,2.81,7.48E-11,1.39E-08
+mitotic cell cycle process (GO:1903047),685,65,23.25,+,2.8,9.69E-13,2.51E-10
+organelle localization by membrane tethering (GO:0140056),171,16,5.8,+,2.76,4.66E-04,1.92E-02
+regulation of carbohydrate metabolic process (GO:0006109),214,20,7.26,+,2.75,9.75E-05,5.04E-03
+negative regulation of organelle organization (GO:0010639),332,31,11.27,+,2.75,1.34E-06,1.22E-04
+regulation of supramolecular fiber organization (GO:1902903),375,35,12.73,+,2.75,2.83E-07,3.02E-05
+regulation of dephosphorylation (GO:0035303),216,20,7.33,+,2.73,1.10E-04,5.61E-03
+regulation of cellular amide metabolic process (GO:0034248),432,40,14.66,+,2.73,4.87E-08,5.86E-06
+positive regulation of intracellular transport (GO:0032388),227,21,7.7,+,2.73,7.53E-05,3.95E-03
+establishment or maintenance of cell polarity (GO:0007163),195,18,6.62,+,2.72,2.46E-04,1.11E-02
+macromolecule methylation (GO:0043414),250,23,8.49,+,2.71,3.77E-05,2.14E-03
+endoplasmic reticulum to Golgi vesicle-mediated transport (GO:0006888),196,18,6.65,+,2.71,2.61E-04,1.17E-02
+positive regulation of cell growth (GO:0030307),164,15,5.57,+,2.69,8.58E-04,3.29E-02
+regulation of intracellular transport (GO:0032386),361,33,12.25,+,2.69,9.47E-07,8.95E-05
+nucleobase-containing compound transport (GO:0015931),253,23,8.59,+,2.68,4.47E-05,2.47E-03
+establishment of organelle localization (GO:0051656),397,36,13.47,+,2.67,3.64E-07,3.68E-05
+chromosome organization (GO:0051276),1061,96,36.01,+,2.67,3.96E-17,3.13E-14
+neural tube development (GO:0021915),155,14,5.26,+,2.66,1.41E-03,4.87E-02
+regulation of microtubule-based process (GO:0032886),235,21,7.98,+,2.63,1.18E-04,5.97E-03
+membrane docking (GO:0022406),180,16,6.11,+,2.62,7.77E-04,3.02E-02
+regulation of mRNA stability (GO:0043488),192,17,6.52,+,2.61,5.62E-04,2.28E-02
+protein-DNA complex subunit organization (GO:0071824),294,26,9.98,+,2.61,2.26E-05,1.37E-03
+regulation of chromosome organization (GO:0033044),283,25,9.61,+,2.6,3.28E-05,1.89E-03
+RNA processing (GO:0006396),923,81,31.33,+,2.59,6.26E-14,2.41E-11
+organelle localization (GO:0051640),616,54,20.91,+,2.58,1.40E-09,2.10E-07
+viral gene expression (GO:0019080),172,15,5.84,+,2.57,1.34E-03,4.68E-02
+organelle fission (GO:0048285),370,32,12.56,+,2.55,5.38E-06,3.82E-04
+DNA conformation change (GO:0071103),313,27,10.62,+,2.54,3.44E-05,1.98E-03
+cellular protein-containing complex assembly (GO:0034622),859,74,29.15,+,2.54,2.41E-12,5.75E-10
+protein-containing complex localization (GO:0031503),257,22,8.72,+,2.52,2.31E-04,1.05E-02
+cytoskeleton organization (GO:0007010),1204,103,40.86,+,2.52,1.04E-16,7.43E-14
+nuclear division (GO:0000280),340,29,11.54,+,2.51,1.85E-05,1.15E-03
+regulation of intracellular protein transport (GO:0033157),258,22,8.76,+,2.51,2.35E-04,1.07E-02
+actin filament organization (GO:0007015),270,23,9.16,+,2.51,1.64E-04,7.91E-03
+DNA repair (GO:0006281),530,45,17.99,+,2.5,7.83E-08,9.15E-06
+regulation of response to DNA damage stimulus (GO:2001020),224,19,7.6,+,2.5,4.48E-04,1.87E-02
+DNA packaging (GO:0006323),201,17,6.82,+,2.49,9.03E-04,3.42E-02
+double-strand break repair (GO:0006302),202,17,6.86,+,2.48,9.50E-04,3.54E-02
+regulation of RNA stability (GO:0043487),202,17,6.86,+,2.48,9.50E-04,3.53E-02
+regulation of actin filament organization (GO:0110053),276,23,9.37,+,2.46,1.93E-04,9.09E-03
+positive regulation of cellular protein localization (GO:1903829),301,25,10.22,+,2.45,9.99E-05,5.15E-03
+protein deubiquitination (GO:0016579),278,23,9.44,+,2.44,2.06E-04,9.57E-03
+positive regulation of protein transport (GO:0051222),329,27,11.17,+,2.42,5.89E-05,3.16E-03
+developmental growth (GO:0048589),354,29,12.01,+,2.41,3.15E-05,1.85E-03
+ribonucleoprotein complex biogenesis (GO:0022613),465,38,15.78,+,2.41,2.61E-06,2.14E-04
+regulation of protein-containing complex assembly (GO:0043254),454,37,15.41,+,2.4,3.79E-06,2.89E-04
+growth (GO:0040007),357,29,12.12,+,2.39,3.57E-05,2.04E-03
+methylation (GO:0032259),308,25,10.45,+,2.39,1.29E-04,6.48E-03
+positive regulation of establishment of protein localization (GO:1904951),345,28,11.71,+,2.39,4.96E-05,2.71E-03
+DNA metabolic process (GO:0006259),781,63,26.51,+,2.38,1.26E-09,1.90E-07
+cellular response to DNA damage stimulus (GO:0006974),787,63,26.71,+,2.36,1.58E-09,2.35E-07
+RNA metabolic process (GO:0016070),1599,128,54.27,+,2.36,1.04E-18,1.50E-15
+nucleic acid metabolic process (GO:0090304),2232,177,75.75,+,2.34,6.95E-26,2.74E-22
+regulation of cytoskeleton organization (GO:0051493),519,41,17.62,+,2.33,1.72E-06,1.52E-04
+protein-DNA complex assembly (GO:0065004),254,20,8.62,+,2.32,8.68E-04,3.31E-02
+microtubule-based process (GO:0007017),803,63,27.25,+,2.31,3.81E-09,5.36E-07
+regulation of actin filament-based process (GO:0032970),396,31,13.44,+,2.31,4.37E-05,2.43E-03
+rhythmic process (GO:0048511),269,21,9.13,+,2.3,6.95E-04,2.75E-02
+protein modification by small protein removal (GO:0070646),295,23,10.01,+,2.3,3.88E-04,1.65E-02
+cell cycle (GO:0007049),1390,108,47.18,+,2.29,6.67E-15,3.19E-12
+regulation of GTPase activity (GO:0043087),490,38,16.63,+,2.28,9.06E-06,5.96E-04
+positive regulation of growth (GO:0045927),258,20,8.76,+,2.28,1.01E-03,3.70E-02
+positive regulation of GTPase activity (GO:0043547),413,32,14.02,+,2.28,3.65E-05,2.08E-03
+RNA catabolic process (GO:0006401),246,19,8.35,+,2.28,1.41E-03,4.87E-02
+protein-containing complex assembly (GO:0065003),1337,103,45.38,+,2.27,5.06E-14,2.00E-11
+positive regulation of cellular catabolic process (GO:0031331),390,30,13.24,+,2.27,7.35E-05,3.87E-03
+regulation of small GTPase mediated signal transduction (GO:0051056),327,25,11.1,+,2.25,3.66E-04,1.57E-02
+regulation of cellular protein localization (GO:1903827),564,43,19.14,+,2.25,2.39E-06,2.00E-04
+"transcription, DNA-templated (GO:0006351)",553,42,18.77,+,2.24,3.45E-06,2.69E-04
+nucleic acid-templated transcription (GO:0097659),554,42,18.8,+,2.23,3.56E-06,2.77E-04
+regulation of catabolic process (GO:0009894),1021,77,34.65,+,2.22,2.93E-10,4.86E-08
+viral process (GO:0016032),849,64,28.82,+,2.22,1.09E-08,1.45E-06
+supramolecular fiber organization (GO:0097435),597,45,20.26,+,2.22,2.38E-06,2.00E-04
+actin filament-based process (GO:0030029),598,45,20.3,+,2.22,2.42E-06,2.01E-04
+cell cycle phase transition (GO:0044770),293,22,9.94,+,2.21,1.07E-03,3.83E-02
+positive regulation of organelle organization (GO:0010638),590,44,20.02,+,2.2,3.70E-06,2.85E-04
+actin cytoskeleton organization (GO:0030036),524,39,17.78,+,2.19,1.17E-05,7.54E-04
+RNA biosynthetic process (GO:0032774),566,42,19.21,+,2.19,7.27E-06,4.90E-04
+organelle organization (GO:0006996),3574,261,121.3,+,2.15,8.68E-35,1.37E-30
+regulation of cellular component size (GO:0032535),384,28,13.03,+,2.15,3.57E-04,1.53E-02
+positive regulation of RNA metabolic process (GO:0051254),1718,125,58.31,+,2.14,3.16E-15,1.66E-12
+positive regulation of nucleobase-containing compound metabolic process (GO:0045935),1891,137,64.18,+,2.13,1.82E-16,1.25E-13
+regulation of organelle organization (GO:0033043),1188,86,40.32,+,2.13,1.91E-10,3.35E-08
+membrane organization (GO:0061024),956,69,32.45,+,2.13,1.46E-08,1.90E-06
+protein-containing complex subunit organization (GO:0043933),1581,114,53.66,+,2.12,1.41E-13,4.73E-11
+intracellular transport (GO:0046907),1499,108,50.88,+,2.12,6.37E-13,1.79E-10
+regulation of cellular localization (GO:0060341),836,60,28.37,+,2.11,2.30E-07,2.50E-05
+regulation of cellular response to stress (GO:0080135),685,49,23.25,+,2.11,2.54E-06,2.10E-04
+biological process involved in symbiotic interaction (GO:0044403),937,67,31.8,+,2.11,3.26E-08,4.08E-06
+cell cycle process (GO:0022402),1070,76,36.32,+,2.09,6.00E-09,8.23E-07
+regulation of mitotic cell cycle phase transition (GO:1901990),424,30,14.39,+,2.08,2.77E-04,1.22E-02
+positive regulation of nucleic acid-templated transcription (GO:1903508),1622,114,55.05,+,2.07,8.07E-13,2.23E-10
+"positive regulation of transcription, DNA-templated (GO:0045893)",1622,114,55.05,+,2.07,8.07E-13,2.19E-10
+positive regulation of RNA biosynthetic process (GO:1902680),1623,114,55.09,+,2.07,8.18E-13,2.19E-10
+regulation of actin cytoskeleton organization (GO:0032956),356,25,12.08,+,2.07,1.14E-03,4.03E-02
+regulation of cellular catabolic process (GO:0031329),855,60,29.02,+,2.07,3.39E-07,3.49E-05
+positive regulation of catabolic process (GO:0009896),460,32,15.61,+,2.05,2.66E-04,1.19E-02
+cellular component assembly (GO:0022607),2438,169,82.75,+,2.04,8.46E-19,1.34E-15
+negative regulation of cellular macromolecule biosynthetic process (GO:2000113),1487,103,50.47,+,2.04,2.23E-11,4.40E-09
+cell division (GO:0051301),492,34,16.7,+,2.04,1.71E-04,8.16E-03
+negative regulation of macromolecule biosynthetic process (GO:0010558),1498,103,50.84,+,2.03,4.05E-11,7.70E-09
+gene expression (GO:0010467),2186,150,74.19,+,2.02,3.72E-16,2.35E-13
+nucleobase-containing compound metabolic process (GO:0006139),2719,186,92.28,+,2.02,2.42E-20,6.37E-17
+"negative regulation of transcription, DNA-templated (GO:0045892)",1288,88,43.72,+,2.01,1.59E-09,2.34E-07
+negative regulation of phosphate metabolic process (GO:0045936),513,35,17.41,+,2.01,2.10E-04,9.73E-03
+negative regulation of nucleic acid-templated transcription (GO:1903507),1290,88,43.78,+,2.01,1.66E-09,2.43E-07
+negative regulation of RNA biosynthetic process (GO:1902679),1292,88,43.85,+,2.01,1.74E-09,2.52E-07
+negative regulation of phosphorus metabolic process (GO:0010563),514,35,17.45,+,2.01,2.14E-04,9.87E-03
+negative regulation of RNA metabolic process (GO:0051253),1394,94,47.31,+,1.99,8.79E-10,1.36E-07
+peptidyl-amino acid modification (GO:0018193),875,59,29.7,+,1.99,1.85E-06,1.61E-04
+negative regulation of gene expression (GO:0010629),964,65,32.72,+,1.99,5.48E-07,5.40E-05
+positive regulation of transcription by RNA polymerase II (GO:0045944),1206,81,40.93,+,1.98,1.62E-08,2.10E-06
+regulation of cell growth (GO:0001558),417,28,14.15,+,1.98,1.06E-03,3.82E-02
+cellular component biogenesis (GO:0044085),2701,181,91.67,+,1.97,7.89E-19,1.38E-15
+positive regulation of macromolecule biosynthetic process (GO:0010557),1853,124,62.89,+,1.97,1.55E-12,3.82E-10
+negative regulation of cellular component organization (GO:0051129),718,48,24.37,+,1.97,1.84E-05,1.14E-03
+regulation of mitotic cell cycle (GO:0007346),588,39,19.96,+,1.95,1.43E-04,7.01E-03
+negative regulation of cellular biosynthetic process (GO:0031327),1556,103,52.81,+,1.95,2.56E-10,4.30E-08
+regulation of cellular component biogenesis (GO:0044087),967,64,32.82,+,1.95,9.67E-07,9.08E-05
+regulation of cell cycle process (GO:0010564),772,51,26.2,+,1.95,1.41E-05,8.98E-04
+negative regulation of nucleobase-containing compound metabolic process (GO:0045934),1514,100,51.39,+,1.95,6.02E-10,9.50E-08
+positive regulation of anion transport (GO:1903793),502,33,17.04,+,1.94,5.13E-04,2.10E-02
+negative regulation of transcription by RNA polymerase II (GO:0000122),902,59,30.61,+,1.93,4.20E-06,3.13E-04
+heterocycle metabolic process (GO:0046483),2904,189,98.56,+,1.92,1.96E-18,2.21E-15
+protein transport (GO:0015031),1463,95,49.65,+,1.91,3.62E-09,5.15E-07
+regulation of cell cycle phase transition (GO:1901987),462,30,15.68,+,1.91,1.19E-03,4.21E-02
+negative regulation of biosynthetic process (GO:0009890),1588,103,53.9,+,1.91,8.84E-10,1.35E-07
+regulation of protein localization (GO:0032880),899,58,30.51,+,1.9,6.74E-06,4.58E-04
+positive regulation of cellular biosynthetic process (GO:0031328),1956,126,66.39,+,1.9,9.18E-12,1.93E-09
+regulation of cell cycle (GO:0051726),1196,77,40.59,+,1.9,2.25E-07,2.47E-05
+positive regulation of biosynthetic process (GO:0009891),1990,128,67.54,+,1.9,7.85E-12,1.70E-09
+protein modification by small protein conjugation or removal (GO:0070647),1031,66,34.99,+,1.89,2.01E-06,1.70E-04
+cellular response to stress (GO:0033554),1755,112,59.57,+,1.88,3.61E-10,5.88E-08
+peptide transport (GO:0015833),1492,95,50.64,+,1.88,1.13E-08,1.48E-06
+establishment of protein localization (GO:0045184),1558,99,52.88,+,1.87,5.99E-09,8.29E-07
+cellular aromatic compound metabolic process (GO:0006725),2948,187,100.06,+,1.87,5.55E-17,4.17E-14
+regulation of establishment of protein localization (GO:0070201),592,37,20.09,+,1.84,5.99E-04,2.41E-02
+amide transport (GO:0042886),1526,95,51.79,+,1.83,2.65E-08,3.37E-06
+regulation of protein transport (GO:0051223),567,35,19.24,+,1.82,1.06E-03,3.82E-02
+intracellular protein transport (GO:0006886),973,60,33.02,+,1.82,2.09E-05,1.28E-03
+chordate embryonic development (GO:0043009),601,37,20.4,+,1.81,9.32E-04,3.48E-02
+negative regulation of cellular metabolic process (GO:0031324),2580,158,87.57,+,1.8,5.54E-13,1.65E-10
+protein localization (GO:0008104),2158,132,73.24,+,1.8,9.90E-11,1.77E-08
+organic cyclic compound metabolic process (GO:1901360),3190,195,108.27,+,1.8,3.49E-16,2.30E-13
+negative regulation of nitrogen compound metabolic process (GO:0051172),2390,146,81.12,+,1.8,7.41E-12,1.62E-09
+intracellular signal transduction (GO:0035556),1575,96,53.46,+,1.8,6.14E-08,7.33E-06
+negative regulation of macromolecule metabolic process (GO:0010605),2861,171,97.1,+,1.76,3.07E-13,9.33E-11
+cellular component organization (GO:0016043),5775,344,196.01,+,1.76,4.33E-31,2.28E-27
+cellular component organization or biogenesis (GO:0071840),5999,355,203.61,+,1.74,5.57E-32,4.40E-28
+positive regulation of cellular component organization (GO:0051130),1135,67,38.52,+,1.74,2.60E-05,1.57E-03
+cellular nitrogen compound metabolic process (GO:0034641),3407,201,115.63,+,1.74,3.18E-15,1.62E-12
+regulation of cellular component organization (GO:0051128),2360,139,80.1,+,1.74,3.45E-10,5.66E-08
+regulation of nucleobase-containing compound metabolic process (GO:0019219),4007,235,136,+,1.73,6.13E-18,5.37E-15
+protein phosphorylation (GO:0006468),684,40,23.22,+,1.72,1.34E-03,4.69E-02
+regulation of transcription by RNA polymerase II (GO:0006357),2586,151,87.77,+,1.72,8.02E-11,1.47E-08
+macromolecule localization (GO:0033036),2550,148,86.55,+,1.71,1.98E-10,3.39E-08
+negative regulation of metabolic process (GO:0009892),3104,180,105.35,+,1.71,8.30E-13,2.18E-10
+regulation of RNA metabolic process (GO:0051252),3738,216,126.87,+,1.7,1.27E-15,7.71E-13
+establishment of localization in cell (GO:0051649),2365,136,80.27,+,1.69,2.41E-09,3.45E-07
+protein modification by small protein conjugation (GO:0032446),821,47,27.86,+,1.69,8.54E-04,3.28E-02
+positive regulation of nitrogen compound metabolic process (GO:0051173),3058,175,103.79,+,1.69,6.30E-12,1.40E-09
+nitrogen compound transport (GO:0071705),1801,103,61.13,+,1.69,3.62E-07,3.69E-05
+positive regulation of macromolecule metabolic process (GO:0010604),3431,196,116.45,+,1.68,1.54E-13,5.08E-11
+positive regulation of gene expression (GO:0010628),1072,61,36.38,+,1.68,1.47E-04,7.19E-03
+regulation of cellular macromolecule biosynthetic process (GO:2000112),3913,222,132.81,+,1.67,2.75E-15,1.50E-12
+regulation of hydrolase activity (GO:0051336),1308,74,44.39,+,1.67,3.11E-05,1.83E-03
+regulation of macromolecule biosynthetic process (GO:0010556),3944,223,133.86,+,1.67,3.32E-15,1.64E-12
+positive regulation of cellular metabolic process (GO:0031325),3238,183,109.9,+,1.67,4.36E-12,9.82E-10
+cellular macromolecule catabolic process (GO:0044265),912,51,30.95,+,1.65,7.97E-04,3.08E-02
+negative regulation of cellular protein metabolic process (GO:0032269),984,55,33.4,+,1.65,4.67E-04,1.92E-02
+regulation of gene expression (GO:0010468),4872,272,165.36,+,1.64,1.27E-18,1.54E-15
+regulation of anion transport (GO:0044070),860,48,29.19,+,1.64,1.14E-03,4.04E-02
+positive regulation of metabolic process (GO:0009893),3719,206,126.22,+,1.63,5.76E-13,1.68E-10
+cellular localization (GO:0051641),3003,166,101.92,+,1.63,3.73E-10,6.00E-08
+cellular protein localization (GO:0034613),1639,90,55.63,+,1.62,1.14E-05,7.38E-04
+"regulation of transcription, DNA-templated (GO:0006355)",3464,190,117.57,+,1.62,1.64E-11,3.37E-09
+regulation of nucleic acid-templated transcription (GO:1903506),3465,190,117.6,+,1.62,1.66E-11,3.36E-09
+regulation of cellular biosynthetic process (GO:0031326),4105,225,139.32,+,1.61,7.76E-14,2.85E-11
+regulation of RNA biosynthetic process (GO:2001141),3470,190,117.77,+,1.61,2.36E-11,4.59E-09
+cellular macromolecule localization (GO:0070727),1645,90,55.83,+,1.61,1.58E-05,9.90E-04
+regulation of biosynthetic process (GO:0009889),4189,228,142.18,+,1.6,8.54E-14,2.99E-11
+cellular macromolecule biosynthetic process (GO:0034645),1655,90,56.17,+,1.6,1.69E-05,1.06E-03
+negative regulation of protein metabolic process (GO:0051248),1056,57,35.84,+,1.59,9.51E-04,3.52E-02
+regulation of nitrogen compound metabolic process (GO:0051171),5688,304,193.05,+,1.57,1.23E-18,1.62E-15
+regulation of cellular metabolic process (GO:0031323),6106,326,207.24,+,1.57,1.83E-20,5.76E-17
+macromolecule biosynthetic process (GO:0009059),1696,90,57.56,+,1.56,3.95E-05,2.23E-03
+organic substance transport (GO:0071702),2170,115,73.65,+,1.56,2.80E-06,2.26E-04
+regulation of macromolecule metabolic process (GO:0060255),6301,333,213.86,+,1.56,2.59E-20,5.83E-17
+cellular macromolecule metabolic process (GO:0044260),4963,261,168.45,+,1.55,1.91E-14,8.61E-12
+regulation of cellular protein metabolic process (GO:0032268),2437,127,82.71,+,1.54,1.99E-06,1.70E-04
+regulation of primary metabolic process (GO:0080090),5892,307,199.98,+,1.54,3.83E-17,3.18E-14
+macromolecule metabolic process (GO:0043170),6193,322,210.19,+,1.53,2.78E-18,2.92E-15
+negative regulation of cellular process (GO:0048523),4909,255,166.61,+,1.53,2.38E-13,7.36E-11
+anion transport (GO:0006820),2287,118,77.62,+,1.52,8.22E-06,5.47E-04
+regulation of phosphate metabolic process (GO:0019220),1611,83,54.68,+,1.52,2.69E-04,1.20E-02
+regulation of phosphorus metabolic process (GO:0051174),1611,83,54.68,+,1.52,2.69E-04,1.20E-02
+cell development (GO:0048468),1615,83,54.81,+,1.51,2.73E-04,1.21E-02
+regulation of metabolic process (GO:0019222),6847,351,232.39,+,1.51,1.16E-19,2.29E-16
+positive regulation of molecular function (GO:0044093),1766,90,59.94,+,1.5,1.67E-04,8.05E-03
+positive regulation of catalytic activity (GO:0043085),1415,72,48.03,+,1.5,8.66E-04,3.31E-02
+vesicle-mediated transport (GO:0016192),1958,99,66.46,+,1.49,1.14E-04,5.77E-03
+regulation of protein metabolic process (GO:0051246),2595,130,88.08,+,1.48,8.63E-06,5.70E-04
+regulation of catalytic activity (GO:0050790),2516,125,85.39,+,1.46,1.94E-05,1.19E-03
+negative regulation of biological process (GO:0048519),5541,275,188.06,+,1.46,2.67E-12,6.19E-10
+regulation of developmental process (GO:0050793),2441,121,82.85,+,1.46,3.27E-05,1.89E-03
+macromolecule modification (GO:0043412),3240,160,109.97,+,1.45,1.23E-06,1.12E-04
+cellular protein modification process (GO:0006464),3019,149,102.47,+,1.45,3.95E-06,2.99E-04
+protein modification process (GO:0036211),3019,149,102.47,+,1.45,3.95E-06,2.98E-04
+positive regulation of cellular process (GO:0048522),5656,276,191.97,+,1.44,1.67E-11,3.34E-09
+cellular developmental process (GO:0048869),3562,173,120.9,+,1.43,1.09E-06,1.02E-04
+cell differentiation (GO:0030154),3509,169,119.1,+,1.42,2.62E-06,2.14E-04
+cellular protein metabolic process (GO:0044267),3643,175,123.64,+,1.42,1.76E-06,1.53E-04
+regulation of molecular function (GO:0065009),3178,152,107.86,+,1.41,1.67E-05,1.05E-03
+positive regulation of biological process (GO:0048518),6244,298,211.92,+,1.41,1.50E-11,3.12E-09
+nitrogen compound metabolic process (GO:0006807),6897,328,234.09,+,1.4,6.33E-13,1.82E-10
+biological process involved in interspecies interaction between organisms (GO:0044419),2118,100,71.89,+,1.39,1.03E-03,3.74E-02
+cellular metabolic process (GO:0044237),7570,357,256.93,+,1.39,3.86E-14,1.60E-11
+primary metabolic process (GO:0044238),7363,340,249.9,+,1.36,7.93E-12,1.69E-09
+response to stress (GO:0006950),3634,167,123.34,+,1.35,4.51E-05,2.49E-03
+developmental process (GO:0032502),5729,263,194.44,+,1.35,3.89E-08,4.79E-06
+system development (GO:0048731),4279,191,145.23,+,1.32,4.74E-05,2.61E-03
+regulation of signal transduction (GO:0009966),3047,136,103.42,+,1.32,9.82E-04,3.63E-02
+anatomical structure development (GO:0048856),5266,235,178.73,+,1.31,3.06E-06,2.43E-04
+organic substance metabolic process (GO:0071704),7878,350,267.38,+,1.31,4.80E-10,7.65E-08
+metabolic process (GO:0008152),8333,368,282.82,+,1.3,1.94E-10,3.37E-08
+multicellular organism development (GO:0007275),4877,215,165.53,+,1.3,2.65E-05,1.60E-03
+regulation of response to stimulus (GO:0048583),4240,186,143.91,+,1.29,1.76E-04,8.36E-03
+protein metabolic process (GO:0019538),4218,184,143.16,+,1.29,2.51E-04,1.13E-02
+localization (GO:0051179),5807,251,197.09,+,1.27,1.33E-05,8.52E-04
+establishment of localization (GO:0051234),4653,200,157.92,+,1.27,2.85E-04,1.25E-02
+regulation of cellular process (GO:0050794),11302,483,383.59,+,1.26,4.43E-14,1.79E-11
+regulation of biological process (GO:0050789),11856,506,402.4,+,1.26,1.63E-15,9.54E-13
+transport (GO:0006810),4501,191,152.77,+,1.25,8.21E-04,3.16E-02
+biological regulation (GO:0065007),12571,524,426.66,+,1.23,2.24E-14,9.80E-12
+cellular process (GO:0009987),15487,619,525.63,+,1.18,3.49E-18,3.24E-15
+biological_process (GO:0008150),17850,664,605.83,+,1.1,1.22E-12,3.11E-10
+small molecule metabolic process (GO:0044281),1623,31,55.09,-,0.56,4.14E-04,1.75E-02
+nervous system process (GO:0050877),1380,25,46.84,-,0.53,6.11E-04,2.45E-02
+carbohydrate derivative metabolic process (GO:1901135),1006,15,34.14,-,0.44,4.02E-04,1.70E-02
+carboxylic acid metabolic process (GO:0019752),828,12,28.1,-,0.43,1.02E-03,3.73E-02
+oxoacid metabolic process (GO:0043436),861,12,29.22,-,0.41,4.50E-04,1.88E-02
+organic acid metabolic process (GO:0006082),894,12,30.34,-,0.4,2.60E-04,1.17E-02
+cation transport (GO:0006812),826,11,28.03,-,0.39,4.72E-04,1.93E-02
+Unclassified (UNCLASSIFIED),2745,35,93.17,-,0.38,1.22E-12,3.06E-10
+transmembrane transport (GO:0055085),1292,15,43.85,-,0.34,7.64E-07,7.39E-05
+sensory perception (GO:0007600),973,10,33.02,-,0.3,5.39E-06,3.82E-04
+inorganic ion transmembrane transport (GO:0098660),664,6,22.54,-,0.27,9.14E-05,4.76E-03
+ion transmembrane transport (GO:0034220),1051,9,35.67,-,0.25,1.92E-07,2.14E-05
+inorganic cation transmembrane transport (GO:0098662),572,4,19.41,-,0.21,6.80E-05,3.62E-03
+detection of stimulus (GO:0051606),718,5,24.37,-,0.21,5.58E-06,3.92E-04
+G protein-coupled receptor signaling pathway (GO:0007186),1329,9,45.11,-,0.2,1.02E-10,1.81E-08
+cation transmembrane transport (GO:0098655),637,4,21.62,-,0.19,8.22E-06,5.45E-04
+humoral immune response (GO:0006959),386,2,13.1,-,0.15,4.38E-04,1.84E-02
+sensory perception of chemical stimulus (GO:0007606),542,2,18.4,-,0.11,3.97E-06,2.98E-04
+sensory perception of smell (GO:0007608),468,1,15.88,-,0.06,4.69E-06,3.44E-04
+detection of chemical stimulus involved in sensory perception (GO:0050907),486,1,16.49,-,0.06,2.13E-06,1.80E-04
+detection of chemical stimulus (GO:0009593),522,1,17.72,-,0.06,6.78E-07,6.64E-05
+detection of stimulus involved in sensory perception (GO:0050906),554,1,18.8,-,0.05,3.36E-07,3.49E-05
+detection of chemical stimulus involved in sensory perception of smell (GO:0050911),441,0,14.97,-, < 0.01,5.46E-07,5.42E-05
+organic acid catabolic process (GO:0016054),240,0,8.15,-, < 0.01,7.01E-04,2.75E-02
+carboxylic acid catabolic process (GO:0046395),224,0,7.6,-, < 0.01,9.97E-04,3.68E-02

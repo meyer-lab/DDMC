@@ -9,7 +9,7 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
-from .figureM4 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
+from .figureM4 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plot_GO
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 from ..logistic_regression import plotROC, plotClusterCoefficients
 
@@ -17,7 +17,7 @@ from ..logistic_regression import plotROC, plotClusterCoefficients
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 7), (2, 4), multz={0: 1})
+    ax, f = getSetup((17, 10), (3, 4), multz={0: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -35,71 +35,38 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
 
+    ### -------- Build a model to predict Cold- or Hot- tumor enriched samples  -------- ###
     # Import Cold-Hot Tumor data
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
+    cent1, y = FormatXYmatrices(centers.copy())
 
     # Normalize
-    centers = centers.T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
+    cent1 = cent1.T
+    cent1.iloc[:, :] = StandardScaler(with_std=False).fit_transform(cent1.iloc[:, :])
+    cent1 = cent1.T
 
     # Hypothesis Testing
-    centers["TIIC"] = y.values
-    pvals = calculate_mannW_pvals(centers, "TIIC", 1, 0)
+    cent1["TIIC"] = y.values
+    pvals = calculate_mannW_pvals(cent1, "TIIC", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    centers["TIIC"] = centers["TIIC"].replace(0, "CTE")
-    centers["TIIC"] = centers["TIIC"].replace(1, "HTE")
-    plot_clusters_binaryfeatures(centers, "TIIC", ax[0], pvals=pvals)
+    cent1["TIIC"] = cent1["TIIC"].replace(0, "CTE")
+    cent1["TIIC"] = cent1["TIIC"].replace(1, "HTE")
+    plot_clusters_binaryfeatures(cent1, "TIIC", ax[0], pvals=pvals, loc="lower left")
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=7, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", class_weight="balanced", l1_ratios=[0.4, 0.9])
-    plotROC(ax[1], lr, centers.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], y.values), title="TIIC")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-10, n_jobs=-1, penalty="l2", class_weight="balanced")
+    plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
+    plotClusterCoefficients(ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TIIC weights")
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [6, 17, 18, 20], ax[3], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [2, 6], ax[3], num_hits=2)
 
-    # Re-define centers
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
+    # GO
+    plot_GO(2, ax[4], n=4, title="GO Cluster 2")
+    plot_GO(6, ax[5], n=4, title="GO Cluster 6")
 
-    # Import Cold-Hot Tumor data
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    # Select clusters changed by STK status (from figure M4)
-    coi = [1, 5, 7, 9, 11, 12, 15, 19, 21, 22, 24]
+    ### -------- Build a model that predicts STK, build a model that predicts infiltration, and look for shared cluster dependencies -------- ###
+    centers, y = FormatXYmatrices(centers)
+    coi = [21, 24] # Top 2 lowest p-values of clusters changed by STK11 status
     centers = centers.loc[:, coi]
 
     # Normalize
@@ -108,11 +75,36 @@ def makeFigure():
     centers = centers.T
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[4], lr, centers.values, y, cv_folds=4, title="ROC TIIC")
-    plotClusterCoefficients(ax[5], lr.fit(centers, y.values), xlabels=coi, title="TIIC")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-10, n_jobs=-1, penalty="l2", class_weight="balanced")
+    plotROC(ax[6], lr, centers.values, y, cv_folds=4, title="ROC STIK11-TIIC")
+    plotClusterCoefficients(ax[7], lr.fit(centers, y.values), xlabels=coi, title="STK11-TIIC weights")
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [11, 19, 21, 24], ax[6], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [21, 24], ax[8], num_hits=1, title="STK11-TIIC kinases")
+
+    # GO
+    plot_GO(21, ax[9], n=4, title="GO Cluster 21")
+    plot_GO(24, ax[10], n=4, title="GO Cluster 24")
 
     return f
+
+
+def FormatXYmatrices(centers):
+    """Make sure Y matrix has the same matching samples has the signaling centers"""
+    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
+    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
+    l1 = list(centers.index)
+    l2 = list(y.index)
+    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
+    centers = centers.drop(dif)
+
+    # Transform to binary
+    y = y.replace("Cold-tumor enriched", 0)
+    y = y.replace("Hot-tumor enriched", 1)
+    y = np.squeeze(y)
+
+    # Remove NAT-enriched samples
+    centers = centers.drop(y[y == "NAT enriched"].index)
+    y = y.drop(y[y == "NAT enriched"].index).astype(int)
+    assert all(centers.index.values == y.index.values), "Samples don't match"
+    return centers, y
