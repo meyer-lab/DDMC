@@ -46,6 +46,8 @@ def makeFigure():
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
+    centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(0, "WT")
+    centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(1, "EGFRm/ALKf")
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
