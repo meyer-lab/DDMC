@@ -73,30 +73,3 @@ def plotSubstratesPerCluster(x, model, kinase, ax):
     data["Normalized substrate count"] = counters.values()
     sns.barplot(data=data, x="Cluster", y="Normalized substrate count", color="darkblue", ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
     ax.set_title(kinase + " Substrate Enrichment")
-
-
-def plotAKTprediction_EBDTvsCPTAC(ax, model, mcf7_model):
-    """Plot frobenius distance between AKT and clusters 1 and 4 from the EBDT MCF7 and CPTAC models, respectively"""
-    akt_ddmc = MeanCenter(model.predict_UpstreamKinases(), mc_col=True, mc_row=True)
-    akt_ddmc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1)
-    akt_ddmc = akt_ddmc.sort_values(by="Kinase").set_index("Kinase")[4]
-    akt_ebdt = MeanCenter(mcf7_model.predict_UpstreamKinases(), mc_col=True, mc_row=True)
-    akt_ebdt.columns = ["Kinase"] + list(np.arange(mcf7_model.ncl) + 1)
-    akt_ebdt = akt_ebdt.sort_values(by="Kinase").set_index("Kinase")[1]
-    data = pd.concat([akt_ddmc, akt_ebdt], axis=1)
-    data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
-
-    # Plot
-    sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-
-    # Annotate
-    for ii, cluster in enumerate([1, 4], start=1):
-        cluster = data[data["Cluster"] == cluster]
-        hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
-        hits.index = np.arange(hits.shape[0])
-        for jj in range(1):
-            ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.07), fontsize=8)
-    ax.legend().remove()
-    ax.set_title("Kinase vs Cluster Motif")
-    ax.set_xticklabels(["EBDT cluster 1", "CPTAC cluster 4"])
-    ax.set_xlabel("")
