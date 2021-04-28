@@ -18,7 +18,7 @@ from .figure2 import plotMotifs
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((11, 12), (3, 3), multz={0: 1})
+    ax, f = getSetup((12, 12), (3, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -133,10 +133,10 @@ def boxplot_PositionEnrichment(models, ax):
     enr = pd.DataFrame(enr)
     enr.columns = np.arange(models[0].ncl) + 1
     enr.insert(0, "Model", ["Data", "Mix", "Sequence"])
-    dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Position Enrichment")
-    sns.stripplot(data=dd, x="Model", y="Position Enrichment", ax=ax)
-    sns.boxplot(data=dd, x="Model", y="Position Enrichment", ax=ax)
-    ax.set_title("Total Residue Enrichment per Cluster")
+    dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Total information (bits)")
+    sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
+    sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
+    ax.set_title("Cumulative PSSM Enrichment")
 
 
 def plot_SpecificPeptide(models, ax, peptide="MGRKEsEEELE", yaxis=False):
@@ -171,8 +171,10 @@ def plot_SpecificPeptide(models, ax, peptide="MGRKEsEEELE", yaxis=False):
     mat = pd.DataFrame(mat)
     mat.columns = pds_names
     mat.insert(0, "Model", model_names)
-    data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="MSE")
-    sns.barplot(data=data, x="Peptide", y="MSE", hue="Model", ax=ax[0])
+    data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="p-signal MSE")
+    sns.barplot(data=data, x="Peptide", y="p-signal MSE", hue="Model", ax=ax[0])
+    ax[0].set_title("Peptide-to-Cluster signal MSE")
+    ax[0].legend(prop={'size': 8}, loc='lower right')
 
     # Plot Position Enrichment
     enr = np.zeros((3, 1), dtype=float)
@@ -184,7 +186,7 @@ def plot_SpecificPeptide(models, ax, peptide="MGRKEsEEELE", yaxis=False):
     enr.columns = ["Data", "Mix", "Sequence"]
     dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Position Enrichment")
     sns.barplot(data=dd, x="Model", y="Position Enrichment", ax=ax[1])
-    ax[1].set_title("Cluster Residue Enrichment")
+    ax[1].set_title("Cluster PSSM Enrichment")
 
     # Plot Motifs
     pssms = [model.pssms()[labels[ii]] for ii, model in enumerate(models)]

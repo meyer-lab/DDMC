@@ -17,7 +17,7 @@ from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 15), (3, 4), multz={1: 2, 6: 1, 10: 1})
+    ax, f = getSetup((14, 10), (3, 4), multz={1: 2, 6: 1, 10: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=0.8, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -55,7 +55,7 @@ def makeFigure():
     c_kmeans["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_kmeans, "Type", ["Tumor", "NAT"], ax[4], pvals=pvals)
+    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals)
 
     # Tumor vs NAT GMM
     ncl = 15
@@ -74,7 +74,7 @@ def makeFigure():
     c_gmm["Type"] = z.iloc[:, -1].values
     pvals = calculate_mannW_pvals(c_gmm, "Type", "NAT", "Tumor")
     pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_gmm, "Type", ["Tumor", "NAT"], ax[7], pvals=pvals)
+    plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals)
 
     return f
 
