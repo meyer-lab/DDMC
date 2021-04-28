@@ -73,7 +73,7 @@ def makeFigure():
     plotDistanceToUpstreamKinase(model, [7, 8, 14], ax[3], num_hits=3)
 
     # GO
-    plot_GO(7, ax[4], n=2, title="GO Cluster 7", max_width=20)
+    plot_GO(7, ax[4], n=1, title="GO Cluster 7", max_width=20)
     plot_GO(8, ax[5], n=5, title="GO Cluster 8", max_width=20)
 
     return f
