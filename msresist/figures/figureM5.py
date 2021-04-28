@@ -17,7 +17,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 9), (3, 3), multz={0: 1})
+    ax, f = getSetup((14, 6), (2, 4), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -70,12 +70,11 @@ def makeFigure():
     ax[2].legend(loc='lower right', prop={'size': 8})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [7, 8, 14, 22], ax[3], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [7, 8, 14], ax[3], num_hits=3)
 
     # GO
-    plot_GO(7, ax[4], n=2, title="GO Cluster 7")
-    plot_GO(8, ax[5], n=5, title="GO Cluster 8")
-    plot_GO(14, ax[6], n=4, title="GO Cluster 14")
-    plot_GO(22, ax[7], n=5, title="GO Cluster 22")
+    plot_GO(7, ax[4], n=2, title="GO Cluster 7", max_width=20)
+    plot_GO(8, ax[5], n=5, title="GO Cluster 8", max_width=20)
+    ax[6].remove()
 
     return f

@@ -6,10 +6,11 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
-from .figureM4 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plot_GO
+from .figureM4 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 from ..logistic_regression import plotROC, plotClusterCoefficients
 
@@ -17,7 +18,7 @@ from ..logistic_regression import plotROC, plotClusterCoefficients
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 4), multz={0: 1})
+    ax, f = getSetup((15, 7), (2, 4), multz={0: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -45,46 +46,25 @@ def makeFigure():
     cent1 = cent1.T
 
     # Hypothesis Testing
-    cent1["TIIC"] = y.values
-    pvals = calculate_mannW_pvals(cent1, "TIIC", 1, 0)
+    cent1["TI"] = y.values
+    pvals = calculate_mannW_pvals(cent1, "TI", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    cent1["TIIC"] = cent1["TIIC"].replace(0, "CTE")
-    cent1["TIIC"] = cent1["TIIC"].replace(1, "HTE")
-    plot_clusters_binaryfeatures(cent1, "TIIC", ax[0], pvals=pvals, loc="lower left")
+    cent1["TI"] = cent1["TI"].replace(0, "CTE")
+    cent1["TI"] = cent1["TI"].replace(1, "HTE")
+    plot_clusters_binaryfeatures(cent1, "TI", ax[0], pvals=pvals, loc="lower left")
 
     # Logistic Regression
     lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-10, n_jobs=-1, penalty="l2", class_weight="balanced")
-    plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TIIC")
-    plotClusterCoefficients(ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TIIC weights")
+    plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TI")
+    plotClusterCoefficients(ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TI weights")
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [2, 6], ax[3], num_hits=2)
+    plotDistanceToUpstreamKinase(model, [6, 17, 20, 21], ax[3], num_hits=2)
 
     # GO
-    plot_GO(2, ax[4], n=4, title="GO Cluster 2")
-    plot_GO(6, ax[5], n=4, title="GO Cluster 6")
-
-    ### -------- Build a model that predicts STK, build a model that predicts infiltration, and look for shared cluster dependencies -------- ###
-    centers, y = FormatXYmatrices(centers)
-    coi = [21, 24] # Top 2 lowest p-values of clusters changed by STK11 status
-    centers = centers.loc[:, coi]
-
-    # Normalize
-    centers = centers.T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
-
-    # Logistic Regression
-    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-10, n_jobs=-1, penalty="l2", class_weight="balanced")
-    plotROC(ax[6], lr, centers.values, y, cv_folds=4, title="ROC STIK11-TIIC")
-    plotClusterCoefficients(ax[7], lr.fit(centers, y.values), xlabels=coi, title="STK11-TIIC weights")
-
-    # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [21, 24], ax[8], num_hits=1, title="STK11-TIIC kinases")
-
-    # GO
-    plot_GO(21, ax[9], n=4, title="GO Cluster 21")
-    plot_GO(24, ax[10], n=4, title="GO Cluster 24")
+    plot_ImmuneGOs(6, ax[4], title="GO Cluster 6")
+    plot_ImmuneGOs(17, ax[5], title="GO Cluster 17", n=5, loc='lower left')
+    plot_ImmuneGOs(20, ax[6], title="GO Cluster 20", n=7, loc='lower left')
 
     return f
 
@@ -108,3 +88,27 @@ def FormatXYmatrices(centers):
     y = y.drop(y[y == "NAT enriched"].index).astype(int)
     assert all(centers.index.values == y.index.values), "Samples don't match"
     return centers, y
+
+
+def plot_ImmuneGOs(cluster, ax, title=False, max_width=25, n=False, loc='best'):
+    """Plot immune-related GO"""
+    go = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GO_C" + str(cluster) + ".csv")
+    im = go[go["GO biological process complete"].str.contains("immune")]
+    tc = go[go["GO biological process complete"].str.contains("T cell")]
+    bc = go[go["GO biological process complete"].str.contains("B cell")]
+    X = pd.concat([im, tc, bc])
+    X = X[["GO biological process complete", "upload_1 (fold Enrichment)", "upload_1 (over/under)"]]
+    if n:
+        X = X.iloc[:n, :]
+    X.columns = ["Biological process", "Fold Enrichment", "over/under"]
+    X = X[X["Fold Enrichment"] != ' < 0.01']
+    X["Fold Enrichment"] = X["Fold Enrichment"].astype(float)
+    X["Biological process"] = [s.split("(GO")[0] for s in X["Biological process"]]
+    X = X.sort_values(by="Fold Enrichment", ascending=False)
+    sns.barplot(data=X, y="Biological process", x="Fold Enrichment", ax=ax, hue="over/under", orient="h", color="black", **{"linewidth": 2}, **{"edgecolor": "black"})
+    ax.set_yticklabels(textwrap.fill(x.get_text(), max_width) for x in ax.get_yticklabels())
+    if title:
+        ax.set_title(title)
+    else:
+        ax.set_title("GO")
+    ax.legend(prop={'size': 10}, loc=loc)

@@ -112,7 +112,7 @@ def plot_NetPhoresScoreByKinGroup(cluster, ax, n=5, title=False):
         ax.set_title("NetPhorest Upstream Predictions")
 
 
-def plot_GO(cluster, ax, n=5, title=False):
+def plot_GO(cluster, ax, n=5, title=False, max_width=25):
     """Plot top scoring gene ontologies in a cluster"""
     X = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GO_C" + str(cluster) + ".csv")
     X = X[["GO biological process complete", "upload_1 (fold Enrichment)"]].iloc[:n, :]
@@ -120,7 +120,6 @@ def plot_GO(cluster, ax, n=5, title=False):
     X["Fold Enrichment"] = X["Fold Enrichment"].astype(float)
     X["Biological process"] = [s.split("(GO")[0] for s in X["Biological process"]]
     sns.barplot(data=X, y="Biological process", x="Fold Enrichment", ax=ax, orient="h", color="lightgrey", **{"linewidth": 2}, **{"edgecolor": "black"})
-    max_width = 25
     ax.set_yticklabels(textwrap.fill(x.get_text(), max_width) for x in ax.get_yticklabels())
     if title:
         ax.set_title(title)
