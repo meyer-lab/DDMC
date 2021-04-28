@@ -91,10 +91,10 @@ def makeFigure():
     return f
 
 
-def plot_NetPhoresScoreByKinGroup(cluster, ax, n=5, title=False):
+def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False):
     """Plot top scoring kinase groups"""
     NPtoCumScore = {}
-    X = pd.read_csv("msresist/data/cluster_analysis/CPTAC_NK_C" + str(cluster) + ".csv")
+    X = pd.read_csv(PathToFile)
     for ii in range(X.shape[0]):
         curr_NPgroup = X["netphorest_group"][ii]
         if curr_NPgroup not in NPtoCumScore.keys():
@@ -102,14 +102,14 @@ def plot_NetPhoresScoreByKinGroup(cluster, ax, n=5, title=False):
         else:
             NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
     X = pd.DataFrame.from_dict(NPtoCumScore, orient='index').reset_index()
-    X.columns = ["KIN Group", "Score"]
+    X.columns = ["KIN Group", "NetPhorest Score"]
     X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="Score", ascending=False).iloc[:n, :]
-    sns.barplot(data=X, y="KIN Group", x="Score", ax=ax, orient="h", color="darkblue", **{"linewidth": 2}, **{"edgecolor": "black"})
+    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
+    sns.barplot(data=X, y="KIN Group", x="NetPhorest Score", ax=ax, orient="h", color="darkblue", **{"linewidth": 2}, **{"edgecolor": "black"})
     if title:
         ax.set_title(title)
     else:
-        ax.set_title("NetPhorest Upstream Predictions")
+        ax.set_title("Kinase Predictions")
 
 
 def plot_GO(cluster, ax, n=5, title=False, max_width=25):
