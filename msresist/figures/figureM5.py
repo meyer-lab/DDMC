@@ -8,8 +8,8 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .figure2 import plotDistanceToUpstreamKinase
-from .figureM3 import find_patients_with_NATandTumor, merge_binary_vectors
-from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from .figureM3 import find_patients_with_NATandTumor
+from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 
@@ -17,7 +17,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4: 1})
+    ax, f = getSetup((14, 6), (2, 4), multz={0: 1, 2:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -46,7 +46,9 @@ def makeFigure():
     centers["STK11"] = y["STK11.mutation.status"].values
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
     pvals = build_pval_matrix(model.ncl, pvals)
-    plot_clusters_binaryfeatures(centers, "STK11", ["WT", "Mutant"], ax[0], pvals=pvals)
+    centers["STK11"] = centers["STK11"].replace(0, "STK11 WT")
+    centers["STK11"] = centers["STK11"].replace(1, "STK11m")
+    plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
     ax[0].legend(loc='lower left')
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
@@ -63,11 +65,15 @@ def makeFigure():
     # Logistic Regression
     centers["STK11"] = y["STK11.mutation.status"].values
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="l1", class_weight="balanced")
-    plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
+    plotClusterCoefficients(ax[1], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
+    plotROC(ax[2], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[2].legend(loc='lower right', prop={'size': 8})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [1, 8, 9, 14, 22], ax[3], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [7, 8, 14], ax[3], num_hits=3)
+
+    # GO
+    plot_GO(7, ax[4], n=1, title="GO Cluster 7", max_width=20)
+    plot_GO(8, ax[5], n=5, title="GO Cluster 8", max_width=20)
 
     return f

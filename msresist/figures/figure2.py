@@ -19,6 +19,7 @@ from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
 from ..clustering import MassSpecClustering, PSPLdict
+from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 
@@ -306,11 +307,15 @@ def store_cluster_members(X, model, filename, cols):
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
-def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, shuffle=False):
+def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, add_labels=False, title=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1) + [s for s in clusters if isinstance(s, str)]
+    if isinstance(add_labels, list):
+        ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1) + add_labels
+        clusters += add_labels
+    else:
+        ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1)
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
         sns.heatmap(data.T, ax=ax, xticklabels=data.index)
@@ -320,29 +325,31 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
 
     elif kind == "strip":
         data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
-        if not isinstance(shuffle, bool):
+        if isinstance(add_labels, list):
             # Actual ERK predictions
-            sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax[0])
-            AnnotateUpstreamKinases(clusters, ax[0], data, 1)
+            data["Cluster"] = data["Cluster"].astype(str)
+            d1 = data[~data["Cluster"].str.contains("_S")]
+            sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
+            cc = clusters.copy()
+            AnnotateUpstreamKinases([7, 9, 13, 21, "ERK2+"], ax[0], d1, 1)
 
             # Shuffled
-            actual_erks = data[data["Kinase"] == "ERK2"]
-            data_shuff = DistanceToShuffled(shuffle, model, additional_pssms, clusters)
-            data_shuff["Shuffled"] = [True] * 5
-            actual_erks["Shuffled"] = [False] * 5
-            dataS = pd.concat([actual_erks, data_shuff]).drop("Kinase", axis=1)
-            dataS["Cluster"] = dataS["Cluster"].astype(str)
-            clusters_shuff = list(data_shuff["Cluster"])
-            sns.stripplot(data=dataS, x="Cluster", y="Frobenius Distance", hue="Shuffled", ax=ax[1], size=10)
-            DrawArrows(ax[1], data_shuff, actual_erks)
-            ax[1].set_title("Shuffled Peptide Positions")
+            d2 = data[data["Kinase"] == "ERK2"]
+            d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
+            d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
+            sns.stripplot(data=d2, x="Cluster", y="Frobenius Distance", hue="Shuffled", ax=ax[1], size=8)
+            ax[1].set_title("ERK2 Shuffled Positions")
+            ax[1].legend(prop={'size': 10}, loc='lower left')
+            DrawArrows(ax[1], d2)
 
         else:
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
             AnnotateUpstreamKinases(clusters, ax, data, num_hits)
+            if title:
+                ax.set_title(title)
 
 
-def AnnotateUpstreamKinases(clusters, ax, data, num_hits):
+def AnnotateUpstreamKinases(clusters, ax, data, num_hits=1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
     for ii, c in enumerate(clusters, start=1):
@@ -355,44 +362,46 @@ def AnnotateUpstreamKinases(clusters, ax, data, num_hits):
     ax.set_title("Kinase vs Cluster Motif")
 
 
-def DrawArrows(ax, data_shuff, actual_erks):
+def DrawArrows(ax, d2):
+    data_shuff = d2[d2["Shuffled"] == True]
+    actual_erks = d2[d2["Shuffled"] == False]
     arrow_lengths = np.add(data_shuff["Frobenius Distance"].values, abs(actual_erks["Frobenius Distance"].values)) * -1
     for dp in range(data_shuff.shape[0]):
         ax.arrow(dp,
-                 data_shuff["Frobenius Distance"].iloc[dp] - 1,
+                 data_shuff["Frobenius Distance"].iloc[dp] - 0.1,
                  0,
-                 arrow_lengths[dp] + 2,
+                 arrow_lengths[dp] + 0.3,
                  head_width=0.25,
-                 head_length=0.45,
+                 head_length=0.15,
                  width=0.025,
                  fc='black',
                  ec='black')
 
 
-def DistanceToShuffled(shuffle, model, additional_pssms=False, clusters=False):
-    upK = list(shuffle.keys())[0]
-    ClustersToShuffle = list(np.array(list(shuffle.values())[0]) - 1)
-    pspl = PSPLdict()[upK]
+def ShuffleClusters(shuffle, model, additional=False):
+    """Returns PSSMs with shuffled positions"""
+    ClustersToShuffle = np.array(shuffle) - 1
     pssms = model.pssms(PsP_background=True)
-    fds = []
+    s_pssms = []
     for s in ClustersToShuffle:
-        pssm = np.delete(np.array(list(np.array(pssms[s]))), [5, 10], axis=1)
-        s_pssm = pssm[:, np.random.permutation(pssm.shape[1])]
-        fds.append(np.linalg.norm(s_pssm - pspl))
-    ClustersToShuffle = [str(i) for i in np.array(ClustersToShuffle) + 1]
+        mat = ShufflePositions(pssms[s])
+        s_pssms.append(mat)
 
-    if not isinstance(additional_pssms, bool):
-        for pssm in additional_pssms:
-            pssm = np.delete(np.array(list(np.array(pssm))), [5, 10], axis=1)
-            s_pssm = pssm[:, np.random.permutation(pssm.shape[1])]
-            fds.append(np.linalg.norm(s_pssm - pspl))
-            ClustersToShuffle.append("ERK2+")
+    if not isinstance(additional, bool):
+        mat = ShufflePositions(additional)
+        s_pssms.append(mat)
 
-    res = pd.DataFrame()
-    res["Kinase"] = [upK] * len(ClustersToShuffle)
-    res["Cluster"] = [str(c) for c in ClustersToShuffle]
-    res["Frobenius Distance"] = fds
-    return res
+    return s_pssms
+
+def ShufflePositions(pssm):
+    """Shuffles the positions of input PSSMs"""
+    pssm = np.array(pssm)
+    mat = pssm[:, np.random.permutation([0, 1, 2, 3, 4, 6, 7, 8, 9])]
+    mat = np.insert(mat, 5, pssm[:, 5], axis=1)
+    mat = np.insert(mat, 1, pssm[:, -1], axis=1)
+    mat = pd.DataFrame(mat)
+    mat.index = AAlist
+    return mat
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
