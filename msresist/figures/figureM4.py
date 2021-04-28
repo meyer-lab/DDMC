@@ -21,7 +21,7 @@ from ..pre_processing import MeanCenter
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 9), (3, 4), multz={0: 1, 4: 1})
+    ax, f = getSetup((14, 9), (3, 4), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -72,21 +72,11 @@ def makeFigure():
 
     # Cluster 11
     plot_GO(11, ax[7], n=5, title="GO Cluster 11")
-    """
-    No K-S interactions data about NEKs on PsP thus no predictions in NetPhorest...
-    Overrepresented genes in data set: 
-    - **AHNAK** : Reported as a tumor suppressor [@PMID:24662814] and as an inducer of EMT [@PMID:30258109], both via TGFBeta
-    - **TNS1**
-    - Others: AKAP12, CAV1&2, CAVIN1&2, CLDN18, ERICH3, HSPA12B
-    """
 
     # Cluster 12
     plot_GO(12, ax[8], n=3, title="GO Cluster 12")
-    plot_NetPhoresScoreByKinGroup(12, ax[9], n=5, title="NetPhorest Cluster 12")
-    """
-    Relevant Paper: https://mct.aacrjournals.org/content/11/4/994 shows that CX-4945, a clinical stage selective small molecule inhibitor of CK2, 
-    blocks the DNA repair response induced by gemcitabine and cisplatin and synergizes with these agents in models of ovarian cancer.
-    """
+
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[9], n=5, title="Cluster 12 Kinase Predictions")
 
     return f
 
