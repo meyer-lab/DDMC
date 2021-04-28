@@ -23,6 +23,7 @@ def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
     if xlabels:
         coefs_["Cluster"] = xlabels
     p = sns.barplot(ax=ax, x="Cluster", y="LR Coefficient", hue=hue, data=coefs_, color='darkblue', **{"linewidth": 0.5}, **{"edgecolor": "black"})
+
     p.tick_params(axis='x', labelsize=6)
     if title:
         ax.set_title(title)
