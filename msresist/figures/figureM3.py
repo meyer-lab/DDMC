@@ -6,6 +6,9 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import random
+from Bio.Align import substitution_matrices
+from numba import prange
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
@@ -18,7 +21,7 @@ from .figure2 import plotMotifs
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 12), (3, 3), multz={0: 1})
+    ax, f = getSetup((16, 8), (2, 5), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -26,19 +29,40 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Signaling
-
     # Plot mean AUCs per model
     models = plotAUCs(ax[0], return_models=True)
+    ax[0].legend(prop={"size":10}, loc="lower left")
 
     # Center to peptide distance
     barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
     # Position Enrichment
-    boxplot_PositionEnrichment(models, ax[2])
+    boxplot_TotalPositionEnrichment(models, ax[2])
 
-    # Motifs
-    plot_SpecificPeptide(models, ax[3:8], peptide="MGRKEsEEELE", yaxis=[0, 7])
+    # Signaling data
+    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = filter_NaNpeptides(X, tmt=2)
+    seqs = [s.upper() for s in X["Sequence"].values]
+    X["labels0"] = models[0].labels()
+    X["labels20"] = models[1].labels()
+    X["labels50"] = models[2].labels()
+
+    # p-signal MSE
+    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
+
+    # Total enrichment across positions
+    plot_PeptidePositionEnrichment(X, models, ax[4])
+
+    # Sequence-to-Cluster PAM250 distance
+    data = X[X["labels0"] == 22]["Sequence"].values
+    mix = X[X["labels0"] == 19]["Sequence"].values
+    seq = X[X["labels0"] == 15]["Sequence"].values
+    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
+
+    # Plot Motifs
+    clusters = [21, 18, 14]
+    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
+    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
 
     return f
 
@@ -122,7 +146,7 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
     ax.set_title("Peptide-to-Cluster signal MSE")
 
 
-def boxplot_PositionEnrichment(models, ax):
+def boxplot_TotalPositionEnrichment(models, ax):
     """Position enrichment of cluster PSSMs"""
     enr = np.zeros((3, 24), dtype=float)
     for ii, model in enumerate(models):
@@ -139,13 +163,7 @@ def boxplot_PositionEnrichment(models, ax):
     ax.set_title("Cumulative PSSM Enrichment")
 
 
-def plot_SpecificPeptide(models, ax, peptide="MGRKEsEEELE", yaxis=False):
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    seqs = [s.upper() for s in X["Sequence"].values]
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
+def plot_PeptideToClusterMSE(X, models, ax, peptide="MGRKEsEEELE", yaxis=False):
     if not peptide:
         peptide = random.sample(list(np.arange(len(models[0].labels()))), 1)
         X = pd.DataFrame(X.iloc[peptide, :])
@@ -167,30 +185,31 @@ def plot_SpecificPeptide(models, ax, peptide="MGRKEsEEELE", yaxis=False):
         idx_values = [w[1] for w in idx_values]
         mat[ii, 0] = mean_squared_error(d[0][idx_values], center[idx_values])
 
-    # Plot peptide-to-cluster p-signal MSE
+    # Plot
     mat = pd.DataFrame(mat)
     mat.columns = pds_names
     mat.insert(0, "Model", model_names)
     data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="p-signal MSE")
-    sns.barplot(data=data, x="Peptide", y="p-signal MSE", hue="Model", ax=ax[0])
-    ax[0].set_title("Peptide-to-Cluster signal MSE")
-    ax[0].legend(prop={'size': 8}, loc='lower right')
+    sns.barplot(data=data, x="Model", y="p-signal MSE", ax=ax)
+    ax.set_title("TBC1D5 S584-p signal MSE")
+    ax.legend(prop={'size': 8}, loc='lower right')
 
-    # Plot Position Enrichment
+
+def plot_PeptidePositionEnrichment(X, models, ax, peptide="MGRKEsEEELE"):
+    """Plot total sequence enrichment of a particular peptide across models"""
+    X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
+    X.columns = ["Sequence"] + list(X.columns)[1:]
+    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
     enr = np.zeros((3, 1), dtype=float)
     for ii, model in enumerate(models):
         pssms = model.pssms()
-        enr[ii, 0] = np.sum(pssms[labels[ii]].sum().drop(5))
+        enr[ii, 0] = np.sum(pssms[labels[ii] - 1].sum().drop(5))
 
     enr = pd.DataFrame(enr).T
     enr.columns = ["Data", "Mix", "Sequence"]
-    dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Position Enrichment")
-    sns.barplot(data=dd, x="Model", y="Position Enrichment", ax=ax[1])
-    ax[1].set_title("Cluster PSSM Enrichment")
-
-    # Plot Motifs
-    pssms = [model.pssms()[labels[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[2:5], titles=["Data", "Mix", "Sequence"], yaxis=yaxis)
+    dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Total Sequence Information (bits)")
+    sns.barplot(data=dd, x="Model", y="Total Sequence Information (bits)", ax=ax)
+    ax.set_title("TBC1D5 S584-p")
 
 
 def merge_binary_vectors(y, mutant1, mutant2):
@@ -256,3 +275,29 @@ def HotColdBehavior(centers):
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
     return y, centers
+
+
+def PAMdistSeqtoClusters(seq, clusters, ax):
+    pam250 = substitution_matrices.load("PAM250")
+    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
+    dists = []
+    for ii in range(pam250m.shape[0]):
+        for jj in range(pam250m.shape[1]):
+            pam250m[ii, jj] = pam250[ii, jj]
+
+    seq = np.array([pam250.alphabet.find(aa) for aa in seq], dtype=np.intp)
+    for seqs in clusters:
+        seqs = [s.upper() for s in seqs]
+        seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
+        out = np.zeros((seqs.shape[0]))
+        for ii in prange(seqs.shape[0]):
+            for zz in range(seqs.shape[1]):
+                out[ii] += pam250m[seq[zz], seqs[ii, zz]]
+        dists.append(np.mean(out))
+
+    # plot
+    data = pd.DataFrame()
+    data["mean PAM250 score"] = dists
+    data["Model"] = ["Data", "Mix", "Seq"]
+    sns.barplot(data=data, x="Model", y="mean PAM250 score", ax=ax)
+    ax.set_title("Sequence-to-Cluster Similarity")

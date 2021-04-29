@@ -40,36 +40,3 @@ def pos_to_motif(genes, pos, motif_size=5):
         motif[motif_size] = motif[motif_size].lower()
         motifs.append("".join(motif))
     return motifs, del_GeneToPos
-
-
-def plotSubstratesPerCluster(x, model, kinase, ax):
-    """Plot normalized number of substrates of a given kinase per cluster."""
-    # Refine PsP K-S data set
-    ks = pd.read_csv("msresist/data/Validations/Computational/Kinase_Substrate_Dataset.csv")
-    ks = ks[
-        (ks["KINASE"] == kinase) &
-        (ks["IN_VIVO_RXN"] == "X") &
-        (ks["IN_VIVO_RXN"] == "X") &
-        (ks["KIN_ORGANISM"] == "human") &
-        (ks["SUB_ORGANISM"] == "human")
-    ]
-
-    # Count matching substrates per cluster and normalize by cluster size
-    x["cluster"] = model.labels()
-    counters = {}
-    for i in range(1, max(x["cluster"]) + 1):
-        counter = 0
-        cl = x[x["cluster"] == i]
-        put_sub = list(zip(list(cl["Gene"]), list(list(cl["Position"]))))
-        psp = list(zip(list(ks["SUB_GENE"]), list(ks["SUB_MOD_RSD"])))
-        for sub_pos in put_sub:
-            if sub_pos in psp:
-                counter += 1
-        counters[i] = counter / cl.shape[0]
-
-    # Plot
-    data = pd.DataFrame()
-    data["Cluster"] = counters.keys()
-    data["Normalized substrate count"] = counters.values()
-    sns.barplot(data=data, x="Cluster", y="Normalized substrate count", color="darkblue", ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
-    ax.set_title(kinase + " Substrate Enrichment")
