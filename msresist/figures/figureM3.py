@@ -31,7 +31,7 @@ def makeFigure():
 
     # Plot mean AUCs per model
     models = plotAUCs(ax[0], return_models=True)
-    ax[0].legend(prop={"size":10}, loc="lower left")
+    ax[0].legend(prop={"size": 10}, loc="lower left")
 
     # Center to peptide distance
     barplot_PeptideToClusterDistances(models, ax[1], n=2000)
