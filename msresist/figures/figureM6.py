@@ -18,7 +18,7 @@ from ..logistic_regression import plotROC, plotClusterCoefficients
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 11), (3, 3), multz={0: 1, 3:1})
+    ax, f = getSetup((14, 11), (3, 3), multz={0: 1, 3: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})

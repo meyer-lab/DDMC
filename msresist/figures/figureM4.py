@@ -185,7 +185,8 @@ def ExportClusterFile(cluster):
     c["res"] = [s[0] for s in c["Position"]]
     c.insert(4, "Gene_Human", [s + "_HUMAN" for s in c["Gene"]])
     c = c.drop(["Position", "Cluster"], axis=1)
-    drop_list = ["NHSL2", "MAGI3", "SYNC", "LMNB2", "PLS3", "PI4KA", "SYNM", "MAP2", "MIA2", "SPRY4", "KSR1", "RUFY2", "MAP11", "MGA", "PRR12", "PCLO", "NCOR2", "BNIP3", "CENPF", "OTUD4", "RPA1", "CLU", "CDK18", "CHD1L", "DEF6", "MAST4", "SSR3"]
+    drop_list = ["NHSL2", "MAGI3", "SYNC", "LMNB2", "PLS3", "PI4KA", "SYNM", "MAP2", "MIA2", "SPRY4", "KSR1", "RUFY2", "MAP11",
+                 "MGA", "PRR12", "PCLO", "NCOR2", "BNIP3", "CENPF", "OTUD4", "RPA1", "CLU", "CDK18", "CHD1L", "DEF6", "MAST4", "SSR3"]
     for gene in drop_list:
         c = c[c["Gene"] != gene]
     c.to_csv("Cluster_" + str(cluster) + ".csv")
