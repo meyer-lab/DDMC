@@ -18,7 +18,7 @@ from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering, PSPLdict
+from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
@@ -331,7 +331,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
             d1 = data[~data["Cluster"].str.contains("_S")]
             sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
             cc = clusters.copy()
-            AnnotateUpstreamKinases([7, 9, 13, 21, "ERK2+"], ax[0], d1, 1)
+            AnnotateUpstreamKinases(model, [7, 9, 13, 21, "ERK2+"], ax[0], d1, 1)
 
             # Shuffled
             d2 = data[data["Kinase"] == "ERK2"]
@@ -344,18 +344,23 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
 
         else:
             sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-            AnnotateUpstreamKinases(clusters, ax, data, num_hits)
+            AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
             if title:
                 ax.set_title(title)
 
-
-def AnnotateUpstreamKinases(clusters, ax, data, num_hits=1):
+def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
+    pssms = model.pssms()
     for ii, c in enumerate(clusters, start=1):
         cluster = data[data.iloc[:, 1] == str(c)]
         hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
         hits.index = np.arange(hits.shape[0])
+        hits["Phosphoacceptor"] = [KinToPhosphotypeDict[kin] for kin in hits["Kinase"]]
+        cCP = pssms[c - 1].iloc[:, 5].idxmax()
+        if cCP == "S" or cCP == "T":
+            cCP = "S/T"
+        hits = hits[hits["Phosphoacceptor"] == cCP]
         for jj in range(num_hits):
             ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01), fontsize=8)
     ax.legend().remove()
