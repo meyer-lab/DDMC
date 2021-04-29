@@ -21,7 +21,7 @@ from ..pre_processing import MeanCenter
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 9), (3, 4), multz={0: 1, 4: 1})
+    ax, f = getSetup((14, 9), (3, 4), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -72,29 +72,19 @@ def makeFigure():
 
     # Cluster 11
     plot_GO(11, ax[7], n=5, title="GO Cluster 11")
-    """
-    No K-S interactions data about NEKs on PsP thus no predictions in NetPhorest...
-    Overrepresented genes in data set: 
-    - **AHNAK** : Reported as a tumor suppressor [@PMID:24662814] and as an inducer of EMT [@PMID:30258109], both via TGFBeta
-    - **TNS1**
-    - Others: AKAP12, CAV1&2, CAVIN1&2, CLDN18, ERICH3, HSPA12B
-    """
 
     # Cluster 12
     plot_GO(12, ax[8], n=3, title="GO Cluster 12")
-    plot_NetPhoresScoreByKinGroup(12, ax[9], n=5, title="NetPhorest Cluster 12")
-    """
-    Relevant Paper: https://mct.aacrjournals.org/content/11/4/994 shows that CX-4945, a clinical stage selective small molecule inhibitor of CK2, 
-    blocks the DNA repair response induced by gemcitabine and cisplatin and synergizes with these agents in models of ovarian cancer.
-    """
+
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[9], n=5, title="Cluster 12 Kinase Predictions")
 
     return f
 
 
-def plot_NetPhoresScoreByKinGroup(cluster, ax, n=5, title=False):
+def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False):
     """Plot top scoring kinase groups"""
     NPtoCumScore = {}
-    X = pd.read_csv("msresist/data/cluster_analysis/CPTAC_NK_C" + str(cluster) + ".csv")
+    X = pd.read_csv(PathToFile)
     for ii in range(X.shape[0]):
         curr_NPgroup = X["netphorest_group"][ii]
         if curr_NPgroup not in NPtoCumScore.keys():
@@ -102,14 +92,14 @@ def plot_NetPhoresScoreByKinGroup(cluster, ax, n=5, title=False):
         else:
             NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
     X = pd.DataFrame.from_dict(NPtoCumScore, orient='index').reset_index()
-    X.columns = ["KIN Group", "Score"]
+    X.columns = ["KIN Group", "NetPhorest Score"]
     X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="Score", ascending=False).iloc[:n, :]
-    sns.barplot(data=X, y="KIN Group", x="Score", ax=ax, orient="h", color="darkblue", **{"linewidth": 2}, **{"edgecolor": "black"})
+    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
+    sns.barplot(data=X, y="KIN Group", x="NetPhorest Score", ax=ax, orient="h", color="darkblue", **{"linewidth": 2}, **{"edgecolor": "black"})
     if title:
         ax.set_title(title)
     else:
-        ax.set_title("NetPhorest Upstream Predictions")
+        ax.set_title("Kinase Predictions")
 
 
 def plot_GO(cluster, ax, n=5, title=False, max_width=25):
