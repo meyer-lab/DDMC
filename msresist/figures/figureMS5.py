@@ -17,7 +17,7 @@ from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 7), (2, 3), multz={0: 1, 4: 1})
+    ax, f = getSetup((12, 9), (2, 2), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -66,8 +66,5 @@ def makeFigure():
     lr = LogisticRegressionCV(Cs=2, cv=12, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["EGFRm/ALKf"], cv_folds=4, title="ROC EGFRm/ALKf")
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["EGFRm/ALKf"].values), list(centers.columns[:-1]), title="EGFRm/ALKf")
-
-    # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [2, 13, 20], ax[3])
 
     return f

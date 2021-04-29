@@ -10,7 +10,7 @@ from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from .figure1 import plotPCA_scoresORloadings
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
-from ..validations import plotSubstratesPerCluster
+from .figureM4 import plot_NetPhoresScoreByKinGroup
 from ..clustering import compute_control_pssm
 from ..binomial import AAlist
 from ..pre_processing import filter_NaNpeptides
@@ -49,7 +49,7 @@ def makeFigure():
     ax[3].axis("off")
 
     # AKT substrates bar plot
-    plotSubstratesPerCluster(x, model, "Akt1", ax[4])
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/EBDT_NK_C1.csv", ax[4], title="Cluster 1 Kinase Predictions")
 
     # ERK2 White lab motif
     erk2 = pd.read_csv("msresist/data/Validations/Computational/ERK2_substrates.csv")
