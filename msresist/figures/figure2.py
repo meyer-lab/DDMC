@@ -348,6 +348,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
             if title:
                 ax.set_title(title)
 
+
 def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
@@ -368,7 +369,7 @@ def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
 
 
 def DrawArrows(ax, d2):
-    data_shuff = d2[d2["Shuffled"] == True]
+    data_shuff = d2[d2["Shuffled"]]
     actual_erks = d2[d2["Shuffled"] == False]
     arrow_lengths = np.add(data_shuff["Frobenius Distance"].values, abs(actual_erks["Frobenius Distance"].values)) * -1
     for dp in range(data_shuff.shape[0]):
@@ -397,6 +398,7 @@ def ShuffleClusters(shuffle, model, additional=False):
         s_pssms.append(mat)
 
     return s_pssms
+
 
 def ShufflePositions(pssm):
     """Shuffles the positions of input PSSMs"""
