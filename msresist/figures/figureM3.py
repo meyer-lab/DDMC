@@ -29,42 +29,51 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Plot mean AUCs per model
-    models = plotAUCs(ax[0], return_models=True)
-    ax[0].legend(prop={"size": 10}, loc="lower left")
-
-    # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
-
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
-
-    # Signaling data
+    from msresist.clustering import MassSpecClustering
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
-    seqs = [s.upper() for s in X["Sequence"].values]
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
+    model = MassSpecClustering(i, 24, 15, "Binomial").fit(d, nRepeats=0)
+    print("fit")
 
-    # p-signal MSE
-    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
 
-    # Total enrichment across positions
-    plot_PeptidePositionEnrichment(X, models, ax[4])
+    # # Plot mean AUCs per model
+    # models = plotAUCs(ax[0], return_models=True)
+    # ax[0].legend(prop={"size": 10}, loc="lower left")
 
-    # Sequence-to-Cluster PAM250 distance
-    data = X[X["labels0"] == 22]["Sequence"].values
-    mix = X[X["labels0"] == 19]["Sequence"].values
-    seq = X[X["labels0"] == 15]["Sequence"].values
-    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
+    # # Center to peptide distance
+    # barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
-    # Plot Motifs
-    clusters = [21, 18, 14]
-    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
+    # # Position Enrichment
+    # boxplot_TotalPositionEnrichment(models, ax[2])
 
-    return f
+    # # Signaling data
+    # X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    # X = filter_NaNpeptides(X, tmt=2)
+    # seqs = [s.upper() for s in X["Sequence"].values]
+    # X["labels0"] = models[0].labels()
+    # X["labels20"] = models[1].labels()
+    # X["labels50"] = models[2].labels()
+
+    # # p-signal MSE
+    # plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
+
+    # # Total enrichment across positions
+    # plot_PeptidePositionEnrichment(X, models, ax[4])
+
+    # # Sequence-to-Cluster PAM250 distance
+    # data = X[X["labels0"] == 22]["Sequence"].values
+    # mix = X[X["labels0"] == 19]["Sequence"].values
+    # seq = X[X["labels0"] == 15]["Sequence"].values
+    # PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
+
+    # # Plot Motifs
+    # clusters = [21, 18, 14]
+    # pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
+    # plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
+
+    # return f
 
 
 def plotAUCs(ax, return_models=False):
