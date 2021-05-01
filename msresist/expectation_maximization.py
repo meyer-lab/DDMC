@@ -32,9 +32,8 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
         if gmmIn is None:
             # Initialize model
             dists = list()
-            for _ in range(ncl):
+            for ii in range(ncl):
                 nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
-                dists.append(IndependentComponentsDistribution(nDist + [seqDist.copy()]))
 
                 if isinstance(seqDist, list):
                     nDist.append(seqDist[ii])
