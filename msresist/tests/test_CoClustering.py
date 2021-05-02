@@ -28,7 +28,7 @@ def test_wins(distance_method):
 
 
 @pytest.mark.parametrize("w", [0, 0.1, 1.0, 10.0])
-@pytest.mark.parametrize("ncl", [2, 5, 20])
+@pytest.mark.parametrize("ncl", [2, 5])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial", "PAM250_fixed"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
