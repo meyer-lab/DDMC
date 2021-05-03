@@ -82,15 +82,17 @@ def plotAUCs(ax, return_models=False):
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     folds = 5
-    weights = [0, 15, 20, 40, 50]
+    weights = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
-    aucs = np.zeros((3, 5), dtype=float)
+    aucs = np.zeros((3, len(weights)), dtype=float)
     models = []
     for ii, w in enumerate(weights):
         with open(path + str(w) + '_TMT2', 'rb') as m:
-            model = pickle.load(m)[0]
+            model = pickle.load(m)
+            if isinstance(model, list):
+                model = model[0]
 
-        if return_models and w in [0, 20, 50]:
+        if return_models and w in [0, 25, 50]:
             models.append(model)
 
         # Find and scale centers
