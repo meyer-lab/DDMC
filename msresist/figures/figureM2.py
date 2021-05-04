@@ -64,8 +64,10 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
     """Plot artificial missingness error across different number of clusters or weighths."""
     if kind == "Weight":
         data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+        title = "Weight Selection"
     elif kind == "Clusters":
         data = pd.read_csv("msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
+        title = "Cluster Number Selection"
 
     gm = pd.DataFrame(data.groupby([kind]).DDMC.apply(gmean)).reset_index()
     gm["DDMC"] = np.log(gm["DDMC"])
@@ -81,7 +83,7 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
     sns.regplot(x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA")
     ax.set_xticks(list(set(gm[kind])))
     ax.legend().remove()
-    ax.set_title("Cluster Number Selection")
+    ax.set_title(title)
     ax.set_ylabel("log(MSE)—Actual vs Imputed")
 
 
