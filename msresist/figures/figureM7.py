@@ -10,7 +10,7 @@ import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
-from .figureM4 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
+from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 from ..logistic_regression import plotROC, plotClusterCoefficients
 

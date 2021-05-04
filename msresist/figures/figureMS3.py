@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
-from .figureM3 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor, merge_binary_vectors
+from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor, merge_binary_vectors
 
 
 def makeFigure():

@@ -9,8 +9,8 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotDistanceToUpstreamKinase
-from .figureM3 import find_patients_with_NATandTumor
-from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO
+from .figureM4 import find_patients_with_NATandTumor
+from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 

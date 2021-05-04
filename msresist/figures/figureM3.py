@@ -10,7 +10,7 @@ from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from .figure1 import plotPCA_scoresORloadings
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
-from .figureM4 import plot_NetPhoresScoreByKinGroup
+from .figureM5 import plot_NetPhoresScoreByKinGroup
 from ..clustering import compute_control_pssm
 from ..binomial import AAlist
 from ..pre_processing import filter_NaNpeptides
