@@ -1,305 +1,333 @@
 """
-This creates Figure 3: Predictive performance of DDMC clusters using different weights
+This creates Figure 3: Evaluation of Imputating Missingness
 """
-
+import glob
 import pickle
+import random
 import numpy as np
+from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-import random
-from Bio.Align import substitution_matrices
-from numba import prange
-from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
+from statsmodels.multivariate.pca import PCA
 from .common import subplotLabel, getSetup
-from ..logistic_regression import plotROC
-from ..pre_processing import filter_NaNpeptides
-from .figure2 import plotMotifs
+from ..clustering import MassSpecClustering
+from ..pre_processing import filter_NaNpeptides, FindIdxValues
+from ..binomial import Binomial
+from ..pam250 import PAM250
+from ..expectation_maximization import EM_clustering
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 8), (2, 5), multz={0: 1})
-
-    # Add subplot labels
-    subplotLabel(ax)
+    ax, f = getSetup((15, 7), (2, 5), multz={0: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Plot mean AUCs per model
-    models = plotAUCs(ax[0], return_models=True)
-    ax[0].legend(prop={"size": 10}, loc="lower left")
+    # Add subplot labels
+    subplotLabel(ax)
 
-    # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+    # diagram explaining reconstruction process
+    ax[0].axis("off")
 
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
+    plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters")
+    plotErrorAcrossClustersOrWeightsAndMissingness(ax[2:5], "Clusters")
 
-    # Signaling data
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    seqs = [s.upper() for s in X["Sequence"].values]
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
-
-    # p-signal MSE
-    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
-
-    # Total enrichment across positions
-    plot_PeptidePositionEnrichment(X, models, ax[4])
-
-    # Sequence-to-Cluster PAM250 distance
-    data = X[X["labels0"] == 22]["Sequence"].values
-    mix = X[X["labels0"] == 19]["Sequence"].values
-    seq = X[X["labels0"] == 15]["Sequence"].values
-    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
-
-    # Plot Motifs
-    clusters = [21, 18, 14]
-    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
+    plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight")
+    plotErrorAcrossClustersOrWeightsAndMissingness(ax[6:9], "Weight")
 
     return f
 
 
-def plotAUCs(ax, return_models=False):
-    """Plot mean AUCs per phenotype across weights."""
-    # Signaling
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+# ---------------------------------------- Plotting functions ---------------------------------------- #
 
-    # Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+def plotMissingnessDensity(ax, d):
+    """Plot amount of missingness per peptide."""
+    p_nan_counts = []
+    for i in range(d.shape[1]):
+        p_nan_counts.append(np.count_nonzero(np.isnan(d[i])))
 
-    # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    sns.distplot(p_nan_counts, 10, ax=ax)
+    ax.set_title("Missingness distribution in LUAD")
+    ax.set_ylabel("Density")
+    ax.set_xlabel("Number of missing observations per peptide")
 
-    folds = 5
-    weights = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
-    aucs = np.zeros((3, len(weights)), dtype=float)
-    models = []
-    for ii, w in enumerate(weights):
-        with open(path + str(w) + '_TMT2', 'rb') as m:
-            model = pickle.load(m)
-            if isinstance(model, list):
-                model = model[0]
-
-        if return_models and w in [0, 25, 50]:
-            models.append(model)
-
-        # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
-
-        # STK11
-        aucs[0, ii] = plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, return_mAUC=True)
-
-        # EGFRm/ALKf
-        y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        aucs[1, ii] = plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=folds, return_mAUC=True)
-
-        # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        aucs[2, ii] = plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=folds, return_mAUC=True)
-
-    res = pd.DataFrame(aucs)
-    res.columns = [str(w) for w in weights]
-    res["Phenotype"] = ["STK11m", "EGFRm/ALKf", "Infiltration"]
-    data = pd.melt(frame=res, id_vars="Phenotype", value_vars=res.columns[:-1], var_name="Weight", value_name="mean AUC")
-    sns.lineplot(data=data, x="Weight", y="mean AUC", hue="Phenotype", ax=ax)
-    ax.set_title("Predictive performance by Weight")
-
-    if return_models:
-        return models
+    # Add Mean
+    textstr = "$u$ = " + str(np.round(np.mean(p_nan_counts), 1))
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def barplot_PeptideToClusterDistances(models, ax, n=3000):
-    """Compute and plot p-signal-to-center and motif to cluster distance for n peptides across weights."""
-    # Import signaling data, select random peptides, and find cluster assignments
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    random_peptides = np.random.choice(list(np.arange(len(models[0].labels()))), n, replace=False)
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
-    X = X.iloc[random_peptides, :]
-    labels = X.loc[:, ["labels0", "labels20", "labels50"]].values.T
-    d = X.select_dtypes(include=[float]).values
+def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
+    """Plot artificial missingness error across different number of clusters or weighths."""
+    if kind == "Weight":
+        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+    elif kind == "Clusters":
+        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
 
-    psDist = np.zeros((3, d.shape[0]))
-    for ii, model in enumerate(models):
-        for jj in range(d.shape[0]):
-            # Data distance
-            center = model.transform()[:, labels[ii, jj] - 1]
-            idx_values = np.argwhere(~np.isnan(d[jj, :]))
-            psDist[ii, jj] = mean_squared_error(d[jj, idx_values], center[idx_values])
+    gm = pd.DataFrame(data.groupby([kind]).DDMC.apply(gmean)).reset_index()
+    gm["DDMC"] = np.log(gm["DDMC"])
+    gm["Average"] = np.log(data.groupby([kind]).Average.apply(gmean).values)
+    gm["Zero"] = np.log(data.groupby([kind]).Zero.apply(gmean).values)
+    gm["Minimum"] = np.log(data.groupby([kind]).Minimum.apply(gmean).values)
+    gm["PCA"] = np.log(data.groupby([kind]).PCA.apply(gmean).values)
 
-    psDist = pd.DataFrame(psDist).T
-    psDist.columns = ["Data", "Mix", "Sequence"]
-    ps_data = pd.melt(psDist, value_vars=["Data", "Mix", "Sequence"], var_name="Model", value_name="p-signal MSE")
-    sns.barplot(data=ps_data, x="Model", y="p-signal MSE", ci=None, ax=ax)
-    ax.set_title("Peptide-to-Cluster signal MSE")
+    sns.regplot(x=kind, y="DDMC", data=gm, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax, label="DDMC seq")
+    sns.regplot(x=kind, y="Average", data=gm, color="black", scatter=False, ax=ax, label="Average")
+    sns.regplot(x=kind, y="Zero", data=gm, color="lightblue", scatter=False, ax=ax, label="Zero")
+    sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")
+    sns.regplot(x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA")
+    ax.set_xticks(list(set(gm[kind])))
+    ax.legend().remove()
+    ax.set_title("Cluster Number Selection")
+    ax.set_ylabel("log(MSE)—Actual vs Imputed")
 
 
-def boxplot_TotalPositionEnrichment(models, ax):
-    """Position enrichment of cluster PSSMs"""
-    enr = np.zeros((3, 24), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()
-        for jj in range(models[0].ncl):
-            enr[ii, jj] = np.sum(pssms[jj].sum().drop(5))
+def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
+    """Plot artificial missingness error across different number of clusters."""
+    if kind == "Weight":
+        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+        enu = [0, 5, 40]
+    elif kind == "Clusters":
+        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
+        enu = [6, 12, 24]
 
-    enr = pd.DataFrame(enr)
-    enr.columns = np.arange(models[0].ncl) + 1
-    enr.insert(0, "Model", ["Data", "Mix", "Sequence"])
-    dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Total information (bits)")
-    sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
-    sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
-    ax.set_title("Cumulative PSSM Enrichment")
+    data["Missingness"] = np.round(data["Missingness"], 0)
+    gm = pd.DataFrame(data.groupby(["Missingness", kind]).DDMC.apply(gmean)).reset_index()
+    gm["DDMC"] = np.log(gm["DDMC"])
+    gm["Average"] = np.log(data.groupby(["Missingness", kind]).Average.apply(gmean).values)
+    gm["Zero"] = np.log(data.groupby(["Missingness", kind]).Zero.apply(gmean).values)
+    gm["Minimum"] = np.log(data.groupby(["Missingness", kind]).Minimum.apply(gmean).values)
+    gm["PCA"] = np.log(data.groupby(["Missingness", kind]).PCA.apply(gmean).values)
 
-
-def plot_PeptideToClusterMSE(X, models, ax, peptide="MGRKEsEEELE", yaxis=False):
-    if not peptide:
-        peptide = random.sample(list(np.arange(len(models[0].labels()))), 1)
-        X = pd.DataFrame(X.iloc[peptide, :])
-    else:
-        X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-        X.columns = ["Sequence"] + list(X.columns)[1:]
-
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-
-    pds_names = [str(s).split("('")[1].split("')")[0].replace("'", "").replace(",", ";") for s in zip(list(X["Gene"]), list(X["Sequence"]))]
-    model_names = ["Data", "Mix", "Sequence"]
-
-    d = X.iloc[:, 4:-3].values.astype(float)
-    mat = np.zeros((3, 1))
-    for ii, model in enumerate(models):
-        # Distance Calculation
-        center = model.transform()[:, labels[ii] - 1]
-        idx_values = np.argwhere(~np.isnan(d))
-        idx_values = [w[1] for w in idx_values]
-        mat[ii, 0] = mean_squared_error(d[0][idx_values], center[idx_values])
-
-    # Plot
-    mat = pd.DataFrame(mat)
-    mat.columns = pds_names
-    mat.insert(0, "Model", model_names)
-    data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="p-signal MSE")
-    sns.barplot(data=data, x="Model", y="p-signal MSE", ax=ax)
-    ax.set_title("TBC1D5 S584-p signal MSE")
-    ax.legend(prop={'size': 8}, loc='lower right')
+    for ii, w in enumerate(enu):
+        d = gm[gm[kind] == w]
+        sns.regplot(x="Missingness", y="DDMC", data=d, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax[ii], label="DDMC seq")
+        sns.regplot(x="Missingness", y="Average", data=d, color="black", scatter=False, ax=ax[ii], label="Average")
+        sns.regplot(x="Missingness", y="Zero", data=d, color="lightblue", scatter=False, ax=ax[ii], label="Zero")
+        sns.regplot(x="Missingness", y="Minimum", data=d, color="green", scatter=False, ax=ax[ii], label="Minimum")
+        sns.regplot(x="Missingness", y="PCA", data=d, color="orange", scatter=False, ax=ax[ii], label="PCA")
+        ax[ii].legend().remove()
+        ax[ii].set_title(str(kind) + ": " + str(w))
+        ax[ii].set_ylabel("log(MSE)—Actual vs Imputed")
+    ax[0].legend(prop={'size':10}, loc='upper left')
 
 
-def plot_PeptidePositionEnrichment(X, models, ax, peptide="MGRKEsEEELE"):
-    """Plot total sequence enrichment of a particular peptide across models"""
-    X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-    X.columns = ["Sequence"] + list(X.columns)[1:]
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-    enr = np.zeros((3, 1), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()
-        enr[ii, 0] = np.sum(pssms[labels[ii] - 1].sum().drop(5))
+def plotErrorAcrossMissingnessLevels(ax):
+    """Plot artificial missingness error across verying missignenss."""
+    data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_AM_5runs_AvgMinZeroPCA.csv")
+    gm = pd.DataFrame(data.groupby(["Weight", "Missingness"]).DDMC.apply(gmean)).reset_index()
+    gm["DDMC"] = np.log(gm["DDMC"])
+    gm["Average"] = np.log(data.groupby(["Weight", "Missingness"]).Average.apply(gmean).values)
+    gm["Zero"] = np.log(data.groupby(["Weight", "Missingness"]).Zero.apply(gmean).values)
+    gm["Minimum"] = np.log(data.groupby(["Weight", "Missingness"]).Minimum.apply(gmean).values)
+    gm["PCA"] = np.log(data.groupby(["Weight", "Missingness"]).PCA.apply(gmean).values)
 
-    enr = pd.DataFrame(enr).T
-    enr.columns = ["Data", "Mix", "Sequence"]
-    dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Total Sequence Information (bits)")
-    sns.barplot(data=dd, x="Model", y="Total Sequence Information (bits)", ax=ax)
-    ax.set_title("TBC1D5 S584-p")
+    data = gm[gm["Weight"] == 0.0]
+    mix = gm[gm["Weight"] == 15]
+    seq = gm[gm["Weight"] == 30]
 
+    ylabel = "log(MSE)—Actual vs Imputed"
 
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
+    # Data
+    sns.regplot(x="Missingness", y="DDMC", data=data, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[0], label="DDMC data")
+    sns.regplot(x="Missingness", y="Average", data=data, color="black", scatter=False, ax=ax[0], label="Average")
+    sns.regplot(x="Missingness", y="Zero", data=data, color="lightblue", scatter=False, ax=ax[0], label="Zero")
+    sns.regplot(x="Missingness", y="Minimum", data=data, color="green", scatter=False, ax=ax[0], label="Minimum")
+    sns.regplot(x="Missingness", y="PCA", data=data, color="orange", scatter=False, ax=ax[0], label="PCA")
+    ax[0].legend()
+    ax[0].set_title("Data only")
+    ax[0].set_ylabel(ylabel)
 
+    # Mix
+    sns.regplot(x="Missingness", y="DDMC", data=mix, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[1], label="DDMC mix")
+    sns.regplot(x="Missingness", y="Average", data=mix, color="black", scatter=False, ax=ax[1], label="Average")
+    sns.regplot(x="Missingness", y="Zero", data=mix, color="lightblue", scatter=False, ax=ax[1], label="Zero")
+    sns.regplot(x="Missingness", y="Minimum", data=mix, color="green", scatter=False, ax=ax[1], label="Minimum")
+    sns.regplot(x="Missingness", y="PCA", data=mix, color="orange", scatter=False, ax=ax[1], label="PCA")
+    ax[1].legend()
+    ax[1].set_title("Mix")
+    ax[1].set_ylabel(ylabel)
 
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
-
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X
-
-
-def TransformCenters(model, X):
-    """For a given model, find centers and transform for regression."""
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers1 = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    centers2 = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
-    return centers1, centers2
+    # Seq
+    sns.regplot(x="Missingness", y="DDMC", data=seq, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[2], label="DDMC seq")
+    sns.regplot(x="Missingness", y="Average", data=seq, color="black", scatter=False, ax=ax[2], label="Average")
+    sns.regplot(x="Missingness", y="Zero", data=seq, color="lightblue", scatter=False, ax=ax[2], label="Zero")
+    sns.regplot(x="Missingness", y="Minimum", data=seq, color="green", scatter=False, ax=ax[2], label="Minimum")
+    sns.regplot(x="Missingness", y="PCA", data=seq, color="orange", scatter=False, ax=ax[2], label="PCA")
+    ax[2].legend()
+    ax[2].set_title("Mix")
+    ax[2].legend()
 
 
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
+# ---------------------------------------- Functions to calculate imputation errors ---------------------------------------- #
 
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
+def ErrorAcrossMissingnessLevels(distance_method, weights, n_runs=5, ncl=15, tmt=7):
+    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error
+    between the actual versus cluster center or imputed peptide average across patients. Only peptides >= 7 TMT experiments."""
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
+    X.index = np.arange(X.shape[0])
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    errors = np.zeros((X.shape[0] * len(weights) * n_runs, 9))
+    for ii in range(n_runs):
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        baseline_errors = ComputeBaselineErrors(X, data.T, nan_indices)
+        for jj, w in enumerate(weights):
+            model = MassSpecClustering(info, ncl, w, distance_method).fit(data, nRepeats=0)
+            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = model.SeqWeight
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
+            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
 
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
+    df = pd.DataFrame(errors)
+    df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"]
 
-    return y, centers
+    return df
 
 
-def PAMdistSeqtoClusters(seq, clusters, ax):
-    pam250 = substitution_matrices.load("PAM250")
-    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
-    dists = []
-    for ii in range(pam250m.shape[0]):
-        for jj in range(pam250m.shape[1]):
-            pam250m[ii, jj] = pam250[ii, jj]
+def ErrorAcrossNumberOfClusters(distance_method, weight, n_runs=5, tmt=7, n_clusters=[6, 9, 12, 15, 18, 21]):
+    """Calculate missingness error across different number of clusters."""
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
+    X.index = np.arange(X.shape[0])
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    errors = np.zeros((X.shape[0] * len(n_clusters) * n_runs, 9))
+    for ii in range(n_runs):
+        print("Run: ", ii)
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        baseline_errors = ComputeBaselineErrors(X, data.T, nan_indices)
+        for jj, cluster in enumerate(n_clusters):
+            print("#clusters: ", cluster)
+            model = MassSpecClustering(info, cluster, weight, distance_method).fit(data, nRepeats=0)
+            idx1 = X.shape[0] * ((ii * len(n_clusters)) + jj)
+            idx2 = X.shape[0] * ((ii * len(n_clusters)) + jj + 1)
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = cluster
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
+            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
 
-    seq = np.array([pam250.alphabet.find(aa) for aa in seq], dtype=np.intp)
-    for seqs in clusters:
-        seqs = [s.upper() for s in seqs]
-        seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
-        out = np.zeros((seqs.shape[0]))
-        for ii in prange(seqs.shape[0]):
-            for zz in range(seqs.shape[1]):
-                out[ii] += pam250m[seq[zz], seqs[ii, zz]]
-        dists.append(np.mean(out))
+    df = pd.DataFrame(errors)
+    df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Clusters", "DDMC", "Average", "Zero", "Minimum", "PCA"]
 
-    # plot
-    data = pd.DataFrame()
-    data["mean PAM250 score"] = dists
-    data["Model"] = ["Data", "Mix", "Seq"]
-    sns.barplot(data=data, x="Model", y="mean PAM250 score", ax=ax)
-    ax.set_title("Sequence-to-Cluster Similarity")
+    return df
+
+
+def ErrorAcrossWeights(distance_method, weights, ncl=20, n_runs=5, tmt=7):
+    """Calculate missingness error across different number of clusters."""
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
+    X.index = np.arange(X.shape[0])
+    md = X.copy()
+    X = X.select_dtypes(include=['float64']).values
+    errors = np.zeros((X.shape[0] * len(weights) * n_runs, 9))
+    for ii in range(n_runs):
+        print("Run :", ii)
+        vals = FindIdxValues(md)
+        md, nan_indices = IncorporateMissingValues(md, vals)
+        data = md.select_dtypes(include=['float64']).T
+        info = md.select_dtypes(include=['object'])
+        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
+        baseline_errors = ComputeBaselineErrors(X, data.T, nan_indices)
+        for jj, w in enumerate(weights):
+            print("Weight: ", w)
+            model = MassSpecClustering(info, ncl, w, distance_method).fit(data, nRepeats=0)
+            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
+            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
+            errors[idx1:idx2, 0] = ii
+            errors[idx1:idx2, 1] = md.index
+            errors[idx1:idx2, 2] = missingness
+            errors[idx1:idx2, 3] = model.SeqWeight
+            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
+            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
+
+    df = pd.DataFrame(errors)
+    df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"]
+
+    return df
+
+
+def IncorporateMissingValues(X, vals):
+    """Remove a random TMT experiment for each peptide. If a peptide already has the maximum amount of
+    missingness allowed, don't remove."""
+    d = X.select_dtypes(include=["float64"])
+    tmt_idx = []
+    for ii in range(d.shape[0]):
+        tmt = random.sample(list(set(vals[vals[:, 0] == ii][:, -1])), 1)[0]
+        a = vals[(vals[:, -1] == tmt) & (vals[:, 0] == ii)]
+        tmt_idx.append((a[0, 0], a[:, 1]))
+        X.iloc[a[0, 0], a[:, 1]] = np.nan
+    return X, tmt_idx
+
+
+def ComputeBaselineErrors(X, d, nan_indices):
+    """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
+    pc = PCA(d, ncomp=5, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
+    n = d.shape[0]
+    errors = np.empty((4 , n), dtype=float)
+    for ii in range(n):
+        idx = nan_indices[d.index[ii]]
+        v = X[idx[0], idx[1] - 4]
+        avE = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].mean()] * v.size
+        zeroE = [0.0] * v.size
+        minE = [d.iloc[ii, :][~np.isnan(d.iloc[ii, :])].min()] * v.size
+        pcaE = pc._adjusted_data[idx[0], idx[1] - 4]
+        assert all(~np.isnan(v)) and all(~np.isnan(avE)) and all(~np.isnan(zeroE)) and all(~np.isnan(minE)) and all(~np.isnan(pcaE)), (v, avE, zeroE, minE, pcaE)
+        errors[0, ii] = mean_squared_error(v, avE)
+        errors[1, ii] = mean_squared_error(v, zeroE)
+        errors[2, ii] = mean_squared_error(v, minE)
+        errors[3, ii] = mean_squared_error(v, pcaE)
+    return errors
+
+
+def ComputeModelError(X, data, nan_indices, model):
+    """Compute error between cluster center versus real value."""
+    ncl = model.ncl
+    labels = model.labels() - 1
+    centers = model.transform().T
+    n = data.shape[0]
+    errors = np.empty(n, dtype=float)
+    for ii in range(n):
+        idx = nan_indices[data.index[ii]]
+        v = X[idx[0], idx[1] - 4]
+        c = centers[labels[ii], idx[1] - 4]
+        assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
+        errors[ii] = mean_squared_error(v, c)
+    assert len(set(errors)) > 1, (centers, nan_indices[idx], v, c)
+    return errors
+
+
+def ComputeCenters(gmm, ncl):
+    """Calculate cluster averages"""
+
+    centers = np.zeros((ncl, gmm.distributions[0].d - 1))
+
+    for ii, distClust in enumerate(gmm.distributions):
+        for jj, dist in enumerate(distClust[:-1]):
+            centers[ii, jj] = dist.parameters[0]
+
+    return centers.T

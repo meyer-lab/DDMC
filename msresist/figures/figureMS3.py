@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure M2: Predictive performance of DDMC clusters using different weights
+This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
 import pickle
