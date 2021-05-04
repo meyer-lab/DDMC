@@ -63,9 +63,9 @@ def plotMissingnessDensity(ax, d):
 def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
     """Plot artificial missingness error across different number of clusters or weighths."""
     if kind == "Weight":
-        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
     elif kind == "Clusters":
-        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
+        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
 
     gm = pd.DataFrame(data.groupby([kind]).DDMC.apply(gmean)).reset_index()
     gm["DDMC"] = np.log(gm["DDMC"])
@@ -88,10 +88,10 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
 def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
     """Plot artificial missingness error across different number of clusters."""
     if kind == "Weight":
-        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
         enu = [0, 5, 40]
     elif kind == "Clusters":
-        data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
+        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
         enu = [6, 12, 24]
 
     data["Missingness"] = np.round(data["Missingness"], 0)
