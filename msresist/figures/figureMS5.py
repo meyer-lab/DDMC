@@ -10,8 +10,8 @@ from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
 from .figure2 import plotMotifs, plotDistanceToUpstreamKinase
-from .figureM3 import merge_binary_vectors, find_patients_with_NATandTumor
-from .figureM4 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
+from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
+from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 
 
 def makeFigure():
