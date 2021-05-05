@@ -1,27 +1,25 @@
 """
-This creates Figure 3: Predictive performance of DDMC clusters using different weights
+This creates Figure 2: Validations
 """
 
 import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import random
-from Bio.Align import substitution_matrices
-from numba import prange
-from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error
+from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
-from ..logistic_regression import plotROC
+from .figure1 import plotPCA_scoresORloadings
+from .figure2 import plotPCA, plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
+from .figureM5 import plot_NetPhoresScoreByKinGroup
+from ..clustering import compute_control_pssm
+from ..binomial import AAlist
 from ..pre_processing import filter_NaNpeptides
-from .figure2 import plotMotifs
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 8), (2, 5), multz={0: 1})
+    ax, f = getSetup((12, 12), (3, 3), multz={3: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -29,275 +27,42 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Plot mean AUCs per model
-    models = plotAUCs(ax[0], return_models=True)
-    ax[0].legend(prop={"size": 10}, loc="lower left")
+    x = preprocess_ebdt_mcf7()
+    with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
+        model = pickle.load(m)
 
-    # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+    centers = pd.DataFrame(model.transform())
+    centers.columns = np.arange(model.ncl) + 1
+    centers.insert(0, "Inhibitor", x.columns[3:])
+    centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
 
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
+    # PCA AKT
+    AKTi = ["Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X"]
+    centers["AKTi"] = [drug in AKTi for drug in centers["Inhibitor"]]
+    plotPCA(ax[:2], centers, 2, ["Inhibitor", "AKTi"], "Cluster", hue_scores="AKTi")
+    ax[0].legend(loc='lower left', prop={'size': 9}, title="AKTi", fontsize=9)
 
-    # Signaling data
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    seqs = [s.upper() for s in X["Sequence"].values]
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
+    # Upstream Kinases AKT EBDT
+    plotDistanceToUpstreamKinase(model, [1], ax=ax[2], num_hits=1)
 
-    # p-signal MSE
-    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
+    # first plot heatmap of clusters
+    ax[3].axis("off")
 
-    # Total enrichment across positions
-    plot_PeptidePositionEnrichment(X, models, ax[4])
+    # AKT substrates bar plot
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/EBDT_NK_C1.csv", ax[4], title="Cluster 1 Kinase Predictions")
 
-    # Sequence-to-Cluster PAM250 distance
-    data = X[X["labels0"] == 22]["Sequence"].values
-    mix = X[X["labels0"] == 19]["Sequence"].values
-    seq = X[X["labels0"] == 15]["Sequence"].values
-    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
+    # ERK2 White lab motif
+    erk2 = pd.read_csv("msresist/data/Validations/Computational/ERK2_substrates.csv")
+    erk2 = compute_control_pssm([s.upper() for s in erk2["Peptide"]])
+    erk2 = pd.DataFrame(np.clip(erk2, a_min=0, a_max=3))
+    erk2.index = AAlist
+    plotMotifs([erk2], axes=[ax[5]], titles=["ERK2"])
 
-    # Plot Motifs
-    clusters = [21, 18, 14]
-    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
+    # ERK2 prediction
+    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
+        model_cptac = pickle.load(p)[0]
+
+    s_pssms = ShuffleClusters([7, 9, 13, 21], model_cptac, additional=erk2)
+    plotDistanceToUpstreamKinase(model_cptac, [7, 9, 13, 21], additional_pssms=s_pssms + [erk2], add_labels=["7_S", "9_S", "13_S", "21_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
 
     return f
-
-
-def plotAUCs(ax, return_models=False):
-    """Plot mean AUCs per phenotype across weights."""
-    # Signaling
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-
-    # Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-
-    # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
-
-    folds = 5
-    weights = [0, 15, 20, 40, 50]
-    path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
-    aucs = np.zeros((3, 5), dtype=float)
-    models = []
-    for ii, w in enumerate(weights):
-        with open(path + str(w) + '_TMT2', 'rb') as m:
-            model = pickle.load(m)[0]
-
-        if return_models and w in [0, 20, 50]:
-            models.append(model)
-
-        # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
-
-        # STK11
-        aucs[0, ii] = plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, return_mAUC=True)
-
-        # EGFRm/ALKf
-        y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        aucs[1, ii] = plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=folds, return_mAUC=True)
-
-        # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        aucs[2, ii] = plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=folds, return_mAUC=True)
-
-    res = pd.DataFrame(aucs)
-    res.columns = [str(w) for w in weights]
-    res["Phenotype"] = ["STK11m", "EGFRm/ALKf", "Infiltration"]
-    data = pd.melt(frame=res, id_vars="Phenotype", value_vars=res.columns[:-1], var_name="Weight", value_name="mean AUC")
-    sns.lineplot(data=data, x="Weight", y="mean AUC", hue="Phenotype", ax=ax)
-    ax.set_title("Predictive performance by Weight")
-
-    if return_models:
-        return models
-
-
-def barplot_PeptideToClusterDistances(models, ax, n=3000):
-    """Compute and plot p-signal-to-center and motif to cluster distance for n peptides across weights."""
-    # Import signaling data, select random peptides, and find cluster assignments
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    random_peptides = np.random.choice(list(np.arange(len(models[0].labels()))), n, replace=False)
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
-    X = X.iloc[random_peptides, :]
-    labels = X.loc[:, ["labels0", "labels20", "labels50"]].values.T
-    d = X.select_dtypes(include=[float]).values
-
-    psDist = np.zeros((3, d.shape[0]))
-    for ii, model in enumerate(models):
-        for jj in range(d.shape[0]):
-            # Data distance
-            center = model.transform()[:, labels[ii, jj] - 1]
-            idx_values = np.argwhere(~np.isnan(d[jj, :]))
-            psDist[ii, jj] = mean_squared_error(d[jj, idx_values], center[idx_values])
-
-    psDist = pd.DataFrame(psDist).T
-    psDist.columns = ["Data", "Mix", "Sequence"]
-    ps_data = pd.melt(psDist, value_vars=["Data", "Mix", "Sequence"], var_name="Model", value_name="p-signal MSE")
-    sns.barplot(data=ps_data, x="Model", y="p-signal MSE", ci=None, ax=ax)
-    ax.set_title("Peptide-to-Cluster signal MSE")
-
-
-def boxplot_TotalPositionEnrichment(models, ax):
-    """Position enrichment of cluster PSSMs"""
-    enr = np.zeros((3, 24), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()
-        for jj in range(models[0].ncl):
-            enr[ii, jj] = np.sum(pssms[jj].sum().drop(5))
-
-    enr = pd.DataFrame(enr)
-    enr.columns = np.arange(models[0].ncl) + 1
-    enr.insert(0, "Model", ["Data", "Mix", "Sequence"])
-    dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Total information (bits)")
-    sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
-    sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
-    ax.set_title("Cumulative PSSM Enrichment")
-
-
-def plot_PeptideToClusterMSE(X, models, ax, peptide="MGRKEsEEELE", yaxis=False):
-    if not peptide:
-        peptide = random.sample(list(np.arange(len(models[0].labels()))), 1)
-        X = pd.DataFrame(X.iloc[peptide, :])
-    else:
-        X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-        X.columns = ["Sequence"] + list(X.columns)[1:]
-
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-
-    pds_names = [str(s).split("('")[1].split("')")[0].replace("'", "").replace(",", ";") for s in zip(list(X["Gene"]), list(X["Sequence"]))]
-    model_names = ["Data", "Mix", "Sequence"]
-
-    d = X.iloc[:, 4:-3].values.astype(float)
-    mat = np.zeros((3, 1))
-    for ii, model in enumerate(models):
-        # Distance Calculation
-        center = model.transform()[:, labels[ii] - 1]
-        idx_values = np.argwhere(~np.isnan(d))
-        idx_values = [w[1] for w in idx_values]
-        mat[ii, 0] = mean_squared_error(d[0][idx_values], center[idx_values])
-
-    # Plot
-    mat = pd.DataFrame(mat)
-    mat.columns = pds_names
-    mat.insert(0, "Model", model_names)
-    data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="p-signal MSE")
-    sns.barplot(data=data, x="Model", y="p-signal MSE", ax=ax)
-    ax.set_title("TBC1D5 S584-p signal MSE")
-    ax.legend(prop={'size': 8}, loc='lower right')
-
-
-def plot_PeptidePositionEnrichment(X, models, ax, peptide="MGRKEsEEELE"):
-    """Plot total sequence enrichment of a particular peptide across models"""
-    X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-    X.columns = ["Sequence"] + list(X.columns)[1:]
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-    enr = np.zeros((3, 1), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()
-        enr[ii, 0] = np.sum(pssms[labels[ii] - 1].sum().drop(5))
-
-    enr = pd.DataFrame(enr).T
-    enr.columns = ["Data", "Mix", "Sequence"]
-    dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Total Sequence Information (bits)")
-    sns.barplot(data=dd, x="Model", y="Total Sequence Information (bits)", ax=ax)
-    ax.set_title("TBC1D5 S584-p")
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
-
-
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
-
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X
-
-
-def TransformCenters(model, X):
-    """For a given model, find centers and transform for regression."""
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers1 = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    centers2 = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
-    return centers1, centers2
-
-
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    return y, centers
-
-
-def PAMdistSeqtoClusters(seq, clusters, ax):
-    pam250 = substitution_matrices.load("PAM250")
-    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
-    dists = []
-    for ii in range(pam250m.shape[0]):
-        for jj in range(pam250m.shape[1]):
-            pam250m[ii, jj] = pam250[ii, jj]
-
-    seq = np.array([pam250.alphabet.find(aa) for aa in seq], dtype=np.intp)
-    for seqs in clusters:
-        seqs = [s.upper() for s in seqs]
-        seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
-        out = np.zeros((seqs.shape[0]))
-        for ii in prange(seqs.shape[0]):
-            for zz in range(seqs.shape[1]):
-                out[ii] += pam250m[seq[zz], seqs[ii, zz]]
-        dists.append(np.mean(out))
-
-    # plot
-    data = pd.DataFrame()
-    data["mean PAM250 score"] = dists
-    data["Model"] = ["Data", "Mix", "Seq"]
-    sns.barplot(data=data, x="Model", y="mean PAM250 score", ax=ax)
-    ax.set_title("Sequence-to-Cluster Similarity")
