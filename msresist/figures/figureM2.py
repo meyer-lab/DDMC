@@ -106,11 +106,11 @@ def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
 
     for ii, w in enumerate(enu):
         d = gm[gm[kind] == w]
-        sns.regplot(x="Missingness", y="DDMC", data=d, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax[ii], label="DDMC seq")
-        sns.regplot(x="Missingness", y="Average", data=d, color="black", scatter=False, ax=ax[ii], label="Average")
-        sns.regplot(x="Missingness", y="Zero", data=d, color="lightblue", scatter=False, ax=ax[ii], label="Zero")
-        sns.regplot(x="Missingness", y="Minimum", data=d, color="green", scatter=False, ax=ax[ii], label="Minimum")
-        sns.regplot(x="Missingness", y="PCA", data=d, color="orange", scatter=False, ax=ax[ii], label="PCA")
+        sns.regplot(x="Missingness", y="DDMC", data=d, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax[ii], label="DDMC seq", lowess=True)
+        sns.regplot(x="Missingness", y="Average", data=d, color="black", scatter=False, ax=ax[ii], label="Average", lowess=True)
+        sns.regplot(x="Missingness", y="Zero", data=d, color="lightblue", scatter=False, ax=ax[ii], label="Zero", lowess=True)
+        sns.regplot(x="Missingness", y="Minimum", data=d, color="green", scatter=False, ax=ax[ii], label="Minimum", lowess=True)
+        sns.regplot(x="Missingness", y="PCA", data=d, color="orange", scatter=False, ax=ax[ii], label="PCA", lowess=True)
         ax[ii].legend().remove()
         ax[ii].set_title(str(kind) + ": " + str(w))
         ax[ii].set_ylabel("log(MSE)—Actual vs Imputed")
