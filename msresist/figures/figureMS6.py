@@ -14,7 +14,7 @@ from msresist.clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
-from .figureM3 import find_patients_with_NATandTumor, merge_binary_vectors
+from .figureM4 import find_patients_with_NATandTumor, merge_binary_vectors
 
 
 def makeFigure():

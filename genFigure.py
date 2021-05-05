@@ -57,22 +57,12 @@ if __name__ == "__main__":
         overlayCartoon(fdir + 'figure3.svg',
                        'msresist/data/Validations/Experimental/WesternBlots/YAP_DR_blot.svg', 50, 600, scalee=0.17)
 
-    if sys.argv[1] == "S6":
-        # Overlay Figure 3 cross validation diagram
-        overlayCartoon(fdir + 'figureS6.svg',
-                       f'{cartoon_dir}/cross_validation.svg', 60, 0, scalee=0.21)
-
-    if sys.argv[1] == "M2":
-        # Overlay Figure M6 heatmap
+    if sys.argv[1] == 'M2':
+        # Overlay Figure missingness cartoon
         overlayCartoon(fdir + 'figureM2.svg',
-                       f'{cartoon_dir}/heatmap_mcf7.svg', 25, 400, scalee=0.45)
+                       f'{cartoon_dir}/missingness_diagram.svg', 10, 30, scalee=0.28)
 
     if sys.argv[1] == "M4":
-        # Overlay Figure M3 heatmap
+        # Overlay Figure tumor vs NATs heatmap
         overlayCartoon(fdir + 'figureM4.svg',
-                       f'{cartoon_dir}/heatmap_fM3.svg', 50, 0, scalee=0.40)
-
-    if sys.argv[1] == 'MS7':
-        # Overlay Figure MS6 cartoon
-        overlayCartoon(fdir + 'figureMS7.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 0, 0, scalee=0.13)
+                       f'{cartoon_dir}/heatmap_fM4.svg', 50, 0, scalee=0.40)
