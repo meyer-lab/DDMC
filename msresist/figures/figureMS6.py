@@ -85,7 +85,7 @@ def makeFigure():
 def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
     """Generate ROC plots using DDMC, unclustered, k-means, and GMM for a particular feature."""
     # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.1])
 
     folds = 7
 
