@@ -114,7 +114,7 @@ def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
         ax[ii].legend().remove()
         ax[ii].set_title(str(kind) + ": " + str(w))
         ax[ii].set_ylabel("log(MSE)—Actual vs Imputed")
-    ax[0].legend(prop={'size':10}, loc='upper left')
+    ax[0].legend(prop={'size': 10}, loc='upper left')
 
 
 def plotErrorAcrossMissingnessLevels(ax):
@@ -190,10 +190,10 @@ def ErrorAcrossMissingnessLevels(distance_method, weights, n_runs=5, ncl=15, tmt
             errors[idx1:idx2, 2] = missingness
             errors[idx1:idx2, 3] = model.SeqWeight
             errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
-            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
-            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
-            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
-            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
+            errors[idx1:idx2, 5] = baseline_errors[0, :]  # Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :]  # Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :]  # Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :]  # PCA
 
     df = pd.DataFrame(errors)
     df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"]
@@ -226,10 +226,10 @@ def ErrorAcrossNumberOfClusters(distance_method, weight, n_runs=5, tmt=7, n_clus
             errors[idx1:idx2, 2] = missingness
             errors[idx1:idx2, 3] = cluster
             errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
-            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
-            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
-            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
-            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
+            errors[idx1:idx2, 5] = baseline_errors[0, :]  # Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :]  # Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :]  # Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :]  # PCA
 
     df = pd.DataFrame(errors)
     df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Clusters", "DDMC", "Average", "Zero", "Minimum", "PCA"]
@@ -262,10 +262,10 @@ def ErrorAcrossWeights(distance_method, weights, ncl=20, n_runs=5, tmt=7):
             errors[idx1:idx2, 2] = missingness
             errors[idx1:idx2, 3] = model.SeqWeight
             errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
-            errors[idx1:idx2, 5] = baseline_errors[0, :] #Average
-            errors[idx1:idx2, 6] = baseline_errors[1, :] #Zero
-            errors[idx1:idx2, 7] = baseline_errors[2, :] #Minimum
-            errors[idx1:idx2, 8] = baseline_errors[3, :] #PCA
+            errors[idx1:idx2, 5] = baseline_errors[0, :]  # Average
+            errors[idx1:idx2, 6] = baseline_errors[1, :]  # Zero
+            errors[idx1:idx2, 7] = baseline_errors[2, :]  # Minimum
+            errors[idx1:idx2, 8] = baseline_errors[3, :]  # PCA
 
     df = pd.DataFrame(errors)
     df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"]
@@ -290,7 +290,7 @@ def ComputeBaselineErrors(X, d, nan_indices):
     """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
     pc = PCA(d, ncomp=5, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
     n = d.shape[0]
-    errors = np.empty((4 , n), dtype=float)
+    errors = np.empty((4, n), dtype=float)
     for ii in range(n):
         idx = nan_indices[d.index[ii]]
         v = X[idx[0], idx[1] - 4]
