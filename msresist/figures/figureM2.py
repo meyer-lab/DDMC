@@ -286,9 +286,9 @@ def IncorporateMissingValues(X, vals):
     return X, tmt_idx
 
 
-def ComputeBaselineErrors(X, d, nan_indices):
+def ComputeBaselineErrors(X, d, nan_indices, ncomp=5):
     """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
-    pc = PCA(d, ncomp=5, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=ncomp, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
     n = d.shape[0]
     errors = np.empty((4, n), dtype=float)
     for ii in range(n):
