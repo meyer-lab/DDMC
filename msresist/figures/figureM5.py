@@ -21,7 +21,7 @@ from ..pre_processing import MeanCenter, filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (4, 4), multz={0: 1, 4: 1, 12:1, 14:1})
+    ax, f = getSetup((14, 13), (4, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -69,10 +69,10 @@ def makeFigure():
     plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[7], n=5, title="Cluster 12 Kinase Predictions")
 
     # GO Cluster 11
-    # plot_GO(11, ax[8], n=5, title="GO Cluster 11")
+    plot_GO(11, ax[7], n=5, title="GO Cluster 11")
 
     # GO Cluster 12
-    # plot_GO(12, ax[9], n=3, title="GO Cluster 12")
+    plot_GO(12, ax[8], n=3, title="GO Cluster 12")
 
     # Peptides Cluster 11
     y = pd.DataFrame(centers["Type"]).reset_index()
@@ -80,16 +80,12 @@ def makeFigure():
     X["cluster"] = model.labels()
     c11 = X[X["cluster"] == 11].drop("cluster", axis=1)
     d = {"PEAK1": "Y635-p", "ARHGEF7": "S703-p", "PAK4": "S181-p", "FLNA": "S2128-p", "PTPN11": "Y546-p", "HBA2": "T68-p", "HBB": "T88-p", "HBD":"S73-p", "HBG1": "S140-p"}
-    plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[8], title="Gas Transport & Cytoskletal remodeling")
+    plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[9], title="Gas Transport & Cytoskletal remodeling")
 
     # Peptides Cluster 12
     c12 = X[X["cluster"] == 12].drop("cluster", axis=1)
     d = {"MCM4": "S105-p", "MCM3": "T722-p", "TP53BP1": "T1672-p", "MCM4": "S105-p", "BRCA1": "S114-p", "ATRX":"S1348-p", "CDK1": "Y15-p;T14-p", "CDK12": "S102-p;S105-p", "CDK13": "S317-p", "CDK16": "S119-p", "CENPF": "T2997-p"}
-    plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[9], title="DNA Damage")
-
-    # String plots
-    ax[10].axis("off")
-    ax[11].axis("off")
+    plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[10], title="DNA Damage")
 
     return f
 
