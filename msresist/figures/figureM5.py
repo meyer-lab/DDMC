@@ -66,13 +66,13 @@ def makeFigure():
 
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [11, 12], ax[6], num_hits=3)
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[7], n=5, title="Cluster 12 Kinase Predictions")
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[7], n=5, title="Cluster 12 NetPhorest Predictions")
 
     # GO Cluster 11
-    # plot_GO(11, ax[8], n=5, title="GO Cluster 11")
+    plot_GO(11, ax[8], n=5, title="GO Cluster 11")
 
     # GO Cluster 12
-    # plot_GO(12, ax[9], n=3, title="GO Cluster 12")
+    plot_GO(12, ax[9], n=3, title="GO Cluster 12", max_width=20)
 
     # Peptides Cluster 11
     y = pd.DataFrame(centers["Type"]).reset_index()
@@ -80,16 +80,13 @@ def makeFigure():
     X["cluster"] = model.labels()
     c11 = X[X["cluster"] == 11].drop("cluster", axis=1)
     d = {"PEAK1": "Y635-p", "ARHGEF7": "S703-p", "PAK4": "S181-p", "FLNA": "S2128-p", "PTPN11": "Y546-p", "HBA2": "T68-p", "HBB": "T88-p", "HBD":"S73-p", "HBG1": "S140-p"}
-    plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[8], title="Gas Transport & Cytoskletal remodeling")
+    plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[10], title="Gas Transport & Cytoskletal remodeling")
+
 
     # Peptides Cluster 12
     c12 = X[X["cluster"] == 12].drop("cluster", axis=1)
     d = {"MCM4": "S105-p", "MCM3": "T722-p", "TP53BP1": "T1672-p", "MCM4": "S105-p", "BRCA1": "S114-p", "ATRX":"S1348-p", "CDK1": "Y15-p;T14-p", "CDK12": "S102-p;S105-p", "CDK13": "S317-p", "CDK16": "S119-p", "CENPF": "T2997-p"}
-    plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[9], title="DNA Damage")
-
-    # String plots
-    ax[10].axis("off")
-    ax[11].axis("off")
+    plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[11], title="DNA Damage")
 
     return f
 
@@ -101,7 +98,10 @@ def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False):
     p = list(d.values())
     dfs = []
     for i in range(len(n)):
-        dfs.append(pd.DataFrame(x.loc[n[i], p[i]]).T)
+        ptd = pd.DataFrame(x.loc[n[i], p[i]]).T
+        if ptd.shape[1] == 1:
+            ptd = ptd.T
+        dfs.append(ptd)
     c = pd.concat(dfs).reset_index()
     c.columns = ["Gene", "Position"] + list(c.columns[2:])
 
@@ -109,8 +109,13 @@ def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False):
     c["SeqPos"] = [s + ";" + c["Position"].iloc[i] for i, s in enumerate(c["Gene"])]
     c = c.set_index("SeqPos").T.iloc[4:, :].reset_index()
 
-    assert np.all(list(c["index"]) == list(y["Sample.ID"]))
-    c = c.reset_index().iloc[:, 2:]
+    try: 
+        assert np.all(list(c["index"]) == list(y["Sample.ID"]))
+    except:
+        l1 = list(c["index"])
+        l2 = list(y["Sample.ID"])
+        dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
+        c = c.set_index("index").drop(dif, axis=0)
 
     # Add feature
     f1, f2, f3 = feat_labels
