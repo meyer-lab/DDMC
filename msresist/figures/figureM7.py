@@ -10,15 +10,16 @@ import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
-from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
+from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plotPeptidesByFeature
 from .figure2 import plotPCA, plotDistanceToUpstreamKinase
 from ..logistic_regression import plotROC, plotClusterCoefficients
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 11), (3, 3), multz={0: 1, 3: 1})
+    ax, f = getSetup((14, 13), (4, 3), multz={0: 1, 3: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -31,12 +32,12 @@ def makeFigure():
         model = pickle.load(p)[0]
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = filter_NaNpeptides(X, tmt=2)
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
 
-    ### -------- Build a model to predict Cold- or Hot- tumor enriched samples  -------- ###
     # Import Cold-Hot Tumor data
     cent1, y = FormatXYmatrices(centers.copy())
 
@@ -62,9 +63,30 @@ def makeFigure():
     plotDistanceToUpstreamKinase(model, [6, 17, 20, 21], ax[3], num_hits=2)
 
     # GO
-    plot_ImmuneGOs(6, ax[4], title="GO Cluster 6")
+    plot_ImmuneGOs(6, ax[4], title="GO Cluster 6", n=5, max_width=20)
     plot_ImmuneGOs(17, ax[5], title="GO Cluster 17", n=5, loc='lower left')
-    plot_ImmuneGOs(20, ax[6], title="GO Cluster 20", n=7, loc='lower left')
+    plot_ImmuneGOs(20, ax[6], title="GO Cluster 20", n=7, loc='lower left', max_width=30)
+
+    # Representative Peptides Cluster 6
+    y.index = y.index.rename("Sample.ID")
+    y = y.reset_index().sort_values(by="Sample.ID")
+    X["cluster"] = model.labels()
+    c6 = X[X["cluster"] == 6].drop("cluster", axis=1)
+    c6 = c6.loc[:, ~c6.columns.str.endswith(".N")]
+    d = {"PAK1":"Y142-p", "ABL1": "S559-p", "DOCK11":"S306-p", "DOCK10": "S1289-p;S1292-p", "LCK":"Y192-p", "SYK":"S297-p", "TSC1":"Y508-p", "RC3H2": "S1017-p", "CTNNB1":"S552-p"} #B cell homeo PAK-DOCK10; T cell diff the rest
+    plotPeptidesByFeature(c6, y, d, ["Infiltration Status", "HTE", "CTE"], ax[7], title="Cluster 6", TwoCols=True, legend_size=7)
+
+    # Representative Peptides Cluster 17
+    c17 = X[X["cluster"] == 17].drop("cluster", axis=1)
+    c17 = c17.loc[:, ~c17.columns.str.endswith(".N")]
+    d = {"CD44":"S697-p", "SDK1":"T2111-p", "PRKCD":"S130-p", "PLD1": "T495-p", "CAPN1":"T89-p", "GSTP1":"T35-p"}
+    plotPeptidesByFeature(c17, y, d, ["Infiltration Status", "HTE", "CTE"], ax[8], title="Cluster 17")
+
+    # Representative Peptides Cluster 20
+    c20 = X[X["cluster"] == 20].drop("cluster", axis=1)
+    c20 = c20.loc[:, ~c20.columns.str.endswith(".N")]
+    d = {"RCAN1":"S210-p", "NFATC3":"S366-p", "EP300":"S1716-p", "HSP90AA1":"S623-p", "TAB3":"S80-p", "LYN":"Y316-p", "SDK1":"Y2096-p"}
+    plotPeptidesByFeature(c20, y, d, ["Infiltration Status", "HTE", "CTE"], ax[9], title="Cluster 20")
 
     return f
 
