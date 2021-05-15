@@ -35,7 +35,7 @@ def makeFigure():
     plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters")
     plotErrorAcrossClustersOrWeightsAndMissingness(ax[2:5], "Clusters")
 
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight", legend=False)
     plotErrorAcrossClustersOrWeightsAndMissingness(ax[6:9], "Weight")
 
     return f
@@ -60,7 +60,7 @@ def plotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
+def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, legend=True):
     """Plot artificial missingness error across different number of clusters or weighths."""
     if kind == "Weight":
         data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
@@ -82,9 +82,11 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind):
     sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")
     sns.regplot(x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA")
     ax.set_xticks(list(set(gm[kind])))
-    ax.legend().remove()
     ax.set_title(title)
     ax.set_ylabel("log(MSE)—Actual vs Imputed")
+    ax.legend(prop={'size':10}, loc='upper left')
+    if not legend:
+        ax.legend().remove()
 
 
 def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
@@ -114,7 +116,6 @@ def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
         ax[ii].legend().remove()
         ax[ii].set_title(str(kind) + ": " + str(w))
         ax[ii].set_ylabel("log(MSE)—Actual vs Imputed")
-    ax[0].legend(prop={'size': 10}, loc='upper left')
 
 
 def plotErrorAcrossMissingnessLevels(ax):
@@ -286,9 +287,9 @@ def IncorporateMissingValues(X, vals):
     return X, tmt_idx
 
 
-def ComputeBaselineErrors(X, d, nan_indices):
+def ComputeBaselineErrors(X, d, nan_indices, ncomp=5):
     """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
-    pc = PCA(d, ncomp=5, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
+    pc = PCA(d, ncomp=ncomp, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
     n = d.shape[0]
     errors = np.empty((4, n), dtype=float)
     for ii in range(n):
