@@ -561,6 +561,7 @@ metabolic process (GO:0008152),8333,618,534.9,+,1.16,7.56E-06,3.90E-04
 response to stimulus (GO:0050896),8496,627,545.36,+,1.15,1.19E-05,5.94E-04
 cellular process (GO:0009987),15487,1132,994.12,+,1.14,1.70E-19,6.53E-17
 biological_process (GO:0008150),17850,1252,1145.8,+,1.09,9.70E-21,4.78E-18
+immune response (GO:0006955),1972,90,126.58,-,0.71,6.53E-04,2.00E-02
 system process (GO:0003008),2040,84,130.95,-,0.64,9.76E-06,4.92E-04
 small molecule metabolic process (GO:0044281),1623,63,104.18,-,0.6,1.52E-05,7.35E-04
 cation transport (GO:0006812),826,29,53.02,-,0.55,5.40E-04,1.70E-02
@@ -575,6 +576,7 @@ ion transmembrane transport (GO:0034220),1051,33,67.46,-,0.49,5.59E-06,2.92E-04
 oxoacid metabolic process (GO:0043436),861,27,55.27,-,0.49,5.01E-05,2.11E-03
 organic acid metabolic process (GO:0006082),894,27,57.39,-,0.47,1.43E-05,6.99E-04
 cellular amide metabolic process (GO:0043603),808,24,51.87,-,0.46,2.88E-05,1.29E-03
+adaptive immune response (GO:0002250),649,19,41.66,-,0.46,1.84E-04,6.45E-03
 carbohydrate derivative metabolic process (GO:1901135),1006,29,64.58,-,0.45,1.25E-06,7.59E-05
 extracellular matrix organization (GO:0030198),382,10,24.52,-,0.41,1.79E-03,4.65E-02
 extracellular structure organization (GO:0043062),383,10,24.58,-,0.41,1.79E-03,4.65E-02
@@ -588,6 +590,7 @@ sensory perception (GO:0007600),973,15,62.46,-,0.24,1.45E-12,2.33E-10
 adenylate cyclase-modulating G protein-coupled receptor signaling pathway (GO:0007188),220,3,14.12,-,0.21,9.86E-04,2.80E-02
 glycosylation (GO:0070085),255,3,16.37,-,0.18,1.79E-04,6.31E-03
 sulfur compound metabolic process (GO:0006790),369,4,23.69,-,0.17,2.59E-06,1.46E-04
+humoral immune response (GO:0006959),386,4,24.78,-,0.16,8.65E-07,5.46E-05
 glycoprotein biosynthetic process (GO:0009101),300,3,19.26,-,0.16,1.50E-05,7.30E-04
 detection of stimulus (GO:0051606),718,7,46.09,-,0.15,3.12E-12,4.64E-10
 protein glycosylation (GO:0006486),242,2,15.53,-,0.13,6.28E-05,2.58E-03
@@ -598,6 +601,7 @@ sensory perception of smell (GO:0007608),468,2,30.04,-,0.07,1.19E-10,1.58E-08
 detection of stimulus involved in sensory perception (GO:0050906),554,1,35.56,-,0.03,3.81E-14,7.71E-12
 "complement activation, classical pathway (GO:0006958)",161,0,10.33,-, < 0.01,7.97E-05,3.16E-03
 complement activation (GO:0006956),177,0,11.36,-, < 0.01,3.88E-05,1.69E-03
+humoral immune response mediated by circulating immunoglobulin (GO:0002455),167,0,10.72,-, < 0.01,5.32E-05,2.23E-03
 xenobiotic metabolic process (GO:0006805),124,0,7.96,-, < 0.01,8.97E-04,2.60E-02
 cellular response to xenobiotic stimulus (GO:0071466),129,0,8.28,-, < 0.01,5.87E-04,1.83E-02
 oxidative phosphorylation (GO:0006119),120,0,7.7,-, < 0.01,8.67E-04,2.54E-02
@@ -608,3 +612,4 @@ response to xenobiotic stimulus (GO:0009410),136,0,8.73,-, < 0.01,3.97E-04,1.29E
 respiratory electron transport chain (GO:0022904),108,0,6.93,-, < 0.01,1.93E-03,4.96E-02
 electron transport chain (GO:0022900),170,0,10.91,-, < 0.01,5.67E-05,2.36E-03
 regulation of complement activation (GO:0030449),117,0,7.51,-, < 0.01,1.32E-03,3.61E-02
+regulation of humoral immune response (GO:0002920),140,0,8.99,-, < 0.01,2.61E-04,8.84E-03
