@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
-from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO
+from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO, plotPeptidesByFeature
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 
@@ -50,7 +50,7 @@ def makeFigure():
     centers["STK11"] = centers["STK11"].replace(0, "STK11 WT")
     centers["STK11"] = centers["STK11"].replace(1, "STK11m")
     plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
-    ax[0].legend(loc='lower left')
+    ax[0].legend(loc='lower left', prop={'size':10})
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
     centers = centers.reset_index().set_index("STK11")
@@ -69,6 +69,7 @@ def makeFigure():
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[1].legend(loc='lower right', prop={'size': 8})
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
+    ax[2].legend(loc='lower left', prop={'size':10})
 
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [7, 8], ax[3], num_hits=3)
@@ -88,36 +89,3 @@ def makeFigure():
     plotPeptidesByFeature(c8, y, d, ["STK11 status", "WT", "Mutant"], ax=ax[6], title="Golgi Fragmentation peptides")
 
     return f
-
-
-def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False):
-    """Plot and compare specific peptides by feature. Input data should contain a column with the
-    feature of interest"""
-    x = X.set_index(["Gene", "Position"])
-    n = list(d.keys())
-    p = list(d.values())
-    dfs = []
-    for i in range(len(n)):
-        dfs.append(pd.DataFrame(x.loc[n[i], p[i]]).T)
-    c = pd.concat(dfs).reset_index()
-    c.columns = ["Gene", "Position"] + list(c.columns[2:])
-
-    # Farmat data to concatenate feature
-    c["SeqPos"] = [s + ";" + c["Position"].iloc[i] for i, s in enumerate(c["Gene"])]
-    c = c.set_index("SeqPos").T.iloc[4:, :].reset_index()
-
-    assert np.all(list(c["index"]) == list(y["Sample.ID"]))
-    c = c.reset_index().iloc[:, 2:]
-
-    # Add feature
-    f1, f2, f3 = feat_labels
-    c[f1] = y.iloc[:, 1].values
-    c[f1] = c[f1].replace(0, f2)
-    c[f1] = c[f1].replace(1, f3)
-
-    dm = pd.melt(c, id_vars=f1, value_vars=c.columns[:-1], var_name="p-site", value_name="mean log(p-signal)")
-
-    sns.barplot(data=dm, x=f1, y="mean log(p-signal)", hue="p-site", ci=None, ax=ax)
-    ax.legend(prop={"size": 8}, loc=loc)
-    if title:
-        ax.set_title(title)
