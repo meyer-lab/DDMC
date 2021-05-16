@@ -84,7 +84,7 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, legend=True):
     ax.set_xticks(list(set(gm[kind])))
     ax.set_title(title)
     ax.set_ylabel("log(MSE)—Actual vs Imputed")
-    ax.legend(prop={'size':10}, loc='upper left')
+    ax.legend(prop={'size': 10}, loc='upper left')
     if not legend:
         ax.legend().remove()
 

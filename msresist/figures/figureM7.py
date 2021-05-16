@@ -73,19 +73,20 @@ def makeFigure():
     X["cluster"] = model.labels()
     c6 = X[X["cluster"] == 6].drop("cluster", axis=1)
     c6 = c6.loc[:, ~c6.columns.str.endswith(".N")]
-    d = {"PAK1":"Y142-p", "ABL1": "S559-p", "DOCK11":"S306-p", "DOCK10": "S1289-p;S1292-p", "LCK":"Y192-p", "SYK":"S297-p", "TSC1":"Y508-p", "RC3H2": "S1017-p", "CTNNB1":"S552-p"} #B cell homeo PAK-DOCK10; T cell diff the rest
+    d = {"PAK1": "Y142-p", "ABL1": "S559-p", "DOCK11": "S306-p", "DOCK10": "S1289-p;S1292-p", "LCK": "Y192-p", "SYK": "S297-p",
+         "TSC1": "Y508-p", "RC3H2": "S1017-p", "CTNNB1": "S552-p"}  # B cell homeo PAK-DOCK10; T cell diff the rest
     plotPeptidesByFeature(c6, y, d, ["Infiltration Status", "HTE", "CTE"], ax[7], title="Cluster 6", TwoCols=True, legend_size=7)
 
     # Representative Peptides Cluster 17
     c17 = X[X["cluster"] == 17].drop("cluster", axis=1)
     c17 = c17.loc[:, ~c17.columns.str.endswith(".N")]
-    d = {"CD44":"S697-p", "SDK1":"T2111-p", "PRKCD":"S130-p", "PLD1": "T495-p", "CAPN1":"T89-p", "GSTP1":"T35-p"}
+    d = {"CD44": "S697-p", "SDK1": "T2111-p", "PRKCD": "S130-p", "PLD1": "T495-p", "CAPN1": "T89-p", "GSTP1": "T35-p"}
     plotPeptidesByFeature(c17, y, d, ["Infiltration Status", "HTE", "CTE"], ax[8], title="Cluster 17")
 
     # Representative Peptides Cluster 20
     c20 = X[X["cluster"] == 20].drop("cluster", axis=1)
     c20 = c20.loc[:, ~c20.columns.str.endswith(".N")]
-    d = {"RCAN1":"S210-p", "NFATC3":"S366-p", "EP300":"S1716-p", "HSP90AA1":"S623-p", "TAB3":"S80-p", "LYN":"Y316-p", "SDK1":"Y2096-p"}
+    d = {"RCAN1": "S210-p", "NFATC3": "S366-p", "EP300": "S1716-p", "HSP90AA1": "S623-p", "TAB3": "S80-p", "LYN": "Y316-p", "SDK1": "Y2096-p"}
     plotPeptidesByFeature(c20, y, d, ["Infiltration Status", "HTE", "CTE"], ax[9], title="Cluster 20")
 
     return f
