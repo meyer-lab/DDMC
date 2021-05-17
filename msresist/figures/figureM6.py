@@ -50,7 +50,7 @@ def makeFigure():
     centers["STK11"] = centers["STK11"].replace(0, "STK11 WT")
     centers["STK11"] = centers["STK11"].replace(1, "STK11m")
     plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
-    ax[0].legend(loc='lower left', prop={'size':10})
+    ax[0].legend(loc='lower left', prop={'size': 10})
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
     centers = centers.reset_index().set_index("STK11")
@@ -69,7 +69,7 @@ def makeFigure():
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[1].legend(loc='lower right', prop={'size': 8})
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
-    ax[2].legend(loc='lower left', prop={'size':10})
+    ax[2].legend(loc='lower left', prop={'size': 10})
 
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [7, 8], ax[3], num_hits=3)
