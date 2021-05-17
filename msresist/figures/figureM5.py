@@ -21,7 +21,7 @@ from ..pre_processing import MeanCenter, filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 13), (4, 4), multz={0: 1, 4:1, 12:1, 14:1})
+    ax, f = getSetup((15, 13), (4, 4), multz={0: 1, 4: 1, 12: 1, 14: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -79,13 +79,23 @@ def makeFigure():
     y.columns = ["Sample.ID", "Type"]
     X["cluster"] = model.labels()
     c11 = X[X["cluster"] == 11].drop("cluster", axis=1)
-    d = {"PEAK1": "Y635-p", "ARHGEF7": "S703-p", "PAK4": "S181-p", "FLNA": "S2128-p", "PTPN11": "Y546-p", "HBA2": "T68-p", "HBB": "T88-p", "HBD":"S73-p", "HBG1": "S140-p"}
+    d = {"PEAK1": "Y635-p", "ARHGEF7": "S703-p", "PAK4": "S181-p", "FLNA": "S2128-p", "PTPN11": "Y546-p", "HBA2": "T68-p", "HBB": "T88-p", "HBD": "S73-p", "HBG1": "S140-p"}
     plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[10], title="Cluster 11: Gas Transport & Cytoskletal remodeling", TwoCols=True)
-
 
     # Peptides Cluster 12
     c12 = X[X["cluster"] == 12].drop("cluster", axis=1)
-    d = {"MCM4": "S105-p", "MCM3": "T722-p", "TP53BP1": "T1672-p", "MCM4": "S105-p", "BRCA1": "S114-p", "ATRX":"S1348-p", "CDK1": "Y15-p;T14-p", "CDK12": "S102-p;S105-p", "CDK13": "S317-p", "CDK16": "S119-p", "CENPF": "T2997-p"}
+    d = {
+        "MCM4": "S105-p",
+        "MCM3": "T722-p",
+        "TP53BP1": "T1672-p",
+        "MCM4": "S105-p",
+        "BRCA1": "S114-p",
+        "ATRX": "S1348-p",
+        "CDK1": "Y15-p;T14-p",
+        "CDK12": "S102-p;S105-p",
+        "CDK13": "S317-p",
+        "CDK16": "S119-p",
+        "CENPF": "T2997-p"}
     plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[11], title="Cluster 12: DNA Damage", TwoCols=True)
 
     return f
@@ -109,10 +119,10 @@ def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False, Two
     c["SeqPos"] = [s + ";" + c["Position"].iloc[i] for i, s in enumerate(c["Gene"])]
     c = c.set_index("SeqPos").T.iloc[4:, :].reset_index()
 
-    try: 
+    try:
         assert np.all(list(c["index"]) == list(y["Sample.ID"]))
         c = c.set_index("index")
-    except:
+    except BaseException:
         l1 = list(c["index"])
         l2 = list(y["Sample.ID"])
         dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
@@ -131,9 +141,9 @@ def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False, Two
         ax.set_title(title)
 
     if TwoCols:
-        h,l = ax.get_legend_handles_labels()
+        h, l = ax.get_legend_handles_labels()
         ax.legend_.remove()
-        ax.legend(h,l, ncol=2, prop={'size':legend_size})
+        ax.legend(h, l, ncol=2, prop={'size': legend_size})
     else:
         ax.legend(prop={"size": legend_size}, loc=loc)
 
