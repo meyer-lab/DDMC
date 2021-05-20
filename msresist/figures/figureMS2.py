@@ -3,7 +3,7 @@ This creates Supplemental Figure 2: Cluster motifs
 """
 
 import pickle
-import numpy as np 
+import numpy as np
 from .common import subplotLabel, getSetup
 from .figure2 import plotMotifs
 
