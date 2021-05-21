@@ -18,7 +18,8 @@ from sklearn.cluster import KMeans
 from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering
+from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict
+from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 
@@ -306,14 +307,15 @@ def store_cluster_members(X, model, filename, cols):
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
-def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, additional_labels=False):
+def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, add_labels=False, title=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    cols = ["Kinase"] + list(np.arange(1, model.ncl + 1))
-    if not isinstance(additional_pssms, bool):
-        cols.append(additional_labels)
-    ukin_mc.columns = cols
+    if isinstance(add_labels, list):
+        ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1) + add_labels
+        clusters += add_labels
+    else:
+        ukin_mc.columns = ["Kinase"] + list(np.arange(model.ncl) + 1)
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
         sns.heatmap(data.T, ax=ax, xticklabels=data.index)
@@ -323,16 +325,90 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
 
     elif kind == "strip":
         data = pd.melt(data.reset_index(), id_vars="Kinase", value_vars=list(data.columns), var_name="Cluster", value_name="Frobenius Distance")
-        sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-        datas = []
-        for ii, cluster in enumerate(clusters, start=1):
-            cluster = data[data["Cluster"] == cluster]
-            hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
-            hits.index = np.arange(hits.shape[0])
-            for jj in range(num_hits):
-                ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01), fontsize=8)
-        ax.legend().remove()
+        if isinstance(add_labels, list):
+            # Actual ERK predictions
+            data["Cluster"] = data["Cluster"].astype(str)
+            d1 = data[~data["Cluster"].str.contains("_S")]
+            sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
+            cc = clusters.copy()
+            AnnotateUpstreamKinases(model, [7, 9, 13, 21, "ERK2+"], ax[0], d1, 1)
+
+            # Shuffled
+            d2 = data[data["Kinase"] == "ERK2"]
+            d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
+            d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
+            sns.stripplot(data=d2, x="Cluster", y="Frobenius Distance", hue="Shuffled", ax=ax[1], size=8)
+            ax[1].set_title("ERK2 Shuffled Positions")
+            ax[1].legend(prop={'size': 10}, loc='lower left')
+            DrawArrows(ax[1], d2)
+
+        else:
+            sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
+            AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
+            if title:
+                ax.set_title(title)
+
+
+def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
+    """Annotate upstream kinase predictions"""
+    data.iloc[:, 1] = data.iloc[:, 1].astype(str)
+    pssms = model.pssms()
+    for ii, c in enumerate(clusters, start=1):
+        cluster = data[data.iloc[:, 1] == str(c)]
+        hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
+        hits.index = np.arange(hits.shape[0])
+        hits["Phosphoacceptor"] = [KinToPhosphotypeDict[kin] for kin in hits["Kinase"]]
+        cCP = pssms[c - 1].iloc[:, 5].idxmax()
+        if cCP == "S" or cCP == "T":
+            cCP = "S/T"
+        hits = hits[hits["Phosphoacceptor"] == cCP]
+        for jj in range(num_hits):
+            ax.annotate(hits["Kinase"].iloc[jj], (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01), fontsize=8)
+    ax.legend().remove()
     ax.set_title("Kinase vs Cluster Motif")
+
+
+def DrawArrows(ax, d2):
+    data_shuff = d2[d2["Shuffled"]]
+    actual_erks = d2[d2["Shuffled"] == False]
+    arrow_lengths = np.add(data_shuff["Frobenius Distance"].values, abs(actual_erks["Frobenius Distance"].values)) * -1
+    for dp in range(data_shuff.shape[0]):
+        ax.arrow(dp,
+                 data_shuff["Frobenius Distance"].iloc[dp] - 0.1,
+                 0,
+                 arrow_lengths[dp] + 0.3,
+                 head_width=0.25,
+                 head_length=0.15,
+                 width=0.025,
+                 fc='black',
+                 ec='black')
+
+
+def ShuffleClusters(shuffle, model, additional=False):
+    """Returns PSSMs with shuffled positions"""
+    ClustersToShuffle = np.array(shuffle) - 1
+    pssms = model.pssms(PsP_background=True)
+    s_pssms = []
+    for s in ClustersToShuffle:
+        mat = ShufflePositions(pssms[s])
+        s_pssms.append(mat)
+
+    if not isinstance(additional, bool):
+        mat = ShufflePositions(additional)
+        s_pssms.append(mat)
+
+    return s_pssms
+
+
+def ShufflePositions(pssm):
+    """Shuffles the positions of input PSSMs"""
+    pssm = np.array(pssm)
+    mat = pssm[:, np.random.permutation([0, 1, 2, 3, 4, 6, 7, 8, 9])]
+    mat = np.insert(mat, 5, pssm[:, 5], axis=1)
+    mat = np.insert(mat, 1, pssm[:, -1], axis=1)
+    mat = pd.DataFrame(mat)
+    mat.index = AAlist
+    return mat
 
 
 def label_point(X, model, clusters, pspl, ax, n_neighbors=5):

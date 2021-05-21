@@ -14,7 +14,7 @@ class PAM250(CustomDistribution):
         self.background = background
 
         if background is None:
-            # Compute all pairwise distances and generate seq vs seq to score dictionary
+            # Compute all pairwise distances
             self.background = MotifPam250Scores(seqs)
 
         super().__init__(self.background.shape[0])
