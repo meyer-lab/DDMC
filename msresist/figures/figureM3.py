@@ -66,3 +66,16 @@ def makeFigure():
     plotDistanceToUpstreamKinase(model_cptac, [7, 9, 13, 21], additional_pssms=s_pssms + [erk2], add_labels=["7_S", "9_S", "13_S", "21_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
 
     return f
+
+
+def plotMCF7AKTclustermap():
+    """Code to create hierarchical clustering of cluster 1 across treatments"""
+    with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
+        model = pickle.load(m)
+    c1 = pd.DataFrame(model.transform()[:, 0])
+    X = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv")
+    index = [col.split("7.")[1].split(".")[0] for col in X.columns[2:]]
+    c1["Inhibitor"] = index
+    c1 = c1.set_index("Inhibitor")
+    lim = np.max(np.abs(c1)) * 0.3
+    g = sns.clustermap(c1, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, row_cluster=True, col_cluster=False, figsize=(2, 15), yticklabels=True, xticklabels=False)

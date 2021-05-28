@@ -27,7 +27,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Plot mean AUCs per model
     models = plotAUCs(ax[0], return_models=True)
@@ -239,8 +239,8 @@ def find_patients_with_NATandTumor(X, label, conc=False):
     if conc:
         xN = xN.set_index(label)
         xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
+        xN.columns = [str(i) + "_Normal" for i in xN.columns]
+        X.columns = [str(i) + "_Tumor" for i in X.columns]
         X = pd.concat([X, xN], axis=1)
     return X
 
