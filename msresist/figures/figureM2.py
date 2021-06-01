@@ -21,7 +21,7 @@ from ..expectation_maximization import EM_clustering
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((13, 6), (2, 5), multz={0: 1})
+    ax, f = getSetup((12, 10), (3, 4), multz={0: 3})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
