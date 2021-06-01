@@ -386,7 +386,7 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
 
 
-def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores"):
+def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores", annotateScores=False):
     """Plot PCA scores only"""
     pp = PCA(n_components=n_components)
     dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
@@ -402,6 +402,9 @@ def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_
         ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
         if legendOut:
             ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
+        if annotateScores:
+            for j, txt in enumerate(d[scores_ind[0]]):
+                ax.annotate(txt, (dScor_["PC1"][j] + 0.001, dScor_["PC2"][j] + 0.001), fontsize=10)
 
     # Loadings
     elif plot == "loadings":
