@@ -239,8 +239,8 @@ def find_patients_with_NATandTumor(X, label, conc=False):
     if conc:
         xN = xN.set_index(label)
         xN.index = l2
-        xN.columns = [str(i) + "_N" for i in xN.columns]
-        X.columns = [str(i) + "_T" for i in X.columns]
+        xN.columns = [str(i) + "_Normal" for i in xN.columns]
+        X.columns = [str(i) + "_Tumor" for i in X.columns]
         X = pd.concat([X, xN], axis=1)
     return X
 

@@ -60,7 +60,7 @@ if __name__ == "__main__":
     if sys.argv[1] == 'M2':
         # Overlay Figure missingness cartoon
         overlayCartoon(fdir + 'figureM2.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 20, 20, scalee=0.85)
+                       f'{cartoon_dir}/missingness_diagram.svg', 170, 0, scalee=1)
 
     if sys.argv[1] == "M5":
         # Overlay Figure tumor vs NATs heatmap
