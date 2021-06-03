@@ -1,4 +1,4 @@
-matplotlib==3.4.1
+matplotlib==3.4.2
 seaborn==0.11.1
 svgutils==0.3.4
 pandas==1.2.4
@@ -7,9 +7,9 @@ panflute==1.12.5
 pandoc-fignos==2.4.0
 pandoc-eqnos==2.5.0
 pandoc-tablenos==2.3.0
-pytest==6.2.3
-pytest-cov==2.11.1
-biopython==1.78
+pytest==6.2.4
+pytest-cov==2.12.1
+biopython==1.79
 scikit-learn==0.24.2
 jupyter==1.0.0
 git+https://github.com/meyer-lab/pomegranate.git@custom-dist
