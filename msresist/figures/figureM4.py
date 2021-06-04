@@ -42,7 +42,6 @@ def makeFigure():
     # Signaling data
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
-    seqs = [s.upper() for s in X["Sequence"].values]
     X["labels0"] = models[0].labels()
     X["labels20"] = models[1].labels()
     X["labels50"] = models[2].labels()
