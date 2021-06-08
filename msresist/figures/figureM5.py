@@ -5,6 +5,7 @@ This creates Figure 5: Tumor vs NAT analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import pickle
 import textwrap
 from scipy.stats import mannwhitneyu
@@ -27,7 +28,10 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    matplotlib.rcParams['font.sans-serif'] = "Helvetica"
+    matplotlib.rcParams['font.family'] = "sans-serif"
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
