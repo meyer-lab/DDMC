@@ -25,8 +25,7 @@ jobs:
       with:
         name: files
         path: |
-          figure*.svg
-          output/*/manuscript.docx
+          output
     - name: Deploy 🚀
       uses: JamesIves/github-pages-deploy-action@releases/v3
       if: github.ref == 'refs/heads/master'
