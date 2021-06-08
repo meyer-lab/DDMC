@@ -24,7 +24,7 @@ def makeFigure():
     ax, f = getSetup((12, 10), (3, 4), multz={0: 3})
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -76,7 +76,7 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, legend=True):
     gm["Minimum"] = np.log(data.groupby([kind]).Minimum.apply(gmean).values)
     gm["PCA"] = np.log(data.groupby([kind]).PCA.apply(gmean).values)
 
-    sns.regplot(x=kind, y="DDMC", data=gm, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax, label="DDMC seq")
+    sns.regplot(x=kind, y="DDMC", data=gm, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax, label="DDMC")
     sns.regplot(x=kind, y="Average", data=gm, color="black", scatter=False, ax=ax, label="Average")
     sns.regplot(x=kind, y="Zero", data=gm, color="lightblue", scatter=False, ax=ax, label="Zero")
     sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")

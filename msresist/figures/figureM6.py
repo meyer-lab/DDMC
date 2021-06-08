@@ -14,7 +14,6 @@ from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 
-
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
@@ -24,7 +23,11 @@ def makeFigure():
     subplotLabel(ax)
 
     # Phosphoproteomic aberrations associated with molecular signatures
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1.3, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    import matplotlib
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
+    matplotlib.rcParams['font.family'] = "sans-serif"
 
     # Load Clustering Model from Figure 2
     with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
@@ -68,7 +71,7 @@ def makeFigure():
     lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.1])
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[1].legend(loc='lower right', prop={'size': 8})
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="STK11")
+    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="")
     ax[2].legend(loc='lower left', prop={'size': 10})
 
     # plot Upstream Kinases
