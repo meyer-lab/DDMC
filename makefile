@@ -53,4 +53,6 @@ testcover: venv
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
-	rm -rf *.pdf output venv pylint.log figure*.svg
+	rm -rf *.pdf venv pylint.log figure*.svg
+	git checkout HEAD -- output
+	git clean -ffdx output
