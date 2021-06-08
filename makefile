@@ -54,4 +54,5 @@ testcover: venv
 
 clean:
 	rm -rf *.pdf venv pylint.log figure*.svg
-	git reset output
+	git checkout HEAD -- output
+	git clean -ffdx output
