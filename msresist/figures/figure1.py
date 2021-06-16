@@ -30,7 +30,7 @@ itp = 24
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 10), (3, 5), multz={3: 1})
+    ax, f = getSetup((16, 12), (4, 4), multz={0:1, 3: 1})
 
     # Add subplot labels
     subplotLabel(ax)
