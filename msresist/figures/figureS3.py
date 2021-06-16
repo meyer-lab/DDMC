@@ -1,5 +1,5 @@
 """
-This creates Figure 2.
+This creates Supplemental Figure 3: Specific phosphosites.
 """
 
 import pandas as pd
