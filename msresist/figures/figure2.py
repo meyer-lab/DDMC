@@ -27,7 +27,7 @@ from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((17, 8), (3, 6), multz={0: 1, 2: 1})
+    ax, f = getSetup((14, 6), (2, 4), multz={0: 1, 2: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -68,15 +68,8 @@ def makeFigure():
     plsr = PLSRegression(n_components=4)
     plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
-    # Centers
-    plotCenters(ax[5:10], model, lines)
-
-    # Plot motifs
-    pssms = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[10:15], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[0, 11])
-
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[15])
+    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[5], num_hits=1)
 
     return f
 
