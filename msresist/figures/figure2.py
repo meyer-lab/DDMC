@@ -69,7 +69,7 @@ def makeFigure():
     plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
 
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[5], num_hits=1)
+    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[5], num_hits=7)
 
     return f
 
