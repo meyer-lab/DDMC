@@ -1,8 +1,9 @@
 
 import pickle
-import seaborn as sns 
+import seaborn as sns
 from .common import subplotLabel, getSetup
 from msresist.figures.figure2 import plotCenters, plotMotifs
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
