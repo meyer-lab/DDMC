@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from ..motifs import MapMotifs
-from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels
+from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels, CorrCoefFilter
 from ..distances import BarPlotRipleysK, DataFrameRipleysK, PlotRipleysK
 
 sns.set(color_codes=True)
@@ -568,7 +568,7 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig.show()
 
 
-def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
+def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
     """ Plot variability of overlapping peptides across MS biological replicates. """
     ABC = MapMotifs(ABC, list(ABC.iloc[:, 0]))
     data_headers = list(ABC.select_dtypes(include=["float64"]).columns)
@@ -577,14 +577,14 @@ def plotVarReplicates(ax, ABC, CorrCoefFilter=False, StdFilter=False):
     _, CorrCoefPeptides, StdPeptides = MapOverlappingPeptides(ABC)
 
     # Correlation of Duplicates, optionally filtering first
-    DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers, FCto)
-    if CorrCoefFilter:
+    DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers)
+    if Set_CorrCoefFilter:
         DupsTable = CorrCoefFilter(DupsTable)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert DupsTable.shape[0] / 2 == DupsTable_drop.shape[0]
 
     # Stdev of Triplicates, optionally filtering first
-    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers, FCto)
+    StdPeptides = BuildMatrix(StdPeptides, ABC, data_headers)
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == "std"]
     if StdFilter:
