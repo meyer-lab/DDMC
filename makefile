@@ -1,4 +1,4 @@
-flist = 1 2 3 S1 S2 S3 M2 M4 M5 M6 M7 MS2 MS3 MS4 MS5 MS6
+flist = 3 S1 S2 S3 S4 MS3 MS4 MS5 MS6
 
 all: $(patsubst %, figure%.svg, $(flist))
 
@@ -24,6 +24,7 @@ output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, figure%.svg,
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
+		--csl=./manuscripts/science.csl \
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
 output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
@@ -31,6 +32,7 @@ output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg,
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=./common/templates/manubot/pandoc/common.yaml \
 		--defaults=./common/templates/manubot/pandoc/docx.yaml \
+		--csl=./manuscripts/science.csl \
 		--output=output/$*/manuscript.docx output/$*/manuscript.md
 
 test: venv
@@ -51,4 +53,6 @@ testcover: venv
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
-	rm -rf *.pdf output venv pylint.log figure*.svg
+	rm -rf *.pdf venv pylint.log figure*.svg
+	git checkout HEAD -- output
+	git clean -ffdx output

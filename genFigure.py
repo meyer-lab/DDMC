@@ -40,12 +40,12 @@ if __name__ == "__main__":
     if sys.argv[1] == "2":
         # Overlay Figure 2 pipeline
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/pipeline.svg', 50, 10, scalee=0.14)
+                       f'{cartoon_dir}/pipeline.svg', 80, 10, scalee=0.15)
 
     if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 470, 5, scalee=0.08)
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 560, 0, scalee=0.09)
 
     if sys.argv[1] == "3":
         # Overlay Figure 3 YAP AXL vs KO blot
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     if sys.argv[1] == 'M2':
         # Overlay Figure missingness cartoon
         overlayCartoon(fdir + 'figureM2.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 20, 20, scalee=0.85)
+                       f'{cartoon_dir}/missingness_diagram.svg', 170, 0, scalee=1)
 
     if sys.argv[1] == "M5":
         # Overlay Figure tumor vs NATs heatmap
