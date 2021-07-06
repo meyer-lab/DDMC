@@ -579,7 +579,7 @@ def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
     # Correlation of Duplicates, optionally filtering first
     DupsTable = BuildMatrix(CorrCoefPeptides, ABC, data_headers)
     if Set_CorrCoefFilter:
-        DupsTable = CorrCoefFilter(DupsTable)
+        DupsTable = CorrCoefFilter(DupsTable, 0.5)
     DupsTable_drop = DupsTable.drop_duplicates(["Protein", "Sequence"])
     assert DupsTable.shape[0] / 2 == DupsTable_drop.shape[0]
 
@@ -588,7 +588,7 @@ def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
     TripsTable = TripsMeanAndStd(StdPeptides, merging_indices + ["BioReps"], data_headers)
     Stds = TripsTable.iloc[:, TripsTable.columns.get_level_values(1) == "std"]
     if StdFilter:
-        Xidx = np.all(Stds.values <= 0.4, axis=1)
+        Xidx = np.all(Stds.values <= 0.6, axis=1)
         Stds = Stds.iloc[Xidx, :]
 
     n_bins = 10
@@ -639,14 +639,14 @@ def plot_AllSites(ax, x, prot, title, ylim=False):
         ax.set_ylim(ylim)
 
 
-def plot_IdSites(ax, x, d, title, rn=False, ylim=False):
+def plot_IdSites(ax, x, d, title, rn=False, ylim=False, xlabels=False):
     """ Plot a set of specified p-sites. 'd' should be a dictionary werein every item is a protein-position pair. """
-    x = x.set_index(["Gene", "Position"])
     n = list(d.keys())
     p = list(d.values())
     dfs = []
     for i in range(len(n)):
-        dfs.append(x.loc[n[i], p[i]].select_dtypes(include=float))
+        x1 = x[(x["Gene"] == n[i]) & (x["Position"] == p[i])]
+        dfs.append(x1.set_index(["Gene", "Position"]).select_dtypes(include=float))
 
     df = pd.concat(dfs)
 
@@ -661,7 +661,10 @@ def plot_IdSites(ax, x, d, title, rn=False, ylim=False):
     ax = sns.lineplot(x="Line", y="p-signal", data=data, hue="GenePos", ax=ax)
 
     ax.legend(loc=0)
-    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
+    if xlabels:
+        lines = xlabels
+    else:
+        lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
     ax.set_xticklabels(lines, rotation=45)
     ax.set_ylabel("$Log2$ (p-site)")
     ax.set_title(title)

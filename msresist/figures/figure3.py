@@ -7,30 +7,46 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from .common import subplotLabel, getSetup
-from .figure1 import TimePointFoldChange
+from .figure1 import TimePointFoldChange, plot_IdSites
+from msresist.pre_processing import preprocessing
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 12), (3, 4), multz={8: 1, 10: 1})
+    ax, f = getSetup((16, 11), (3, 4), multz={0: 1, 5: 2, 10: 1})
 
     # Add subplot labels
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Dasatinib Dose Response Time Course
-    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"), pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
-    das = transform_YAPviability_data(das)
-    plot_YAPinhibitorTimeLapse(ax[:8], das, ylim=[0, 14])
+    # Import Dasatinib DR MS data
+    X = preprocessing(AXL_Das_DR=True, Vfilter=True, log2T=True, mc_row=False)
+    for i in range(X.shape[0]):
+        X.iloc[i, 6:11] -=  X.iloc[i, 6]
+        X.iloc[i, 11:] -=  X.iloc[i, 11]
 
-    # YAP blot AXL vs KO
-    ax[8].axis("off")
+    # Das DR time point 
+    plot_DasDR_timepoint(ax[0])
+    ax[0].set_xlabel("[Dasatinib]")
 
-    # YAP blot dasatinib dose response
-    ax[9].axis("off")
+    # Luminex p-ASY Das DR 
+    plot_pAblSrcYap(ax[1:4])
+
+    # Das DR Mass Spec Dose response cluster
+    ax[4].axis("off")
+
+    # AXL Mass Spec Cluster 4 enrichment of peptides in Das DR cluster
+    plotHyerGeomTestDasDRGenes(ax[5])
+
+    # Selected peptides within Dasatinib DR Cluster
+    abl_sfk = {'LYN': 'Y397-p', 'YES1': 'Y223-p', 'ABL1': 'Y393-p', 'FRK': 'Y497-p', 'LCK': 'Y394-p'}
+    plot_IdSites(ax[6], X, abl_sfk, "ABL&SFK", rn=False, ylim=False, xlabels=list(X.columns[6:]))
+
+    # Das DR Mass Spec WT/KO dif
+    ax[7].axis("off")
 
     return f
 
@@ -81,3 +97,67 @@ def MeanTRs(X):
             X.drop(X.columns[j + 6], axis="columns")
 
     return X.drop(X.columns[[j + 6 for i in idx for j in i]], axis="columns")
+
+
+def plotHyerGeomTestDasDRGenes(ax):
+    """Data from https://systems.crump.ucla.edu/hypergeometric/index.php where: 
+    - N = common peptides across both expts 
+    - M = cluster 4 among N
+    - s = das responding among N
+    - k = overlap
+    Counts generated using GenerateHyperGeomTestParameters()."""
+    hg = pd.DataFrame()
+    hg["Cluster"] = np.arange(5) + 1
+    hg["p_value"] = [0.515, 0.179, 0.244, 0.0013, 0.139]
+    sns.barplot(data=hg, x="Cluster", y="p_value", ax=ax, color="darkblue", **{"linewidth": 1}, **{"edgecolor": "black"})
+    ax.set_title("Enrichment of Das-responsive Peptides")
+    ax.set_ylim((0, 0.55))
+    for index, row in hg.iterrows():
+        ax.text(row.Cluster - 1, row.p_value + 0.01, round(row.p_value, 3), color='black', ha="center")
+
+
+def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
+    """Generate parameters to calculate p-value for under- or over-enrichment based on CDF of the hypergeometric distribution."""
+    N = list(set(A["Gene"]).intersection(set(X["Gene"])))
+    cl = axl_ms[A["Cluster"] == cluster]
+    M = list(set(cl["Gene"]).intersection(set(N)))
+    s = list(set(dasG).intersection(set(N)))
+    k = list(set(s).intersection(set(M)))
+    return (len(k), len(s), len(M), len(N))
+
+
+def plot_DasDR_timepoint(ax, time=96):
+    """Plot dasatinib DR at specified time point."""
+    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"), 
+    pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+    das = transform_YAPviability_data(das)
+    tp = das[das["Elapsed"] == time]
+    sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ax=ax)
+
+
+def plot_pAblSrcYap(ax):
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+    mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/DasatinibDR_newMEK_lysisbuffer.csv")
+    mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line", "Lysis_Buffer"], value_vars=["p-MEK", "p-YAP", "p-ABL", "p-SRC"], var_name="Protein", value_name="p-Signal")
+    mfi_YAP = pd.read_csv("msresist/data/Validations/Luminex/DasatinibDR_pYAP127_check.csv")
+    mfi_YAP = pd.melt(mfi_YAP, id_vars=["Treatment", "Line", "Lysis_Buffer"], value_vars=["p-MEK", "p-YAP(S127)"], var_name="Protein", value_name="p-Signal")
+    abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL") & (mfi_AS["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
+    abl["Treatment"] = [t.replace("A", "(A)") for t in abl["Treatment"]]
+    abl["Treatment"][6:] = abl["Treatment"][1:6]
+    src = mfi_AS[(mfi_AS["Protein"] == "p-SRC") & (mfi_AS["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
+    src["Treatment"] = [t.replace("A", "(A)") for t in src["Treatment"]]
+    src["Treatment"][6:] = src["Treatment"][1:6]
+    yap = mfi_YAP[(mfi_YAP["Protein"] == "p-YAP(S127)") & (mfi_YAP["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
+    yap["Treatment"] = [t.replace("A", "(A)") for t in yap["Treatment"]]
+    yap["Treatment"][6:] = yap["Treatment"][1:6]
+
+    sns.barplot(data=abl, x="Treatment", y="p-Signal", hue="Line", ax=ax[0])
+    ax[0].set_title("p-ABL")
+    ax[0].set_xticklabels(abl["Treatment"][:6], rotation=90)
+    sns.barplot(data=src, x="Treatment", y="p-Signal", hue="Line", ax=ax[1])
+    ax[1].set_title("p-SRC")
+    ax[1].set_xticklabels(src["Treatment"][:6], rotation=90)
+    sns.barplot(data=yap, x="Treatment", y="p-Signal", hue="Line", ax=ax[2])
+    ax[2].set_title("p-YAP S127")
+    ax[2].set_xticklabels(yap["Treatment"][:6], rotation=90)
+
