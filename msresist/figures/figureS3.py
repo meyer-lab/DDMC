@@ -25,7 +25,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Read in Mass Spec data
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_col=True)
+    X = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_col=True)
 
     # PCA
     data = X.set_index(["Gene"]).select_dtypes(include=float)

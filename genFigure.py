@@ -47,16 +47,6 @@ if __name__ == "__main__":
         overlayCartoon(fdir + 'figure2.svg',
                        f'{cartoon_dir}/AXL_MS_heatmap.svg', 560, 0, scalee=0.09)
 
-    if sys.argv[1] == "3":
-        # Overlay Figure 3 YAP AXL vs KO blot
-        overlayCartoon(fdir + 'figure3.svg',
-                       'msresist/data/Validations/Experimental/WesternBlots/YAP_WTvsKO_blot.svg', 700, 590, scalee=0.17)
-
-    if sys.argv[1] == "3":
-        # Overlay Figure 3 YAP dasatinib dose response
-        overlayCartoon(fdir + 'figure3.svg',
-                       'msresist/data/Validations/Experimental/WesternBlots/YAP_DR_blot.svg', 50, 600, scalee=0.17)
-
     if sys.argv[1] == 'M2':
         # Overlay Figure missingness cartoon
         overlayCartoon(fdir + 'figureM2.svg',
