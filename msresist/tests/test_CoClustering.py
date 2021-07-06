@@ -10,7 +10,7 @@ from ..expectation_maximization import EM_clustering
 from ..pre_processing import preprocessing
 
 
-X = preprocessing(AXLwt=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+X = preprocessing(AXLwt_GF=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
 data = X.select_dtypes(include=['float64']).T
 info = X.select_dtypes(include=['object'])
 preMotifSet = ["ABL", "EGFR", "ALK", "SRC", "YES"]
