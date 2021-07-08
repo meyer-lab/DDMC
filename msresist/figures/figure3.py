@@ -14,7 +14,7 @@ from msresist.pre_processing import preprocessing
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 11), (3, 4), multz={0: 1, 5: 2, 10: 1})
+    ax, f = getSetup((16, 11), (4, 4), multz={4:1, 6:1, 8: 2, 13: 1})
 
     # Add subplot labels
     subplotLabel(ax)
