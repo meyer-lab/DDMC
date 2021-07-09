@@ -14,7 +14,7 @@ from msresist.pre_processing import preprocessing
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 11), (4, 4), multz={4:1, 6:1, 8: 2, 13: 1})
+    ax, f = getSetup((16, 11), (4, 4), multz={4: 1, 6: 1, 8: 2, 13: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -25,14 +25,14 @@ def makeFigure():
     # Import Dasatinib DR MS data
     X = preprocessing(AXL_Das_DR=True, Vfilter=True, log2T=True, mc_row=False)
     for i in range(X.shape[0]):
-        X.iloc[i, 6:11] -=  X.iloc[i, 6]
-        X.iloc[i, 11:] -=  X.iloc[i, 11]
+        X.iloc[i, 6:11] -= X.iloc[i, 6]
+        X.iloc[i, 11:] -= X.iloc[i, 11]
 
-    # Das DR time point 
+    # Das DR time point
     plot_DasDR_timepoint(ax[0])
     ax[0].set_xlabel("[Dasatinib]")
 
-    # Luminex p-ASY Das DR 
+    # Luminex p-ASY Das DR
     plot_pAblSrcYap(ax[1:4])
 
     # Das DR Mass Spec Dose response cluster
@@ -100,8 +100,8 @@ def MeanTRs(X):
 
 
 def plotHyerGeomTestDasDRGenes(ax):
-    """Data from https://systems.crump.ucla.edu/hypergeometric/index.php where: 
-    - N = common peptides across both expts 
+    """Data from https://systems.crump.ucla.edu/hypergeometric/index.php where:
+    - N = common peptides across both expts
     - M = cluster 4 among N
     - s = das responding among N
     - k = overlap
@@ -128,8 +128,8 @@ def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
 
 def plot_DasDR_timepoint(ax, time=96):
     """Plot dasatinib DR at specified time point."""
-    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"), 
-    pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"),
+           pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
     das = transform_YAPviability_data(das)
     tp = das[das["Elapsed"] == time]
     sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ax=ax)
@@ -160,4 +160,3 @@ def plot_pAblSrcYap(ax):
     sns.barplot(data=yap, x="Treatment", y="p-Signal", hue="Line", ax=ax[2])
     ax[2].set_title("p-YAP S127")
     ax[2].set_xticklabels(yap["Treatment"][:6], rotation=90)
-
