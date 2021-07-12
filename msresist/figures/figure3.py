@@ -144,7 +144,7 @@ def plot_pAblSrcYap(ax):
     abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL") & (mfi_AS["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
     abl["Treatment"] = [t.replace("A", "(A)") for t in abl["Treatment"]]
     abl["Treatment"][6:] = abl["Treatment"][1:6]
-    src = mfi_AS[(mfi_AS["Protein"] == "p-SRC") & (mfi_AS["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
+    src = mfi_AS[(mfi_AS["Protein"] == "p-SRC") & (mfi_AS["Lysis_Buffer"] == "NP-40")].iloc[:-2, :]
     src["Treatment"] = [t.replace("A", "(A)") for t in src["Treatment"]]
     src["Treatment"][6:] = src["Treatment"][1:6]
     yap = mfi_YAP[(mfi_YAP["Protein"] == "p-YAP(S127)") & (mfi_YAP["Lysis_Buffer"] == "RIPA")].iloc[:-1, :]
