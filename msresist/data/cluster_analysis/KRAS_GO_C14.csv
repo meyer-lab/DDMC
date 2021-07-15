@@ -1,0 +1,12 @@
+﻿GO biological process complete,Homo sapiens - REFLIST (20595),upload_1 (132),upload_1 (expected),upload_1 (over/under),upload_1 (fold Enrichment),upload_1 (raw P-value),upload_1 (FDR)
+microtubule cytoskeleton organization (GO:0000226),567,15,3.63,+,4.13,4.64E-06,1.22E-02
+microtubule-based process (GO:0007017),806,20,5.17,+,3.87,2.80E-07,2.21E-03
+cytoskeleton organization (GO:0007010),1212,23,7.77,+,2.96,3.15E-06,1.25E-02
+cell cycle (GO:0007049),1316,24,8.43,+,2.85,3.65E-06,1.16E-02
+macromolecule localization (GO:0033036),2496,34,16,+,2.13,2.14E-05,3.76E-02
+cellular component biogenesis (GO:0044085),2754,36,17.65,+,2.04,2.75E-05,4.35E-02
+cellular component organization or biogenesis (GO:0071840),6006,69,38.49,+,1.79,3.94E-08,6.23E-04
+cellular component organization (GO:0016043),5783,63,37.07,+,1.7,2.20E-06,1.16E-02
+cellular macromolecule metabolic process (GO:0044260),4909,53,31.46,+,1.68,3.46E-05,4.97E-02
+macromolecule metabolic process (GO:0043170),6151,64,39.42,+,1.62,8.89E-06,2.01E-02
+nitrogen compound metabolic process (GO:0006807),6886,69,44.13,+,1.56,1.08E-05,2.14E-02

@@ -173,9 +173,9 @@ def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False):
         ax.set_title("Kinase Predictions")
 
 
-def plot_GO(cluster, ax, n=5, title=False, max_width=25):
+def plot_GO(cluster, ax, n=5, title=False, max_width=25, analysis="CPTAC"):
     """Plot top scoring gene ontologies in a cluster"""
-    X = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GO_C" + str(cluster) + ".csv")
+    X = pd.read_csv("msresist/data/cluster_analysis/" + str(analysis) + "_GO_C" + str(cluster) + ".csv")
     X = X[["GO biological process complete", "upload_1 (fold Enrichment)"]].iloc[:n, :]
     X.columns = ["Biological process", "Fold Enrichment"]
     X["Fold Enrichment"] = X["Fold Enrichment"].astype(float)
