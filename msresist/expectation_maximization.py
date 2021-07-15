@@ -20,7 +20,7 @@ def EM_clustering_repeat(nRepeats=3, *params):
     return output
 
 
-def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
+def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None, verbose=False):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
@@ -46,7 +46,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None):
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=500, verbose=False, stop_threshold=1e-4)
+        gmm.fit(d, max_iterations=500, verbose=verbose, stop_threshold=1e-4)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):

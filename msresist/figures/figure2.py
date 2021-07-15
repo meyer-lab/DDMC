@@ -189,7 +189,7 @@ def add_rBox(ypred, y, ax):
     ax.text(0.75, 0.10, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True):
+def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clusters", annotate=True, spacer=0.05):
     """Plot Scores and Loadings of PLSR model"""
     X_scores, _ = model.transform(X, Y)
     PC1_xload, PC2_xload = model.x_loadings_[:, pcX - 1], model.x_loadings_[:, pcY - 1]
@@ -207,7 +207,6 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[0].axhline(y=0, color="0.25", linestyle="--")
     ax[0].axvline(x=0, color="0.25", linestyle="--")
 
-    spacer = 0.5
     ax[0].set_xlim([(-1 * max(np.abs(PC1_scores))) - spacer, max(np.abs(PC1_scores)) + spacer])
     ax[0].set_ylim([(-1 * max(np.abs(PC2_scores))) - spacer, max(np.abs(PC2_scores)) + spacer])
 
@@ -220,10 +219,10 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
         numbered = []
         list(map(lambda v: numbered.append(str(v + 1)), range(ncl)))
         for i, txt in enumerate(numbered):
-            ax[1].annotate(txt, (PC1_xload[i] + 0.05, PC2_xload[i] - 0.05), fontsize=10)
+            ax[1].annotate(txt, (PC1_xload[i] + spacer, PC2_xload[i] - spacer), fontsize=10)
     markers = ["x", "D", "*", "1"]
     for i, label in enumerate(Y.columns):
-        ax[1].annotate(label, (PC1_yload[i] + 0.05, PC2_yload[i] - 0.05), fontsize=10)
+        ax[1].annotate(label, (PC1_yload[i] + spacer, PC2_yload[i] - spacer), fontsize=10)
         ax[1].scatter(PC1_yload[i], PC2_yload[i], color="black", marker=markers[i])
     ax[1].scatter(PC1_xload, PC2_xload, c=np.arange(ncl), cmap=colors.ListedColormap(colors_))
     ax[1].set_title("PLSR Model Loadings", fontsize=12)
