@@ -85,7 +85,8 @@ def transform_YAPviability_data(data, itp=12):
     c["Lines"] = [s.split(" ")[0] for s in c["Lines"]]
     c = c[["Elapsed", "Lines", "Condition", "Inh_concentration", "Fold-change confluency"]]
     c = c[c["Elapsed"] >= itp]
-    return c
+    c["IC_n"] = [float(s.split("uM")[0]) for s in c["Inh_concentration"]]
+    return c.sort_values(by="IC_n").drop("IC_n", axis=1)
 
 
 def MeanTRs(X):
@@ -126,13 +127,19 @@ def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
     return (len(k), len(s), len(M), len(N))
 
 
-def plot_DasDR_timepoint(ax, time=96):
+def plot_DasDR_timepoint(ax, inhibitor, time=96):
     """Plot dasatinib DR at specified time point."""
-    das = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"),
-           pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
-    das = transform_YAPviability_data(das)
-    tp = das[das["Elapsed"] == time]
+    if inhibitor == "dasatinib":
+        inh = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"),
+            pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+    elif inhibitor == "CX-4945":
+        inh = pd.read_csv("CX_4945_BR1 _dose.csv")
+        inh.columns = [col.split(".1")[0].strip() for col in inh.columns]
+        inh = [inh.groupby(lambda x:x, axis=1).mean()]
+    data = transform_YAPviability_data(inh)
+    tp = data[data["Elapsed"] == time]
     sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ax=ax)
+    ax.set_xlabel("[" + inhibitor + "]")
 
 
 def plot_pAblSrcYap(ax):
