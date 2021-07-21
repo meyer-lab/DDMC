@@ -9,7 +9,7 @@ import pickle
 from scipy.stats import zscore
 from sklearn.cross_decomposition import PLSRegression
 from .common import subplotLabel, getSetup
-from ..pre_processing import MeanCenter, Log2T
+from ..pre_processing import MeanCenter
 from ..validations import pos_to_motif
 from ..clustering import MassSpecClustering
 from .figure1 import plotPCA
