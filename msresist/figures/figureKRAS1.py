@@ -19,6 +19,7 @@ from .figureM5 import plot_GO
 
 sns.set(color_codes=True)
 
+
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
@@ -42,7 +43,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Unpickle DDMC model and find clusters
-    with open('msresist/data/pickled_models/KRAS_Haura_Binomial_CL15_W10', 'rb') as m:    
+    with open('msresist/data/pickled_models/KRAS_Haura_Binomial_CL15_W10', 'rb') as m:
         model = pickle.load(m)
 
     centers = pd.DataFrame(model.transform()).T
@@ -54,7 +55,7 @@ def makeFigure():
     centers["Cell Line"] = [i.split("_")[0] for i in cols]
     centers["Time point"] = [i.split("_")[1] for i in cols]
 
-    #PCA
+    # PCA
     plotPCA(ax[:2], centers.reset_index(), 2, ["Cell Line", "Time point"], "Cluster", hue_scores="Cell Line", style_scores="Time point")
 
     # Upstream Kinases
@@ -71,14 +72,14 @@ def makeFigure():
 
     # C5 analysis
     """
-    Includes 57 peptides that all show a striking increase in abundance after 24h compared with 0h and 6h in H358 cells (epithelial). 
-    Includes a HER2 peptide (T1240, not reported in PsP). HER2 signaling is identified in Hitendra's paper as a key driver of resistance in epithelial cells. 
-    - Is this a HER2 cluster? 
-    - Could this include new HER2 substrates / signaling components? 
+    Includes 57 peptides that all show a striking increase in abundance after 24h compared with 0h and 6h in H358 cells (epithelial).
+    Includes a HER2 peptide (T1240, not reported in PsP). HER2 signaling is identified in Hitendra's paper as a key driver of resistance in epithelial cells.
+    - Is this a HER2 cluster?
+    - Could this include new HER2 substrates / signaling components?
     - Maybe NEKs, activated by HER2, phosphorylates a bunch of these peptides?
     - Gene ontology analysis of these 57 peptides found no statistically significant biological processes
     """
-    d = {"ERBB2": "T1240", "NEK7": "Y28", "ELMO2" : "S94", "TCP11": "S385", "CCDC6": "S395", "RNF139": "Y577"}
+    d = {"ERBB2": "T1240", "NEK7": "Y28", "ELMO2": "S94", "TCP11": "S385", "CCDC6": "S395", "RNF139": "Y577"}
     plot_IdSites(ax[6], X, d, "", rn=False, ylim=False, xlabels=X.columns[3:-1])
     ax[6].set_xticklabels(X.columns[3:-1], rotation=90)
     ax[6].set_title("Cluster 5 peptides")
@@ -92,8 +93,8 @@ def makeFigure():
 
     # C14 analysis
     """
-    Small cluster (151 peptides) with mainly p-sites whose genes regulate MT-based cytoskeletal reorganization and cell cycle. 
-    Interstingly, NEK7 is one of the kinases predicted to be upstream of this cluster and is present, showing the general trend of "attenuating-down". 
+    Small cluster (151 peptides) with mainly p-sites whose genes regulate MT-based cytoskeletal reorganization and cell cycle.
+    Interstingly, NEK7 is one of the kinases predicted to be upstream of this cluster and is present, showing the general trend of "attenuating-down".
     Same GO results using complete H358 portion as with entire data set
     """
     plot_GO(14, ax[9], n=7, title="GO Cluster 14", max_width=20, analysis="KRAS")
@@ -116,7 +117,7 @@ def makeFigure():
     ax[13].set_xticklabels(X.columns[3:-1], rotation=90)
     ax[13].set_title("Interkinetic nuclear migration")
 
-    #C11 analysis
+    # C11 analysis
     plot_GO(11, ax[14], n=7, title="GO Cluster 11", max_width=40, analysis="KRAS")
 
     plot_GO("11_H1792", ax[15], n=7, title="GO Cluster 11", max_width=40, analysis="KRAS")
