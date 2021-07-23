@@ -29,8 +29,7 @@ def makeFigure():
         X.iloc[i, 11:] -= X.iloc[i, 11]
 
     # Das DR time point
-    plot_DasDR_timepoint(ax[0])
-    ax[0].set_xlabel("[Dasatinib]")
+    plot_InhDR_timepoint(ax[0], "Dasatinib", "nM", time=96)
 
     # Luminex p-ASY Das DR
     plot_pAblSrcYap(ax[1:4])
@@ -70,14 +69,9 @@ def plot_YAPinhibitorTimeLapse(ax, X, ylim=False):
                 ax[j].legend(prop={'size': 10})
 
 
-def transform_YAPviability_data(data, itp=12):
+def transform_DRviability(data, inhibitor, units, itp):
     """Transform to initial time point and convert into seaborn format"""
-    new = []
-    for i, mat in enumerate(data):
-        if i > 0:
-            mat = MeanTRs(mat)
-        new.append(TimePointFoldChange(mat, itp))
-
+    new = fold_change_acrossBRs(data, itp)
     c = pd.concat(new, axis=0)
     c = pd.melt(c, id_vars="Elapsed", value_vars=c.columns[1:], var_name="Lines", value_name="Fold-change confluency")
     c["Condition"] = [s.split(" ")[1].split(" ")[0] for s in c["Lines"]]
@@ -85,9 +79,18 @@ def transform_YAPviability_data(data, itp=12):
     c["Lines"] = [s.split(" ")[0] for s in c["Lines"]]
     c = c[["Elapsed", "Lines", "Condition", "Inh_concentration", "Fold-change confluency"]]
     c = c[c["Elapsed"] >= itp]
-    c["IC_n"] = [float(s.split("uM")[0]) for s in c["Inh_concentration"]]
+    c["IC_n"] = [float(s.split(units)[0]) for s in c["Inh_concentration"]]
     return c.sort_values(by="IC_n").drop("IC_n", axis=1)
 
+def fold_change_acrossBRs(data, itp):
+    """Compute fold change to initial time point in every BR.
+    Note that data should always be a list, even if just one BR."""
+    new = []
+    for i, mat in enumerate(data):
+        if i > 0:
+            mat = MeanTRs(mat)
+        new.append(TimePointFoldChange(mat, itp))
+    return new
 
 def MeanTRs(X):
     """Merge technical replicates of 2 BR by taking the mean."""
@@ -127,19 +130,56 @@ def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
     return (len(k), len(s), len(M), len(N))
 
 
-def plot_DasDR_timepoint(ax, inhibitor, time=96):
-    """Plot dasatinib DR at specified time point."""
-    if inhibitor == "dasatinib":
-        inh = [pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib.csv"),
-               pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+def plot_InhDR_timepoint(ax, inhibitor, time=96, itp=24):
+    """Plot inhibitor DR at specified time point."""
+    if inhibitor == "Dasatinib":
+        br1 = merge_TRs("Dasatinib_Dose_BR3.csv", 2)
+        inh = [br1, pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+        units = "nM"
     elif inhibitor == "CX-4945":
-        inh = pd.read_csv("CX_4945_BR1 _dose.csv")
-        inh.columns = [col.split(".1")[0].strip() for col in inh.columns]
-        inh = [inh.groupby(lambda x:x, axis=1).mean()]
-    data = transform_YAPviability_data(inh)
+        inh = [merge_TRs("CX_4945_BR1 _dose.csv", 2)]
+        units = "uM"
+    elif inhibitor == "Volasertib":
+        inh = [merge_TRs("Volasertib_Dose_BR1.csv", 2)]
+        units = "nM"
+    data = transform_DRviability(inh, inhibitor, units, itp)
     tp = data[data["Elapsed"] == time]
-    sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ax=ax)
+    sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ci=68, ax=ax)
     ax.set_xlabel("[" + inhibitor + "]")
+
+
+def merge_TRs(filename, nTRs):
+    """Merge technical replicates of an experiment"""
+    path = "msresist/data/Validations/CellGrowth/"
+    inh = pd.read_csv(path + filename)
+    for i in range(1, nTRs):
+        inh.columns = [col.split("." + str(i))[0].strip() for col in inh.columns]
+    inh = inh.groupby(lambda x:x, axis=1).mean()
+    return inh
+
+
+def transform_siRNA(data, itp):
+    new = fold_change_acrossBRs(data, itp)
+    c = pd.concat(new, axis=0)
+    c = pd.melt(c, id_vars="Elapsed", value_vars=c.columns[1:], var_name="Lines", value_name="Fold-change confluency")
+    c["Treatment"] = [s.split(" ")[1] for s in c["Lines"]]
+    c["Construct"] = [s.split("-")[1] if "-" in s else "Non-T" for s in c["Lines"]]
+    c["Lines"] = [s.split(" ")[0] for s in c["Lines"]]
+    c = c[c["Elapsed"] >= itp]
+    return c
+
+
+def plot_siRNA_TimeLapse(ax, target, time=96, itp=24, trs=2):
+    d = merge_TRs("NEK_siRNA_BR1.csv", trs)
+    if target == "NEK6":
+        d = [d.loc[:, ~d.columns.str.contains("7")]]
+    elif target == "NEK7":
+        d = [d.loc[:, ~d.columns.str.contains("6")]]
+    d = transform_siRNA(d, itp)
+    wt = d[d["Lines"] == "WT"]
+    ko = d[d["Lines"] == "KO"]
+    sns.lineplot(x="Elapsed", y="Fold-change confluency", data=wt, hue="Treatment", style="Construct", ax=ax[0]).set_title("PC9 WT-si" + target)
+    sns.lineplot(x="Elapsed", y="Fold-change confluency", data=ko, hue="Treatment", style="Construct", ax=ax[1]).set_title("PC9 AXL KO-si" + target)
 
 
 def plot_pAblSrcYap(ax):
@@ -167,3 +207,24 @@ def plot_pAblSrcYap(ax):
     sns.barplot(data=yap, x="Treatment", y="p-Signal", hue="Line", ax=ax[2])
     ax[2].set_title("p-YAP S127")
     ax[2].set_xticklabels(yap["Treatment"][:6], rotation=90)
+
+
+def plot_pAblSrcYap2(ax, line="WT"):
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+    mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/ABL_SRC_YAP_DasDR.csv")
+    mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line"], value_vars=["p-YAP S127", "p-SRC Y416", "p-ABL Y245"], var_name="Protein", value_name="p-Signal")
+    mfi_AS = mfi_AS[mfi_AS["Line"] == line]
+
+    abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL Y245")]
+    src = mfi_AS[(mfi_AS["Protein"] == "p-SRC Y416")]
+    yap = mfi_AS[(mfi_AS["Protein"] == "p-YAP S127")]
+
+    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", ax=ax[0])
+    a.set_title("p-ABL Y245")
+    a.set_xticklabels(a.get_xticklabels(), rotation=90)
+    s = sns.barplot(data=src, x="Treatment", y="p-Signal", ax=ax[1])
+    s.set_title("p-SRC Y416")
+    s.set_xticklabels(s.get_xticklabels(), rotation=90)
+    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2])
+    y.set_title("p-YAP S127")
+    y.set_xticklabels(y.get_xticklabels(), rotation=90)
