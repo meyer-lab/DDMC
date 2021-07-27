@@ -82,6 +82,7 @@ def transform_DRviability(data, inhibitor, units, itp):
     c["IC_n"] = [float(s.split(units)[0]) for s in c["Inh_concentration"]]
     return c.sort_values(by="IC_n").drop("IC_n", axis=1)
 
+
 def fold_change_acrossBRs(data, itp):
     """Compute fold change to initial time point in every BR.
     Note that data should always be a list, even if just one BR."""
@@ -91,6 +92,7 @@ def fold_change_acrossBRs(data, itp):
             mat = MeanTRs(mat)
         new.append(TimePointFoldChange(mat, itp))
     return new
+
 
 def MeanTRs(X):
     """Merge technical replicates of 2 BR by taking the mean."""
@@ -154,7 +156,7 @@ def merge_TRs(filename, nTRs):
     inh = pd.read_csv(path + filename)
     for i in range(1, nTRs):
         inh.columns = [col.split("." + str(i))[0].strip() for col in inh.columns]
-    inh = inh.groupby(lambda x:x, axis=1).mean()
+    inh = inh.groupby(lambda x: x, axis=1).mean()
     return inh
 
 
