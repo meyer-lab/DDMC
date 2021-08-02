@@ -88,8 +88,6 @@ def fold_change_acrossBRs(data, itp):
     Note that data should always be a list, even if just one BR."""
     new = []
     for i, mat in enumerate(data):
-        if i > 0:
-            mat = MeanTRs(mat)
         new.append(TimePointFoldChange(mat, itp))
     return new
 
@@ -135,15 +133,17 @@ def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
 def plot_InhDR_timepoint(ax, inhibitor, time=96, itp=24):
     """Plot inhibitor DR at specified time point."""
     if inhibitor == "Dasatinib":
-        br1 = merge_TRs("Dasatinib_Dose_BR3.csv", 2)
-        inh = [br1, pd.read_csv("msresist/data/Validations/Experimental/DoseResponses/Dasatinib_2fixed.csv")]
+        inh = [merge_TRs("Dasatinib_Dose_BR3.csv", 2), merge_TRs("Dasatinib_2fixed.csv", 2)]
         units = "nM"
+        time = 96
     elif inhibitor == "CX-4945":
-        inh = [merge_TRs("CX_4945_BR1 _dose.csv", 2)]
+        inh = [merge_TRs("CX_4945_BR1_dose.csv", 2), merge_TRs("CX_4945_BR2_dose.csv", 2)]
         units = "uM"
+        time = 120
     elif inhibitor == "Volasertib":
-        inh = [merge_TRs("Volasertib_Dose_BR1.csv", 2)]
+        inh = [merge_TRs("Volasertib_Dose_BR1.csv", 2), merge_TRs("Volasertib_Dose_BR2.csv", 2)]
         units = "nM"
+        time = 72
     data = transform_DRviability(inh, inhibitor, units, itp)
     tp = data[data["Elapsed"] == time]
     sns.lineplot(data=tp, x="Inh_concentration", y="Fold-change confluency", hue="Lines", style="Condition", ci=68, ax=ax)
