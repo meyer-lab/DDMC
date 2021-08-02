@@ -29,7 +29,6 @@ def makeFigure():
         X.iloc[i, 11:] -= X.iloc[i, 11]
 
     # Das DR time point
-    plot_InhDR_timepoint(ax[0], "Dasatinib", "nM", time=96)
 
     # Luminex p-ASY Das DR
     plot_pAblSrcYap(ax[1:4])
@@ -130,7 +129,7 @@ def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
     return (len(k), len(s), len(M), len(N))
 
 
-def plot_InhDR_timepoint(ax, inhibitor, time=96, itp=24):
+def plot_InhDR_timepoint(ax, inhibitor, itp=24):
     """Plot inhibitor DR at specified time point."""
     if inhibitor == "Dasatinib":
         inh = [merge_TRs("Dasatinib_Dose_BR3.csv", 2), merge_TRs("Dasatinib_2fixed.csv", 2)]
@@ -139,7 +138,7 @@ def plot_InhDR_timepoint(ax, inhibitor, time=96, itp=24):
     elif inhibitor == "CX-4945":
         inh = [merge_TRs("CX_4945_BR1_dose.csv", 2), merge_TRs("CX_4945_BR2_dose.csv", 2)]
         units = "uM"
-        time = 120
+        time = 96
     elif inhibitor == "Volasertib":
         inh = [merge_TRs("Volasertib_Dose_BR1.csv", 2), merge_TRs("Volasertib_Dose_BR2.csv", 2)]
         units = "nM"
