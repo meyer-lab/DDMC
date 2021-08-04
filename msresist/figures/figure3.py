@@ -229,3 +229,27 @@ def plot_pAblSrcYap2(ax, line="WT"):
     y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2])
     y.set_title("p-YAP S127")
     y.set_xticklabels(y.get_xticklabels(), rotation=90)
+
+
+def plot_pAblSrcYap3(ax, line="WT"):
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+    mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/20210730 ABL_SRC_YAP_DasDR 2_20210730_182250.csv")
+    mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line", "Experiment"], value_vars=["p-YAP S127", "p-SRC Y416", "p-ABL Y245"], var_name="Protein", value_name="p-Signal")
+    mfi_AS = mfi_AS[mfi_AS["Line"] == line]
+
+    abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL Y245")]
+    abl["Treatment"] = [t.replace("A", "(A)") for t in abl["Treatment"]]
+    src = mfi_AS[(mfi_AS["Protein"] == "p-SRC Y416")]
+    src["Treatment"] = [t.replace("A", "(A)") for t in src["Treatment"]]
+    yap = mfi_AS[(mfi_AS["Protein"] == "p-YAP S127")]
+    yap["Treatment"] = [t.replace("A", "(A)") for t in yap["Treatment"]]
+
+    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", ax=ax[0], hue="Experiment")
+    a.set_title("p-ABL Y245")
+    a.set_xticklabels(a.get_xticklabels(), rotation=90)
+    s = sns.barplot(data=src, x="Treatment", y="p-Signal", ax=ax[1], hue="Experiment")
+    s.set_title("p-SRC Y416")
+    s.set_xticklabels(s.get_xticklabels(), rotation=90)
+    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2], hue="Experiment")
+    y.set_title("p-YAP S127")
+    y.set_xticklabels(y.get_xticklabels(), rotation=90)
