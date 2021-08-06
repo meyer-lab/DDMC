@@ -10,6 +10,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils import resample
 from .common import subplotLabel, getSetup
 from ..motifs import MapMotifs
 from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels, CorrCoefFilter
@@ -693,3 +694,59 @@ def selectpeptides(x, koi):
     ms = pd.concat(l, axis=1).T.reset_index()
     ms.columns = x.reset_index().columns
     return ms
+
+
+def bootPCA(d, n_components, lIDX, n_boots=100):
+    """ Compute PCA scores and loadings including bootstrap variance of the estimates. """
+    bootScor, bootLoad = [], []
+    data_headers = list(d.select_dtypes(include=['float64']).columns)
+    sIDX = list(d.select_dtypes(include=['object']).columns)
+    for _ in range(n_boots):
+        xIDX = range(d.shape[0])
+        resamp = resample(xIDX, replace=True)
+        bootdf = d.iloc[resamp, :].groupby(sIDX).mean().reset_index()
+        bootdf[data_headers] = StandardScaler().fit_transform(bootdf[data_headers])
+        pp = PCA(n_components=n_components)
+        dScor = pp.fit_transform(bootdf[data_headers].values)
+        dScor, dLoad = pca_dfs(dScor, pp.components_, bootdf, n_components, sIDX, lIDX)
+        bootScor.append(dScor)
+        bootLoad.append(dLoad)
+
+    bootScor = pd.concat(bootScor)
+    bootScor_m = bootScor.groupby(sIDX).mean().reset_index()
+    bootScor_sd = bootScor.groupby(sIDX).std().reset_index()
+
+    bootLoad = pd.concat(bootLoad)
+    bootLoad_m = bootLoad.groupby(lIDX).mean().reset_index()
+    bootLoad_sd = bootLoad.groupby(lIDX).std().reset_index()
+
+    return bootScor_m, bootScor_sd, bootLoad_m, bootLoad_sd, bootScor
+
+
+def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=False):
+    """ Plot Scores and Loadings. """
+    sIDX = list(means.select_dtypes(include=['object']).columns)
+    hue = sIDX[0]
+    style = None
+    if len(sIDX) == 2:
+        style = sIDX[1]
+
+    ax.errorbar(means["PC1"], means["PC2"], xerr=stds["PC1"], yerr=stds["PC2"], 
+                linestyle="", elinewidth=0.2, capsize=2, capthick=0.2, ecolor='k')
+
+    if colors:
+        pal = sns.xkcd_palette(colors)
+        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax, 
+                             palette=pal, markers=["o", "X", "d", "*"], **{'linewidth':.5, 'edgecolor':"k"}, s=55)
+    if not colors:
+        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax, 
+                             markers=["o", "X", "d", "*"], **{'linewidth':.5, 'edgecolor':"k"}, s=55)
+
+    if LegOut:
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
+    ax.set_title(title)
+
+    if annotate:
+        for idx, txt in enumerate(means[sIDX[0]]):
+             p1.text(means["PC1"][idx], means["PC2"][idx], txt, 
+                     horizontalalignment='left', color='black', size="xx-small", fontweight="light")
