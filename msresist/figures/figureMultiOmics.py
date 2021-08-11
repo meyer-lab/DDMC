@@ -44,20 +44,20 @@ def gen_csvs():
             corr[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
     corr = np.asarray(corr).T
 
-    p_dfrot = []
+    prot = []
     for idx, gene in enumerate(predictor_prot.columns):
-        p_dfrot.append([])
+        prot.append([])
         for clust in response_prot.columns:
             cov = np.cov(list(predictor_prot[gene].dropna()),list(response_prot[clust].loc[predictor_prot[gene].dropna().index]))
-            p_dfrot[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
-    p_dfrot = np.asarray(p_dfrot).T
+            prot[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
+    prot = np.asarray(prot).T
 
     corr_out= pd.DataFrame(corr, columns = predictor.columns, index = response.columns)
     corr_out = corr_out.append(mRNA_data['geneSymbol'])
     corr_out.to_csv('mRNA_Cluster_Correlations.csv')
-    p_dfrot_out= pd.DataFrame(p_dfrot, columns = predictor_prot.columns, index = response_prot.columns)
-    p_dfrot_out = p_dfrot_out.append(prot_data['geneSymbol'])
-    p_dfrot_out.to_csv('prot_Cluster_Correlations.csv')
+    prot_out= pd.DataFrame(prot, columns = predictor_prot.columns, index = response_prot.columns)
+    prot_out = prot_out.append(prot_data['geneSymbol'])
+    prot_out.to_csv('prot_Cluster_Correlations.csv')
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
