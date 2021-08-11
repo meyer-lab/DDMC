@@ -696,6 +696,20 @@ def selectpeptides(x, koi):
     return ms
 
 
+def preprocess_ID():
+    bid = pd.read_csv("msresist/data/BioID/BioID.csv")
+    genes = [s.split("GN=")[1].split("PE")[0] if "GN" in s else bid["Gene"][i].split("_")[1] for i, s in enumerate(bid["Protein"])]
+    bid = bid.drop(["Protein", "Gene"], axis=1)
+    bid.insert(0, "Gene", genes)
+    XIDX = np.any(bid.iloc[:, 1:].values > 7, axis=1)
+    bid = bid.iloc[XIDX, :]
+    bid = bid.replace(0, 0.00001)
+    bid.iloc[:, 1:] = np.log(bid.iloc[:, 1:])
+    bid = bid.set_index("Gene").T.reset_index()
+    bid["index"] = [s.split(".")[0] for s in bid["index"]]
+    return bid
+
+
 def bootPCA(d, n_components, lIDX, n_boots=100):
     """ Compute PCA scores and loadings including bootstrap variance of the estimates. """
     bootScor, bootLoad = [], []
@@ -714,11 +728,11 @@ def bootPCA(d, n_components, lIDX, n_boots=100):
 
     bootScor = pd.concat(bootScor)
     bootScor_m = bootScor.groupby(sIDX).mean().reset_index()
-    bootScor_sd = bootScor.groupby(sIDX).std().reset_index()
+    bootScor_sd = bootScor.groupby(sIDX).sem().reset_index()
 
     bootLoad = pd.concat(bootLoad)
     bootLoad_m = bootLoad.groupby(lIDX).mean().reset_index()
-    bootLoad_sd = bootLoad.groupby(lIDX).std().reset_index()
+    bootLoad_sd = bootLoad.groupby(lIDX).sem().reset_index()
 
     return bootScor_m, bootScor_sd, bootLoad_m, bootLoad_sd, bootScor
 
