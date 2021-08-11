@@ -44,25 +44,25 @@ def gen_csvs():
             corr[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
     corr = np.asarray(corr).T
 
-    corr_prot = []
+    p_dfrot = []
     for idx, gene in enumerate(predictor_prot.columns):
-        corr_prot.append([])
+        p_dfrot.append([])
         for clust in response_prot.columns:
             cov = np.cov(list(predictor_prot[gene].dropna()),list(response_prot[clust].loc[predictor_prot[gene].dropna().index]))
-            corr_prot[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
-    corr_prot = np.asarray(corr_prot).T
+            p_dfrot[idx].append(cov[0][1]/((cov[0][0]*cov[1][1])**.5))
+    p_dfrot = np.asarray(p_dfrot).T
 
     corr_out= pd.DataFrame(corr, columns = predictor.columns, index = response.columns)
     corr_out = corr_out.append(mRNA_data['geneSymbol'])
     corr_out.to_csv('mRNA_Cluster_Correlations.csv')
-    corr_prot_out= pd.DataFrame(corr_prot, columns = predictor_prot.columns, index = response_prot.columns)
-    corr_prot_out = corr_prot_out.append(prot_data['geneSymbol'])
-    corr_prot_out.to_csv('prot_Cluster_Correlations.csv')
+    p_dfrot_out= pd.DataFrame(p_dfrot, columns = predictor_prot.columns, index = response_prot.columns)
+    p_dfrot_out = p_dfrot_out.append(prot_data['geneSymbol'])
+    p_dfrot_out.to_csv('prot_Cluster_Correlations.csv')
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (4, 1))
+    ax, f = getSetup((12, 8), (2, 1))
 
     # Add subplot labels
     #subplotLabel(ax)
@@ -72,40 +72,31 @@ def makeFigure():
     
 
 
-    corr_out = pd.read_csv('mRNA_Cluster_Correlations.csv')
-    corr_out = corr_out[corr_out.index!=24]
-    corr_temp = np.array([], dtype = float)
-    clust_temp = np.array([],int)
-    corr_temp_2 = np.array([], dtype = float)
-    clust_temp_2 = np.array([],int)
-    for col in corr_out.columns:
-        if col != corr_out.columns[0]:
-            corr_temp = np.concatenate((corr_temp,np.asarray(corr_out[col][corr_out.index<12], dtype = float)))
-            clust_temp = np.concatenate((clust_temp,np.arange(1,13)))
-            corr_temp_2 = np.concatenate((corr_temp_2,np.asarray(corr_out[col][corr_out.index>=12], dtype = float)))
-            clust_temp_2 = np.concatenate((clust_temp_2,np.arange(13,25)))
-    to_plot = pd.DataFrame(np.asarray([corr_temp, clust_temp]).T, columns = ['corr','clust'])
-    to_plot_2 = pd.DataFrame(np.asarray([corr_temp_2, clust_temp_2]).T, columns = ['corr','clust'])
+    m_df= pd.read_csv('mRNA_Cluster_Correlations.csv')
+    p_df = pd.read_csv('prot_Cluster_Correlations.csv')
+    m_df = m_df[m_df.index!=24]
+    p_df = p_df[p_df.index!=24]
+    corr_1 = np.array([], dtype = float)
+    corr_2 = np.array([], dtype = float)
 
-    corr_prot_out = pd.read_csv('prot_Cluster_Correlations.csv')
-    corr_prot_out = corr_prot_out[corr_prot_out.index!=24]
-    corr_prot_temp = np.array([], dtype = float)
-    clust_prot_temp = np.array([],int)
-    corr_prot_temp_2 = np.array([], dtype = float)
-    clust_prot_temp_2 = np.array([],int)
-    for col in corr_prot_out.columns:
-        if col != corr_prot_out.columns[0]:
-            corr_prot_temp = np.concatenate((corr_prot_temp,np.asarray(corr_prot_out[col][corr_prot_out.index<12], dtype = float)))
-            clust_prot_temp = np.concatenate((clust_prot_temp,np.arange(1,13)))
-            corr_prot_temp_2 = np.concatenate((corr_prot_temp_2,np.asarray(corr_prot_out[col][corr_prot_out.index>=12], dtype = float)))
-            clust_prot_temp_2 = np.concatenate((clust_prot_temp_2,np.arange(13,25)))
-    to_plot_prot = pd.DataFrame(np.asarray([corr_prot_temp, clust_prot_temp]).T, columns = ['corr','clust'])
-    to_plot_prot_2 = pd.DataFrame(np.asarray([corr_prot_temp_2, clust_prot_temp_2]).T, columns = ['corr','clust'])
-   
-    ax[0].set_title('mRNA')
-    ax[2].set_title('Protein')
-    sns.violinplot(x = "clust", y = "corr",data = to_plot, ax = ax[0])
-    sns.violinplot(x = "clust", y = "corr",data = to_plot_2, ax = ax[1])
-    sns.violinplot(x = "clust", y = "corr",data = to_plot_prot, ax = ax[2])
-    sns.violinplot(x = "clust", y = "corr",data = to_plot_prot_2, ax = ax[3])
+    for col_m in m_df.columns[1:]:
+        corr_1 = np.concatenate((corr_1,np.asarray(m_df[col_m][m_df.index<12], dtype = float)))
+        corr_2 = np.concatenate((corr_2,np.asarray(m_df[col_m][m_df.index>=12], dtype = float)))
+    
+
+    for col_p in p_df.columns[1:]:
+        corr_1 = np.concatenate((corr_1,np.asarray(p_df[col_p][p_df.index<12], dtype = float)))
+        corr_2 = np.concatenate((corr_2,np.asarray(p_df[col_p][p_df.index>=12], dtype = float)))
+    
+    mol = ["mRNA" if idx < (len(m_df.columns)-1)*12 else "protein"  for idx  in range((len(m_df.columns)+len(p_df.columns)-2)*12)]   
+    clust_1 = np.arange(0,len(corr_1))%12+1           
+    clust_2 = np.arange(0,len(corr_2))%12+13  
+    group1 = pd.DataFrame(np.asarray([corr_1, clust_1, mol]).T, columns = ['Correlation','Cluster', 'Molecule'])
+    group2 = pd.DataFrame(np.asarray([corr_2, clust_2, mol]).T, columns = ['Correlation','Cluster', 'Molecule'])
+    group1 = group1.astype({'Correlation':'float64', 'Cluster': 'str', 'Molecule': 'str'})
+    group2 = group2.astype({'Correlation':'float64', 'Cluster': 'str', 'Molecule': 'str'})
+
+    sns.violinplot(x = "Cluster", y = "Correlation",data = group1, ax = ax[0], hue = "Molecule", split=True)
+    sns.violinplot(x = "Cluster", y = "Correlation",data = group2, ax = ax[1], hue = "Molecule", split=True)
+
     return f
