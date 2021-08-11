@@ -62,7 +62,7 @@ def gen_csvs():
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 8), (2, 1))
+    ax, f = getSetup((12, 5), (1, 1))
 
     # Add subplot labels
     #subplotLabel(ax)
@@ -70,33 +70,23 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
     
-
-
     m_df= pd.read_csv('mRNA_Cluster_Correlations.csv')
     p_df = pd.read_csv('prot_Cluster_Correlations.csv')
     m_df = m_df[m_df.index!=24]
     p_df = p_df[p_df.index!=24]
-    corr_1 = np.array([], dtype = float)
-    corr_2 = np.array([], dtype = float)
+    corr = np.array([], dtype = float)
 
     for col_m in m_df.columns[1:]:
-        corr_1 = np.concatenate((corr_1,np.asarray(m_df[col_m][m_df.index<12], dtype = float)))
-        corr_2 = np.concatenate((corr_2,np.asarray(m_df[col_m][m_df.index>=12], dtype = float)))
+        corr = np.concatenate((corr,np.asarray(m_df[col_m], dtype = float)))
     
-
     for col_p in p_df.columns[1:]:
-        corr_1 = np.concatenate((corr_1,np.asarray(p_df[col_p][p_df.index<12], dtype = float)))
-        corr_2 = np.concatenate((corr_2,np.asarray(p_df[col_p][p_df.index>=12], dtype = float)))
+        corr = np.concatenate((corr,np.asarray(p_df[col_p], dtype = float)))
     
-    mol = ["mRNA" if idx < (len(m_df.columns)-1)*12 else "protein"  for idx  in range((len(m_df.columns)+len(p_df.columns)-2)*12)]   
-    clust_1 = np.arange(0,len(corr_1))%12+1           
-    clust_2 = np.arange(0,len(corr_2))%12+13  
-    group1 = pd.DataFrame(np.asarray([corr_1, clust_1, mol]).T, columns = ['Correlation','Cluster', 'Molecule'])
-    group2 = pd.DataFrame(np.asarray([corr_2, clust_2, mol]).T, columns = ['Correlation','Cluster', 'Molecule'])
+    mol = ["mRNA" if idx < (len(m_df.columns)-1)*24 else "protein"  for idx  in range((len(m_df.columns)+len(p_df.columns)-2)*24)]   
+    clust = np.arange(0,len(corr))%24+1           
+    group1 = pd.DataFrame(np.asarray([corr, clust, mol]).T, columns = ['Correlation','Cluster', 'Molecule'])
     group1 = group1.astype({'Correlation':'float64', 'Cluster': 'str', 'Molecule': 'str'})
-    group2 = group2.astype({'Correlation':'float64', 'Cluster': 'str', 'Molecule': 'str'})
 
     sns.violinplot(x = "Cluster", y = "Correlation",data = group1, ax = ax[0], hue = "Molecule", split=True)
-    sns.violinplot(x = "Cluster", y = "Correlation",data = group2, ax = ax[1], hue = "Molecule", split=True)
 
     return f
