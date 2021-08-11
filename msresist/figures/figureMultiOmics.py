@@ -65,12 +65,14 @@ def makeFigure():
     ax, f = getSetup((12, 10), (4, 1))
 
     # Add subplot labels
-    subplotLabel(ax)
+    #subplotLabel(ax)
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
     
-    corr_out = pd.read_csv('/Users/lukakarginov/Documents/Meyer Lab/resistance-MS/msresist/figures/mRNA_Cluster_Correlations.csv')
+
+
+    corr_out = pd.read_csv('mRNA_Cluster_Correlations.csv')
     corr_out = corr_out[corr_out.index!=24]
     corr_temp = np.array([], dtype = float)
     clust_temp = np.array([],int)
@@ -85,7 +87,7 @@ def makeFigure():
     to_plot = pd.DataFrame(np.asarray([corr_temp, clust_temp]).T, columns = ['corr','clust'])
     to_plot_2 = pd.DataFrame(np.asarray([corr_temp_2, clust_temp_2]).T, columns = ['corr','clust'])
 
-    corr_prot_out = pd.read_csv('/Users/lukakarginov/Documents/Meyer Lab/resistance-MS/msresist/figures/mRNA_Cluster_Correlations.csv')
+    corr_prot_out = pd.read_csv('prot_Cluster_Correlations.csv')
     corr_prot_out = corr_prot_out[corr_prot_out.index!=24]
     corr_prot_temp = np.array([], dtype = float)
     clust_prot_temp = np.array([],int)
@@ -97,13 +99,13 @@ def makeFigure():
             clust_prot_temp = np.concatenate((clust_prot_temp,np.arange(1,13)))
             corr_prot_temp_2 = np.concatenate((corr_prot_temp_2,np.asarray(corr_prot_out[col][corr_prot_out.index>=12], dtype = float)))
             clust_prot_temp_2 = np.concatenate((clust_prot_temp_2,np.arange(13,25)))
-    to_plot = pd.DataFrame(np.asarray([corr_prot_temp, clust_prot_temp]).T, columns = ['corr','clust'])
-    to_plot_2 = pd.DataFrame(np.asarray([corr_prot_temp_2, clust_prot_temp_2]).T, columns = ['corr','clust'])
+    to_plot_prot = pd.DataFrame(np.asarray([corr_prot_temp, clust_prot_temp]).T, columns = ['corr','clust'])
+    to_plot_prot_2 = pd.DataFrame(np.asarray([corr_prot_temp_2, clust_prot_temp_2]).T, columns = ['corr','clust'])
    
     ax[0].set_title('mRNA')
     ax[2].set_title('Protein')
     sns.violinplot(x = "clust", y = "corr",data = to_plot, ax = ax[0])
     sns.violinplot(x = "clust", y = "corr",data = to_plot_2, ax = ax[1])
-    sns.violinplot(x = "clust", y = "corr",data = to_plot, ax = ax[2])
-    sns.violinplot(x = "clust", y = "corr",data = to_plot_2, ax = ax[3])
+    sns.violinplot(x = "clust", y = "corr",data = to_plot_prot, ax = ax[2])
+    sns.violinplot(x = "clust", y = "corr",data = to_plot_prot_2, ax = ax[3])
     return f
