@@ -21,7 +21,7 @@ from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
-from pca import plotPCA
+from ..pca import plotPCA
 
 
 def makeFigure():
