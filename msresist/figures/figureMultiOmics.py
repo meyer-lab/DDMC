@@ -8,9 +8,10 @@ import seaborn as sns
 from .common import subplotLabel, getSetup
 
 def gen_csvs():
-    clust_data = pd.read_csv('CPTAC_LUAD_CL24_W15_TMT2_Centers.csv')
-    prot_data = pd.read_excel('mmc3.xlsx', 1)
-    mRNA_data = pd.read_excel('mmc2.xlsx', sheet_name='Table S2E')
+    path = 'msresist/data/MS/CPTAC/'
+    clust_data = pd.read_csv(path + 'CPTAC_LUAD_CL24_W15_TMT2_Centers.csv')
+    prot_data = pd.read_csv(path + 'CPTAC_LUAD_Protein.csv')
+    mRNA_data = pd.read_csv(path + 'CPTAC_LUAD_RNAseq.csv')
 
     #prot import
     prot_data.columns = np.asarray(prot_data.iloc[1])
