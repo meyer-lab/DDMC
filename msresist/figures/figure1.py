@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 from .common import subplotLabel, getSetup
 from ..motifs import MapMotifs
+from ..pca import plotPCA
 from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels, CorrCoefFilter
 from ..distances import BarPlotRipleysK, DataFrameRipleysK, PlotRipleysK
 
@@ -338,21 +339,6 @@ def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", ytickl
     g = sns.clustermap(data, method="centroid", cmap="bwr", robust=robust, vmax=lim, vmin=-lim, figsize=figsize, yticklabels=yticklabels, xticklabels=xticklabels)
     ax = g.ax_heatmap
     ax.set_ylabel(ylabel)
-
-
-def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
-    """ build PCA scores and loadings data frames. """
-    dScor = pd.DataFrame()
-    dLoad = pd.DataFrame()
-    for i in range(n_components):
-        cpca = "PC" + str(i + 1)
-        dScor[cpca] = scores[:, i]
-        dLoad[cpca] = loadings[i, :]
-
-    for j in sIDX:
-        dScor[j] = list(df[j])
-    dLoad[lIDX] = df.select_dtypes(include=["float64"]).columns
-    return dScor, dLoad
 
 
 def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
