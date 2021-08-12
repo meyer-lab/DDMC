@@ -707,7 +707,11 @@ def preprocess_ID():
     bid.iloc[:, 1:] = np.log(bid.iloc[:, 1:])
     bid = bid.set_index("Gene").T.reset_index()
     bid["index"] = [s.split(".")[0] for s in bid["index"]]
-    return bid
+    nc = bid.groupby("index").mean().loc["Bio"]
+    bid.iloc[:, 1:] /= nc
+    XIDX = np.any(bid.iloc[:, 1:].values > 3, axis=0)
+    XIDX = np.insert(XIDX, 0, True)
+    return bid.iloc[:, XIDX]
 
 
 def bootPCA(d, n_components, lIDX, n_boots=100):
