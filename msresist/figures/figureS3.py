@@ -6,7 +6,8 @@ import pandas as pd
 import seaborn as sns
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing
-from .figure1 import plot_IdSites, plot_AllSites, plotPCA_scoresORloadings
+from .figure1 import plot_IdSites, plot_AllSites
+from ..pca import plotPCA_scoresORloadings
 from ..motifs import MapMotifs
 
 

@@ -11,7 +11,8 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plotPeptidesByFeature
-from .figure2 import plotPCA, plotDistanceToUpstreamKinase
+from .figure2 import plotDistanceToUpstreamKinase
+from .pca import plotPCA
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides
 
