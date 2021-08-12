@@ -11,7 +11,6 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import logomaker as lm
 from sklearn.cross_decomposition import PLSRegression
-from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import cross_val_predict
 from sklearn.cluster import KMeans
@@ -21,7 +20,8 @@ from ..pre_processing import preprocessing, MeanCenter
 from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
-from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plotPCA
+from .figure1 import import_phenotype_data, formatPhenotypesForModeling
+from ..pca import plotPCA
 
 
 def makeFigure():

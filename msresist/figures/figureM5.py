@@ -15,7 +15,8 @@ from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure2 import plotPCA, plotMotifs, plotDistanceToUpstreamKinase
+from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
+from ..pca import plotPCA
 from ..pre_processing import MeanCenter, filter_NaNpeptides
 
 
