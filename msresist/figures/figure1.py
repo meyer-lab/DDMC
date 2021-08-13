@@ -2,6 +2,7 @@
 This creates Figure 1: Phenotypic characterization of PC9 AXL mutants
 """
 
+from msresist.pre_processing import Linear
 import os
 import pandas as pd
 import numpy as np
@@ -466,5 +467,3 @@ def selectpeptides(x, koi):
     ms = pd.concat(l, axis=1).T.reset_index()
     ms.columns = x.reset_index().columns
     return ms
-
-from msresist.pre_processing import Linear
