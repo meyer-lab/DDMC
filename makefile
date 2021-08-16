@@ -22,17 +22,15 @@ output/%/manuscript.md: venv manuscripts/%/*.md
 output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
-		--defaults=./common/templates/manubot/pandoc/common.yaml \
+		--defaults=common.yaml \
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
-		--csl=./manuscripts/science.csl \
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
 output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
 	cp *.svg output/$*/
 	. venv/bin/activate && pandoc --verbose \
-		--defaults=./common/templates/manubot/pandoc/common.yaml \
+		--defaults=common.yaml \
 		--defaults=./common/templates/manubot/pandoc/docx.yaml \
-		--csl=./manuscripts/science.csl \
 		--output=output/$*/manuscript.docx output/$*/manuscript.md
 
 test: venv
