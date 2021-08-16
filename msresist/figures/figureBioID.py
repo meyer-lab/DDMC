@@ -1,7 +1,8 @@
 import pandas as pd
 from msresist.pca import plotBootPCA, bootPCA, preprocess_ID
-import seaborn as sns 
+import seaborn as sns
 from .common import subplotLabel, getSetup
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -16,14 +17,13 @@ def makeFigure():
 
     bid = preprocess_ID(linear=True)
 
-    #Scores
+    # Scores
     bootScor_m, bootScor_sd, bootLoad_m, bootLoad_sd, bootScor = bootPCA(bid, 3, "Gene", method="NMF", n_boots=100)
     plotBootPCA(ax[0], bootScor_m, bootScor_sd, "NMF Scores", LegOut=False, annotate=False, colors=False)
     ax[0].legend(prop={'size': 10})
 
-    #Loadings
+    # Loadings
     plotBootPCA(ax[1], bootLoad_m, bootLoad_sd, "NMF Loadings", LegOut=False, annotate=True, colors=False)
     ax[1].get_legend().remove()
 
     return f
-

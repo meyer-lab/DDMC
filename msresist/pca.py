@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 
+
 def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
     """ build PCA scores and loadings data frames. """
     dScor = pd.DataFrame()
@@ -297,16 +298,16 @@ def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=Fal
     if len(sIDX) == 2:
         style = sIDX[1]
 
-    ax.errorbar(means["PC1"], means["PC2"], xerr=stds["PC1"], yerr=stds["PC2"], 
+    ax.errorbar(means["PC1"], means["PC2"], xerr=stds["PC1"], yerr=stds["PC2"],
                 linestyle="", elinewidth=0.2, capsize=2, capthick=0.2, ecolor='k')
 
     if colors:
         pal = sns.xkcd_palette(colors)
-        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax, 
-                             palette=pal, markers=["o", "X", "d", "*"], **{'linewidth':.5, 'edgecolor':"k"}, s=55)
+        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax,
+                             palette=pal, markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
     if not colors:
-        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax, 
-                             markers=["o", "X", "d", "*"], **{'linewidth':.5, 'edgecolor':"k"}, s=55)
+        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax,
+                             markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
 
     if LegOut:
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
@@ -314,5 +315,5 @@ def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=Fal
 
     if annotate:
         for idx, txt in enumerate(means[sIDX[0]]):
-             p1.text(means["PC1"][idx], means["PC2"][idx], txt, 
-                     horizontalalignment='left', color='black', size="xx-small", fontweight="light")
+            p1.text(means["PC1"][idx], means["PC2"][idx], txt,
+                    horizontalalignment='left', color='black', size="xx-small", fontweight="light")
