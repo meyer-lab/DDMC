@@ -55,7 +55,7 @@ def makeFigure():
     ax[1].axis("off")
 
     # Predictions
-    X = preprocessing(Axlmuts_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    X = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
     Xs, models = ComputeCenters(X, d, i, model, 5)
@@ -114,7 +114,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_gmm = x_.groupby("Cluster").mean().T
 
     # DDMC seq
-    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=20, distance_method="PAM250").fit(d)
+    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method).fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix
