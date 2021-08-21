@@ -32,8 +32,8 @@ def preprocessing(
         filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw_wAcc.csv")))
         filesin.append(pd.read_csv(os.path.join(path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw_wAcc.csv")))
     if AXL_Das_DR:
-        filesin.append(pd.read_csv("msresist/data/Validations/Experimental/MassSpec/06232021-DasDR_BR1_Raw.csv").iloc[:, 1:])
-        filesin.append(pd.read_csv("msresist/data/Validations/Experimental/MassSpec/06232021-DasDR_BR2_Raw.csv").iloc[:, 1:])
+        filesin.append(pd.read_csv("msresist/data/Validations/Experimental/MassSpec/06232021-DasDR_BR1_raw.csv").iloc[:, 1:])
+        filesin.append(pd.read_csv("msresist/data/Validations/Experimental/MassSpec/06232021-DasDR_BR2_raw.csv").iloc[:, 1:])
 
     data_headers = list(filesin[0].select_dtypes(include=["float64"]).columns)
     FCto = data_headers[0]
