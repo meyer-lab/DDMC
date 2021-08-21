@@ -14,7 +14,7 @@ from msresist.pre_processing import preprocessing
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 11), (4, 4), multz={4: 1, 6: 1, 8: 2, 13: 1})
+    ax, f = getSetup((15, 14), (4, 4), multz={0: 1, 8: 2, 13:1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -29,6 +29,7 @@ def makeFigure():
         X.iloc[i, 11:] -= X.iloc[i, 11]
 
     # Das DR time point
+    plot_InhDR_timepoint(ax[0], "Dasatinib", itp=24)
 
     # Luminex p-ASY Das DR
     plot_pAblSrcYap(ax[1:4])
@@ -38,6 +39,7 @@ def makeFigure():
 
     # AXL Mass Spec Cluster 4 enrichment of peptides in Das DR cluster
     plotHyerGeomTestDasDRGenes(ax[5])
+    ax[5].set_ylim(0, 0.7)
 
     # Selected peptides within Dasatinib DR Cluster
     abl_sfk = {'LYN': 'Y397-p', 'YES1': 'Y223-p', 'ABL1': 'Y393-p', 'FRK': 'Y497-p', 'LCK': 'Y394-p'}
@@ -111,7 +113,7 @@ def plotHyerGeomTestDasDRGenes(ax):
     Counts generated using GenerateHyperGeomTestParameters()."""
     hg = pd.DataFrame()
     hg["Cluster"] = np.arange(5) + 1
-    hg["p_value"] = [0.515, 0.179, 0.244, 0.0013, 0.139]
+    hg["p_value"] = [0.160, 0.260, 0.013, 0.578, 0.0328]
     sns.barplot(data=hg, x="Cluster", y="p_value", ax=ax, color="darkblue", **{"linewidth": 1}, **{"edgecolor": "black"})
     ax.set_title("Enrichment of Das-responsive Peptides")
     ax.set_ylim((0, 0.55))
@@ -122,7 +124,7 @@ def plotHyerGeomTestDasDRGenes(ax):
 def GenerateHyperGeomTestParameters(A, X, dasG, cluster):
     """Generate parameters to calculate p-value for under- or over-enrichment based on CDF of the hypergeometric distribution."""
     N = list(set(A["Gene"]).intersection(set(X["Gene"])))
-    cl = axl_ms[A["Cluster"] == cluster]
+    cl = A[A["Cluster"] == cluster]
     M = list(set(cl["Gene"]).intersection(set(N)))
     s = list(set(dasG).intersection(set(N)))
     k = list(set(s).intersection(set(M)))

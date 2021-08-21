@@ -76,7 +76,10 @@ class MassSpecClustering(BaseEstimator):
             for dd in wDist:
                 dd.SeqWeight = 10.0
         else:
-            wDist.SeqWeight = 10.0
+            if self.distance_method == "Binomial":
+                wDist.SeqWeight = 50.0
+            elif self.distance_method == "PAM250":
+                wDist.SeqWeight = 15.0
 
         seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
 
