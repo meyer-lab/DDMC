@@ -124,6 +124,14 @@ class MassSpecClustering(BaseEstimator):
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
         for ii in range(self.ncl):
+            # Check for empty clusters and ignore them, if there are
+            l1 = list(np.arange(self.ncl) + 1)
+            l2 = list(set(self.labels()))
+            ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
+            if ii + 1 in ec:
+                continue 
+
+            # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
             for jj, seq in enumerate(self.info["Sequence"]):
                 seq = seq.upper()
