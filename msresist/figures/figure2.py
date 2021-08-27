@@ -303,12 +303,9 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
     ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
-    ncl = ukin.shape[1] - 1
     if isinstance(add_labels, list):
-        ukin_mc.columns = ["Kinase"] + list(np.arange(ncl) + 1) + add_labels
+        ukin_mc.columns = ["Kinase"] + ukin_mc.columns[1:] + add_labels
         clusters += add_labels
-    else:
-        ukin_mc.columns = ["Kinase"] + list(np.arange(ncl) + 1)
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
         sns.heatmap(data.T, ax=ax, xticklabels=data.index)
@@ -345,7 +342,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
 def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
-    pssms = model.pssms()
+    pssms, _ = model.pssms()
     for ii, c in enumerate(clusters, start=1):
         cluster = data[data.iloc[:, 1] == str(c)]
         hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
