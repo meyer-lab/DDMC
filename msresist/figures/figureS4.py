@@ -26,7 +26,7 @@ def makeFigure():
     plotCenters(ax[:5], model, lines)
 
     # Plot motifs
-    pssms = model.pssms(PsP_background=True)
+    pssms, _ = model.pssms(PsP_background=True)
     plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[5:10], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[0, 11])
 
     return f
