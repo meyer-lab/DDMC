@@ -117,19 +117,27 @@ class MassSpecClustering(BaseEstimator):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
-        pssms = []
+        pssms, cl_num = [], []
         if PsP_background:
             bg_seqs = BackgroundSeqs(self.info["Sequence"])
             back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
-        for ii in range(self.ncl):
+        for ii in range(1, self.ncl + 1):
+            # Check for empty clusters and ignore them, if there are
+            l1 = list(np.arange(self.ncl) + 1)
+            l2 = list(set(self.labels()))
+            ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
+            if ii in ec:
+                continue 
+
+            # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
             for jj, seq in enumerate(self.info["Sequence"]):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
-                    pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
-                    if ii == 0 and not PsP_background:
+                    pssm[AAlist.index(aa), kk] += self.scores_[jj, ii - 1]
+                    if ii == 1 and not PsP_background:
                         back_pssm[AAlist.index(aa), kk] += 1.0
 
             # Normalize by position across residues and remove negative outliers
@@ -137,11 +145,11 @@ class MassSpecClustering(BaseEstimator):
                 if pos == 5:
                     continue
                 pssm[:, pos] /= np.mean(pssm[:, pos])
-                if ii == 0 and not PsP_background:
+                if ii == 1 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
             pssm = np.ma.log2(pssm)
             pssm = pssm.filled(0)
-            if ii == 0 and not PsP_background:
+            if ii == 1 and not PsP_background:
                 back_pssm = np.ma.log2(back_pssm)
                 back_pssm = back_pssm.filled(0)
             pssm -= back_pssm.copy()
@@ -152,20 +160,21 @@ class MassSpecClustering(BaseEstimator):
             # Normalize phosphoacceptor position to frequency
             df = pd.DataFrame(self.info["Sequence"].str.upper())
             df["Cluster"] = self.labels()
-            clSeq = df[df["Cluster"] == ii + 1]["Sequence"]
+            clSeq = df[df["Cluster"] == ii]["Sequence"]
             clSeq = pd.DataFrame(frequencies(clSeq)).T
             tm = np.mean([clSeq.loc["S", 5], clSeq.loc["T", 5], clSeq.loc["Y", 5]])
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
             pssms.append(np.clip(pssm, a_min=0, a_max=3))
+            cl_num.append(ii)
 
-        return pssms
+        return pssms, cl_num
 
     def predict_UpstreamKinases(self, PsP_background=False, additional_pssms=False):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
-        PSSMs = self.pssms(PsP_background=True)
+        PSSMs, cl_num = self.pssms(PsP_background=True)
 
         # Optionally add external pssms
         if not isinstance(additional_pssms, bool):
@@ -178,6 +187,7 @@ class MassSpecClustering(BaseEstimator):
                 a[ii, jj] = np.linalg.norm(pssm - spec_profile)
 
         table = pd.DataFrame(a)
+        table.columns = cl_num
         table.insert(0, "Kinase", list(PSPLdict().keys()))
         return table
 

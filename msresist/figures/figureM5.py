@@ -29,7 +29,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     matplotlib.rcParams['font.sans-serif'] = "Helvetica"
     matplotlib.rcParams['font.family'] = "sans-serif"
