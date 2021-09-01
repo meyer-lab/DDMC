@@ -238,7 +238,7 @@ def find_patients_with_NATandTumor(X, label, conc=False):
     xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
     xN = X[X[label].str.endswith(".N")].sort_values(by=label)
     l2 =  [s.split(".N")[0] for s in xN[label]]
-    X = (list(xT[label]),l2, xT, label)
+    X = drop_unmatched_cols(list(xT[label]),l2, xT, label)
 
     if conc:
         xN = xN.set_index(label)
