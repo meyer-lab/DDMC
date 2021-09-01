@@ -11,11 +11,11 @@ import textwrap
 from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
+from ..figures.figureM4 import drop_unmatched_cols
 from ..pca import plotPCA
 from ..pre_processing import MeanCenter, filter_NaNpeptides
 
@@ -30,9 +30,6 @@ def makeFigure():
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
-
-    matplotlib.rcParams['font.sans-serif'] = "Helvetica"
-    matplotlib.rcParams['font.family'] = "sans-serif"
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
@@ -128,10 +125,7 @@ def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False, Two
         assert np.all(list(c["index"]) == list(y["Sample.ID"]))
         c = c.set_index("index")
     except BaseException:
-        l1 = list(c["index"])
-        l2 = list(y["Sample.ID"])
-        dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-        c = c.set_index("index").drop(dif, axis=0)
+        c = drop_unmatched_cols(list(c["index"]), list(y["Sample.ID"]), c, "index")
 
     # Add feature
     f1, f2, f3 = feat_labels

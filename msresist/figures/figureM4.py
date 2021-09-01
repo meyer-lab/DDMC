@@ -105,7 +105,7 @@ def plotAUCs(ax, return_models=False):
         aucs[1, ii] = plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=folds, return_mAUC=True)
 
         # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
+        y_hcb, centers_hcb = HotColdBehavior(centers_hcb, "Sample.ID")
         aucs[2, ii] = plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=folds, return_mAUC=True)
 
     res = pd.DataFrame(aucs)
@@ -224,16 +224,21 @@ def merge_binary_vectors(y, mutant1, mutant2):
     return pd.Series(y_)
 
 
+def drop_unmatched_cols(l1, l2, X, label):
+    """Drop columns that do no match between X and Y regression matrices."""
+    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
+    X = X.set_index(label).drop(dif)
+    assert all(X.index.values == np.array(l2)), "Samples don't match"
+    return X
+
+
 def find_patients_with_NATandTumor(X, label, conc=False):
     """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
     Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
     xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
     xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
+    l2 =  [s.split(".N")[0] for s in xN[label]]
+    X = (list(xT[label]),l2, xT, label)
 
     if conc:
         xN = xN.set_index(label)
@@ -256,14 +261,11 @@ def TransformCenters(model, X):
     return centers1, centers2
 
 
-def HotColdBehavior(centers):
+def HotColdBehavior(centers, label):
     # Import Cold-Hot Tumor data
     y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
     y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
+    centers = drop_unmatched_cols(list(centers.index), list(y.index), centers.reset_index(), label)
 
     # Transform to binary
     y = y.replace("Cold-tumor enriched", 0)

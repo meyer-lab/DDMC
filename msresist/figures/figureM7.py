@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plotPeptidesByFeature
 from .figure2 import plotDistanceToUpstreamKinase
+from .figureM4 import drop_unmatched_cols
 from .pca import plotPCA
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides
@@ -40,7 +41,7 @@ def makeFigure():
     centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
 
     # Import Cold-Hot Tumor data
-    cent1, y = FormatXYmatrices(centers.copy())
+    cent1, y = FormatXYmatrices(centers.copy(), "Patient_ID")
 
     # Normalize
     cent1 = cent1.T
@@ -93,14 +94,11 @@ def makeFigure():
     return f
 
 
-def FormatXYmatrices(centers):
+def FormatXYmatrices(centers, label):
     """Make sure Y matrix has the same matching samples has the signaling centers"""
     y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
     y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
+    centers = drop_unmatched_cols(list(centers.index), list(y.index), centers.reset_index(), label)
 
     # Transform to binary
     y = y.replace("Cold-tumor enriched", 0)
