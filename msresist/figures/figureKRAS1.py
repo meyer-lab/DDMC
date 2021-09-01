@@ -12,7 +12,7 @@ from .common import subplotLabel, getSetup
 from ..pre_processing import MeanCenter
 from ..validations import pos_to_motif
 from ..clustering import MassSpecClustering
-from .figure1 import plotPCA
+from ..pca import plotPCA
 from .figure2 import plotDistanceToUpstreamKinase, plotR2YQ2Y, plotScoresLoadings
 from .figureM5 import plot_GO
 
