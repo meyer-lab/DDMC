@@ -61,7 +61,7 @@ def makeFigure():
         plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight) + prio)
 
         # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
+        y_hcb, centers_hcb = HotColdBehavior(centers_hcb, "Patient_ID")
         plotROC(ax[ii + 10], lr, centers_hcb.values, y_hcb, cv_folds=folds, title="Infiltration " + "w=" + str(model.SeqWeight) + prio)
 
     return f
