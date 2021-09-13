@@ -129,7 +129,7 @@ class MassSpecClustering(BaseEstimator):
             l2 = list(set(self.labels()))
             ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
             if ii in ec:
-                continue 
+                continue
 
             # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
