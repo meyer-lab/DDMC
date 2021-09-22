@@ -15,7 +15,6 @@ from .distributions import *
 from .kmeans import Kmeans
 from .gmm import GeneralMixtureModel
 from .NaiveBayes import NaiveBayes
-from .BayesClassifier import BayesClassifier
 from .hmm import HiddenMarkovModel
 
 __version__ = '0.14.5'
@@ -54,7 +53,5 @@ def from_json(s):
 		return HiddenMarkovModel.from_json(s)
 	elif d['class'] == 'NaiveBayes':
 		return NaiveBayes.from_json(s)
-	elif d['class'] == 'BayesClassifier':
-		return BayesClassifier.from_json(s)
 	else:
 		raise ValueError("Must pass in an JSON with a valid model name.")

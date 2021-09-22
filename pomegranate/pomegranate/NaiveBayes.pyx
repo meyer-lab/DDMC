@@ -176,13 +176,13 @@ cdef class NaiveBayes(BayesModel):
 
 		ICD = IndependentComponentsDistribution
 		if distributions in (MultivariateGaussianDistribution, DirichletDistribution):
-			raise ValueError("naive Bayes only supports independent features. Use BayesClassifier instead")
+			raise ValueError("naive Bayes only supports independent features.")
 		elif isinstance(distributions, (list, numpy.ndarray, tuple)):
 			for distribution in distributions:
 				if not callable(distribution):
 					raise ValueError("must pass in class constructors, not initiated distributions (i.e. NormalDistribution)")
 				elif distribution in (MultivariateGaussianDistribution, DirichletDistribution):
-					raise ValueError("naive Bayes only supported independent features. Use BayesClassifier instead")
+					raise ValueError("naive Bayes only supported independent features.")
 
 		if not isinstance(X, BaseGenerator):
 			if y is None:

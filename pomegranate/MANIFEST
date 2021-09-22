@@ -2,8 +2,6 @@
 CHANGES.txt
 requirements.txt
 setup.py
-pomegranate/BayesClassifier.c
-pomegranate/BayesClassifier.pyx
 pomegranate/NaiveBayes.c
 pomegranate/NaiveBayes.pyx
 pomegranate/__init__.py
