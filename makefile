@@ -35,7 +35,7 @@ output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg,
 		--output=output/$*/manuscript.docx output/$*/manuscript.md
 
 test: venv
-	. venv/bin/activate && pytest -s -v -x
+	. venv/bin/activate && pytest -s -v -x msresist
 
 testprofile: venv
 	. venv/bin/activate && python3 -m cProfile -o profile /usr/local/bin/pytest -s

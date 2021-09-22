@@ -10,7 +10,6 @@ from .bayes cimport BayesModel
 from distributions import Distribution
 from .gmm import GeneralMixtureModel
 from .hmm import HiddenMarkovModel
-from .BayesianNetwork import BayesianNetwork
 
 from .io import BaseGenerator
 from .io import DataGenerator
@@ -92,8 +91,6 @@ cdef class BayesClassifier(BayesModel):
 				models.append(GeneralMixtureModel.from_dict(j))
 			elif j['class'] == 'HiddenMarkovModel':
 				models.append(HiddenMarkovModel.from_dict(j))
-			elif j['class'] == 'BayesianNetwork':
-				models.append(BayesianNetwork.from_dict(j))
 
 		nb = cls( models, numpy.array(d['weights']))
 		return nb
@@ -185,7 +182,7 @@ cdef class BayesClassifier(BayesModel):
 
 		**kwargs : dict, optional
 			Any arguments to pass into the `from_samples` methods of other objects
-			that are being created such as BayesianNetworks or HMMs.
+			that are being created such as HMMs.
 
 		Returns
 		-------
@@ -211,7 +208,7 @@ cdef class BayesClassifier(BayesModel):
 		n_components = len(data_generator.classes) - (-1 in data_generator.classes)
 
 		if callable(distributions):
-			if distributions in (BayesianNetwork, HiddenMarkovModel):
+			if distributions in (HiddenMarkovModel, ):
 				batches = [batch for batch in data_generator.batches()]
 				X = numpy.concatenate([batch[0] for batch in batches])
 				y = numpy.concatenate([batch[1] for batch in batches])
