@@ -20,7 +20,6 @@ If you get an error involving `pomegranate/distributions/NeuralNetworkWrapper.c:
 * [General Mixture Models](http://pomegranate.readthedocs.io/en/latest/GeneralMixtureModel.html)
 * [Hidden Markov Models](http://pomegranate.readthedocs.io/en/latest/HiddenMarkovModel.html)
 * [Naive Bayes and Bayes Classifiers](http://pomegranate.readthedocs.io/en/latest/NaiveBayes.html)
-* [Markov Chains](http://pomegranate.readthedocs.io/en/latest/MarkovChain.html)
 
 The discrete Bayesian networks also support novel work on structure learning in the presence of constraints through a constraint graph. These constraints can dramatically speed up structure learning through the use of loose general prior knowledge, and can frequently make the exact learning task take only polynomial time instead of exponential time. See the [PeerJ manuscript](https://peerj.com/articles/cs-122/) for the theory and the [pomegranate tutorial](https://github.com/jmschrei/pomegranate/blob/master/tutorials/B_Model_Tutorial_4b_Bayesian_Network_Structure_Learning.ipynb) for the practical usage! 
 

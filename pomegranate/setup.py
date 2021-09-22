@@ -21,7 +21,6 @@ filenames = [
     "kmeans",
     "NaiveBayes",
     "BayesClassifier",
-    "MarkovChain",
     "utils",
     "parallel"
 ]
