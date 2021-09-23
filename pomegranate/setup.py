@@ -19,7 +19,6 @@ filenames = [
     "hmm",
     "gmm",
     "kmeans",
-    "NaiveBayes",
     "utils",
     "parallel"
 ]

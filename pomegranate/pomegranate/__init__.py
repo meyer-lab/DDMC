@@ -14,7 +14,6 @@ from .parallel import *
 from .distributions import *
 from .kmeans import Kmeans
 from .gmm import GeneralMixtureModel
-from .NaiveBayes import NaiveBayes
 
 __version__ = '0.14.5'
 
@@ -48,7 +47,5 @@ def from_json(s):
 		return Distribution.from_json(s)
 	elif d['class'] == 'GeneralMixtureModel':
 		return GeneralMixtureModel.from_json(s)
-	elif d['class'] == 'NaiveBayes':
-		return NaiveBayes.from_json(s)
 	else:
 		raise ValueError("Must pass in an JSON with a valid model name.")

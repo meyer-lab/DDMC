@@ -4,7 +4,6 @@
 import numpy
 cimport numpy
 
-from .NaiveBayes import NaiveBayes
 from .distributions import Distribution
 
 from joblib import Parallel
@@ -309,10 +308,7 @@ def summarize(model, X, weights=None, y=None, n_jobs=1, backend='threading', par
 	parallel = parallel or Parallel(n_jobs=n_jobs, backend=backend)
 	delay = delayed(model.summarize)
 
-	if isinstance(model, NaiveBayes):
-		y = parallel(delay(X[start:end], y[start:end], weights[start:end]) for start, end in zip(starts, ends))
-	else:
-		y = parallel(delay(X[start:end], weights[start:end]) for start, end in zip(starts, ends))
+	y = parallel(delay(X[start:end], weights[start:end]) for start, end in zip(starts, ends))
 
 	return sum(y)
 
@@ -400,9 +396,6 @@ def fit(model, X, weights=None, y=None, n_jobs=1, backend='threading', stop_thre
 	if isinstance(model, Distribution):
 		summarize(model, X, weights, n_jobs, backend)
 		model.from_summaries(inertia)
-
-	elif isinstance(model, NaiveBayes):
-		model.fit(X, y, weights, n_jobs=n_jobs, inertia=inertia)
 
 	else:
 		if isinstance(X, list):
