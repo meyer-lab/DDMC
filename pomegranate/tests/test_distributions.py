@@ -8,7 +8,6 @@ from pomegranate import (Distribution,
 						 ExponentialDistribution,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
-						 BernoulliDistribution,
 						 from_json)
 
 from nose.tools import with_setup
@@ -613,65 +612,6 @@ def test_distributions_exponential_random_sample():
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_bernoulli():
-	d = BernoulliDistribution(0.6)
-	assert_equal(d.probability(0), 0.4)
-	assert_equal(d.probability(1), 0.6)
-	assert_equal(d.parameters[0], 1-d.probability(0))
-	assert_equal(d.parameters[0], d.probability(1))
-
-	d.fit([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-	assert_not_equal(d.probability(1), 1.0)
-	assert_equal(d.probability(0), 1.0)
-
-	a = [0.0, 0.0, 0.0]
-	b = [1.0, 1.0, 1.0]
-	c = [1.0, 1.0, 1.0]
-	d.summarize(a)
-	d.from_summaries()
-	assert_equal(d.probability(0), 1)
-	assert_equal(d.probability(1), 0)
-
-	d.summarize(a)
-	d.summarize(b)
-	d.from_summaries()
-	assert_equal(d.probability(0), 0.5)
-	assert_equal(d.probability(1), 0.5)
-	assert_equal(d.parameters[0], d.probability(0))
-	assert_equal(d.parameters[0], d.probability(1))
-
-	d.summarize(a)
-	d.summarize(b)
-	d.summarize(c)
-	d.from_summaries()
-	assert_equal(round(d.probability(0), 4), 0.3333)
-	assert_equal(round(d.probability(1), 4), 0.6667)
-	assert_equal(d.parameters[0], d.probability(1))
-
-	d = BernoulliDistribution.from_samples([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
-	assert_equal(round(d.probability(0), 4), 0.8333)
-	assert_equal(round(d.probability(1), 4), 0.1667)
-	assert_almost_equal(d.parameters[0], d.probability(1))
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "BernoulliDistribution")
-	assert_equal(round(e.parameters[0], 4), 0.1667)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "BernoulliDistribution")
-	assert_equal(round(f.parameters[0], 4), 0.1667)
-
-def test_distributions_uniform_kernel_random_sample():
-	d = BernoulliDistribution(0.2)
-
-	x = numpy.array([0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 
-			0, 0, 0, 0, 0])
-
-	assert_array_equal(d.sample(20, random_state=5), x)
-	assert_raises(AssertionError, assert_array_equal, d.sample(20), x)
 
 @with_setup(setup, teardown)
 def test_independent():

@@ -27,7 +27,6 @@ filenames = [
 distributions = [
     'distributions',
     'UniformDistribution',
-    'BernoulliDistribution',
     'NormalDistribution',
     'LogNormalDistribution',
     'ExponentialDistribution',
