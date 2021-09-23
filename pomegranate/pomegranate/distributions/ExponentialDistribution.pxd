@@ -1,4 +1,4 @@
-# UniformDistribution.pxd
+# ExponentialDistribution.pxd
 # Contact: Jacob Schreiber <jmschreiber91@gmail.com>
 
 import numpy

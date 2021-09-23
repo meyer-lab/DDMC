@@ -10,7 +10,6 @@ import sys
 
 from ..utils import weight_set
 
-from .UniformDistribution import UniformDistribution
 from .NormalDistribution import NormalDistribution
 from .LogNormalDistribution import LogNormalDistribution
 from .ExponentialDistribution import ExponentialDistribution

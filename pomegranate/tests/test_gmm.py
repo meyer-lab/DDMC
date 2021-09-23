@@ -341,48 +341,6 @@ def test_gmm_multivariate_discrete_initialization():
 
 	GeneralMixtureModel([d1, d2], weights=np.array([0.4,0.6]))
 
-@with_setup(setup_multivariate_gaussian, teardown)
-def test_gmm_dimension():
-	gmm1 = GeneralMixtureModel([NormalDistribution(0, 1), UniformDistribution(0, 10)])
-
-	assert_equal(gmm.d, 5)
-	assert_equal(gmm1.d, 1)
-
-
-@with_setup(setup_multivariate_gaussian, teardown)
-def test_gmm_json():
-	univariate = GeneralMixtureModel([NormalDistribution(5, 2), UniformDistribution(0, 10)])
-
-	j_univ = univariate.to_json()
-	j_multi = gmm.to_json()
-
-	new_univ = univariate.from_json(j_univ)
-	assert_true(isinstance(new_univ.distributions[0], NormalDistribution))
-	assert_true(isinstance(new_univ.distributions[1], UniformDistribution))
-	assert_true(isinstance(new_univ, GeneralMixtureModel))
-	assert_array_equal(univariate.weights, new_univ.weights)
-
-	new_multi = gmm.from_json(j_multi)
-	for i in range(5):
-		assert_true(isinstance(new_multi.distributions[i], MultivariateGaussianDistribution))
-
-	assert_true(isinstance(new_multi, GeneralMixtureModel))
-	assert_array_almost_equal(gmm.weights, new_multi.weights)
-
-
-def test_gmm_univariate_pickling():
-	univariate = GeneralMixtureModel(
-		[NormalDistribution(5, 2), UniformDistribution(0, 10)],
-        weights=np.array([1.0, 2.0]))
-
-	j_univ = pickle.dumps(univariate)
-
-	new_univ = pickle.loads(j_univ)
-	assert_true(isinstance(new_univ.distributions[0], NormalDistribution))
-	assert_true(isinstance(new_univ.distributions[1], UniformDistribution))
-	assert_true(isinstance(new_univ, GeneralMixtureModel))
-	assert_array_equal(univariate.weights, new_univ.weights)
-
 
 @with_setup(setup_multivariate_gaussian, teardown)
 def test_gmm_multivariate_gaussian_pickling():

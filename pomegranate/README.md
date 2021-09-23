@@ -50,7 +50,6 @@ pomegranate requires:
 - Cython (only if building from source)
 - NumPy
 - SciPy
-- NetworkX
 - joblib
 ```
 
