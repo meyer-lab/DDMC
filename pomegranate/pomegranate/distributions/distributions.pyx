@@ -12,7 +12,6 @@ from ..utils import weight_set
 
 from .NormalDistribution import NormalDistribution
 from .LogNormalDistribution import LogNormalDistribution
-from .ExponentialDistribution import ExponentialDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution

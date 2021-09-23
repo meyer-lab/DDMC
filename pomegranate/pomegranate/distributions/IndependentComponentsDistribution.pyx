@@ -33,7 +33,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 	represent the mean of that event. Observations must now be tuples of
 	a length equal to the number of distributions passed in.
 
-	s1 = IndependentComponentsDistribution([ExponentialDistribution(0.1),
+	s1 = IndependentComponentsDistribution([NormalDistribution(1, 3),
 									NormalDistribution(5, 2)])
 	s1.log_probability((5, 2))
 	"""

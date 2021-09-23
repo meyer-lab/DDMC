@@ -3,7 +3,6 @@ from __future__ import (division)
 from pomegranate import (Distribution,
 						 NormalDistribution,
 						 LogNormalDistribution,
-						 ExponentialDistribution,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
 						 from_json)
@@ -281,42 +280,6 @@ def test_distributions_lognormal_random_sample():
 
 	x = numpy.array([1.55461432,  0.71829843, 11.36764528,  0.77717313,  
 		1.11584263])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_exponential():
-	d = ExponentialDistribution(3)
-	assert_equal(round(d.log_probability(8), 4), -22.9014)
-
-	d.fit([2.7, 2.9, 3.8, 1.9, 2.7, 1.6, 1.3, 1.0, 1.9])
-	assert_equal(round(d.parameters[0], 4), 0.4545)
-
-	d = ExponentialDistribution(4)
-	assert_not_equal(round(d.log_probability(8), 4), -22.9014)
-
-	d.summarize([2.7, 2.9, 3.8])
-	d.summarize([1.9, 2.7, 1.6])
-	d.summarize([1.3, 1.0, 1.9])
-	d.from_summaries()
-
-	assert_equal(round(d.parameters[0], 4), 0.4545)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "ExponentialDistribution")
-	assert_equal(round(e.parameters[0], 4), 0.4545)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "ExponentialDistribution")
-	assert_equal(round(f.parameters[0], 4), 0.4545)
-
-
-def test_distributions_exponential_random_sample():
-	d = ExponentialDistribution(7)
-
-	x = numpy.array([0.03586, 0.292267, 0.033083, 0.358359, 0.095748])
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)

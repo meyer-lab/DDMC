@@ -10,7 +10,6 @@ from .distributions import *
 
 from .NormalDistribution import NormalDistribution
 from .LogNormalDistribution import LogNormalDistribution
-from .ExponentialDistribution import ExponentialDistribution
 from .CustomDistribution import CustomDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
