@@ -1,6 +1,5 @@
 from pomegranate import *
 from pomegranate.io import DataGenerator
-from pomegranate.io import DataFrameGenerator
 
 from nose.tools import with_setup
 from nose.tools import assert_true
@@ -614,66 +613,6 @@ def test_gmm_multivariate_mixed_random_sample():
 
 	assert_array_almost_equal(gmm.sample(3, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, gmm.sample(3), x)
-
-def test_io_log_probability():
-	X = numpy.random.randn(100, 5) + 0.5
-	X2 = DataGenerator(X)
-	X3 = DataFrameGenerator(pandas.DataFrame(X))
-
-	d = MultivariateGaussianDistribution
-	model = GeneralMixtureModel.from_samples(d, n_components=2, X=X)
-
-	logp1 = model.log_probability(X)
-	logp2 = model.log_probability(X2)
-	logp3 = model.log_probability(X3)
-
-	assert_array_almost_equal(logp1, logp2)
-	assert_array_almost_equal(logp1, logp3)
-
-def test_io_predict():
-	X = numpy.random.randn(100, 5) + 0.5
-	X2 = DataGenerator(X)
-	X3 = DataFrameGenerator(pandas.DataFrame(X))
-
-	d = MultivariateGaussianDistribution
-	model = GeneralMixtureModel.from_samples(d, n_components=2, X=X)
-
-	y_hat1 = model.predict(X)
-	y_hat2 = model.predict(X2)
-	y_hat3 = model.predict(X3)
-
-	assert_array_almost_equal(y_hat1, y_hat2)
-	assert_array_almost_equal(y_hat1, y_hat3)
-
-def test_io_predict_proba():
-	X = numpy.random.randn(100, 5) + 0.5
-	X2 = DataGenerator(X)
-	X3 = DataFrameGenerator(pandas.DataFrame(X))
-
-	d = MultivariateGaussianDistribution
-	model = GeneralMixtureModel.from_samples(d, n_components=2, X=X)
-
-	y_hat1 = model.predict_proba(X)
-	y_hat2 = model.predict_proba(X2)
-	y_hat3 = model.predict_proba(X3)
-
-	assert_array_almost_equal(y_hat1, y_hat2)
-	assert_array_almost_equal(y_hat1, y_hat3)
-
-def test_io_predict_log_proba():
-	X = numpy.random.randn(100, 5) + 0.5
-	X2 = DataGenerator(X)
-	X3 = DataFrameGenerator(pandas.DataFrame(X))
-
-	d = MultivariateGaussianDistribution
-	model = GeneralMixtureModel.from_samples(d, n_components=2, X=X)
-
-	y_hat1 = model.predict_log_proba(X)
-	y_hat2 = model.predict_log_proba(X2)
-	y_hat3 = model.predict_log_proba(X3)
-
-	assert_array_almost_equal(y_hat1, y_hat2)
-	assert_array_almost_equal(y_hat1, y_hat3)
 
 def test_io_fit():
 	X = numpy.random.randn(100, 5) + 0.5

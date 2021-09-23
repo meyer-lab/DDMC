@@ -13,15 +13,3 @@ cdef class Model(object):
 	cdef double _vl_log_probability(self, double* symbol, int n) nogil
 	cdef double _summarize(self, double* items, double* weights, int n,
 		int column_idx, int d) nogil
-
-
-cdef class GraphModel(Model):
-	cdef public list states, edges
-	cdef public object graph
-	cdef int n_edges, n_states
-
-
-cdef class State(object):
-	cdef public object distribution
-	cdef public str name
-	cdef public double weight

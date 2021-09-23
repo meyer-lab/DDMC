@@ -18,10 +18,6 @@ cimport numpy
 
 import numbers
 
-import heapq
-
-cdef bint GPU = False
-cdef int has_cupy = -1
 
 numpy.import_array()
 
