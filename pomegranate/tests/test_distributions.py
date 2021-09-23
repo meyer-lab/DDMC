@@ -7,8 +7,6 @@ from pomegranate import (Distribution,
 						 LogNormalDistribution,
 						 ExponentialDistribution,
 						 GammaDistribution,
-						 PoissonDistribution,
-						 BetaDistribution,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
 						 BernoulliDistribution,
@@ -653,57 +651,6 @@ def test_distributions_exponential_random_sample():
 	d = ExponentialDistribution(7)
 
 	x = numpy.array([0.03586, 0.292267, 0.033083, 0.358359, 0.095748])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_poisson():
-	d = PoissonDistribution(5)
-
-	assert_almost_equal(d.log_probability(5), -1.7403021806115442)
-	assert_almost_equal(d.log_probability(10), -4.0100334487345126)
-	assert_almost_equal(d.log_probability(1), -3.3905620875658995)
-	assert_equal(d.log_probability(-1), float("-inf"))
-
-	d = PoissonDistribution(0)
-
-	assert_equal(d.log_probability(1), float("-inf"))
-	assert_equal(d.log_probability(7), float("-inf"))
-
-	d.fit([1, 6, 4, 9, 1])
-	assert_equal(d.parameters[0], 4.2)
-
-	d.fit([1, 6, 4, 9, 1], weights=[0, 0, 0, 1, 0])
-	assert_equal(d.parameters[0], 9)
-
-	d.fit([1, 6, 4, 9, 1], weights=[1, 0, 0, 1, 0])
-	assert_equal(d.parameters[0], 5)
-
-	assert_almost_equal(d.log_probability(5), -1.7403021806115442)
-	assert_almost_equal(d.log_probability(10), -4.0100334487345126)
-	assert_almost_equal(d.log_probability(1), -3.3905620875658995)
-	assert_equal(d.log_probability(-1), float("-inf"))
-
-	e = pickle.loads(pickle.dumps(d))
-	assert_equal(e.name, "PoissonDistribution")
-	assert_equal(e.parameters[0], 5)
-
-
-def test_distributions_poisson_random_sample():
-	d = PoissonDistribution(1)
-
-	x = numpy.array([0, 1, 2, 2, 0])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-def test_distributions_beta_random_sample():
-	d = BetaDistribution(1, 1)
-
-	x = numpy.array([0.612564, 0.098563, 0.735983, 0.583171, 0.69296 ])
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)

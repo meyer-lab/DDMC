@@ -45,14 +45,14 @@ def setup_multivariate_mixed():
 	d12 = ExponentialDistribution(5)
 	d13 = LogNormalDistribution(0.5, 0.78)
 	d14 = NormalDistribution(0.4, 0.8)
-	d15 = PoissonDistribution(4)
+	d15 = ExponentialDistribution(4)
 	d1 = IndependentComponentsDistribution([d11, d12, d13, d14, d15])
 
 	d21 = NormalDistribution(3, 1)
 	d22 = ExponentialDistribution(35)
 	d23 = LogNormalDistribution(1.8, 1.33)
 	d24 = NormalDistribution(0.5, 0.7)
-	d25 = PoissonDistribution(6)
+	d25 = ExponentialDistribution(6)
 	d2 = IndependentComponentsDistribution([d21, d22, d23, d24, d25])
 
 	global gmm
@@ -75,7 +75,7 @@ def setup_univariate_mixed():
 	d1 = ExponentialDistribution(5)
 	d2 = NormalDistribution(0, 1.2)
 	d3 = LogNormalDistribution(0.3, 1.4)
-	d4 = PoissonDistribution(5)
+	d4 = ExponentialDistribution(5)
 	gmm = GeneralMixtureModel([d1, d2, d3, d4])
 
 
@@ -111,24 +111,6 @@ def test_gmm_multivariate_gaussian_log_probability():
 
 	logp_t = [ -9.8405678, -9.67171158, -9.71615297, -9.89404726,
 	-10.93812212, -11.06611533, -11.31473392, -10.79220257]
-	logp = gmm.log_probability(X)
-
-	assert_array_almost_equal(logp, logp_t)
-
-
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_log_probability():
-	X = numpy.array([[1.1, 2.7, 3.0, 4.8, 6.2],
-					[1.8, 2.1, 3.1, 5.2, 6.5],
-					[0.9, 2.2, 3.2, 5.0, 5.8],
-					[1.0, 2.1, 3.5, 4.3, 5.2],
-					[1.2, 2.9, 3.1, 4.2, 5.5],
-					[1.8, 1.9, 3.0, 4.9, 5.7],
-					[1.2, 3.1, 2.9, 4.2, 5.9],
-					[1.0, 2.9, 3.9, 4.1, 6.0]])
-
-	logp_t = [-33.75384631, -34.1714099,  -32.59702495, -27.39375394,
-	-30.66715208, -30.52489174, -31.71056782, -30.79589904]
 	logp = gmm.log_probability(X)
 
 	assert_array_almost_equal(logp, logp_t)
@@ -185,65 +167,6 @@ def test_gmm_univariate_gaussian_log_probability():
 	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
 
 
-@with_setup(setup_univariate_mixed, teardown)
-def test_gmm_mixed_log_probability():
-	X = np.array([[1.1], [2.7], [3.0], [4.8], [6.2]])
-	logp = [-2.01561437061559, -2.7951359521294536, -2.8314639809821918,
-			-2.9108132001193265, -3.1959940375620945]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.8], [2.1], [3.1], [5.2], [6.5]])
-	logp = [-2.4758296236378774, -2.6201420691379314, -2.8383034405278975,
-			-2.966292939154318, -3.2891059316267657]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[0.9], [2.2], [3.2], [5.0], [5.8]])
-	logp = [-1.8326789033955484, -2.660084457680723, -2.8432332382831653,
-			-2.9359363402629808, -3.0888100501157312]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.0], [2.1], [3.5], [4.3], [5.2]])
-	logp = [-1.9296484854978633, -2.6201420691379314, -2.850660742142904,
-			-2.8698462265150058, -2.966292939154318]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.2], [2.9], [3.1], [4.2], [5.5]])
-	logp = [-2.0938404063492411, -2.8222781320451804, -2.8383034405278975,
-			-2.8650550479352965, -3.0216937107055277]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.8], [1.9], [3.0], [4.9], [5.7]])
-	logp = [-2.4758296236378774, -2.527780058213545, -2.8314639809821918,
-			-2.9227254358998933, -3.0651517040535605]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.2], [3.1], [2.9], [4.2], [5.9]])
-	logp = [-2.0938404063492411, -2.8383034405278975, -2.8222781320451804,
-			-2.8650550479352965, -3.1137381280223324]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-	X = np.array([[1.0], [2.9], [3.9], [4.1], [6.0]])
-	logp = [-1.9296484854978633, -2.8222781320451804, -2.8560160466782816,
-			-2.8612291168066575, -3.1399218398841575]
-	assert_array_almost_equal(gmm.log_probability(X), logp)
-	assert_array_almost_equal(gmm.log_probability(X, n_jobs=2), logp)
-	assert_array_almost_equal(gmm.log_probability(X, batch_size=2), logp)
-
-
 @with_setup(setup_multivariate_gaussian, teardown)
 def test_gmm_multivariate_gaussian_json():
 	gmm_2 = GeneralMixtureModel.from_json(gmm.to_json())
@@ -273,28 +196,6 @@ def test_gmm_multivariate_gaussian_json():
 	assert_almost_equal(gmm_2.log_probability(X).sum(), -10.7922, 4)
 
 
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_json():
-	gmm2 = GeneralMixtureModel.from_json(gmm.to_json())
-
-	X = numpy.array([[1.1, 2.7, 3.0, 4.8, 6.2],
-					[1.8, 2.1, 3.1, 5.2, 6.5],
-					[0.9, 2.2, 3.2, 5.0, 5.8],
-					[1.0, 2.1, 3.5, 4.3, 5.2],
-					[1.2, 2.9, 3.1, 4.2, 5.5],
-					[1.8, 1.9, 3.0, 4.9, 5.7],
-					[1.2, 3.1, 2.9, 4.2, 5.9],
-					[1.0, 2.9, 3.9, 4.1, 6.0]])
-
-	logp_t = [-33.75384631, -34.1714099,  -32.59702495, -27.39375394,
-	-30.66715208, -30.52489174, -31.71056782, -30.79589904]
-	logp1 = gmm.log_probability(X)
-	logp2 = gmm2.log_probability(X)
-
-	assert_array_almost_equal(logp2, logp_t)
-	assert_array_almost_equal(logp1, logp2)
-
-
 @with_setup(setup_multivariate_gaussian, teardown)
 def test_gmm_multivariate_gaussian_robust_from_json():
 	gmm_2 = from_json(gmm.to_json())
@@ -322,28 +223,6 @@ def test_gmm_multivariate_gaussian_robust_from_json():
 
 	X = np.array([[1.0, 2.9, 3.9, 4.1, 6.0]])
 	assert_almost_equal(gmm_2.log_probability(X).sum(), -10.7922, 4)
-
-
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_robust_from_json():
-	gmm2 = from_json(gmm.to_json())
-
-	X = numpy.array([[1.1, 2.7, 3.0, 4.8, 6.2],
-					[1.8, 2.1, 3.1, 5.2, 6.5],
-					[0.9, 2.2, 3.2, 5.0, 5.8],
-					[1.0, 2.1, 3.5, 4.3, 5.2],
-					[1.2, 2.9, 3.1, 4.2, 5.5],
-					[1.8, 1.9, 3.0, 4.9, 5.7],
-					[1.2, 3.1, 2.9, 4.2, 5.9],
-					[1.0, 2.9, 3.9, 4.1, 6.0]])
-
-	logp_t = [-33.75384631, -34.1714099,  -32.59702495, -27.39375394,
-	-30.66715208, -30.52489174, -31.71056782, -30.79589904]
-	logp1 = gmm.log_probability(X)
-	logp2 = gmm2.log_probability(X)
-
-	assert_array_almost_equal(logp2, logp_t)
-	assert_array_almost_equal(logp1, logp2)
 
 
 @with_setup(setup_multivariate_gaussian, teardown)
@@ -529,13 +408,13 @@ def test_gmm_multivariate_gaussian_pickling():
 	assert_true(isinstance(d1.distributions[1], ExponentialDistribution))
 	assert_true(isinstance(d1.distributions[2], LogNormalDistribution))
 	assert_true(isinstance(d1.distributions[3], NormalDistribution))
-	assert_true(isinstance(d1.distributions[4], PoissonDistribution))
+	assert_true(isinstance(d1.distributions[4], ExponentialDistribution))
 
 	assert_true(isinstance(d2.distributions[0], NormalDistribution))
 	assert_true(isinstance(d2.distributions[1], ExponentialDistribution))
 	assert_true(isinstance(d2.distributions[2], LogNormalDistribution))
 	assert_true(isinstance(d2.distributions[3], NormalDistribution))
-	assert_true(isinstance(d2.distributions[4], PoissonDistribution))
+	assert_true(isinstance(d2.distributions[4], ExponentialDistribution))
 
 	assert_true(isinstance(gmm2, GeneralMixtureModel))
 	assert_array_equal(gmm.weights, gmm2.weights)
@@ -655,34 +534,6 @@ def test_gmm_multivariate_gaussian_nan_from_samples():
 		assert_array_almost_equal(cov2, cov2t)
 
 
-def test_gmm_multivariate_mixed_nan_from_samples():
-	numpy.random.seed(1)
-	X = numpy.concatenate([numpy.random.normal(0, 1, size=(100, 5)),
-						   numpy.random.normal(4, 1, size=(100, 5))])
-	X = numpy.abs(X)
-	numpy.random.shuffle(X)
-	idxs = numpy.random.choice(numpy.arange(1000), replace=False, size=500)
-	i, j = idxs // 5, idxs % 5
-
-	X_nan = X.copy()
-	X_nan[i, j] = numpy.nan
-
-	p1 = [4.11799, 0.257289, 1.38576, 4.11644, 3.775064]
-	p2 = [0.77275, 1.323, -0.4297, 0.707097, 0.81196]
-
-	d = [NormalDistribution, ExponentialDistribution, LogNormalDistribution,
-		NormalDistribution, PoissonDistribution]
-
-	model = GeneralMixtureModel.from_samples(d, 2, X_nan, init='first-k', n_init=1)
-
-	for i in range(5):
-		d1 = model.distributions[0].distributions[i]
-		assert_almost_equal(d1.parameters[0], p1[i], 3)
-
-		d2 = model.distributions[1].distributions[i]
-		assert_almost_equal(d2.parameters[0], p2[i], 3)
-
-
 def test_gmm_multivariate_gaussian_nan_fit():
 	mu1, mu2, mu3 = numpy.zeros(3), numpy.zeros(3)+3, numpy.zeros(3)+5
 	cov1, cov2, cov3 = numpy.eye(3), numpy.eye(3)*2, numpy.eye(3)*0.5
@@ -734,30 +585,6 @@ def test_gmm_multivariate_gaussian_nan_fit():
 	assert_array_almost_equal(cov3, cov3t)
 
 
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_nan_fit():
-
-	numpy.random.seed(1)
-	X = numpy.concatenate([numpy.random.normal(0, 1, size=(300, 5)),
-						   numpy.random.normal(2.5, 1, size=(300, 5))])
-	X = numpy.abs(X)
-	numpy.random.shuffle(X)
-	idxs = numpy.random.choice(numpy.arange(3000), replace=False, size=1500)
-	i, j = idxs // 5, idxs % 5
-
-	gmm.fit(X)
-
-	p1 = [2.400978, 0.4117966, 0.72697, 2.47768, 2.30139]
-	p2 = [0.73931, 1.24874, -0.68713, 0.67972, 0.82206]
-
-	for i in range(5):
-		d1 = gmm.distributions[0].distributions[i]
-		assert_almost_equal(d1.parameters[0], p1[i], 4)
-
-		d2 = gmm.distributions[1].distributions[i]
-		assert_almost_equal(d2.parameters[0], p2[i], 4)
-
-
 @with_setup(setup_multivariate_gaussian, teardown)
 def test_gmm_multivariate_gaussian_nan_log_probability():
 	numpy.random.seed(1)
@@ -778,31 +605,6 @@ def test_gmm_multivariate_gaussian_nan_log_probability():
 	logp = gmm.log_probability(X)
 	logp2 = gmm.log_probability(X, n_jobs=2)
 	logp4 = gmm.log_probability(X, n_jobs=4)
-
-	assert_array_almost_equal(logp, logp_t)
-	assert_array_almost_equal(logp2, logp_t)
-	assert_array_almost_equal(logp4, logp_t)
-
-
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_nan_log_probability():
-	X = numpy.array([[ 1.014,   nan, 1.076, 1.012,   nan],
-		 [ 0.745,   nan,   nan,   nan, 1.226],
-		 [ 0.012,   nan,   nan, 0.010, 0.006],
-		 [   nan,   nan, 0.979, 1.031,   nan],
-		 [ 0.006, 0.003,   nan, 0.006,   nan],
-		 [   nan,   nan,   nan,   nan, 1.041],
-		 [ 1.176, 1.040, 1.098, 1.224, 1.186],
-		 [   nan, 0.004,   nan,   nan, 0.005],
-		 [   nan,   nan,   nan, 0.025,   nan],
-		 [ 0.0116,  nan, 0.022, 0.006,   nan]])
-
-	logp = gmm.log_probability(X)
-	logp2 = gmm.log_probability(X, n_jobs=2)
-	logp4 = gmm.log_probability(X, n_jobs=4)
-
-	logp_t = [ -3.447266,  -4.038374,  -6.900469,  -2.282948,  -1.216055,
-        -3.080241,  -9.789394,  -2.4831  ,  -0.799054, -13.052867]
 
 	assert_array_almost_equal(logp, logp_t)
 	assert_array_almost_equal(logp2, logp_t)
@@ -846,24 +648,6 @@ def test_gmm_multivariate_gaussian_nan_predict():
 	assert_array_equal(y, y_hat)
 
 
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_nan_predict():
-	X = [[ 1.014,   nan, 1.076, 1.012,   nan],
-		 [ 0.745,   nan,   nan,   nan, 1.226],
-		 [ 0.012,   nan,   nan, 0.010, 0.006],
-		 [   nan,   nan, 0.979, 1.031,   nan],
-		 [ 0.006, 0.003,   nan, 0.006,   nan],
-		 [   nan,   nan,   nan,   nan, 1.041],
-		 [ 1.176, 1.040, 1.098, 1.224, 1.186],
-		 [   nan, 0.004,   nan,   nan, 0.005],
-		 [   nan,   nan,   nan, 0.025,   nan],
-		 [ 0.0116,  nan, 0.022, 0.006,   nan]]
-
-	y_hat = gmm.predict(X)
-	y = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1]
-	assert_array_equal(y, y_hat)
-
-
 @with_setup(setup_multivariate_discrete)
 def test_gmm_multivariate_discrete_predict_proba():
 	probs = gmm.predict_proba(numpy.array([['A', '0'], ['B', '1']]))
@@ -892,34 +676,6 @@ def test_gmm_multivariate_gaussian_nan_predict_proba():
 		 [  8.63688760e-03, 9.91106040e-01, 2.57071963e-04, 1.50716583e-13, 1.99728068e-28]]
 
 	assert_array_almost_equal(y, y_hat, 2)
-
-
-@with_setup(setup_multivariate_mixed, teardown)
-def test_gmm_multivariate_mixed_nan_predict_proba():
-	X = [[ 1.014,   nan, 1.076, 1.012,   nan],
-		 [ 0.745,   nan,   nan,   nan, 1.226],
-		 [ 0.012,   nan,   nan, 0.010, 0.006],
-		 [   nan,   nan, 0.979, 1.031,   nan],
-		 [ 0.006, 0.003,   nan, 0.006,   nan],
-		 [   nan,   nan,   nan,   nan, 1.041],
-		 [ 1.176, 1.040, 1.098, 1.224, 1.186],
-		 [   nan, 0.004,   nan,   nan, 0.005],
-		 [   nan,   nan,   nan, 0.025,   nan],
-		 [ 0.0116,  nan, 0.022, 0.006,   nan]]
-
-	y_hat = gmm.predict_proba(X)
-	y = [[  9.54354263e-01,   4.56457374e-02],
-		 [  9.82240224e-01,   1.77597761e-02],
-		 [  9.97442611e-01,   2.55738927e-03],
-		 [  7.48577347e-01,   2.51422653e-01],
-		 [  8.93432925e-01,   1.06567075e-01],
-		 [  8.28908436e-01,   1.71091564e-01],
-		 [  1.00000000e+00,   2.78899961e-15],
-		 [  5.42909820e-01,   4.57090180e-01],
-		 [  4.96708777e-01,   5.03291223e-01],
-		 [  1.31011533e-01,   8.68988467e-01]]
-
-	assert_array_almost_equal(y, y_hat)
 
 
 def test_gmm_multivariate_gaussian_ooc_nan_from_samples():
@@ -955,7 +711,7 @@ def test_gmm_multivariate_mixed_ooc_nan_from_samples():
 	i, j = idxs // 3, idxs % 3
 	X[i, j] = numpy.nan
 
-	d = [NormalDistribution, LogNormalDistribution, PoissonDistribution]
+	d = [NormalDistribution, LogNormalDistribution, ExponentialDistribution]
 
 	model1 = GeneralMixtureModel.from_samples(d, 2, X, init='first-k',
 		batch_size=None, max_iterations=3)
@@ -1023,8 +779,8 @@ def test_gmm_multivariate_mixed_ooc_nan_fit():
 	i, j = idxs // 3, idxs % 3
 	X[i, j] = numpy.nan
 
-	d1 = [NormalDistribution(0, 1), LogNormalDistribution(0.4, 0.2), PoissonDistribution(3)]
-	d2 = [NormalDistribution(2, 1), LogNormalDistribution(0.8, 1.2), PoissonDistribution(6)]
+	d1 = [NormalDistribution(0, 1), LogNormalDistribution(0.4, 0.2), ExponentialDistribution(3)]
+	d2 = [NormalDistribution(2, 1), LogNormalDistribution(0.8, 1.2), ExponentialDistribution(6)]
 	d = [IndependentComponentsDistribution([a.copy() for a in d1]),
 		 IndependentComponentsDistribution([a.copy() for a in d2])]
 	model1 = GeneralMixtureModel(d)
@@ -1098,7 +854,7 @@ def test_gmm_multivariate_mixed_minibatch_nan_from_samples():
 	i, j = idxs // 3, idxs % 3
 	X[i, j] = numpy.nan
 
-	d = [NormalDistribution, LogNormalDistribution, PoissonDistribution]
+	d = [NormalDistribution, LogNormalDistribution, ExponentialDistribution]
 
 	model1 = GeneralMixtureModel.from_samples(d, 2, X, init='first-k',
 		batch_size=None, max_iterations=5)
@@ -1175,8 +931,8 @@ def test_gmm_multivariate_mixed_minibatch_nan_fit():
 	i, j = idxs // 3, idxs % 3
 	X[i, j] = numpy.nan
 
-	d1 = [NormalDistribution(0, 1), LogNormalDistribution(0.4, 0.2), PoissonDistribution(3)]
-	d2 = [NormalDistribution(2, 1), LogNormalDistribution(0.8, 1.2), PoissonDistribution(6)]
+	d1 = [NormalDistribution(0, 1), LogNormalDistribution(0.4, 0.2), ExponentialDistribution(3)]
+	d2 = [NormalDistribution(2, 1), LogNormalDistribution(0.8, 1.2), ExponentialDistribution(6)]
 
 	d = [IndependentComponentsDistribution([a.copy() for a in d1]),
 		 IndependentComponentsDistribution([a.copy() for a in d2])]

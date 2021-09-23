@@ -13,10 +13,8 @@ from .BernoulliDistribution import BernoulliDistribution
 from .NormalDistribution import NormalDistribution
 from .LogNormalDistribution import LogNormalDistribution
 from .ExponentialDistribution import ExponentialDistribution
-from .BetaDistribution import BetaDistribution
 from .GammaDistribution import GammaDistribution
 from .DiscreteDistribution import DiscreteDistribution
-from .PoissonDistribution import PoissonDistribution
 from .CustomDistribution import CustomDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
