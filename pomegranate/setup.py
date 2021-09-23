@@ -26,7 +26,6 @@ filenames = [
 distributions = [
     'distributions',
     'NormalDistribution',
-    'LogNormalDistribution',
     'KernelDensities',
     'IndependentComponentsDistribution',
     'MultivariateGaussianDistribution'

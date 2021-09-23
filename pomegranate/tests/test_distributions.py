@@ -2,7 +2,6 @@ from __future__ import (division)
 
 from pomegranate import (Distribution,
 						 NormalDistribution,
-						 LogNormalDistribution,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
 						 from_json)
@@ -243,43 +242,6 @@ def test_distributions_normal_random_sample():
 
 	x = numpy.array([ 0.44122749, -0.33087015,  2.43077119, -0.25209213,  
 		0.10960984])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-@with_setup(setup, teardown)
-def test_lognormal():
-	d = LogNormalDistribution(5, 2)
-	assert_equal(round(d.log_probability(5), 4), -4.6585)
-
-	d.fit([5.1, 5.03, 4.98, 5.05, 4.91, 5.2, 5.1, 5., 4.8, 5.21])
-	assert_equal(round(d.parameters[0], 4), 1.6167)
-	assert_equal(round(d.parameters[1], 4), 0.0237)
-
-	d.summarize([5.1, 5.03, 4.98, 5.05])
-	d.summarize([4.91, 5.2, 5.1])
-	d.summarize([5., 4.8, 5.21])
-	d.from_summaries()
-
-	assert_equal(round(d.parameters[0], 4), 1.6167)
-	assert_equal(round(d.parameters[1], 4), 0.0237)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "LogNormalDistribution")
-	assert_equal(round(e.parameters[0], 4), 1.6167)
-	assert_equal(round(e.parameters[1], 4), 0.0237)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "LogNormalDistribution")
-	assert_equal(round(f.parameters[0], 4), 1.6167)
-	assert_equal(round(f.parameters[1], 4), 0.0237)
-
-
-def test_distributions_lognormal_random_sample():
-	d = LogNormalDistribution(0, 1)
-
-	x = numpy.array([1.55461432,  0.71829843, 11.36764528,  0.77717313,  
-		1.11584263])
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)

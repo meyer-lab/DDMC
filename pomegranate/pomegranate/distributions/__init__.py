@@ -9,7 +9,6 @@ For detailed documentation and examples, see the README.
 from .distributions import *
 
 from .NormalDistribution import NormalDistribution
-from .LogNormalDistribution import LogNormalDistribution
 from .CustomDistribution import CustomDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
