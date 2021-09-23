@@ -2,7 +2,6 @@ from __future__ import (division)
 
 from pomegranate import (Distribution,
 						 NormalDistribution,
-						 DiscreteDistribution,
 						 LogNormalDistribution,
 						 ExponentialDistribution,
 						 IndependentComponentsDistribution,
@@ -248,86 +247,6 @@ def test_distributions_normal_random_sample():
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_distributions_discrete():
-	d = DiscreteDistribution({'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25})
-
-	assert_equal(d.log_probability('C'), -1.3862943611198906)
-	assert_equal(d.log_probability('A'), d.log_probability('C'))
-	assert_equal(d.log_probability('G'), d.log_probability('T'))
-	assert_equal(d.log_probability('a'), float('-inf'))
-
-	seq = "ACGTACGTTGCATGCACGCGCTCTCGCGC"
-	d.fit(list(seq))
-
-	assert_equal(d.log_probability('C'), -0.9694005571881036)
-	assert_equal(d.log_probability('A'), -1.9810014688665833)
-	assert_equal(d.log_probability('T'), -1.575536360758419)
-
-	seq = "ACGTGTG"
-	d.fit(list(seq), weights=[0., 1., 2., 3., 4., 5., 6.])
-
-	assert_equal(d.log_probability('A'), float('-inf'))
-	assert_equal(d.log_probability('C'), -3.044522437723423)
-	assert_equal(d.log_probability('G'), -0.5596157879354228)
-
-	d.summarize(list("ACG"), weights=[0., 1., 2.])
-	d.summarize(list("TGT"), weights=[3., 4., 5.])
-	d.summarize(list("G"), weights=[6.])
-	d.from_summaries()
-
-	assert_equal(d.log_probability('A'), float('-inf'))
-	assert_equal(round(d.log_probability('C'), 4), -3.0445)
-	assert_equal(round(d.log_probability('G'), 4), -0.5596)
-
-	d = DiscreteDistribution({'A': 0.0, 'B': 1.0})
-	d.summarize(list("ABABABAB"))
-	d.summarize(list("ABAB"))
-	d.summarize(list("BABABABABABABABABA"))
-	d.from_summaries(inertia=0.75)
-	assert_equal(d.parameters[0], {'A': 0.125, 'B': 0.875})
-
-	d = DiscreteDistribution({'A': 0.0, 'B': 1.0})
-	d.summarize(list("ABABABAB"))
-	d.summarize(list("ABAB"))
-	d.summarize(list("BABABABABABABABABA"))
-	d.from_summaries(inertia=0.5)
-	assert_equal(d.parameters[0], {'A': 0.25, 'B': 0.75})
-
-	d.freeze()
-	d.fit(list('ABAABBAAAAAAAAAAAAAAAAAA'))
-	assert_equal(d.parameters[0], {'A': 0.25, 'B': 0.75})
-
-	d = DiscreteDistribution.from_samples(['A', 'B', 'A', 'A'])
-	assert_equal(d.parameters[0], {'A': 0.75, 'B': 0.25})
-
-	# Test vector input instead of flat array.
-	d = DiscreteDistribution.from_samples(numpy.array(['A', 'B', 'A', 'A']).reshape(-1,1))
-	assert_equal(d.parameters[0], {'A': 0.75, 'B': 0.25})
-
-	d = DiscreteDistribution.from_samples(['A', 'B', 'A', 'A'], pseudocount=0.5)
-	assert_equal(d.parameters[0], {'A': 0.70, 'B': 0.30})
-
-	d = DiscreteDistribution.from_samples(['A', 'B', 'A', 'A'], pseudocount=6)
-	assert_equal(d.parameters[0], {'A': 0.5625, 'B': 0.4375})
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "DiscreteDistribution")
-	assert_equal(e.parameters[0], {'A': 0.5625, 'B': 0.4375})
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "DiscreteDistribution")
-	assert_equal(f.parameters[0], {'A': 0.5625, 'B': 0.4375})
-
-
-def test_discrete_robust_json_serialization():
-	d = DiscreteDistribution.from_samples(['A', 'B', 'A', 'A'], pseudocount=6)
-
-	e = from_json(d.to_json())
-	assert_equal(e.name, "DiscreteDistribution")
-	assert_equal(e.parameters[0], {'A': 0.5625, 'B': 0.4375})
 
 @with_setup(setup, teardown)
 def test_lognormal():

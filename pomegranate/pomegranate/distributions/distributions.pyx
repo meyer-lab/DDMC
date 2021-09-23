@@ -13,7 +13,6 @@ from ..utils import weight_set
 from .NormalDistribution import NormalDistribution
 from .LogNormalDistribution import LogNormalDistribution
 from .ExponentialDistribution import ExponentialDistribution
-from .DiscreteDistribution import DiscreteDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution
@@ -96,8 +95,7 @@ cdef class Distribution(Model):
 		Parameters
 		----------
 		X : double
-			The X to calculate the log probability of (overridden for
-			DiscreteDistributions)
+			The X to calculate the log probability of
 
 		Returns
 		-------
@@ -239,25 +237,6 @@ cdef class Distribution(Model):
 		if d['name'] == 'IndependentComponentsDistribution':
 			d['parameters'][0] = [cls.from_dict(dist) for dist in d['parameters'][0]]
 			return IndependentComponentsDistribution(d['parameters'][0], d['parameters'][1], d['frozen'])
-
-		elif d['name'] == 'DiscreteDistribution':
-			dp = d['parameters'][0]
-
-			if d['dtype'] in ('str', 'unicode', 'numpy.string_'):
-				dist = {str(key) : value for key, value in dp.items()}
-			elif d['dtype'] == 'bool':
-				dist = {key == 'True' : value for key, value in dp.items()}
-			elif d['dtype'] == 'int':
-				dist = {int(key) : value for key, value in dp.items()}
-			elif d['dtype'] == 'float':
-				dist = {float(key) : value for key, value in dp.items()}
-			elif d['dtype'].startswith('numpy.'):
-				dtype = d['dtype'][6:]
-				dist = {numpy.array([key], dtype=dtype)[0]: value for key, value in dp.items()}
-			else:
-				dist = dp
-
-			return DiscreteDistribution(dist, frozen=d['frozen'])
 
 		elif 'Table' in d['name']:
 			parents = [j if isinstance(j, int) else Distribution.from_dict(j) for j in d['parents']]

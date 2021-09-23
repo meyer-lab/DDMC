@@ -17,7 +17,6 @@ from .base cimport Model
 from .kmeans import Kmeans
 
 from distributions.distributions cimport Distribution
-from distributions import DiscreteDistribution
 from distributions import IndependentComponentsDistribution
 
 from .bayes cimport BayesModel
@@ -539,10 +538,6 @@ cdef class GeneralMixtureModel(BayesModel):
 
         if callable(distributions):
             d_ = distributions
-
-            if d_ == DiscreteDistribution:
-                raise ValueError("cannot fit a discrete GMM "
-                                 "without pre-initialized distributions")
 
             if d == 1:
                 distributions = [d_ for i in range(n_components)]

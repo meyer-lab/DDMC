@@ -29,7 +29,6 @@ distributions = [
     'NormalDistribution',
     'LogNormalDistribution',
     'ExponentialDistribution',
-    'DiscreteDistribution',
     'KernelDensities',
     'IndependentComponentsDistribution',
     'MultivariateGaussianDistribution'

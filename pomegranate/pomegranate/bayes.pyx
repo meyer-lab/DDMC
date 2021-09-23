@@ -14,7 +14,6 @@ cimport numpy
 
 from .base cimport Model
 from distributions.distributions cimport Distribution
-from distributions import DiscreteDistribution
 from distributions import IndependentComponentsDistribution
 from .gmm import GeneralMixtureModel
 from .callbacks import History
@@ -108,32 +107,13 @@ cdef class BayesModel(Model):
         """
         dist = self.distributions[0]
 
-        if isinstance(dist, DiscreteDistribution):
-            keys = []
-            for distribution in self.distributions:
-                keys.extend(distribution.keys())
-            keys.sort()
-            self.keymap = [{key: i for i, key in enumerate(keys)}]
-            for distribution in self.distributions:
-                distribution.bake(tuple(keys))
-
-        elif isinstance(dist, IndependentComponentsDistribution):
+        if isinstance(dist, IndependentComponentsDistribution):
             self.keymap = [{} for i in range(self.d)]
             keymap_tuples = [tuple() for i in range(self.d)]
 
             for distribution in self.distributions:
                 for i in range(self.d):
-                    if isinstance(distribution[i], DiscreteDistribution):
-                        for key in distribution[i].keys():
-                            if key not in self.keymap[i]:
-                                self.keymap[i][key] = len(self.keymap[i])
-                                keymap_tuples[i] += (key,)
-
-            for distribution in self.distributions:
-                for i in range(self.d):
                     d = distribution[i]
-                    if isinstance(d, DiscreteDistribution):
-                        d.bake(tuple(sorted(keymap_tuples[i])))
 
     def __reduce__(self):
         return self.__class__, (self.distributions.tolist(),
@@ -801,10 +781,7 @@ cdef class BayesModel(Model):
         summaries /= summaries.sum()
 
         for i, distribution in enumerate(self.distributions):
-            if isinstance(distribution, DiscreteDistribution):
-                distribution.from_summaries(inertia, pseudocount)
-            else:
-                distribution.from_summaries(inertia, **kwargs)
+            distribution.from_summaries(inertia, **kwargs)
 
             self.weights[i] = _log(summaries[i])
             self.summaries[i] = 0.

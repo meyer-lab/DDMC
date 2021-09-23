@@ -186,8 +186,7 @@ cdef class Model(object):
 		Parameters
 		----------
 		symbol : double
-			The symbol to calculate the log probability of (overridden for
-			DiscreteDistributions)
+			The symbol to calculate the log probability of
 
 		Returns
 		-------

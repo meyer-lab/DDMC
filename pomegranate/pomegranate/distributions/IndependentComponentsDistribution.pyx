@@ -18,8 +18,6 @@ from ..utils cimport python_summarize
 from ..utils import check_random_state
 from ..utils import weight_set
 
-from .DiscreteDistribution import DiscreteDistribution
-
 
 cimport numpy
 numpy.import_array()
@@ -58,7 +56,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 		self.distributions_ptr = <void**> self.distributions.data
 
 		self.d = len(distributions)
-		self.discrete = isinstance(distributions[0], DiscreteDistribution)
+		self.discrete = False
 		self.cython = 1
 		for dist in distributions:
 			if not isinstance(dist, Distribution) and not isinstance(dist, Model):
@@ -83,9 +81,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 		return self.__class__, (self.distributions, self.weights, self.frozen)
 
 	def bake(self, keys):
-		for i, distribution in enumerate(self.distributions):
-			if isinstance(distribution, DiscreteDistribution):
-				distribution.bake(keys[i])
+		return None
 
 	def log_probability(self, X):
 		"""
@@ -232,10 +228,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 			return
 
 		for d in self.parameters[0]:
-			if isinstance(d, DiscreteDistribution):
-				d.from_summaries(inertia, pseudocount)
-			else:
-				d.from_summaries(inertia)
+			d.from_summaries(inertia)
 
 	def clear_summaries(self):
 		"""Clear the summary statistics stored in the object."""
