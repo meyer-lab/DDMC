@@ -4,7 +4,6 @@
 import numpy
 cimport numpy
 
-from .hmm import HiddenMarkovModel
 from .NaiveBayes import NaiveBayes
 from .distributions import Distribution
 
@@ -55,13 +54,10 @@ def parallelize(model, X, func, n_jobs, backend):
 
 	delay = delayed(getattr(model, func))
 	with Parallel(n_jobs=n_jobs, backend=backend) as parallel:
-		if isinstance(model, HiddenMarkovModel):
-			y = parallel(delay(x) for x in X)
-		else:
-			n = len(X)
-			starts = [n/n_jobs*i for i in range(n_jobs)]
-			ends = starts[1:] + [n]
-			y = parallel(delay(X[start:end]) for start, end in zip(starts, ends))
+		n = len(X)
+		starts = [n/n_jobs*i for i in range(n_jobs)]
+		ends = starts[1:] + [n]
+		y = parallel(delay(X[start:end]) for start, end in zip(starts, ends))
 
 	return numpy.concatenate(y) if n_jobs > 1 and n_jobs != len(X) else y
 
@@ -293,9 +289,7 @@ def summarize(model, X, weights=None, y=None, n_jobs=1, backend='threading', par
 		The log probability of the dataset being summarized.
 	"""
 
-	if isinstance(X, list) and isinstance(model, HiddenMarkovModel):
-		n, n_jobs = len(X), len(X)
-	elif isinstance(X, list):
+	if isinstance(X, list):
 		n, d = len(X), model.d
 	elif X.ndim == 1 and model.d > 1:
 		n, d = 1, X.shape[0]
@@ -403,11 +397,7 @@ def fit(model, X, weights=None, y=None, n_jobs=1, backend='threading', stop_thre
 	else:
 		weights = numpy.asarray(weights, dtype='float64')
 
-	if isinstance(model, HiddenMarkovModel):
-		return model.fit(X, weights=weights, n_jobs=n_jobs, stop_threshold=stop_threshold,
-			max_iterations=max_iterations, inertia=inertia, verbose=verbose, **kwargs)
-
-	elif isinstance(model, Distribution):
+	if isinstance(model, Distribution):
 		summarize(model, X, weights, n_jobs, backend)
 		model.from_summaries(inertia)
 

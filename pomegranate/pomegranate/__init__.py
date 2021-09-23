@@ -15,7 +15,6 @@ from .distributions import *
 from .kmeans import Kmeans
 from .gmm import GeneralMixtureModel
 from .NaiveBayes import NaiveBayes
-from .hmm import HiddenMarkovModel
 
 __version__ = '0.14.5'
 
@@ -49,8 +48,6 @@ def from_json(s):
 		return Distribution.from_json(s)
 	elif d['class'] == 'GeneralMixtureModel':
 		return GeneralMixtureModel.from_json(s)
-	elif d['class'] == 'HiddenMarkovModel':
-		return HiddenMarkovModel.from_json(s)
 	elif d['class'] == 'NaiveBayes':
 		return NaiveBayes.from_json(s)
 	else:

@@ -17,7 +17,6 @@ from distributions.distributions cimport Distribution
 from distributions import DiscreteDistribution
 from distributions import JointProbabilityTable
 from distributions import IndependentComponentsDistribution
-from .hmm import HiddenMarkovModel
 from .gmm import GeneralMixtureModel
 from .callbacks import History
 
@@ -86,9 +85,6 @@ cdef class BayesModel(Model):
 
             if not isinstance(dist, Distribution) and not isinstance(dist, Model):
                 self.cython = 0
-            elif dist.model == 'HiddenMarkovModel':
-                self.is_vl_ = 1
-                self.keymap = dist.keymap
 
         if weights is None:
             weights = numpy.ones_like(distributions, dtype='float64') / self.n
@@ -748,7 +744,7 @@ cdef class BayesModel(Model):
         X = _convert(X)
         y = _convert(y)
 
-        if self.d > 0 and not isinstance( self.distributions[0], HiddenMarkovModel ):
+        if self.d > 0:
             if X.ndim > 2:
                 raise ValueError("input data has too many dimensions")
             elif X.ndim == 2 and self.d != X.shape[1]:
