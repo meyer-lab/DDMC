@@ -16,7 +16,6 @@ from scipy.linalg.cython_blas cimport dgemm
 from ..utils cimport _log
 from ..utils cimport mdot
 from ..utils cimport ndarray_wrap_cpointer
-from ..utils cimport _is_gpu_enabled
 from ..utils cimport isnan
 from ..utils import check_random_state
 
@@ -89,18 +88,8 @@ cdef class MultivariateGaussianDistribution(MultivariateDistribution):
 		cdef int i, j, d = self.d
 		cdef double* dot
 
-		if _is_gpu_enabled():
-			with gil:
-				import cupy
-
-				x = ndarray_wrap_cpointer(X, n*d).reshape(n, d)
-				x1 = cupy.array(x)
-				x2 = cupy.array(self.inv_cov)
-				dot_ndarray = cupy.dot(x1, x2).get()
-				dot = <double*> (<numpy.ndarray> dot_ndarray).data
-		else:
-			dot = <double*> calloc(n*d, sizeof(double))
-			mdot(X, self._inv_cov, dot, n, d, d)
+		dot = <double*> calloc(n*d, sizeof(double))
+		mdot(X, self._inv_cov, dot, n, d, d)
 
 		for i in range(n):
 			logp[i] = 0
@@ -113,8 +102,7 @@ cdef class MultivariateGaussianDistribution(MultivariateDistribution):
 			else:
 				logp[i] = -0.5 * (d * LOG_2_PI + logp[i]) - 0.5 * self._log_det
 
-		if not _is_gpu_enabled():
-			free(dot)
+		free(dot)
 
 	cdef double _log_probability_missing(self, double* X) nogil:
 		cdef double logp
@@ -178,23 +166,7 @@ cdef class MultivariateGaussianDistribution(MultivariateDistribution):
 					column_sum[j*d + j] += x * w
 					column_w_sum[j] += w
 
-		if _is_gpu_enabled():
-			with gil:
-				import cupy
-
-				x_ndarray = ndarray_wrap_cpointer(y, n*d).reshape(n, d)
-				x_gpu = cupy.array(x_ndarray, copy=False)
-				pair_sum_ndarray = cupy.dot(x_gpu.T, x_gpu).get()
-
-				for j in range(d):
-					self.column_w_sum[j] += column_w_sum[j]
-
-					for k in range(d):
-						self.pair_sum[j*d + k] += pair_sum_ndarray[j, k]
-						self.pair_w_sum[j*d + k] += pair_w_sum[j*d + k] + w_sum
-						self.column_sum[j*d + k] += column_sum[j*d + k]
-
-		else:
+		if True:
 			pair_sum = <double*> calloc(d*d, sizeof(double))
 
 			dgemm('N', 'T', &d, &d, &n, &alpha, y, &d, y, &d, &beta, pair_sum, &d)
