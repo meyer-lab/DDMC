@@ -19,4 +19,3 @@ from .CustomDistribution import CustomDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution
-from .JointProbabilityTable import JointProbabilityTable

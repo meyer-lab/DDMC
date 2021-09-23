@@ -15,7 +15,6 @@ cimport numpy
 from .base cimport Model
 from distributions.distributions cimport Distribution
 from distributions import DiscreteDistribution
-from distributions import JointProbabilityTable
 from distributions import IndependentComponentsDistribution
 from .gmm import GeneralMixtureModel
 from .callbacks import History
@@ -101,10 +100,7 @@ cdef class BayesModel(Model):
         self.summaries_ptr = <double*> self.summaries.data
 
         if self.is_vl_ == 0:
-            if isinstance(distributions[0], JointProbabilityTable):
-                self.cython = 0
-            else:
-                self._build_keymap()
+            self._build_keymap()
 
     def _build_keymap(self):
         """

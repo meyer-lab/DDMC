@@ -20,7 +20,6 @@ from .DiscreteDistribution import DiscreteDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution
-from .JointProbabilityTable import JointProbabilityTable
 
 
 cdef class Distribution(Model):
@@ -283,9 +282,6 @@ cdef class Distribution(Model):
 						table[-1].append(numpy.array([item], dtype=dtype)[0])
 					else:
 						table[-1].append(item)
-
-			if d['name'] == 'JointProbabilityTable':
-				return JointProbabilityTable(table, parents)
 
 		else:
 			dist = eval("{}({}, frozen={})".format(d['name'],

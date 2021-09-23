@@ -35,8 +35,7 @@ distributions = [
     'DiscreteDistribution',
     'KernelDensities',
     'IndependentComponentsDistribution',
-    'MultivariateGaussianDistribution',
-    'JointProbabilityTable'
+    'MultivariateGaussianDistribution'
 ]
 
 if not use_cython:
