@@ -19,3 +19,4 @@ logomaker==0.8
 svgutils==0.3.4
 statsmodels==0.12.2
 joblib==1.0.1
+nose
