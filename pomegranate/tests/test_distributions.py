@@ -6,7 +6,6 @@ from pomegranate import (Distribution,
 						 DiscreteDistribution,
 						 LogNormalDistribution,
 						 ExponentialDistribution,
-						 GammaDistribution,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
 						 BernoulliDistribution,
@@ -581,46 +580,6 @@ def test_distributions_lognormal_random_sample():
 
 
 @with_setup(setup, teardown)
-def test_gamma():
-	d = GammaDistribution(5, 2)
-	assert_equal(round(d.log_probability(4), 4), -2.1671)
-
-	d.fit([2.3, 4.3, 2.7, 2.3, 3.1, 3.2, 3.4, 3.1, 2.9, 2.8])
-	assert_equal(round(d.parameters[0], 4), 31.8806)
-	assert_equal(round(d.parameters[1], 4), 10.5916)
-
-	d = GammaDistribution(2, 7)
-	assert_not_equal(round(d.log_probability(4), 4), -2.1671)
-
-	d.summarize([2.3, 4.3, 2.7])
-	d.summarize([2.3, 3.1, 3.2])
-	d.summarize([3.4, 3.1, 2.9, 2.8])
-	d.from_summaries()
-
-	assert_equal(round(d.parameters[0], 4), 31.8806)
-	assert_equal(round(d.parameters[1], 4), 10.5916)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "GammaDistribution")
-	assert_equal(round(e.parameters[0], 4), 31.8806)
-	assert_equal(round(e.parameters[1], 4), 10.5916)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "GammaDistribution")
-	assert_equal(round(f.parameters[0], 4), 31.8806)
-	assert_equal(round(f.parameters[1], 4), 10.5916)
-
-
-def test_distributions_gamma_random_sample():
-	d = GammaDistribution(0.5, 1)
-
-	x = numpy.array([0.049281, 0.042733, 0.238545, 0.773426, 0.088091])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
 def test_exponential():
 	d = ExponentialDistribution(3)
 	assert_equal(round(d.log_probability(8), 4), -22.9014)
@@ -851,8 +810,7 @@ def test_distributions_independent_random_sample():
 
 
 def test_univariate_log_probability():
-	distributions = [UniformDistribution, NormalDistribution, ExponentialDistribution,
-					 GammaDistribution, LogNormalDistribution]
+	distributions = [UniformDistribution, NormalDistribution, ExponentialDistribution, LogNormalDistribution]
 	X = numpy.abs(numpy.random.randn(100))
 
 	for distribution in distributions:

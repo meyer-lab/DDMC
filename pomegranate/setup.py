@@ -31,7 +31,6 @@ distributions = [
     'NormalDistribution',
     'LogNormalDistribution',
     'ExponentialDistribution',
-    'GammaDistribution',
     'DiscreteDistribution',
     'KernelDensities',
     'IndependentComponentsDistribution',
