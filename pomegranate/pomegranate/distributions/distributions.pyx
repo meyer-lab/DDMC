@@ -20,18 +20,12 @@ from .GammaDistribution import GammaDistribution
 from .DiscreteDistribution import DiscreteDistribution
 from .PoissonDistribution import PoissonDistribution
 
-from .KernelDensities import KernelDensity
-from .KernelDensities import UniformKernelDensity
-from .KernelDensities import GaussianKernelDensity
-from .KernelDensities import TriangleKernelDensity
-
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution
 from .DirichletDistribution import DirichletDistribution
 from .ConditionalProbabilityTable import ConditionalProbabilityTable
 from .JointProbabilityTable import JointProbabilityTable
 
-from .NeuralNetworkWrapper import NeuralNetworkWrapper
 
 cdef class Distribution(Model):
 	"""A probability distribution.

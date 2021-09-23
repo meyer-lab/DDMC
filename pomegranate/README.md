@@ -12,8 +12,6 @@ pomegranate is pip-installable using `pip install pomegranate` and conda-install
 
 If you get an error involving `pomegranate/base.c`, try installing with `pip install --no-cache-dir pomegranate`.
 
-If you get an error involving `pomegranate/distributions/NeuralNetworkWrapper.c: No such file or directory`, try installing Cython first and then re-installing. 
-
 ### Models
 
 * [Probability Distributions](http://pomegranate.readthedocs.io/en/latest/Distributions.html)

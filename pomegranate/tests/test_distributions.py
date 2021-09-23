@@ -9,9 +9,6 @@ from pomegranate import (Distribution,
 						 GammaDistribution,
 						 PoissonDistribution,
 						 BetaDistribution,
-						 GaussianKernelDensity,
-						 TriangleKernelDensity,
-						 UniformKernelDensity,
 						 IndependentComponentsDistribution,
 						 MultivariateGaussianDistribution,
 						 ConditionalProbabilityTable,
@@ -708,127 +705,6 @@ def test_distributions_beta_random_sample():
 	d = BetaDistribution(1, 1)
 
 	x = numpy.array([0.612564, 0.098563, 0.735983, 0.583171, 0.69296 ])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-@with_setup(setup, teardown)
-def test_gaussian_kernel():
-	d = GaussianKernelDensity([0, 4, 3, 5, 7, 4, 2])
-	assert_equal(round(d.log_probability(3.3), 4), -1.7042)
-
-	d.fit([1, 6, 8, 3, 2, 4, 7, 2])
-	assert_equal(round(d.log_probability(1.2), 4), -2.0237)
-
-	d.fit([1, 0, 108], weights=[2., 3., 278.])
-	assert_equal(round(d.log_probability(110), 4), -2.9368)
-	assert_equal(round(d.log_probability(0), 4), -5.1262)
-
-	d.summarize([1, 6, 8, 3])
-	d.summarize([2, 4, 7])
-	d.summarize([2])
-	d.from_summaries()
-	assert_equal(round(d.log_probability(1.2), 4), -2.0237)
-
-	d.summarize([1, 0, 108], weights=[2., 3., 278.])
-	d.from_summaries()
-	assert_equal(round(d.log_probability(110), 4), -2.9368)
-	assert_equal(round(d.log_probability(0), 4), -5.1262)
-
-	d.freeze()
-	d.fit([1, 3, 5, 4, 6, 7, 3, 4, 2])
-	assert_equal(round(d.log_probability(110), 4), -2.9368)
-	assert_equal(round(d.log_probability(0), 4), -5.1262)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "GaussianKernelDensity")
-	assert_equal(round(e.log_probability(110), 4), -2.9368)
-	assert_equal(round(e.log_probability(0), 4), -5.1262)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "GaussianKernelDensity")
-	assert_equal(round(f.log_probability(110), 4), -2.9368)
-	assert_equal(round(f.log_probability(0), 4), -5.1262)
-
-
-def test_distributions_gaussian_kernel_random_sample():
-	d = GaussianKernelDensity([0, 4, 3, 5, 7, 4, 2])
-
-	x = numpy.array([5.367586, 2.574708, 2.114238, 2.170925, 4.596907])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_triangular_kernel():
-	d = TriangleKernelDensity([1, 6, 3, 4, 5, 2])
-	assert_equal(round(d.log_probability(6.5), 4), -2.4849)
-
-	d = TriangleKernelDensity([1, 8, 100])
-	assert_not_equal(round(d.log_probability(6.5), 4), -2.4849)
-
-	d.summarize([1, 6])
-	d.summarize([3, 4, 5])
-	d.summarize([2])
-	d.from_summaries()
-	assert_equal(round(d.log_probability(6.5), 4), -2.4849)
-
-	d.freeze()
-	d.fit([1, 4, 6, 7, 3, 5, 7, 8, 3, 3, 4])
-	assert_equal(round(d.log_probability(6.5), 4), -2.4849)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "TriangleKernelDensity")
-	assert_equal(round(e.log_probability(6.5), 4), -2.4849)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(f.name, "TriangleKernelDensity")
-	assert_equal(round(f.log_probability(6.5), 4), -2.4849)
-
-
-def test_distributions_triangle_kernel_random_sample():
-	d = TriangleKernelDensity([0, 4, 3, 5, 7, 4, 2])
-
-	x = numpy.array([4.118801, 2.31576 , 4.018591, 1.770455, 4.612734])
-
-	assert_array_almost_equal(d.sample(5, random_state=5), x)
-	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)
-
-
-@with_setup(setup, teardown)
-def test_uniform_kernel():
-	d = UniformKernelDensity([1, 3, 5, 6, 2, 2, 3, 2, 2])
-
-	assert_equal(round(d.log_probability(2.2), 4), -0.4055)
-	assert_equal(round(d.log_probability(6.2), 4), -2.1972)
-	assert_equal(d.log_probability(10), float('-inf'))
-
-	d = UniformKernelDensity([1, 100, 200])
-	assert_not_equal(round(d.log_probability(2.2), 4), -0.4055)
-	assert_not_equal(round(d.log_probability(6.2), 4), -2.1972)
-
-	d.summarize([1, 3, 5, 6, 2])
-	d.summarize([2, 3, 2, 2])
-	d.from_summaries()
-	assert_equal(round(d.log_probability(2.2), 4), -0.4055)
-	assert_equal(round(d.log_probability(6.2), 4), -2.1972)
-
-	e = Distribution.from_json(d.to_json())
-	assert_equal(e.name, "UniformKernelDensity")
-	assert_equal(round(e.log_probability(2.2), 4), -0.4055)
-	assert_equal(round(e.log_probability(6.2), 4), -2.1972)
-
-	f = pickle.loads(pickle.dumps(e))
-	assert_equal(e.name, "UniformKernelDensity")
-	assert_equal(round(f.log_probability(2.2), 4), -0.4055)
-	assert_equal(round(f.log_probability(6.2), 4), -2.1972)
-
-
-def test_distributions_uniform_kernel_random_sample():
-	d = UniformKernelDensity([0, 4, 3, 5, 7, 4, 2])
-
-	x = numpy.array([4.223488, 2.531816, 4.036836, 1.593601, 4.375442])
 
 	assert_array_almost_equal(d.sample(5, random_state=5), x)
 	assert_raises(AssertionError, assert_array_almost_equal, d.sample(5), x)

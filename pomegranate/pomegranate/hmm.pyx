@@ -21,7 +21,6 @@ from .base cimport State
 from distributions.distributions cimport Distribution
 from distributions.DiscreteDistribution cimport DiscreteDistribution
 from distributions.IndependentComponentsDistribution cimport IndependentComponentsDistribution
-from distributions.NeuralNetworkWrapper import NeuralNetworkWrapper
 
 from .kmeans import Kmeans
 
@@ -3640,9 +3639,6 @@ cdef class HiddenMarkovModel(GraphModel):
                          distributions=DiscreteDistribution)
 
                 distributions.append(distribution)           
-
-        elif isinstance(distribution, list) and isinstance(distribution[0], NeuralNetworkWrapper):
-            distributions = distribution
 
         else:
             X_concat = numpy.concatenate(X_)
