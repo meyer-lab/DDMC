@@ -44,29 +44,6 @@ class Callback(object):
 		pass
 
 
-class ModelCheckpoint(Callback):
-	"""This will save the model to disk after each epoch."""
-
-	def __init__(self, name=None, verbose=True):
-		self.model = None
-		self.params = None
-		self.name = None
-		self.verbose = verbose
-
-	def on_epoch_end(self, logs):
-		"""Save the model to disk at the end of each epoch."""
-
-		model = self.model.to_json()
-		epoch = logs['epoch']
-		name = self.name if self.name is not None else self.model.name
-
-		if self.verbose:
-			print("[{}] Saving checkpoint to {}.{}.json".format(epoch, name, epoch))
-
-		with open('{}.{}.json'.format(name, epoch), 'w') as outfile:
-			outfile.write(model)
-
-
 class History(Callback):
 	"""Keeps a history of the loss during training."""
 
@@ -95,50 +72,3 @@ class History(Callback):
 		self.learning_rates.append(logs['learning_rate'])
 		self.n_seen_batches.append(logs['n_seen_batches'])
 		self.initial_log_probability = logs['initial_log_probability']
-
-
-class CSVLogger(Callback):
-	"""Logs results of training to a CSV file during training."""
-
-	def __init__(self, filename, separator=',', append=False):
-		self.filename = filename
-		self.separator = separator
-		self.append = append
-		self.file = None
-		self.columns = ['epoch', 'duration', 'total_improvement', 'improvement',
-			'log_probability', 'last_log_probability', 'epoch_start_time',
-			'epoch_end_time', 'n_seen_batches', 'learning_rate']
-
-	def on_training_begin(self):
-		if self.append == False:
-			self.file = open(self.filename, 'w')
-			self.file.write(self.separator.join(self.columns) + "\n")
-		else:
-			self.file = open(self.filename, 'a')
-
-
-	def on_training_end(self, logs):
-		self.file.close()
-
-	def on_epoch_end(self, logs):
-		self.file.write(self.separator.join(str(logs[col]) for col in self.columns) + "\n")
-
-class LambdaCallback(Callback):
-	"""A callback that takes in anonymous functions for any of the methods, for convenience."""
-
-	def __init__(self, on_training_begin=None, on_training_end=None, on_epoch_end=None):
-		self.on_training_begin_ = on_training_begin
-		self.on_training_end_ = on_training_end
-		self.on_epoch_end_ = on_epoch_end
-
-	def on_training_begin(self):
-		if self.on_training_begin_ is not None:
-			self.on_training_begin_()
-
-	def on_training_end(self, logs):
-		if self.on_training_end_ is not None:
-			self.on_training_end_(logs)
-
-	def on_epoch_end(self, logs):
-		if self.on_epoch_end_ is not None:
-			self.on_epoch_end_(logs)

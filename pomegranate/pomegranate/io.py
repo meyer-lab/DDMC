@@ -1,10 +1,5 @@
 import numpy
 
-try:
-	import pandas
-except:
-	pandas = None
-
 class BaseGenerator(object):
 	"""The base data generator class.
 
@@ -150,82 +145,3 @@ class DataGenerator(BaseGenerator):
 			
 			start += self.batch_size
 			end += self.batch_size
-
-class CSVGenerator(BaseGenerator):
-	"""A generator that returns batches of sequences from a data file.
-
-	This object will wrap a file, such as a CSV file, and generate batches
-	of data from it. It will not load the entire file into memory except
-	for particular model methods that force it to do so. It is mostly a
-	wrapper around a call to `pandas.read_csv`.
-
-	Parameters
-	----------
-	filename : str
-		The name of the file to open.
-
-	weight_column : str or int or None, optional 
-		The column to use for the weights. If None, assume uniform weights.
-
-	y_column: str or int or None, optional
-		The column to use for the labels. If None, assume no labels.
-
-	kwargs : keyword arguments, optional
-		Any other argument to pass into `pandas.read_csv`.
-	"""
-	
-	def __init__(self, filename, weight_column=None, y_column=None, 
-		batch_size=32, **kwargs):
-		self.filename = filename
-		self.weight_column = weight_column
-		self.y_column = y_column
-		self.kwargs = kwargs
-		self.file = pandas.read_csv(filename, iterator=True, 
-			chunksize=batch_size, **kwargs)
-
-	def __len__(self):
-		return len(self.X)
-
-	@property
-	def shape(self):
-		raise ValueError("Cannot get shape of a file.")
-
-	@property
-	def classes(self):
-		if self.y_column is None:
-			raise ValueError("Must specify y_column to return classes.")
-
-		return numpy.unique(numpy.concatenate([numpy.unique(
-			batch[self.y_column]) for batch in self.batches]))
-
-	def batches(self):
-		for batch in self.file:
-			if self.weight_column is not None:
-				weights = batch[self.weight_column].values.astype('float64')
-				X = batch.drop(self.weight_column)
-			else:
-				weights = numpy.ones(batch.shape[0], dtype='float64')
-
-			if self.y_column is not None:
-				y = X[self.y_column].values.astype('float64')
-				X = X.drop(self.y_column).values.astype('float64')
-				yield X, weights, y
-			else:
-				X = X.values.astype('float64')
-				yield X, weights
-
-
-	def labeled_batches(self):
-		X = [x for x, y in zip(self.X, self.y) if y is not None]
-		weights = [w for w, y in zip(self.weights, self.y) if y is not None]
-		y = [y for y in self.y if y is not None]
-
-		for idx in range(len(X)):
-			yield X[idx:idx+1], weights[idx:idx+1], y[idx:idx+1]
-
-	def unlabeled_batches(self):
-		X = [x for x, y in zip(self.X, self.y) if y is None]
-		weights = [w for w, y in zip(self.weights, self.y) if y is None]
-
-		for idx in range(len(X)):
-			yield X[idx:idx+1], weights[idx:idx+1]
