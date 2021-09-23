@@ -22,8 +22,6 @@ from .PoissonDistribution import PoissonDistribution
 
 from .IndependentComponentsDistribution import IndependentComponentsDistribution
 from .MultivariateGaussianDistribution import MultivariateGaussianDistribution
-from .DirichletDistribution import DirichletDistribution
-from .ConditionalProbabilityTable import ConditionalProbabilityTable
 from .JointProbabilityTable import JointProbabilityTable
 
 
@@ -290,8 +288,6 @@ cdef class Distribution(Model):
 
 			if d['name'] == 'JointProbabilityTable':
 				return JointProbabilityTable(table, parents)
-			elif d['name'] == 'ConditionalProbabilityTable':
-				return ConditionalProbabilityTable(table, parents)
 
 		else:
 			dist = eval("{}({}, frozen={})".format(d['name'],

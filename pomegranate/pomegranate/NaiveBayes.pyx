@@ -11,7 +11,6 @@ from .bayes cimport BayesModel
 from distributions.distributions cimport Distribution
 from distributions import IndependentComponentsDistribution
 from distributions import MultivariateGaussianDistribution
-from distributions import DirichletDistribution
 
 from .gmm import GeneralMixtureModel
 from .io import BaseGenerator
@@ -175,13 +174,13 @@ cdef class NaiveBayes(BayesModel):
 		"""
 
 		ICD = IndependentComponentsDistribution
-		if distributions in (MultivariateGaussianDistribution, DirichletDistribution):
+		if distributions in (MultivariateGaussianDistribution, ):
 			raise ValueError("naive Bayes only supports independent features.")
 		elif isinstance(distributions, (list, numpy.ndarray, tuple)):
 			for distribution in distributions:
 				if not callable(distribution):
 					raise ValueError("must pass in class constructors, not initiated distributions (i.e. NormalDistribution)")
-				elif distribution in (MultivariateGaussianDistribution, DirichletDistribution):
+				elif distribution in (MultivariateGaussianDistribution, ):
 					raise ValueError("naive Bayes only supported independent features.")
 
 		if not isinstance(X, BaseGenerator):

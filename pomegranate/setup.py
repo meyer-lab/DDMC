@@ -38,8 +38,6 @@ distributions = [
     'KernelDensities',
     'IndependentComponentsDistribution',
     'MultivariateGaussianDistribution',
-    'DirichletDistribution',
-    'ConditionalProbabilityTable',
     'JointProbabilityTable'
 ]
 
