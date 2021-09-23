@@ -94,24 +94,6 @@ def test_kmeans_init():
 
 
 @with_setup(setup_three_dimensions)
-def test_kmeans_from_samples():
-	model = Kmeans.from_samples(2, X, init='first-k')
-	centroids = [[-0.872246, -0.344245, -0.578309],
-      			 [ 8.282911,  7.825455,  7.069913]]
-
-	assert_array_almost_equal(model.centroids, centroids)
-
-
-@with_setup(setup_three_dimensions)
-def test_kmeans_from_samples_parallel():
-	model = Kmeans.from_samples(2, X, init='first-k', n_jobs=2)
-	centroids = [[-0.872246, -0.344245, -0.578309],
-      			 [ 8.282911,  7.825455,  7.069913]]
-
-	assert_array_almost_equal(model.centroids, centroids)
-
-
-@with_setup(setup_three_dimensions)
 def test_kmeans_predict():
 	y = numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
 	y_hat = model.predict(X)
@@ -172,35 +154,6 @@ def test_kmeans_fit_parallel():
 	assert_array_almost_equal(model.centroids, centroids)
 
 
-@with_setup(setup_five_dimensions)
-def test_kmeans_multiple_init():
-	model1 = Kmeans.from_samples(4, X, init='kmeans++', n_init=1)
-	model2 = Kmeans.from_samples(4, X, init='kmeans++', n_init=25)
-
-	dist1 = model1.distance(X).min(axis=1).sum()
-	dist2 = model2.distance(X).min(axis=1).sum()
-
-	assert_greater_equal(dist1, dist2)
-
-	model1 = Kmeans.from_samples(4, X, init='first-k', n_init=1)
-	model2 = Kmeans.from_samples(4, X, init='first-k', n_init=5)
-
-	dist1 = model1.distance(X).min(axis=1).sum()
-	dist2 = model2.distance(X).min(axis=1).sum()
-
-	assert_equal(dist1, dist2)
-
-
-@with_setup(setup_five_dimensions)
-def test_kmeans_ooc_from_samples():
-	numpy.random.seed(0)
-
-	model1 = Kmeans.from_samples(5, X, init='first-k', batch_size=20)
-	model2 = Kmeans.from_samples(5, X, init='first-k', batch_size=None)
-
-	assert_array_equal(model1.centroids, model2.centroids)
-
-
 @with_setup(setup_three_dimensions)
 def test_kmeans_ooc_fit():
 	centroids_copy = numpy.copy(centroids)
@@ -220,16 +173,6 @@ def test_kmeans_ooc_fit():
 
 
 @with_setup(setup_five_dimensions)
-def test_kmeans_minibatch_from_samples():
-	model1 = Kmeans.from_samples(4, X, init='first-k', batch_size=10)
-	model2 = Kmeans.from_samples(4, X, init='first-k', batch_size=None)
-	model3 = Kmeans.from_samples(4, X, init='first-k', batch_size=10, batches_per_epoch=1)
-
-	assert_array_almost_equal(model1.centroids, model2.centroids)
-	assert_raises(AssertionError, assert_array_equal, model1.centroids, model3.centroids)
-
-
-@with_setup(setup_five_dimensions)
 def test_kmeans_minibatch_fit():
 	centroids_copy = numpy.copy(centroids)
 	model1 = Kmeans(4, centroids_copy)
@@ -245,24 +188,6 @@ def test_kmeans_minibatch_fit():
 
 	assert_array_almost_equal(model1.centroids, model2.centroids)
 	assert_raises(AssertionError, assert_array_equal, model1.centroids, model3.centroids)
-
-
-@with_setup(setup_three_dimensions)
-def test_kmeans_nan_from_samples():
-	model = Kmeans.from_samples(2, X_nan, init='first-k')
-	centroids = [[-0.872246,  0.235907, -0.785954],
-      			 [ 7.94916 ,  7.825455,  7.395059]]
-
-	assert_array_almost_equal(model.centroids, centroids)
-
-
-@with_setup(setup_three_dimensions)
-def test_kmeans_nan_from_samples_parallel():
-	model = Kmeans.from_samples(2, X_nan, init='first-k', n_jobs=2)
-	centroids = [[-0.872246,  0.235907, -0.785954],
-      			 [ 7.94916 ,  7.825455,  7.395059]]
-
-	assert_array_almost_equal(model.centroids, centroids)
 
 
 @with_setup(setup_three_dimensions)
@@ -342,36 +267,6 @@ def test_kmeans_nan_large_predict_parallel():
 
 
 @with_setup(setup_five_dimensions)
-def test_kmeans_nan_multiple_init():
-	numpy.random.seed(0)
-	model1 = Kmeans.from_samples(4, X_nan, init='kmeans++', n_init=1)
-	
-	numpy.random.seed(0)
-	model2 = Kmeans.from_samples(4, X_nan, init='kmeans++', n_init=25)
-
-	dist1 = model1.distance(X).min(axis=1).sum()
-	dist2 = model2.distance(X).min(axis=1).sum()
-
-	assert_greater_equal(dist1, dist2)
-
-	model1 = Kmeans.from_samples(4, X_nan, init='first-k', n_init=1)
-	model2 = Kmeans.from_samples(4, X_nan, init='first-k', n_init=5)
-
-	dist1 = model1.distance(X).min(axis=1).sum()
-	dist2 = model2.distance(X).min(axis=1).sum()
-
-	assert_equal(dist1, dist2)
-
-
-@with_setup(setup_five_dimensions)
-def test_kmeans_ooc_nan_from_samples():
-	model1 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=20)
-	model2 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=None)
-
-	assert_array_almost_equal(model1.centroids, model2.centroids)
-
-
-@with_setup(setup_five_dimensions)
 def test_kmeans_ooc_nan_fit():
 	centroids_copy = numpy.copy(centroids)
 	model1 = Kmeans(4, centroids_copy, n_init=1)
@@ -387,18 +282,6 @@ def test_kmeans_ooc_nan_fit():
 
 	assert_array_almost_equal(model1.centroids, model2.centroids, 4)
 	assert_array_almost_equal(model1.centroids, model3.centroids, 4)
-
-
-@with_setup(setup_five_dimensions)
-def test_kmeans_minibatch_nan_from_samples():
-	model1 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=10)
-	model2 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=None)
-	model3 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=10, batches_per_epoch=1)
-	model4 = Kmeans.from_samples(4, X_nan, init='first-k', batch_size=10, batches_per_epoch=2)
-
-	assert_array_almost_equal(model1.centroids, model2.centroids)
-	assert_array_almost_equal(model1.centroids, model4.centroids)
-	assert_raises(AssertionError, assert_array_equal, model1.centroids, model3.centroids)
 
 
 @with_setup(setup_five_dimensions)
