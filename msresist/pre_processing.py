@@ -60,7 +60,6 @@ def preprocessing(
 
     if FCfilter:
         X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.40)
-#         X = FoldChangeFilterToControl(X, data_headers, FCto, cutoff=0.4)
 
     if not log2T:
         if FCtoUT:
