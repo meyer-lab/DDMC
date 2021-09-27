@@ -8,7 +8,7 @@ from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
 from sklearn.metrics import plot_roc_curve
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
 
 def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
@@ -57,10 +57,13 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha='center', va='center', color='white')
 
 
-def plotROC(ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False):
+def plotROC(ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False, kfold="stratified"):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values
-    cv = StratifiedKFold(n_splits=cv_folds)
+    if kfold == "stratified":
+        cv = StratifiedKFold(n_splits=cv_folds)
+    elif kfold == "repeated":
+        cv = RepeatedKFold(n_splits=3, n_repeats=10)
     tprs = []
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)

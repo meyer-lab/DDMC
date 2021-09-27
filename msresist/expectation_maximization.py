@@ -28,7 +28,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None, verbose=False):
     idxx = np.atleast_2d(np.arange(d.shape[0]))
     d = np.hstack((d, idxx.T))
 
-    for _ in range(10):
+    for _ in range(20):
         if gmmIn is None:
             # Initialize model
             dists = list()
@@ -46,7 +46,7 @@ def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None, verbose=False):
         else:
             gmm = gmmIn
 
-        gmm.fit(d, max_iterations=500, verbose=verbose, stop_threshold=1e-4)
+        gmm.fit(d, max_iterations=300, verbose=verbose, stop_threshold=1e-3)
         scores = gmm.predict_proba(d)
 
         if np.all(np.isfinite(scores)):
