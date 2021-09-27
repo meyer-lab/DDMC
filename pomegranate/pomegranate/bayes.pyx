@@ -59,14 +59,10 @@ cdef class BayesModel(Model):
 
     d : int
         The number of dimensionals the model is built to consider.
-
-    is_vl_ : bool
-        Whether this model is built for variable length sequences or not.
     """
 
     def __init__(self, distributions, weights=None):
         self.d = 0
-        self.is_vl_ = 0
         self.cython = 1
 
         self.n = len(distributions)
@@ -97,8 +93,7 @@ cdef class BayesModel(Model):
         self.summaries = numpy.zeros_like(weights, dtype='float64')
         self.summaries_ptr = <double*> self.summaries.data
 
-        if self.is_vl_ == 0:
-            self._build_keymap()
+        self._build_keymap()
 
     def _build_keymap(self):
         """
@@ -191,7 +186,7 @@ cdef class BayesModel(Model):
 
         cdef int i, j, n, d, m
 
-        if self.is_vl_ or self.d == 1:
+        if self.d == 1:
             n, d = len(X), self.d
         elif self.d > 1 and X.ndim == 1:
             raise ValueError("Must pass in an array with at least two dimensions.")
@@ -200,7 +195,7 @@ cdef class BayesModel(Model):
 
         if n_jobs > 1 or isinstance(X, BaseGenerator):
             if batch_size is None:
-                batch_size = 1 if self.is_vl_ else n // n_jobs + n % n_jobs
+                batch_size = n // n_jobs + n % n_jobs
 
             if not isinstance(X, BaseGenerator):
                 data_generator = DataGenerator(X, batch_size=batch_size)
@@ -220,21 +215,13 @@ cdef class BayesModel(Model):
         cdef numpy.ndarray X_ndarray
         cdef double* X_ptr
 
-        if not self.is_vl_:
-            X_ndarray = _check_input(X, self.keymap)
-            X_ptr = <double*> X_ndarray.data
-            if d != self.d:
-                raise ValueError("sample has {} dimensions but model has {} dimensions".format(d, self.d))
+        X_ndarray = _check_input(X, self.keymap)
+        X_ptr = <double*> X_ndarray.data
+        if d != self.d:
+            raise ValueError("sample has {} dimensions but model has {} dimensions".format(d, self.d))
 
         with nogil:
-            if self.is_vl_:
-                for i in range(n):
-                    with gil:
-                        X_ndarray = numpy.asarray(X[i])
-                        X_ptr = <double*> X_ndarray.data
-                    logp[i] = self._vl_log_probability(X_ptr, n)
-            else:
-                self._log_probability(X_ptr, logp, n)
+            self._log_probability(X_ptr, logp, n)
 
         return logp_ndarray
 
@@ -351,7 +338,7 @@ cdef class BayesModel(Model):
 
         if n_jobs > 1 or isinstance(X, BaseGenerator):
             if batch_size is None:
-                batch_size = 1 if self.is_vl_ else len(X) // n_jobs + len(X) % n_jobs
+                batch_size = len(X) // n_jobs + len(X) % n_jobs
 
             if not isinstance(X, BaseGenerator):
                 data_generator = DataGenerator(X, batch_size=batch_size)
@@ -365,46 +352,30 @@ cdef class BayesModel(Model):
 
             return numpy.concatenate(y_array)
 
-        if not self.is_vl_:
-            X_ndarray = _check_input(X, self.keymap)
-            X_ptr = <double*> X_ndarray.data
-            n, d = X_ndarray.shape[0], X_ndarray.shape[1]
-            if d != self.d:
-                raise ValueError("sample only has {} dimensions but should have {} dimensions".format(d, self.d))
-        else:
-            X_ndarray = X
-            n, d = len(X_ndarray), self.d
+        X_ndarray = _check_input(X, self.keymap)
+        X_ptr = <double*> X_ndarray.data
+        n, d = X_ndarray.shape[0], X_ndarray.shape[1]
+        if d != self.d:
+            raise ValueError("sample only has {} dimensions but should have {} dimensions".format(d, self.d))
 
         y = numpy.zeros((n, self.n), dtype='float64')
         y_ptr = <double*> y.data
 
         with nogil:
-            if not self.is_vl_:
-                self._predict_log_proba(X_ptr, y_ptr, n, d)
-            else:
-                for i in range(n):
-                    with gil:
-                        X_ndarray = _check_input(X[i], self.keymap)
-                        X_ptr = <double*> X_ndarray.data
-                        d = len(X_ndarray)
+            self._predict_log_proba(X_ptr, y_ptr, n, d)
 
-                    self._predict_log_proba(X_ptr, y_ptr+i*self.n, 1, d)
-
-        return y if self.is_vl_ else y.reshape(self.n, n).T
+        return y.reshape(self.n, n).T
 
     cdef void _predict_log_proba(self, double* X, double* y, int n, int d) nogil:
         cdef double y_sum, logp
         cdef int i, j
 
         for j in range(self.n):
-            if self.is_vl_:
-                y[j] = (<Model> self.distributions_ptr[j])._vl_log_probability(X, d)
+            if self.cython == 1:
+                (<Model> self.distributions_ptr[j])._log_probability(X, y+j*n, n)
             else:
-                if self.cython == 1:
-                    (<Model> self.distributions_ptr[j])._log_probability(X, y+j*n, n)
-                else:
-                    with gil:
-                        python_log_probability(self.distributions[j], X, y+j*n, n)
+                with gil:
+                    python_log_probability(self.distributions[j], X, y+j*n, n)
 
         for i in range(n):
             y_sum = NEGINF
@@ -456,7 +427,7 @@ cdef class BayesModel(Model):
 
         if n_jobs > 1 or isinstance(X, BaseGenerator):
             if batch_size is None:
-                batch_size = 1 if self.is_vl_ else len(X) // n_jobs + len(X) % n_jobs
+                batch_size = len(X) // n_jobs + len(X) % n_jobs
 
             if not isinstance(X, BaseGenerator):
                 data_generator = DataGenerator(X, batch_size=batch_size)
@@ -470,31 +441,17 @@ cdef class BayesModel(Model):
 
             return numpy.concatenate(y_array)
 
-        if not self.is_vl_:
-            X_ndarray = _check_input(X, self.keymap)
-            X_ptr = <double*> X_ndarray.data
-            n, d = len(X_ndarray), len(X_ndarray[0])
-            if d != self.d:
-                raise ValueError("sample only has {} dimensions but should have {} dimensions".format(d, self.d))
-        else:
-            X_ndarray = X
-            n, d = len(X_ndarray), self.d
-
+        X_ndarray = _check_input(X, self.keymap)
+        X_ptr = <double*> X_ndarray.data
+        n, d = len(X_ndarray), len(X_ndarray[0])
+        if d != self.d:
+            raise ValueError("sample only has {} dimensions but should have {} dimensions".format(d, self.d))
 
         y = numpy.zeros(n, dtype='int32')
         y_ptr = <int*> y.data
 
         with nogil:
-            if not self.is_vl_:
-                self._predict(X_ptr, y_ptr, n, d)
-            else:
-                for i in range(n):
-                    with gil:
-                        X_ndarray = _check_input(X[i], self.keymap)
-                        X_ptr = <double*> X_ndarray.data
-                        d = len(X_ndarray)
-
-                    self._predict(X_ptr, y_ptr+i, 1, d)
+            self._predict(X_ptr, y_ptr, n, d)
 
         return y
 
@@ -504,14 +461,11 @@ cdef class BayesModel(Model):
         cdef double* r = <double*> calloc(n*self.n, sizeof(double))
 
         for j in range(self.n):
-            if self.is_vl_:
-                r[j] = (<Model> self.distributions_ptr[j])._vl_log_probability(X, d)
+            if self.cython == 1:
+                (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
             else:
-                if self.cython == 1:
-                    (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
-                else:
-                    with gil:
-                        python_log_probability(self.distributions[j], X, r+j*n, n)
+                with gil:
+                    python_log_probability(self.distributions[j], X, r+j*n, n)
 
         for i in range(n):
             max_logp = NEGINF
@@ -558,12 +512,8 @@ cdef class BayesModel(Model):
         else:
             weights = numpy.asarray(weights, dtype='float64')
 
-        if self.is_vl_:
-            for i, distribution in enumerate(self.distributions):
-                distribution.summarize(list(X[y==i]), weights[y==i])
-        else:
-            for i, distribution in enumerate(self.distributions):
-                distribution.summarize(X[y==i], weights[y==i])
+        for i, distribution in enumerate(self.distributions):
+            distribution.summarize(X[y==i], weights[y==i])
 
         for i in range(self.n):
             weight = weights[y==i].sum()

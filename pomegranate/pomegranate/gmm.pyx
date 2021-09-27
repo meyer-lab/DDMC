@@ -310,9 +310,7 @@ cdef class GeneralMixtureModel(BayesModel):
         cdef numpy.ndarray weights_ndarray
         cdef double log_probability
 
-        if self.is_vl_:
-            n, d = len(X), self.d
-        elif self.d == 1:
+        if self.d == 1:
             n, d = X.shape[0], 1
         elif self.d > 1 and X.ndim == 1:
             n, d = 1, len(X)
@@ -327,23 +325,12 @@ cdef class GeneralMixtureModel(BayesModel):
         cdef double* X_ptr
         cdef double* weights_ptr = <double*> weights_ndarray.data
 
-        if not self.is_vl_:
-            X_ndarray = _check_input(X, self.keymap)
-            X_ptr = <double*> X_ndarray.data
+        X_ndarray = _check_input(X, self.keymap)
+        X_ptr = <double*> X_ndarray.data
 
-            with nogil:
-                log_probability = self._summarize(X_ptr, weights_ptr, n,
-                    0, self.d)
-
-        else:
-            log_probability = 0.0
-            for i in range(n):
-                X_ndarray = _check_input(X[i], self.keymap)
-                X_ptr = <double*> X_ndarray.data
-                d = len(X_ndarray)
-                with nogil:
-                    log_probability += self._summarize(X_ptr, weights_ptr+i,
-                        d, 0, self.d)
+        with nogil:
+            log_probability = self._summarize(X_ptr, weights_ptr, n,
+                0, self.d)
 
         return log_probability
 
@@ -358,8 +345,6 @@ cdef class GeneralMixtureModel(BayesModel):
             if self.cython == 0:
                 with gil:
                     python_log_probability(self.distributions[j], X, r+j*n, n)
-            elif self.is_vl_:
-                r[j*n] = (<Model> self.distributions_ptr[j])._vl_log_probability(X, n)
             else:
                 (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
 
@@ -375,9 +360,6 @@ cdef class GeneralMixtureModel(BayesModel):
                 summaries[j] += r[j*n + i]
 
             log_probability_sum += total * weights[i]
-
-            if self.is_vl_:
-                break
 
         for j in range(self.n):
             if self.cython == 0:
