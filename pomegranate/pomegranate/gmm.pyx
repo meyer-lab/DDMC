@@ -21,8 +21,6 @@ from distributions import IndependentComponentsDistribution
 
 from .bayes cimport BayesModel
 from .utils cimport pair_lse
-from .utils cimport python_log_probability
-from .utils cimport python_summarize
 from .utils import _check_input
 
 from .io import BaseGenerator
@@ -342,11 +340,7 @@ cdef class GeneralMixtureModel(BayesModel):
         cdef double total, logp, log_probability_sum = 0.0
 
         for j in range(self.n):
-            if self.cython == 0:
-                with gil:
-                    python_log_probability(self.distributions[j], X, r+j*n, n)
-            else:
-                (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
+            (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
 
         for i in range(n):
             total = NEGINF
@@ -362,12 +356,7 @@ cdef class GeneralMixtureModel(BayesModel):
             log_probability_sum += total * weights[i]
 
         for j in range(self.n):
-            if self.cython == 0:
-                with gil:
-                    python_summarize(self.distributions[j], X, r+j*n, n)
-            else:
-                (<Model> self.distributions_ptr[j])._summarize(X, r+j*n, n,
-                    0, d)
+            (<Model> self.distributions_ptr[j])._summarize(X, r+j*n, n, 0, d)
 
         with gil:
             for j in range(self.n):

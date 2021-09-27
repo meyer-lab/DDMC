@@ -17,7 +17,6 @@ cdef class BayesModel(Model):
 
 	cdef object keymap
 	cdef public int n
-	cdef public int cython
 
 	cdef void _predict_log_proba(self, double* X, double* y, int n, int d) nogil
 	cdef void _predict( self, double* X, int* y, int n, int d) nogil

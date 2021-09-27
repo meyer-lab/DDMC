@@ -12,8 +12,6 @@ from libc.string cimport memset
 
 from ..utils cimport _log
 from ..utils cimport isnan
-from ..utils cimport python_log_probability
-from ..utils cimport python_summarize
 
 from ..utils import check_random_state
 from ..utils import weight_set
@@ -57,10 +55,6 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 
 		self.d = len(distributions)
 		self.discrete = False
-		self.cython = 1
-		for dist in distributions:
-			if not isinstance(dist, Distribution) and not isinstance(dist, Model):
-				self.cython = 0
 
 		if weights is not None:
 			self.weights = numpy.array(weights, dtype=numpy.float64)
@@ -141,11 +135,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 
 		for i in range(n):
 			for j in range(self.d):
-				if self.cython == 1:
-					(<Model> self.distributions_ptr[j])._log_probability(X+i*self.d+j, &logp, 1)
-				else:
-					with gil:
-						python_log_probability(self.distributions[j], X+i*self.d+j, &logp, 1)
+				(<Model> self.distributions_ptr[j])._log_probability(X+i*self.d+j, &logp, 1)
 
 				log_probability[i] += logp * self.weights_ptr[j]
 
@@ -201,7 +191,7 @@ cdef class IndependentComponentsDistribution(MultivariateDistribution):
 					all_initialized = False
 					break
 
-		if self.cython == 1 and all_initialized:
+		if all_initialized:
 			for i in range(d):
 				(<Model> self.distributions_ptr[i])._summarize(X, weights, n, 
 					i, d)

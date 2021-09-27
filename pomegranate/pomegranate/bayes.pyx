@@ -19,7 +19,6 @@ from .callbacks import History
 
 from .utils cimport _log
 from .utils cimport pair_lse
-from .utils cimport python_log_probability
 from .utils import _check_input
 from .utils import _convert
 from .utils import check_random_state
@@ -63,7 +62,6 @@ cdef class BayesModel(Model):
 
     def __init__(self, distributions, weights=None):
         self.d = 0
-        self.cython = 1
 
         self.n = len(distributions)
         if len(distributions) < 2:
@@ -75,9 +73,6 @@ cdef class BayesModel(Model):
                 raise TypeError("must have initialized distributions in list")
             elif self.d != dist.d:
                 raise TypeError("mis-matching dimensions between distributions in list")
-
-            if not isinstance(dist, Distribution) and not isinstance(dist, Model):
-                self.cython = 0
 
         if weights is None:
             weights = numpy.ones_like(distributions, dtype='float64') / self.n
@@ -229,21 +224,13 @@ cdef class BayesModel(Model):
         cdef int i, j, d = self.d
         cdef double* logp = <double*> malloc(n * sizeof(double))
 
-        if self.cython == 1:
-            (<Model> self.distributions_ptr[0])._log_probability(X, log_probability, n)
-        else:
-            with gil:
-                python_log_probability(self.distributions[0], X, log_probability, n)
+        (<Model> self.distributions_ptr[0])._log_probability(X, log_probability, n)
 
         for i in range(n):
             log_probability[i] += self.weights_ptr[0]
 
         for j in range(1, self.n):
-            if self.cython == 1:
-                (<Model> self.distributions_ptr[j])._log_probability(X, logp, n)
-            else:
-                with gil:
-                    python_log_probability(self.distributions[j], X, logp, n)
+            (<Model> self.distributions_ptr[j])._log_probability(X, logp, n)
 
             for i in range(n):
                 log_probability[i] = pair_lse(log_probability[i], logp[i] + self.weights_ptr[j])
@@ -371,11 +358,7 @@ cdef class BayesModel(Model):
         cdef int i, j
 
         for j in range(self.n):
-            if self.cython == 1:
-                (<Model> self.distributions_ptr[j])._log_probability(X, y+j*n, n)
-            else:
-                with gil:
-                    python_log_probability(self.distributions[j], X, y+j*n, n)
+            (<Model> self.distributions_ptr[j])._log_probability(X, y+j*n, n)
 
         for i in range(n):
             y_sum = NEGINF
@@ -461,11 +444,7 @@ cdef class BayesModel(Model):
         cdef double* r = <double*> calloc(n*self.n, sizeof(double))
 
         for j in range(self.n):
-            if self.cython == 1:
-                (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
-            else:
-                with gil:
-                    python_log_probability(self.distributions[j], X, r+j*n, n)
+            (<Model> self.distributions_ptr[j])._log_probability(X, r+j*n, n)
 
         for i in range(n):
             max_logp = NEGINF
