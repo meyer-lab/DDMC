@@ -1,5 +1,5 @@
 """
-This creates KRAS figure
+This creates KRAS figure clustering all three cell lines together
 """
 
 import pandas as pd
