@@ -204,7 +204,7 @@ def TumorType(X):
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 1
-    data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
+    data = pd.melt(id_vars=id_var, value_vars=centers.columns[:-1], value_name="p-signal", var_name="Cluster", frame=centers)
     sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
     ax.legend(prop={'size': 8}, loc=loc)
 
@@ -221,25 +221,25 @@ def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
 
 
 def calculate_mannW_pvals(centers, col, feature1, feature2):
-    """Compute Mann Whitney rank test p-values"""
-    pvals = []
-    for ii in range(centers.shape[1] - 1):
-        x = centers.iloc[:, [ii, -1]]
+    """Compute Mann Whitney rank test p-values corrected for multiple tests."""
+    pvals, clus = [], []
+    for ii in centers.columns[:-1]:
+        x = centers.loc[:, [ii, col]]
         x1 = x[x[col] == feature1].iloc[:, 0]
         x2 = x[x[col] == feature2].iloc[:, 0]
         pval = mannwhitneyu(x1, x2)[1]
         pvals.append(pval)
-    pvals = multipletests(pvals)[1]  # p-value correction for multiple tests
-    return pvals
+        clus.append(ii)
+    return dict(zip(clus, multipletests(pvals)[1]))
 
 
 def build_pval_matrix(ncl, pvals):
     """Build data frame with pvalues per cluster"""
     data = pd.DataFrame()
-    data["Clusters"] = np.arange(ncl) + 1
-    data["p-value"] = pvals
+    data["Clusters"] = pvals.keys()
+    data["p-value"] = pvals.values()
     signif = []
-    for val in pvals:
+    for val in pvals.values():
         if 0.01 < val < 0.05:
             signif.append("<0.05")
         elif val < 0.01:
