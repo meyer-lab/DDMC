@@ -204,7 +204,7 @@ def TumorType(X):
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     ncl = centers.shape[1] - 1
-    data = pd.melt(id_vars=id_var, value_vars=np.arange(ncl) + 1, value_name="p-signal", var_name="Cluster", frame=centers)
+    data = pd.melt(id_vars=id_var, value_vars=centers.columns[:-1], value_name="p-signal", var_name="Cluster", frame=centers)
     sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
     ax.legend(prop={'size': 8}, loc=loc)
 
