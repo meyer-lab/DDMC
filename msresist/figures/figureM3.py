@@ -2,10 +2,10 @@
 This creates Figure 2: Validations
 """
 
-import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from ..clustering import MassSpecClustering
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from .figure1 import plotPCA_scoresORloadings
@@ -27,10 +27,13 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
+    # Import signaling data
     x = preprocess_ebdt_mcf7()
-    with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
-        model = pickle.load(m)
+    d = x.select_dtypes(include=[float]).T
+    i = x.select_dtypes(include=[object])
 
+    # Fit DDMC and find centers
+    model = MassSpecClustering(i, ncl=20, SeqWeight=5, distance_method="Binomial").fit(d)
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.ncl) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])

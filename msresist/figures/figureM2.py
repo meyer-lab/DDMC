@@ -21,7 +21,7 @@ def makeFigure():
     ax, f = getSetup((12, 10), (3, 4), multz={0: 3})
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)

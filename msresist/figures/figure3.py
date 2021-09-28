@@ -2,7 +2,6 @@
 This creates Figure 3: ABL/SFK/YAP experimental validations
 """
 
-import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -257,6 +256,7 @@ def plot_pAblSrcYap3(ax, line="WT"):
     y.set_title("p-YAP S127")
     y.set_xticklabels(y.get_xticklabels(), rotation=90)
 
+
 def plot_dasatinib_MS_clustermaps():
     """Generate clustermaps of PC9 WT/KO cells treated with an increasing concentration of dasatinib.
     Choose between entire data set, dose response only, or WT up KO down clusters.
@@ -266,11 +266,7 @@ def plot_dasatinib_MS_clustermaps():
         X.iloc[i, 6:11] -= X.iloc[i, 6]
         X.iloc[i, 11:] -= X.iloc[i, 11]
 
-    with open("msresist/data/pickled_models/AXLmodel_PAM250_W2-5_5CL", "rb") as m:
-        model = pickle.load(m)
-
     axl_ms = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-    axl_ms["Cluster"] = model.labels()
     data = X.set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
     lim = np.max(abs(data.values)) * 0.5
 

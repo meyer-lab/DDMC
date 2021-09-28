@@ -7,6 +7,8 @@ import numpy as np
 import seaborn as sns
 from .common import subplotLabel, getSetup
 from .figure2 import plotMotifs
+from ..pre_processing import filter_NaNpeptides
+from ..clustering import MassSpecClustering
 
 
 def makeFigure():
@@ -16,8 +18,13 @@ def makeFigure():
 
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
+
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     pssms = model.pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 4)

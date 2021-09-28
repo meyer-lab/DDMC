@@ -2,7 +2,6 @@
 This creates Figure 7: Tumor infiltrating immune cells
 """
 
-import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -12,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures, plotPeptidesByFeature
 from .figure2 import plotDistanceToUpstreamKinase
-from .pca import plotPCA
+from ..clustering import MassSpecClustering
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides
 
@@ -23,14 +22,18 @@ def makeFigure():
     ax, f = getSetup((14, 13), (4, 3), multz={0: 1, 3: 1})
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)
 
-    # Import DDMC clusters
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
+
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)

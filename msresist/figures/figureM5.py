@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib
-import pickle
 import textwrap
 from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
+from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
@@ -34,11 +34,13 @@ def makeFigure():
     matplotlib.rcParams['font.sans-serif'] = "Helvetica"
     matplotlib.rcParams['font.family'] = "sans-serif"
 
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
 
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     # first plot heatmap of clusters
     ax[0].axis("off")
