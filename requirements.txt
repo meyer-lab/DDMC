@@ -1,5 +1,4 @@
 scipy==1.7.1
-numpy==1.21.2
 matplotlib==3.4.3
 seaborn==0.11.2
 svgutils==0.3.4
@@ -20,5 +19,3 @@ gprof2dot
 logomaker==0.8
 svgutils==0.3.4
 statsmodels==0.12.2
-joblib==1.0.1
-nose
