@@ -60,12 +60,7 @@ def makeFigure():
 
     # Tumor vs NAT GMM
     ncl = 15
-    for _ in range(10):
-        try:
-            gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
-            break
-        except BaseException:
-            continue
+    gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
