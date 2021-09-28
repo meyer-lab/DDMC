@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 5: Predicting EGFRm/ALKf using DDMC clusters.
+This creates Supplemental Figure 6: Predicting EGFRm/ALKf using DDMC clusters.
 """
 import pickle
 import numpy as np

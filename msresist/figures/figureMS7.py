@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 6: Predicting STK11 genotype using different clustering strategies.
+This creates Supplemental Figure 7: Predicting STK11 genotype using different clustering strategies.
 """
 
 import pickle

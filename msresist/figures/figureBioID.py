@@ -1,3 +1,7 @@
+"""
+This creates BioID figure
+"""
+
 import pandas as pd
 from msresist.pca import plotBootPCA, bootPCA, preprocess_ID
 import seaborn as sns
