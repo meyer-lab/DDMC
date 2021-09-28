@@ -19,7 +19,7 @@ class MassSpecClustering(BaseEstimator):
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, pre_motifs=False, verbose=False):
+    def __init__(self, info, ncl, SeqWeight, distance_method):
         self.info = info
         self.ncl = ncl
         self.SeqWeight = SeqWeight
@@ -77,7 +77,7 @@ class MassSpecClustering(BaseEstimator):
 
         return np.argmax(self.scores_, axis=1) + 1
 
-    def pssms(self, PsP_background=False, erk_control=False):
+    def pssms(self, PsP_background=False):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""

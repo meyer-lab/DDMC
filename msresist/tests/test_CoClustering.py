@@ -11,13 +11,12 @@ from ..pre_processing import preprocessing
 X = preprocessing(AXLwt_GF=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
 data = X.select_dtypes(include=['float64']).T
 info = X.select_dtypes(include=['object'])
-preMotifSet = ["ABL", "EGFR", "ALK", "SRC", "YES"]
 
 
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_wins(distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
-    MSC = MassSpecClustering(info, 2, SeqWeight=0, distance_method=distance_method, pre_motifs=preMotifSet[0:2]).fit(X=data)
+    MSC = MassSpecClustering(info, 2, SeqWeight=0, distance_method=distance_method).fit(X=data)
     distances = MSC.wins(data)
 
     # assert that the distance to the same sequence weight is less
@@ -30,7 +29,7 @@ def test_wins(distance_method):
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
-    MSC = MassSpecClustering(info, ncl, SeqWeight=w, distance_method=distance_method, pre_motifs=preMotifSet[0:ncl]).fit(X=data)
+    MSC = MassSpecClustering(info, ncl, SeqWeight=w, distance_method=distance_method).fit(X=data)
 
     # Assert that we got a reasonable result
     assert np.all(np.isfinite(MSC.scores_))
