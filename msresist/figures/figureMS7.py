@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 6: Predicting STK11 genotype using different clustering strategies.
+This creates Supplemental Figure 7: Predicting STK11 genotype using different clustering strategies.
 """
 
 import pickle
@@ -37,7 +37,15 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     assert np.all(np.isfinite(d))
-    model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
+
+    for _ in range(10):
+        try:
+            model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
+            break
+        except BaseException:
+            continue
+
+    assert np.all(np.isfinite(model_min.scores_))
 
     centers_min = pd.DataFrame(model_min.transform()).T
     centers_min.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers_min.iloc[:, :])
@@ -112,8 +120,12 @@ def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
 
     # Run GMM
     ncl = 15
-    gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
-    x_["Cluster"] = gmm.labels()
+    for _ in range(10):
+        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
+        scores = gmm.predict_proba(d.T)
+        if np.all(np.isfinite(scores)):
+            break
+    x_["Cluster"] = gmm.predict(d.T)
     c_gmm = x_.groupby("Cluster").mean().T
     c_gmm["Patient_ID"] = X.columns[4:]
     c_gmm.columns = list(np.arange(ncl) + 1) + ["Patient_ID"]

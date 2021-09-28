@@ -1,5 +1,5 @@
 """
-This creates Figure 3: Evaluation of Imputating Missingness
+This creates Figure 2: Evaluation of Imputating Missingness
 """
 import glob
 import pickle
@@ -15,7 +15,6 @@ from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
 from ..binomial import Binomial
 from ..pam250 import PAM250
-from ..expectation_maximization import EM_clustering
 
 
 def makeFigure():

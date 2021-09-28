@@ -7,6 +7,7 @@ from msresist.pre_processing import Linear
 from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
+from sklearn.metrics import explained_variance_score, r2_score
 
 
 def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
@@ -238,12 +239,12 @@ def plotpca_ScoresLoadings_plotly(data, title, loc=False):
     fig.show()
 
 
-def preprocess_ID(linear=False):
+def preprocess_ID(linear=False, npepts=7, FCcut=10):
     bid = pd.read_csv("msresist/data/BioID/BioID.csv")
     genes = [s.split("_")[0] for i, s in enumerate(bid["Gene"])]
     bid = bid.drop(["Protein", "Gene"], axis=1)
     bid.insert(0, "Gene", genes)
-    XIDX = np.any(bid.iloc[:, 1:].values > 7, axis=1)
+    XIDX = np.any(bid.iloc[:, 1:].values > npepts, axis=1)
     bid = bid.iloc[XIDX, :]
     bid = bid.replace(0, 0.00001)
     bid.iloc[:, 1:] = np.log(bid.iloc[:, 1:])
@@ -252,7 +253,7 @@ def preprocess_ID(linear=False):
     nc = bid.groupby("index").mean().loc["Bio"]
     fc = bid.copy()
     fc.iloc[:, 1:] += nc.abs()
-    XIDX = np.any(fc.iloc[:, 1:].values >= 10, axis=0)
+    XIDX = np.any(fc.iloc[:, 1:].values >= FCcut, axis=0)
     XIDX = np.insert(XIDX, 0, True)
     bid = bid.iloc[:, XIDX]
     if linear:
@@ -269,12 +270,21 @@ def bootPCA(d, n_components, lIDX, method="PCA", n_boots=100):
         xIDX = range(d.shape[0])
         resamp = resample(xIDX, replace=True)
         bootdf = d.iloc[resamp, :].groupby(sIDX).mean().reset_index()
+        data = bootdf[data_headers]
+
         if method == "PCA":
-            bootdf[data_headers] = StandardScaler().fit_transform(bootdf[data_headers])
+            bootdf[data_headers] = StandardScaler().fit_transform(data)
             red = PCA(n_components=n_components)
+            dScor = red.fit_transform(data.values)
+            varExp = np.round(red.explained_variance_ratio_, 2)
+
         elif method == "NMF":
-            red = NMF(n_components=n_components)
-        dScor = red.fit_transform(bootdf[data_headers].values)
+            varExp = []
+            for i in range(1, n_components + 1):
+                red = NMF(n_components=i, max_iter=10000, solver="mu", beta_loss="frobenius", init='nndsvdar').fit(data.values)
+                dScor = red.transform(data)
+                varExp.append(r2_score(data, red.inverse_transform(dScor)))
+
         dScor, dLoad = pca_dfs(dScor, red.components_, bootdf, n_components, sIDX, lIDX)
         bootScor.append(dScor)
         bootLoad.append(dLoad)
@@ -287,10 +297,10 @@ def bootPCA(d, n_components, lIDX, method="PCA", n_boots=100):
     bootLoad_m = bootLoad.groupby(lIDX).mean().reset_index()
     bootLoad_sd = bootLoad.groupby(lIDX).sem().reset_index()
 
-    return bootScor_m, bootScor_sd, bootLoad_m, bootLoad_sd, bootScor
+    return bootScor_m, bootScor_sd, bootLoad_m, bootLoad_sd, bootScor, varExp
 
 
-def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=False):
+def plotBootPCA(ax, means, stds, varExp, title=False, X="PC1", Y="PC2", LegOut=False, annotate=False, colors=False):
     """ Plot Scores and Loadings. """
     sIDX = list(means.select_dtypes(include=['object']).columns)
     hue = sIDX[0]
@@ -298,15 +308,17 @@ def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=Fal
     if len(sIDX) == 2:
         style = sIDX[1]
 
-    ax.errorbar(means["PC1"], means["PC2"], xerr=stds["PC1"], yerr=stds["PC2"],
+    ax.errorbar(means[X], means[Y], xerr=stds[X], yerr=stds[Y],
                 linestyle="", elinewidth=0.2, capsize=2, capthick=0.2, ecolor='k')
 
     if colors:
         pal = sns.xkcd_palette(colors)
-        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax,
+        p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,
                              palette=pal, markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
+
+
     if not colors:
-        p1 = sns.scatterplot(x="PC1", y="PC2", data=means, hue=hue, style=style, ax=ax,
+        p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,
                              markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
 
     if LegOut:
@@ -315,5 +327,8 @@ def plotBootPCA(ax, means, stds, title, LegOut=False, annotate=False, colors=Fal
 
     if annotate:
         for idx, txt in enumerate(means[sIDX[0]]):
-            p1.text(means["PC1"][idx], means["PC2"][idx], txt,
+            p1.text(means[X][idx], means[Y][idx], txt,
                     horizontalalignment='left', color='black', size="xx-small", fontweight="light")
+
+    ax.set_xlabel(str(X) + "(" + str(int(varExp[int(X[-1]) - 1] * 100)) + "%)", fontsize=10)
+    ax.set_ylabel(str(Y) + "(" + str(int(varExp[int(Y[-1]) - 1] * 100)) + "%)", fontsize=10)
