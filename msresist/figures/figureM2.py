@@ -1,5 +1,5 @@
 """
-This creates Figure 3: Evaluation of Imputating Missingness
+This creates Figure 2: Evaluation of Imputating Missingness
 """
 import random
 import numpy as np
@@ -11,6 +11,8 @@ from statsmodels.multivariate.pca import PCA
 from .common import subplotLabel, getSetup
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides, FindIdxValues
+from ..binomial import Binomial
+from ..pam250 import PAM250
 
 
 def makeFigure():
