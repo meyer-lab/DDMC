@@ -9,7 +9,6 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from pomegranate import GeneralMixtureModel, NormalDistribution
 from msresist.clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides

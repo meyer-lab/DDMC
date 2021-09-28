@@ -2,16 +2,12 @@
 
 import glob
 import itertools
-from copy import copy
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from sklearn.manifold import MDS
-from sklearn.decomposition import PCA
 from Bio.Align import substitution_matrices
-from .expectation_maximization import EM_clustering_repeat
-from .motifs import ForegroundSeqs
+from .expectation_maximization import EM_clustering
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250, fixedMotif
 
@@ -29,7 +25,6 @@ class MassSpecClustering(BaseEstimator):
         self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.verbose = verbose
 
         seqs = [s.upper() for s in info["Sequence"]]
 
@@ -52,9 +47,9 @@ class MassSpecClustering(BaseEstimator):
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
-    def fit(self, X, y=None, nRepeats=1):
+    def fit(self, X, y=None):
         """Compute EM clustering"""
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist, None, self.verbose)
+        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering(X, self.info, self.ncl, self.dist)
 
         return self
 
@@ -70,7 +65,7 @@ class MassSpecClustering(BaseEstimator):
             wDist = self.dist.copy()
             wDist.SeqWeight = 0.0
 
-        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        data_model = EM_clustering(X, self.info, self.ncl, wDist)[1]
 
         if self.distance_method == "PAM250_fixed":
             for dd in wDist:
@@ -81,7 +76,7 @@ class MassSpecClustering(BaseEstimator):
             elif self.distance_method == "PAM250":
                 wDist.SeqWeight = 15.0
 
-        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        seq_model = EM_clustering(X, self.info, self.ncl, wDist)[1]
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
@@ -98,14 +93,7 @@ class MassSpecClustering(BaseEstimator):
     def transform(self):
         """Calculate cluster averages"""
         check_is_fitted(self, ["gmm_"])
-
-        centers = np.zeros((self.ncl, self.gmm_.distributions[0].d - 1))
-
-        for ii, distClust in enumerate(self.gmm_.distributions):
-            for jj, dist in enumerate(distClust[:-1]):
-                centers[ii, jj] = dist.parameters[0]
-
-        return centers.T
+        return self.gmm_.means_.T
 
     def labels(self):
         """Find cluster assignment with highest likelihood for each peptide"""

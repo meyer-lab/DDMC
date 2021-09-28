@@ -1,59 +1,68 @@
 """Main Expectation-Maximization functions using gmm and binomial or pam250 to determine cluster assginments.
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
-from copy import copy
 import numpy as np
-import scipy.stats as sp
-from pomegranate import GeneralMixtureModel, NormalDistribution, IndependentComponentsDistribution
+from statsmodels.multivariate.pca import PCA
+from sklearn.mixture import GaussianMixture
+from sklearn.mixture._gaussian_mixture import _estimate_log_gaussian_prob, _estimate_gaussian_parameters, _compute_precision_cholesky
 
 
-def EM_clustering_repeat(nRepeats=3, *params):
-    output = EM_clustering(*params)
+class DDMC(GaussianMixture):
+    """ The core DDMC class. """
+    def _estimate_log_prob(self, X):
+        logp = _estimate_log_gaussian_prob(
+            X, self.means_, self.precisions_cholesky_, self.covariance_type
+        )
 
-    for _ in range(nRepeats):
-        output_temp = EM_clustering(*params)
+        # Add in the sequence effect
+        for ii in range(self.n_components):
+            logp[:, ii] += self.seqDist[ii].logWeights
 
-        # Use the new result if it's better
-        if output_temp[0] > output[0]:
-            output = output_temp
+        return logp
 
-    return output
+    def _m_step(self, X, log_resp):
+        """M step.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        log_resp : array-like of shape (n_samples, n_components)
+            Logarithm of the posterior probabilities (or responsibilities) of
+            the point of each sample in X.
+        """
+        n_samples, _ = X.shape
+        self.weights_, self.means_, self.covariances_ = _estimate_gaussian_parameters(
+            X, np.exp(log_resp), self.reg_covar, self.covariance_type
+        )
+        self.weights_ /= n_samples
+        self.precisions_cholesky_ = _compute_precision_cholesky(
+            self.covariances_, self.covariance_type
+        )
+
+        # Add in the sequence effect
+        for ii in range(self.n_components):
+            self.seqDist[ii].from_summaries(np.squeeze(np.exp(log_resp[:, ii])))
 
 
-def EM_clustering(data, info, ncl, seqDist=None, gmmIn=None, verbose=False):
+def EM_clustering(data, _, ncl, seqDist=None):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
-    # Indices for looking up probabilities later.
-    idxx = np.atleast_2d(np.arange(d.shape[0]))
-    d = np.hstack((d, idxx.T))
+    pc = PCA(d, ncomp=5, method="nipals", missing="fill-em", standardize=False, demean=False, normalize=False)
+    d = pc._adjusted_data
+    assert np.all(np.isfinite(d))
 
-    for _ in range(10):
-        if gmmIn is None:
-            # Initialize model
-            dists = list()
-            for ii in range(ncl):
-                nDist = [NormalDistribution(sp.norm.rvs(), 0.2) for _ in range(d.shape[1] - 1)]
+    gmm = DDMC(n_components=ncl, covariance_type="diag", n_init=5)
 
-                if isinstance(seqDist, list):
-                    nDist.append(seqDist[ii])
-                else:
-                    nDist.append(seqDist.copy())
+    if isinstance(seqDist, list):
+        gmm.seqDist = seqDist
+    else:
+        gmm.seqDist = [seqDist.copy() for _ in range(ncl)]
 
-                dists.append(IndependentComponentsDistribution(nDist))
+    gmm.fit(d)
+    scores = gmm.predict_proba(d)
 
-            gmm = GeneralMixtureModel(dists)
-        else:
-            gmm = gmmIn
-
-        gmm.fit(d, max_iterations=500, verbose=verbose, stop_threshold=1e-4)
-        scores = gmm.predict_proba(d)
-
-        if np.all(np.isfinite(scores)):
-            break
-
-    seq_scores = np.exp([dd[-1].logWeights for dd in gmm.distributions])
-    avgScore = np.sum(gmm.log_probability(d))
+    seq_scores = scores # fix
+    avgScore = gmm.lower_bound_
 
     assert np.all(np.isfinite(scores))
     assert np.all(np.isfinite(seq_scores))

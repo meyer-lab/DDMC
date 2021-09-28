@@ -14,7 +14,6 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import cross_val_predict
 from sklearn.cluster import KMeans
-from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
 from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict

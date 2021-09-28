@@ -2,11 +2,9 @@
 Testing file for the clustering methods by data and sequence.
 """
 
-import pickle
 import pytest
 import numpy as np
 from ..clustering import MassSpecClustering
-from ..expectation_maximization import EM_clustering
 from ..pre_processing import preprocessing
 
 
@@ -28,7 +26,7 @@ def test_wins(distance_method):
 
 
 @pytest.mark.parametrize("w", [0, 0.1, 1.0, 10.0])
-@pytest.mark.parametrize("ncl", [2, 5])
+@pytest.mark.parametrize("ncl", [2, 5, 10, 25])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial", "PAM250_fixed"])
 def test_clusters(w, ncl, distance_method):
     """ Test that EMclustering is working by comparing with GMM clusters. """
@@ -40,14 +38,3 @@ def test_clusters(w, ncl, distance_method):
     # Assert that we got a reasonable result
     assert np.all(np.isfinite(MSC.scores_))
     assert np.all(np.isfinite(MSC.seq_scores_))
-
-
-@pytest.mark.parametrize("distm", ["PAM250", "Binomial", "PAM250_fixed"])
-def test_pickle(distm):
-    """ Test that EMclustering can be pickled and unpickled. """
-    MSC = MassSpecClustering(info, 3, SeqWeight=2, distance_method=distm, pre_motifs=preMotifSet[0:3]).fit(X=data)
-    unpickled = pickle.loads(pickle.dumps(MSC))
-    _, scores, _, _ = EM_clustering(data, info, 3, gmmIn=unpickled.gmm_)
-
-    assert np.all(np.isfinite(unpickled.scores_))
-    np.testing.assert_allclose(MSC.scores_, scores, rtol=0.5, atol=0.5)

@@ -7,7 +7,6 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
-from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotROC
