@@ -28,27 +28,6 @@ class PAM250():
             self.logWeights = self.SeqWeight * np.average(self.background, weights=weightsIn, axis=0)
 
 
-class fixedMotif():
-    def __init__(self, seqs, motif, SeqWeight):
-        # Compute log-likelihood of each peptide for the motif
-        self.background = np.zeros(seqs.shape[0])
-        for ii in range(seqs.shape[1]):
-            self.background += motif[seqs[:, ii], ii]
-        assert np.all(np.isfinite(self.background))
-
-        self.seqs = seqs
-        self.motif = motif
-        self.SeqWeight = SeqWeight
-        self.from_summaries(None)
-
-    def copy(self):
-        return fixedMotif(self.seqs, self.motif, self.SeqWeight)
-
-    def from_summaries(self, _):
-        """ Update the underlying distribution. No inertia used. """
-        self.logWeights = self.SeqWeight * self.background
-
-
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting. """
     pam250 = substitution_matrices.load("PAM250")

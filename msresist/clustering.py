@@ -6,10 +6,9 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
-from Bio.Align import substitution_matrices
 from .expectation_maximization import EM_clustering
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
-from .pam250 import PAM250, fixedMotif
+from .pam250 import PAM250
 
 
 # pylint: disable=W0201
@@ -30,20 +29,6 @@ class MassSpecClustering(BaseEstimator):
 
         if distance_method == "PAM250":
             self.dist = PAM250(seqs, SeqWeight)
-
-        elif distance_method == "PAM250_fixed":
-            assert len(pre_motifs) <= ncl
-            pam250 = substitution_matrices.load("PAM250")
-            seqsArr = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
-            seqsArr = np.delete(seqsArr, [5, 10], axis=1)  # Delelte P0 and P+5 (not in PSPL motifs)
-            PSPLs = PSPLdict()
-
-            self.pre_motifs = pre_motifs
-            self.dist = [fixedMotif(seqsArr, PSPLs[mm], SeqWeight) for mm in pre_motifs]
-
-            while len(self.dist) < ncl:
-                self.dist.append(Binomial(info["Sequence"], seqs, SeqWeight))
-
         elif distance_method == "Binomial":
             self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
 
@@ -57,24 +42,15 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        if self.distance_method == "PAM250_fixed":
-            wDist = [dd.copy() for dd in self.dist]
-            for dd in wDist:
-                dd.SeqWeight = 0.0
-        else:
-            wDist = self.dist.copy()
-            wDist.SeqWeight = 0.0
+        wDist = self.dist.copy()
+        wDist.SeqWeight = 0.0
 
         data_model = EM_clustering(X, self.info, self.ncl, wDist)[1]
 
-        if self.distance_method == "PAM250_fixed":
-            for dd in wDist:
-                dd.SeqWeight = 10.0
-        else:
-            if self.distance_method == "Binomial":
-                wDist.SeqWeight = 50.0
-            elif self.distance_method == "PAM250":
-                wDist.SeqWeight = 15.0
+        if self.distance_method == "Binomial":
+            wDist.SeqWeight = 50.0
+        elif self.distance_method == "PAM250":
+            wDist.SeqWeight = 15.0
 
         seq_model = EM_clustering(X, self.info, self.ncl, wDist)[1]
 
