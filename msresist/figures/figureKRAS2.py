@@ -1,3 +1,6 @@
+"""
+This creates KRAS figure clustering only mesenchymal cell lines separately
+"""
 
 import pickle
 import pandas as pd
