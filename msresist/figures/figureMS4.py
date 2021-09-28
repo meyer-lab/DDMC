@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
-from pomegranate import GeneralMixtureModel, NormalDistribution
+from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotROC
@@ -28,6 +28,7 @@ def makeFigure():
     # Tumor vs NAT unclustered
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
+    i = X.select_dtypes(include=['object'])
     X["Gene/Pos"] = X["Gene"] + ": " + X["Position"]
     d = X.set_index("Gene/Pos").select_dtypes(include=["float64"]).T.reset_index()
     d.rename(columns={"index": "Patient_ID"}, inplace=True)
@@ -59,15 +60,10 @@ def makeFigure():
 
     # Tumor vs NAT GMM
     ncl = 15
-    for _ in range(10):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
-        scores = gmm.predict_proba(d.T)
-        if np.all(np.isfinite(scores)):
-            break
+    gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
-    x_["Cluster"] = gmm.predict(d.T)
+    x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
-    c_gmm.columns = list(np.arange(ncl) + 1)
     gmm_lr = lr.fit(c_gmm, y)
     plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
     plotClusterCoefficients(ax[6], gmm_lr, title="GMM")

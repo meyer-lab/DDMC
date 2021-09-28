@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
 from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor, merge_binary_vectors

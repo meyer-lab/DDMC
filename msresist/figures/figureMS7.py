@@ -9,7 +9,6 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from pomegranate import GeneralMixtureModel, NormalDistribution
 from msresist.clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
@@ -37,15 +36,7 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     assert np.all(np.isfinite(d))
-
-    for _ in range(10):
-        try:
-            model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
-            break
-        except BaseException:
-            continue
-
-    assert np.all(np.isfinite(model_min.scores_))
+    model_min = MassSpecClustering(i, ncl=15, SeqWeight=2, distance_method="Binomial").fit(d, "NA")
 
     centers_min = pd.DataFrame(model_min.transform()).T
     centers_min.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers_min.iloc[:, :])
@@ -73,16 +64,16 @@ def makeFigure():
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
     assert all(centers.index.values == y.index.values), "Samples don't match"
     y_STK = y["STK11.mutation.status"]
-    plot_ROCs(ax[:5], centers, centers_min, X, y_STK, "STK11")
+    plot_ROCs(ax[:5], centers, centers_min, X, i, y_STK, "STK11")
 
     # Predicting EGFRm/Alkf
     y_EA = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion")
-    plot_ROCs(ax[5:], centers, centers_min, X, y_EA, "EGFRm/ALKf")
+    plot_ROCs(ax[5:], centers, centers_min, X, i, y_EA, "EGFRm/ALKf")
 
     return f
 
 
-def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
+def plot_ROCs(ax, centers, centers_min, X, i, y, gene_label):
     """Generate ROC plots using DDMC, unclustered, k-means, and GMM for a particular feature."""
     # LASSO
     lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.1])
@@ -120,15 +111,10 @@ def plot_ROCs(ax, centers, centers_min, X, y, gene_label):
 
     # Run GMM
     ncl = 15
-    for _ in range(10):
-        gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
-        scores = gmm.predict_proba(d.T)
-        if np.all(np.isfinite(scores)):
-            break
-    x_["Cluster"] = gmm.predict(d.T)
+    gmm = MassSpecClustering(i, ncl=15, SeqWeight=0, distance_method="Binomial").fit(d, "NA")
+    x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
     c_gmm["Patient_ID"] = X.columns[4:]
-    c_gmm.columns = list(np.arange(ncl) + 1) + ["Patient_ID"]
     c_gmm.iloc[:, :-1] = StandardScaler(with_std=False).fit_transform(c_gmm.iloc[:, :-1])
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
