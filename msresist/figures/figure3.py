@@ -2,6 +2,7 @@
 This creates Figure 3: ABL/SFK/YAP experimental validations
 """
 
+import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -255,3 +256,33 @@ def plot_pAblSrcYap3(ax, line="WT"):
     y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2], hue="Experiment")
     y.set_title("p-YAP S127")
     y.set_xticklabels(y.get_xticklabels(), rotation=90)
+
+def plot_dasatinib_MS_clustermaps():
+    """Generate clustermaps of PC9 WT/KO cells treated with an increasing concentration of dasatinib.
+    Choose between entire data set, dose response only, or WT up KO down clusters.
+    Note that sns.clustermap needs its own figure so these plots will be added manually."""
+    X = preprocessing(AXL_Das_DR=True, Vfilter=True, log2T=True, mc_row=False)
+    for i in range(X.shape[0]):
+        X.iloc[i, 6:11] -= X.iloc[i, 6]
+        X.iloc[i, 11:] -= X.iloc[i, 11]
+
+    with open("msresist/data/pickled_models/AXLmodel_PAM250_W2-5_5CL", "rb") as m:
+        model = pickle.load(m)
+
+    axl_ms = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    axl_ms["Cluster"] = model.labels()
+    data = X.set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
+    lim = np.max(abs(data.values)) * 0.5
+
+    if type == "entire":
+        # dict(zip(X.iloc[g.dendrogram_row.reordered_ind[:55], 2].values, X.iloc[g.dendrogram_row.reordered_ind[:67], 3].values))
+        sns.clustermap(data, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(10, 10), xticklabels=True, col_cluster=False)
+
+    elif type == "dose response":
+        data_dr = X.iloc[g.dendrogram_row.reordered_ind[:55], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
+        sns.clustermap(data_dr.T, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(15, 5), xticklabels=True, col_cluster=True, row_cluster=False)
+
+    elif type == "up and down":
+        data_ud = X.iloc[g.dendrogram_row.reordered_ind[413:427], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
+        lim = np.max(abs(data_ud.values)) * 0.8
+        g_ud = sns.clustermap(data_ud.T, cmap="bwr", method="centroid", robust=True, vmax=lim, vmin=-lim, figsize=(10, 5), xticklabels=True, row_cluster=False)
