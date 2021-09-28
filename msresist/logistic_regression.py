@@ -8,7 +8,7 @@ from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
 from sklearn.metrics import plot_roc_curve
-from sklearn.model_selection import StratifiedKFold, RepeatedKFold
+from sklearn.model_selection import StratifiedKFold
 
 
 def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
