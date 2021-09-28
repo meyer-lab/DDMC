@@ -274,15 +274,12 @@ def plot_dasatinib_MS_clustermaps():
     data = X.set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
     lim = np.max(abs(data.values)) * 0.5
 
-    if type == "entire":
-        # dict(zip(X.iloc[g.dendrogram_row.reordered_ind[:55], 2].values, X.iloc[g.dendrogram_row.reordered_ind[:67], 3].values))
-        sns.clustermap(data, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(10, 10), xticklabels=True, col_cluster=False)
+    g = sns.clustermap(data, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(10, 10), xticklabels=True, col_cluster=False)
+    dict(zip(X.iloc[g.dendrogram_row.reordered_ind[:55], 2].values, X.iloc[g.dendrogram_row.reordered_ind[:67], 3].values))
 
-    elif type == "dose response":
-        data_dr = X.iloc[g.dendrogram_row.reordered_ind[:55], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
-        sns.clustermap(data_dr.T, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(15, 5), xticklabels=True, col_cluster=True, row_cluster=False)
+    data_dr = X.iloc[g.dendrogram_row.reordered_ind[:55], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
+    sns.clustermap(data_dr.T, method="centroid", cmap="bwr", robust=True, vmax=lim, vmin=-lim, figsize=(15, 5), xticklabels=True, col_cluster=True, row_cluster=False)
 
-    elif type == "up and down":
-        data_ud = X.iloc[g.dendrogram_row.reordered_ind[413:427], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
-        lim = np.max(abs(data_ud.values)) * 0.8
-        g_ud = sns.clustermap(data_ud.T, cmap="bwr", method="centroid", robust=True, vmax=lim, vmin=-lim, figsize=(10, 5), xticklabels=True, row_cluster=False)
+    data_ud = X.iloc[g.dendrogram_row.reordered_ind[413:427], :].set_index(["Gene", "Position"]).select_dtypes(include=["float64"])
+    lim = np.max(abs(data_ud.values)) * 0.8
+    g_ud = sns.clustermap(data_ud.T, cmap="bwr", method="centroid", robust=True, vmax=lim, vmin=-lim, figsize=(10, 5), xticklabels=True, row_cluster=False)
