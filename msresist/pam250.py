@@ -6,26 +6,19 @@ from numba import njit, prange
 
 
 class PAM250():
-    def __init__(self, seqs, SeqWeight, background=None):
-        self.background = background
-
-        if background is None:
-            # Compute all pairwise distances
-            self.background = MotifPam250Scores(seqs)
-
-        self.seqs = seqs
+    def __init__(self, seqs, SeqWeight):
+        # Compute all pairwise distances
+        self.background = MotifPam250Scores(seqs)
         self.SeqWeight = SeqWeight
-        self.from_summaries(np.ones(self.background.shape[0]))
-
-    def copy(self):
-        return PAM250(self.seqs, self.SeqWeight, self.background)
+        self.logWeights = 0.0
 
     def from_summaries(self, weightsIn):
-        """ Update the underlying distribution. No inertia used. """
-        if np.sum(weightsIn) == 0.0:
-            self.logWeights = self.SeqWeight * np.average(self.background, axis=0)
-        else:
-            self.logWeights = self.SeqWeight * np.average(self.background, weights=weightsIn, axis=0)
+        """ Update the underlying distribution. """
+        sums = np.sum(weightsIn, axis=0)
+        sums = np.clip(sums, 0.0001, np.inf) # Avoid divide by 0 with empty cluster
+
+        mult = self.background @ weightsIn
+        self.logWeights = self.SeqWeight * mult / sums
 
 
 def MotifPam250Scores(seqs):

@@ -15,8 +15,7 @@ class DDMC(GaussianMixture):
         )
 
         # Add in the sequence effect
-        for ii in range(self.n_components):
-            logp[:, ii] += self.seqDist[ii].logWeights
+        logp += self.seqDist.logWeights
 
         return logp
 
@@ -39,8 +38,7 @@ class DDMC(GaussianMixture):
         )
 
         # Add in the sequence effect
-        for ii in range(self.n_components):
-            self.seqDist[ii].from_summaries(np.squeeze(np.exp(log_resp[:, ii])))
+        self.seqDist.from_summaries(np.exp(log_resp))
 
 
 def EM_clustering(data, _, ncl, seqDist=None):
@@ -52,11 +50,7 @@ def EM_clustering(data, _, ncl, seqDist=None):
     assert np.all(np.isfinite(d))
 
     gmm = DDMC(n_components=ncl, covariance_type="diag", n_init=5)
-
-    if isinstance(seqDist, list):
-        gmm.seqDist = seqDist
-    else:
-        gmm.seqDist = [seqDist.copy() for _ in range(ncl)]
+    gmm.seqDist = seqDist
 
     gmm.fit(d)
     scores = gmm.predict_proba(d)

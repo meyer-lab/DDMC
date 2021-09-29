@@ -130,33 +130,24 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 class Binomial():
     """Create a binomial distance distribution. """
 
-    def __init__(self, seq, seqs, SeqWeight, background=None):
-        self.background = background
+    def __init__(self, seq, seqs, SeqWeight):
+        # Background sequences
+        background = position_weight_matrix(BackgroundSeqs(seq))
+        self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
 
-        if background is None:
-            # Background sequences
-            background = position_weight_matrix(BackgroundSeqs(seq))
-            self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
-
-        self.seq = seq
-        self.seqs = seqs
         self.SeqWeight = SeqWeight
-        self.from_summaries(np.ones(len(seqs)))
+        self.logWeights = 0.0
         assert np.all(np.isfinite(self.background[0]))
         assert np.all(np.isfinite(self.background[1]))
 
-    def copy(self):
-        return Binomial(self.seq, self.seqs, self.SeqWeight, self.background)
-
     def from_summaries(self, weightsIn):
-        """ Update the underlying distribution. No inertia used. """
+        """ Update the underlying distribution. """
         k = np.dot(self.background[1].T, weightsIn).T
-
-        # The counts must be positive, so check this
-        betaA = np.sum(weightsIn) - k
+        betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
-        self.logWeights = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
+        tempp = np.einsum("ijk,ljk->il", self.background[1], probmat)
+        self.logWeights = self.SeqWeight * np.log(tempp)
 
 
 def CountPsiteTypes(X, cA):

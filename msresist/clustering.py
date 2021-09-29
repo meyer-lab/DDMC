@@ -1,6 +1,7 @@
 """ Clustering functions. """
 
 import glob
+from copy import copy
 import itertools
 import numpy as np
 import pandas as pd
@@ -42,7 +43,7 @@ class MassSpecClustering(BaseEstimator):
         """Find similarity of fitted model to data and sequence models"""
         check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
 
-        wDist = self.dist.copy()
+        wDist = copy(self.dist)
         wDist.SeqWeight = 0.0
 
         data_model = EM_clustering(X, self.info, self.ncl, wDist)[1]
