@@ -129,7 +129,6 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 class Binomial():
     """Create a binomial distance distribution. """
-
     def __init__(self, seq, seqs, SeqWeight):
         # Background sequences
         background = position_weight_matrix(BackgroundSeqs(seq))
@@ -142,7 +141,7 @@ class Binomial():
 
     def from_summaries(self, weightsIn):
         """ Update the underlying distribution. """
-        k = np.dot(self.background[1].T, weightsIn).T
+        k = np.einsum("kji,kl->lji", self.background[1], weightsIn, optimize=True)
         betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])

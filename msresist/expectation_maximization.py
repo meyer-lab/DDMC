@@ -2,9 +2,9 @@
 EM Co-Clustering Method using a PAM250 or a Binomial Probability Matrix """
 
 import numpy as np
-from statsmodels.multivariate.pca import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.mixture._gaussian_mixture import _estimate_log_gaussian_prob, _estimate_gaussian_parameters, _compute_precision_cholesky
+from .soft_impute import SoftImpute
 
 
 class DDMC(GaussianMixture):
@@ -45,11 +45,12 @@ def EM_clustering(data, _, ncl, seqDist=None):
     """ Compute EM algorithm to cluster MS data using both data info and seq info.  """
     d = np.array(data.T)
 
-    pc = PCA(d, ncomp=5, method="nipals", missing="fill-em", standardize=False, demean=False, normalize=False)
-    d = pc._adjusted_data
+    imp = SoftImpute(J=10, verbose=True)
+    imp.fit(d)
+    d[np.isnan(d)] = imp.predict(d)
     assert np.all(np.isfinite(d))
 
-    gmm = DDMC(n_components=ncl, covariance_type="diag", n_init=5)
+    gmm = DDMC(n_components=ncl, covariance_type="diag", n_init=2, verbose=10)
     gmm.seqDist = seqDist
 
     gmm.fit(d)
