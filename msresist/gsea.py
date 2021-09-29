@@ -9,8 +9,10 @@ from msresist.pre_processing import preprocessing, filter_NaNpeptides
 
 
 path = "/Users/creixell/Desktop/"
+
+
 def translate_geneIDs(d, geneID, path, col, toID="entrezgene", export=False):
-    """ Generate GSEA clusterProfiler input data. Translate gene accessions. 
+    """ Generate GSEA clusterProfiler input data. Translate gene accessions.
     In this case to ENTREZID by default. """
     if type == "CPTAC":
         with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:

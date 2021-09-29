@@ -6,16 +6,17 @@ import random
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
 
 rnaC = pd.read_csv("msresist/data/MS/CPTAC/Omics results/mRNA_Cluster_Correlations.csv").drop("Unnamed: 0", axis=1)
 protC = pd.read_csv("msresist/data/MS/CPTAC/Omics results/prot_Cluster_Correlations.csv").drop("Unnamed: 0", axis=1)
 
-#Change column labels to Symbol genes
+# Change column labels to Symbol genes
 rnaC.columns = rnaC.iloc[-1, :]
 rnaC = rnaC.iloc[:-1, :]
 protC.columns = protC.iloc[-1, :]
 protC = protC.iloc[:-1, :]
+
 
 def heatmap_ClusterVsTargets_Corr(targets, omic="Protein", title=False):
     """Plot correlations between clusters and targets"""
@@ -26,7 +27,7 @@ def heatmap_ClusterVsTargets_Corr(targets, omic="Protein", title=False):
                 tar[t] = protC[t]
             elif omic == "RNA":
                 tar[t] = rnaC[t]
-        except:
+        except BaseException:
             print(t + " not present in the data set")
             continue
     tar = tar.astype(float)
@@ -46,6 +47,7 @@ heatmap_ClusterVsTargets_Corr(bioid_targets, omic="Protein", title="")
 # targets = list(rnaC.columns[ii])
 # heatmap_ClusterVsTargets_Corr(targets, omic="RNA", title="Random genes")
 
+
 def count_peptides_perCluster(gene, path, ncl, ax):
     """Bar plot of peptide recurrences per cluster"""
     occ = []
@@ -57,6 +59,7 @@ def count_peptides_perCluster(gene, path, ncl, ax):
     out["Cluster"] = np.arange(1, ncl + 1)
     sns.barplot(data=out, x="Cluster", y="Fraction", color="darkblue", edgecolor=".2", ax=ax)
     ax.set_title(gene)
+
 
 _, ax = plt.subplots(1, 2, figsize=(14, 5))
 path = "msresist/data/cluster_members/CPTACmodel_Members_C"
