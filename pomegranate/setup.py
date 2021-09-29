@@ -13,7 +13,7 @@ else:
     use_cython = True
     ext = 'pyx'
 
-filenames = [ 
+filenames = [
     "base",
     "bayes",
     "hmm",
@@ -33,15 +33,16 @@ distributions = [
 
 if not use_cython:
     extensions = [
-        Extension("pomegranate.{}".format( name ), [ "pomegranate/{}.{}".format(name, ext) ]) for name in filenames
+        Extension("pomegranate.{}".format(name), ["pomegranate/{}.{}".format(name, ext)]) for name in filenames
     ] + [Extension("pomegranate.distributions.{}".format(dist), ["pomegranate/distributions/{}.{}".format(dist, ext)]) for dist in distributions]
 else:
     extensions = [
-            Extension("pomegranate.*", ["pomegranate/*.pyx"]),
-	        Extension("pomegranate.distributions.*", ["pomegranate/distributions/*.pyx"])
+        Extension("pomegranate.*", ["pomegranate/*.pyx"]),
+        Extension("pomegranate.distributions.*", ["pomegranate/distributions/*.pyx"])
     ]
 
-    extensions = cythonize(extensions, compiler_directives={'language_level' : "2"})
+    extensions = cythonize(extensions, compiler_directives={'language_level': "2"})
+
 
 class build_ext(_build_ext):
     def finalize_options(self):
@@ -51,6 +52,7 @@ class build_ext(_build_ext):
             __builtins__.__NUMPY_SETUP__ = False
         import numpy
         self.include_dirs.append(numpy.get_include())
+
 
 setup(
     name='pomegranate',
@@ -65,7 +67,7 @@ setup(
     license='MIT',
     description='Pomegranate is a graphical models library for Python, implemented in Cython for speed.',
     ext_modules=extensions,
-    cmdclass={'build_ext':build_ext},
+    cmdclass={'build_ext': build_ext},
     setup_requires=[
         "cython >= 0.22.1",
         "numpy >= 1.20.0",
@@ -77,7 +79,7 @@ setup(
         "scipy >= 0.17.0",
         "pyyaml"
     ],
-    test_suite = 'nose.collector',
+    test_suite='nose.collector',
     package_data={
         'pomegranate': ['*.pyd', '*.pxd'],
         'pomegranate/distributions': ['*.pyd', '*.pxd'],

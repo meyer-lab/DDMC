@@ -6,7 +6,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns 
+import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
 from msresist.pre_processing import MeanCenter
@@ -16,6 +16,7 @@ from msresist.pca import plotPCA
 from msresist.figures.figure2 import plotDistanceToUpstreamKinase
 
 sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
