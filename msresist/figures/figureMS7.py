@@ -50,7 +50,7 @@ def makeFigure():
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
 

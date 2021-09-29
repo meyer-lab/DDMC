@@ -35,7 +35,7 @@ def makeFigure():
     # Fit DDMC and find centers
     model = MassSpecClustering(i, ncl=20, SeqWeight=5, distance_method="Binomial").fit(d)
     centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])
     centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
 

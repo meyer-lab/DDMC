@@ -41,7 +41,7 @@ def makeFigure():
 
     # Find centers
     centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.set_index("Patient_ID")
 
@@ -49,7 +49,7 @@ def makeFigure():
     assert np.all(y['Sample.ID'] == centers.index)
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(0, "WT")
     centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(1, "EGFRm/ALKf")
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)

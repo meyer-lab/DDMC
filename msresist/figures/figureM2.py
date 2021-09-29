@@ -306,7 +306,6 @@ def ComputeBaselineErrors(X, d, nan_indices, ncomp=5):
 
 def ComputeModelError(X, data, nan_indices, model):
     """Compute error between cluster center versus real value."""
-    ncl = model.ncl
     labels = model.labels() - 1
     centers = model.transform().T
     n = data.shape[0]

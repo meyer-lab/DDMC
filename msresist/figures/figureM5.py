@@ -49,14 +49,14 @@ def makeFigure():
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
 
     # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
     plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals, loc='lower left')
 

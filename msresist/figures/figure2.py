@@ -236,7 +236,7 @@ def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
     centers.columns = xlabels
     if drop:
         centers = centers.drop(drop)
-    num_peptides = [np.count_nonzero(model.labels() == jj) for jj in range(1, model.ncl + 1)]
+    num_peptides = [np.count_nonzero(model.labels() == jj) for jj in range(1, model.n_components + 1)]
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
@@ -292,7 +292,7 @@ def plot_LassoCoef(ax, model, title=False):
 def store_cluster_members(X, model, filename, cols):
     """Save csv files with cluster members."""
     X["Cluster"] = model.labels()
-    for i in range(model.ncl):
+    for i in range(model.n_components):
         m = X[X["Cluster"] == i + 1][cols]
         m.index = np.arange(m.shape[0])
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")

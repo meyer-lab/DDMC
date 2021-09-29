@@ -129,12 +129,11 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 class Binomial():
     """Create a binomial distance distribution. """
-    def __init__(self, seq, seqs, SeqWeight):
+    def __init__(self, seq, seqs):
         # Background sequences
         background = position_weight_matrix(BackgroundSeqs(seq))
         self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
 
-        self.SeqWeight = SeqWeight
         self.logWeights = 0.0
         assert np.all(np.isfinite(self.background[0]))
         assert np.all(np.isfinite(self.background[1]))
@@ -146,7 +145,7 @@ class Binomial():
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
         tempp = np.einsum("ijk,ljk->il", self.background[1], probmat)
-        self.logWeights = self.SeqWeight * np.log(tempp)
+        self.logWeights = np.log(tempp)
 
 
 def CountPsiteTypes(X, cA):

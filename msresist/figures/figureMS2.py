@@ -29,7 +29,7 @@ def makeFigure():
     pssms = model.pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 4)
     xlabels = [20, 21, 22, 23, 24]
-    for ii in range(model.ncl):
+    for ii in range(model.n_components):
         cluster = "Cluster " + str(ii + 1)
         plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[0, 10])
         if ii not in ylabels:

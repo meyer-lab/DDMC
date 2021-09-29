@@ -47,7 +47,7 @@ def makeFigure():
 
     centers = pd.DataFrame(model.transform()).T
     centers.columns = d.index
-    centers.index = np.arange(model.ncl) + 1
+    centers.index = np.arange(model.n_components) + 1
 
     cols = centers.columns
     centers = centers.T

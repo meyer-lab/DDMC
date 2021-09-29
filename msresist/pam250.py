@@ -6,10 +6,9 @@ from numba import njit, prange
 
 
 class PAM250():
-    def __init__(self, seqs, SeqWeight):
+    def __init__(self, seqs):
         # Compute all pairwise distances
         self.background = MotifPam250Scores(seqs)
-        self.SeqWeight = SeqWeight
         self.logWeights = 0.0
 
     def from_summaries(self, weightsIn):
@@ -18,13 +17,13 @@ class PAM250():
         sums = np.clip(sums, 0.0001, np.inf) # Avoid divide by 0 with empty cluster
 
         mult = self.background @ weightsIn
-        self.logWeights = self.SeqWeight * mult / sums
+        self.logWeights = mult / sums
 
 
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting. """
     pam250 = substitution_matrices.load("PAM250")
-    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
+    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.int8)
 
     # WARNING this type can only hold -128 to 127
     out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)

@@ -38,7 +38,7 @@ def makeFigure():
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
     centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
 
@@ -53,7 +53,7 @@ def makeFigure():
     # Hypothesis Testing
     cent1["TI"] = y.values
     pvals = calculate_mannW_pvals(cent1, "TI", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     cent1["TI"] = cent1["TI"].replace(0, "CTE")
     cent1["TI"] = cent1["TI"].replace(1, "HTE")
     plot_clusters_binaryfeatures(cent1, "TI", ax[0], pvals=pvals, loc="lower left")

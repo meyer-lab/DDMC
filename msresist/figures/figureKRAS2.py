@@ -84,7 +84,7 @@ def centers(model, d, scale=True):
     if scale:
         centers = pd.DataFrame(StandardScaler().fit_transform(centers))
     centers.columns = d.index
-    centers.index = np.arange(model.ncl) + 1
+    centers.index = np.arange(model.n_components) + 1
 
     cols = centers.columns
     centers = centers.T
