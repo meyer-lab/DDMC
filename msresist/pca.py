@@ -316,7 +316,6 @@ def plotBootPCA(ax, means, stds, varExp, title=False, X="PC1", Y="PC2", LegOut=F
         p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,
                              palette=pal, markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
 
-
     if not colors:
         p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,
                              markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
