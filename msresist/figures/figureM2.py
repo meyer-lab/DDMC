@@ -89,7 +89,6 @@ def ErrorAcross(distance_method, weights, n_runs=5, tmt=7, n_clusters=[6, 9, 12,
         for jj, cluster in enumerate(n_clusters):
             model = MassSpecClustering(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
             error = ComputeModelError(Xmiss, model)
-            raise SystemExit
             eDDMC = 10.0 # ComputeModelError(Xmiss, model)
             dfs = pd.Series([ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns)
             df = df.append(dfs, ignore_index=True)
