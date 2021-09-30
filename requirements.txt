@@ -18,4 +18,4 @@ numba==0.54.0
 gprof2dot
 logomaker==0.8
 svgutils==0.3.4
-statsmodels==0.12.2
+fancyimpute

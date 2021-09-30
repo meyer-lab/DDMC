@@ -9,7 +9,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
-from .soft_impute import SoftImpute
+from fancyimpute import SoftImpute
 
 
 # pylint: disable=W0201
@@ -63,9 +63,7 @@ class MassSpecClustering(GaussianMixture):
         """Compute EM clustering"""
         d = np.array(X.T)
 
-        imp = SoftImpute(J=10, verbose=False)
-        imp.fit(d)
-        d[np.isnan(d)] = imp.predict(d)
+        d = SoftImpute().fit_transform(d)
         assert np.all(np.isfinite(d))
 
         super().fit(d)

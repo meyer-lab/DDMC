@@ -5,10 +5,10 @@ import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from statsmodels.multivariate.pca import PCA
 from .common import subplotLabel, getSetup
 from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
+from fancyimpute import IterativeSVD
 
 
 def makeFigure():
@@ -88,7 +88,7 @@ def ErrorAcross(distance_method, weights, n_runs=5, tmt=7, n_clusters=[6, 9, 12,
 
         for jj, cluster in enumerate(n_clusters):
             model = MassSpecClustering(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
-            eDDMC = 10.0 # ComputeModelError(X, Xmiss.T, nan_indices, model)
+            eDDMC = 10.0 # ComputeModelError(X, Xmiss, model)
             dfs = pd.Series([ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns)
             df = df.append(dfs, ignore_index=True)
 
@@ -106,7 +106,7 @@ def IncorporateMissingValues(X, tmtIDX):
     return X
 
 
-def ComputeBaselineErrors(X, d, ncomp=1):
+def ComputeBaselineErrors(X, d, ncomp=5):
     """ Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value. """
     dmean = d.copy()
     np.copyto(dmean, np.nanmean(d, axis=0, keepdims=True), where=np.isnan(d))
@@ -120,23 +120,21 @@ def ComputeBaselineErrors(X, d, ncomp=1):
     np.copyto(dzero, 0.0, where=np.isnan(d))
     ezero = np.nansum(np.square(X - dzero))
 
-    pc = PCA(d.copy(), ncomp=ncomp, missing="fill-em", method='nipals', standardize=False, demean=False, normalize=False)
-    epca = np.nansum(np.square(X - pc._adjusted_data))
+    dpca = IterativeSVD(rank=ncomp, verbose=False).fit_transform(d.copy())
+    epca = np.nansum(np.square(X - dpca))
 
     return emean, ezero, emin, epca
 
 
-def ComputeModelError(X, data, nan_indices, model):
+def ComputeModelError(X, data, model):
     """Compute error between cluster center versus real value."""
     labels = model.labels() - 1
     centers = model.transform().T
     n = data.shape[0]
     errors = np.empty(n, dtype=float)
     for ii in range(n):
-        idx = nan_indices[data.index[ii]]
         v = X[idx[0], idx[1] - 4]
         c = centers[labels[ii], idx[1] - 4]
-        assert all(~np.isnan(v)) and all(~np.isnan(c)), (v, c)
         errors[ii] = np.nansum(np.square(v - c))
 
     return np.sum(errors)
