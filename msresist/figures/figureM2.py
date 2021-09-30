@@ -88,7 +88,9 @@ def ErrorAcross(distance_method, weights, n_runs=5, tmt=7, n_clusters=[6, 9, 12,
 
         for jj, cluster in enumerate(n_clusters):
             model = MassSpecClustering(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
-            eDDMC = 10.0 # ComputeModelError(X, Xmiss, model)
+            error = ComputeModelError(Xmiss, model)
+            raise SystemExit
+            eDDMC = 10.0 # ComputeModelError(Xmiss, model)
             dfs = pd.Series([ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns)
             df = df.append(dfs, ignore_index=True)
 
@@ -126,15 +128,12 @@ def ComputeBaselineErrors(X, d, ncomp=5):
     return emean, ezero, emin, epca
 
 
-def ComputeModelError(X, data, model):
-    """Compute error between cluster center versus real value."""
-    labels = model.labels() - 1
-    centers = model.transform().T
-    n = data.shape[0]
-    errors = np.empty(n, dtype=float)
-    for ii in range(n):
-        v = X[idx[0], idx[1] - 4]
-        c = centers[labels[ii], idx[1] - 4]
-        errors[ii] = np.nansum(np.square(v - c))
-
-    return np.sum(errors)
+def ComputeModelError(X, model):
+    """Take data with missing values and fill in with cluster centers"""
+    labels = model.labels() # cluster assignments
+    centers = model.transform() # samples x clusters
+    nanIDX = np.isnan(X)
+    for ii in range(X.shape[0]): # X is peptides x samples
+        X[ii, nanIDX[ii, :]] = centers[nanIDX[ii, :], labels[ii] - 1]
+    assert ~np.all(np.isnan(X)), "missing values still present"
+    return X
