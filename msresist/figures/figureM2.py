@@ -20,7 +20,7 @@ from ..pam250 import PAM250
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 10), (3, 4), multz={0: 3})
+    ax, f = getSetup((10, 10), (2, 2), multz={0: 1})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -31,16 +31,14 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters")
-    plotErrorAcrossClustersOrWeightsAndMissingness(ax[2:5], "Clusters")
+    # Imputation error across Cluster numbers
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters", "Binomial")
 
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight", legend=False)
-    plotErrorAcrossClustersOrWeightsAndMissingness(ax[6:9], "Weight")
+    # Imputation error across different Weights
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight", "Binomial", legend=False)
 
     return f
 
-
-# ---------------------------------------- Plotting functions ---------------------------------------- #
 
 def plotMissingnessDensity(ax, d):
     """Plot amount of missingness per peptide."""
@@ -59,13 +57,13 @@ def plotMissingnessDensity(ax, d):
     ax.text(0.015, 0.95, textstr, transform=ax.transAxes, verticalalignment="top", bbox=props)
 
 
-def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, legend=True):
+def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, distance_method, weight=10, ncl=20, n_runs=5, legend=True):
     """Plot artificial missingness error across different number of clusters or weighths."""
     if kind == "Weight":
-        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
+        data = ErrorAcrossWeights(distance_method, weights=list(np.arange(0, 55, 5)), ncl=ncl, n_runs=n_runs, tmt=7)
         title = "Weight Selection"
     elif kind == "Clusters":
-        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
+        data = ErrorAcrossNumberOfClusters(distance_method, weight, n_runs=n_runs, tmt=7, n_clusters=list(np.arange(0, 31, 3)))
         title = "Cluster Number Selection"
 
     gm = pd.DataFrame(data.groupby([kind]).DDMC.apply(gmean)).reset_index()
@@ -86,119 +84,6 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, kind, legend=True):
     ax.legend(prop={'size': 10}, loc='upper left')
     if not legend:
         ax.legend().remove()
-
-
-def plotErrorAcrossClustersOrWeightsAndMissingness(ax, kind):
-    """Plot artificial missingness error across different number of clusters."""
-    if kind == "Weight":
-        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSWeights_5runs_AvgMinZeroPCA.csv")
-        enu = [0, 5, 40]
-    elif kind == "Clusters":
-        data = pd.read_csv("msresist/data/imputing_missingness/binom_GSClusters_5runs_AvgMinZeroPCA.csv")
-        enu = [6, 12, 24]
-
-    data["Missingness"] = np.round(data["Missingness"], 0)
-    gm = pd.DataFrame(data.groupby(["Missingness", kind]).DDMC.apply(gmean)).reset_index()
-    gm["DDMC"] = np.log(gm["DDMC"])
-    gm["Average"] = np.log(data.groupby(["Missingness", kind]).Average.apply(gmean).values)
-    gm["Zero"] = np.log(data.groupby(["Missingness", kind]).Zero.apply(gmean).values)
-    gm["Minimum"] = np.log(data.groupby(["Missingness", kind]).Minimum.apply(gmean).values)
-    gm["PCA"] = np.log(data.groupby(["Missingness", kind]).PCA.apply(gmean).values)
-
-    for ii, w in enumerate(enu):
-        d = gm[gm[kind] == w]
-        sns.regplot(x="Missingness", y="DDMC", data=d, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax[ii], label="DDMC seq", lowess=True)
-        sns.regplot(x="Missingness", y="Average", data=d, color="black", scatter=False, ax=ax[ii], label="Average", lowess=True)
-        sns.regplot(x="Missingness", y="Zero", data=d, color="lightblue", scatter=False, ax=ax[ii], label="Zero", lowess=True)
-        sns.regplot(x="Missingness", y="Minimum", data=d, color="green", scatter=False, ax=ax[ii], label="Minimum", lowess=True)
-        sns.regplot(x="Missingness", y="PCA", data=d, color="orange", scatter=False, ax=ax[ii], label="PCA", lowess=True)
-        ax[ii].legend().remove()
-        ax[ii].set_title(str(kind) + ": " + str(w))
-        ax[ii].set_ylabel("log(MSE)—Actual vs Imputed")
-
-
-def plotErrorAcrossMissingnessLevels(ax):
-    """Plot artificial missingness error across verying missignenss."""
-    data = pd.read_csv("/home/marcc/resistance-MS/msresist/data/imputing_missingness/binom_AM_5runs_AvgMinZeroPCA.csv")
-    gm = pd.DataFrame(data.groupby(["Weight", "Missingness"]).DDMC.apply(gmean)).reset_index()
-    gm["DDMC"] = np.log(gm["DDMC"])
-    gm["Average"] = np.log(data.groupby(["Weight", "Missingness"]).Average.apply(gmean).values)
-    gm["Zero"] = np.log(data.groupby(["Weight", "Missingness"]).Zero.apply(gmean).values)
-    gm["Minimum"] = np.log(data.groupby(["Weight", "Missingness"]).Minimum.apply(gmean).values)
-    gm["PCA"] = np.log(data.groupby(["Weight", "Missingness"]).PCA.apply(gmean).values)
-
-    data = gm[gm["Weight"] == 0.0]
-    mix = gm[gm["Weight"] == 15]
-    seq = gm[gm["Weight"] == 30]
-
-    ylabel = "log(MSE)—Actual vs Imputed"
-
-    # Data
-    sns.regplot(x="Missingness", y="DDMC", data=data, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[0], label="DDMC data")
-    sns.regplot(x="Missingness", y="Average", data=data, color="black", scatter=False, ax=ax[0], label="Average")
-    sns.regplot(x="Missingness", y="Zero", data=data, color="lightblue", scatter=False, ax=ax[0], label="Zero")
-    sns.regplot(x="Missingness", y="Minimum", data=data, color="green", scatter=False, ax=ax[0], label="Minimum")
-    sns.regplot(x="Missingness", y="PCA", data=data, color="orange", scatter=False, ax=ax[0], label="PCA")
-    ax[0].legend()
-    ax[0].set_title("Data only")
-    ax[0].set_ylabel(ylabel)
-
-    # Mix
-    sns.regplot(x="Missingness", y="DDMC", data=mix, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[1], label="DDMC mix")
-    sns.regplot(x="Missingness", y="Average", data=mix, color="black", scatter=False, ax=ax[1], label="Average")
-    sns.regplot(x="Missingness", y="Zero", data=mix, color="lightblue", scatter=False, ax=ax[1], label="Zero")
-    sns.regplot(x="Missingness", y="Minimum", data=mix, color="green", scatter=False, ax=ax[1], label="Minimum")
-    sns.regplot(x="Missingness", y="PCA", data=mix, color="orange", scatter=False, ax=ax[1], label="PCA")
-    ax[1].legend()
-    ax[1].set_title("Mix")
-    ax[1].set_ylabel(ylabel)
-
-    # Seq
-    sns.regplot(x="Missingness", y="DDMC", data=seq, scatter_kws={'alpha': 0.1}, color="darkblue", ax=ax[2], label="DDMC seq")
-    sns.regplot(x="Missingness", y="Average", data=seq, color="black", scatter=False, ax=ax[2], label="Average")
-    sns.regplot(x="Missingness", y="Zero", data=seq, color="lightblue", scatter=False, ax=ax[2], label="Zero")
-    sns.regplot(x="Missingness", y="Minimum", data=seq, color="green", scatter=False, ax=ax[2], label="Minimum")
-    sns.regplot(x="Missingness", y="PCA", data=seq, color="orange", scatter=False, ax=ax[2], label="PCA")
-    ax[2].legend()
-    ax[2].set_title("Mix")
-    ax[2].legend()
-
-
-# ---------------------------------------- Functions to calculate imputation errors ---------------------------------------- #
-
-def ErrorAcrossMissingnessLevels(distance_method, weights, n_runs=5, ncl=15, tmt=7):
-    """Incorporate different percentages of missing values in 'chunks' 8 observations and compute error
-    between the actual versus cluster center or imputed peptide average across patients. Only peptides >= 7 TMT experiments."""
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
-    X.index = np.arange(X.shape[0])
-    md = X.copy()
-    X = X.select_dtypes(include=['float64']).values
-    errors = np.zeros((X.shape[0] * len(weights) * n_runs, 9))
-    for ii in range(n_runs):
-        vals = FindIdxValues(md)
-        md, nan_indices = IncorporateMissingValues(md, vals)
-        data = md.select_dtypes(include=['float64']).T
-        info = md.select_dtypes(include=['object'])
-        missingness = (np.count_nonzero(np.isnan(data), axis=0) / data.shape[0] * 100).astype(float)
-        baseline_errors = ComputeBaselineErrors(X, data.T, nan_indices)
-        for jj, w in enumerate(weights):
-            model = MassSpecClustering(info, ncl, w, distance_method).fit(data, nRepeats=0)
-            idx1 = X.shape[0] * ((ii * len(weights)) + jj)
-            idx2 = X.shape[0] * ((ii * len(weights)) + jj + 1)
-            errors[idx1:idx2, 0] = ii
-            errors[idx1:idx2, 1] = md.index
-            errors[idx1:idx2, 2] = missingness
-            errors[idx1:idx2, 3] = model.SeqWeight
-            errors[idx1:idx2, 4] = ComputeModelError(X, data.T, nan_indices, model)
-            errors[idx1:idx2, 5] = baseline_errors[0, :]  # Average
-            errors[idx1:idx2, 6] = baseline_errors[1, :]  # Zero
-            errors[idx1:idx2, 7] = baseline_errors[2, :]  # Minimum
-            errors[idx1:idx2, 8] = baseline_errors[3, :]  # PCA
-
-    df = pd.DataFrame(errors)
-    df.columns = ["N_Run", "Peptide_Idx", "Missingness", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"]
-
-    return df
 
 
 def ErrorAcrossNumberOfClusters(distance_method, weight, n_runs=5, tmt=7, n_clusters=[6, 9, 12, 15, 18, 21]):
