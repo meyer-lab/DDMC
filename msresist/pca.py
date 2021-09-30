@@ -25,10 +25,13 @@ def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
     return dScor, dLoad
 
 
-def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, scale=False):
     """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
+    d = d.select_dtypes(include=["float64"]).values
+    if scale:
+        d = StandardScaler.fit_transform(d)
+    dScor_ = pp.fit_transform(d)
     dLoad_ = pp.components_
     dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
     varExp = np.round(pp.explained_variance_ratio_, 2)
