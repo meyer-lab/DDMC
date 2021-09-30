@@ -9,7 +9,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
-from .soft_impute import SoftImpute
+from fancyimpute import SoftImpute
 
 
 # pylint: disable=W0201
@@ -24,6 +24,7 @@ class MassSpecClustering(GaussianMixture):
 
         self.info = info
         self.SeqWeight = SeqWeight
+        self.distance_method = distance_method
 
         seqs = [s.upper() for s in info["Sequence"]]
 
@@ -62,9 +63,7 @@ class MassSpecClustering(GaussianMixture):
         """Compute EM clustering"""
         d = np.array(X.T)
 
-        imp = SoftImpute(J=10, verbose=False)
-        imp.fit(d)
-        d[np.isnan(d)] = imp.predict(d)
+        d = SoftImpute(verbose=False).fit_transform(d)
         assert np.all(np.isfinite(d))
 
         super().fit(d)
@@ -104,6 +103,18 @@ class MassSpecClustering(GaussianMixture):
         """ Calculate cluster averages. """
         check_is_fitted(self, ["means_"])
         return self.means_.T
+
+    def impute(self, X):
+        """ Impute a matching dataset. """
+        X = X.copy()
+        labels = self.labels() # cluster assignments
+        centers = self.transform() # samples x clusters
+        nanIDX = np.isnan(X)
+        assert len(labels) == X.shape[0]
+        for ii in range(X.shape[0]): # X is peptides x samples
+            X[ii, nanIDX[ii, :]] = centers[nanIDX[ii, :], labels[ii] - 1]
+        assert np.all(np.isfinite(X))
+        return X
 
     def pssms(self, PsP_background=False):
         """Compute position-specific scoring matrix of each cluster.

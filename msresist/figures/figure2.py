@@ -65,7 +65,7 @@ def makeFigure():
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, ddmc.ncl, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
 
     # Plot upstream kinases heatmap
     plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[5], num_hits=10)
@@ -108,9 +108,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
 
     # GMM
     ddmc_data = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method=ddmc.distance_method).fit(d)
-    x_ = X.copy()
-    x_["Cluster"] = ddmc_data.labels()
-    c_gmm = x_.groupby("Cluster").mean().T
+    c_gmm = ddmc_data.transform()
 
     # DDMC seq
     ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method).fit(d)
