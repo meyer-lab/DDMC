@@ -32,10 +32,10 @@ def makeFigure():
     ax[0].axis("off")
 
     # Imputation error across Cluster numbers
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters", "Binomial")
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[1], "Clusters", "Binomial")
 
     # Imputation error across different Weights
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight", "Binomial", legend=False)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], "Weight", "Binomial", legend=False)
 
     return f
 
