@@ -13,7 +13,6 @@ from .figure2 import plotPCA, plotDistanceToUpstreamKinase, plotMotifs, ShuffleC
 from .figureM5 import plot_NetPhoresScoreByKinGroup
 from ..clustering import compute_control_pssm
 from ..binomial import AAlist
-from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():

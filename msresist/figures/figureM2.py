@@ -27,7 +27,7 @@ def makeFigure():
 
     # Perform inputation
     dataW = ErrorAcross("Binomial", weights=np.arange(0, 55, 5), n_clusters=[20] * 11)
-    dataC = ErrorAcross("Binomial", [10] * 11, n_clusters=np.arange(1, 34, 3))
+    dataC = ErrorAcross("Binomial", [10] * 12, n_clusters=np.arange(1, 37, 3))
 
     # Imputation error across Cluster numbers
     plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC, "Clusters")
@@ -65,7 +65,7 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
         ax.legend().remove()
 
 
-def ErrorAcross(distance_method, weights, n_runs=5, tmt=7, n_clusters=[6, 9, 12, 15, 18, 21]):
+def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
     """ Calculate missingness error across different number of clusters. """
     assert len(weights) == len(n_clusters)
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)

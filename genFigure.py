@@ -7,12 +7,16 @@ import matplotlib
 
 matplotlib.use("AGG")
 
-fdir = "./"
 cartoon_dir = r"./msresist/figures"
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 if __name__ == "__main__":
     nameOut = "figure" + sys.argv[1]
+
+    if "M" in nameOut:
+        fdir = "./output/method/"
+    else:
+        fdir = "./output/biol/"
 
     start = time.time()
 
