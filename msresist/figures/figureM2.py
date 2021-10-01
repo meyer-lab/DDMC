@@ -30,10 +30,10 @@ def makeFigure():
     dataC = ErrorAcross("Binomial", [10] * 11, n_clusters=np.arange(1, 34, 3))
 
     # Imputation error across Cluster numbers
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataW, "Clusters")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC, "Clusters")
 
     # Imputation error across different Weights
-    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC, "Weight", legend=False)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataW, "Weight", legend=False)
 
     return f
 
