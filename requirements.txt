@@ -19,3 +19,4 @@ gprof2dot
 logomaker==0.8
 svgutils==0.3.4
 fancyimpute
+statsmodels
