@@ -63,15 +63,24 @@ class MassSpecClustering(GaussianMixture):
         """Compute EM clustering"""
         d = np.array(X.T)
 
-        d = SoftImpute(verbose=False).fit_transform(d)
-        assert np.all(np.isfinite(d))
+        if np.any(np.isnan(d)):
+            d = SoftImpute(verbose=False).fit_transform(d)
+            assert np.all(np.isfinite(d))
+            imputt = True
+        else:
+            imputt = False
 
         super().fit(d)
         self.scores_ = self.predict_proba(d)
 
+        if imputt:
+            d = np.array(X.T)
+            d = self.impute(d)
+            super().fit(d)
+            self.scores_ = self.predict_proba(d)
+
         assert np.all(np.isfinite(self.scores_))
         assert np.all(np.isfinite(self.seq_scores_))
-
         return self
 
     def wins(self, X):
@@ -109,10 +118,11 @@ class MassSpecClustering(GaussianMixture):
         X = X.copy()
         labels = self.labels() # cluster assignments
         centers = self.transform() # samples x clusters
-        nanIDX = np.isnan(X)
+
         assert len(labels) == X.shape[0]
         for ii in range(X.shape[0]): # X is peptides x samples
-            X[ii, nanIDX[ii, :]] = centers[nanIDX[ii, :], labels[ii] - 1]
+            X[ii, np.isnan(X[ii, :])] = centers[np.isnan(X[ii, :]), labels[ii] - 1]
+
         assert np.all(np.isfinite(X))
         return X
 

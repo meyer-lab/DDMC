@@ -7,7 +7,6 @@ import pandas as pd
 import seaborn as sns
 import random
 from Bio.Align import substitution_matrices
-from numba import prange
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
@@ -288,7 +287,7 @@ def PAMdistSeqtoClusters(seq, clusters, ax):
         seqs = [s.upper() for s in seqs]
         seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
         out = np.zeros((seqs.shape[0]))
-        for ii in prange(seqs.shape[0]):
+        for ii in range(seqs.shape[0]):
             for zz in range(seqs.shape[1]):
                 out[ii] += pam250m[seq[zz], seqs[ii, zz]]
         dists.append(np.mean(out))
