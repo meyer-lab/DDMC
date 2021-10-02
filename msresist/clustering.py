@@ -26,7 +26,6 @@ class MassSpecClustering(GaussianMixture):
         self.info = info
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.random_state = random_state
 
         seqs = [s.upper() for s in info["Sequence"]]
 
