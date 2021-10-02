@@ -1,5 +1,6 @@
 """ Clustering functions. """
 
+import warnings
 import glob
 from copy import deepcopy
 import itertools
@@ -65,7 +66,10 @@ class MassSpecClustering(GaussianMixture):
         d = np.array(X.T)
 
         if np.any(np.isnan(d)):
-            d = SoftImpute(verbose=False).fit_transform(d)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                d = SoftImpute(verbose=False).fit_transform(d)
+
             assert np.all(np.isfinite(d))
             imputt = True
         else:
