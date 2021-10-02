@@ -8,11 +8,12 @@ import seaborn as sns
 from ..clustering import MassSpecClustering
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
-from .figure1 import plotPCA_scoresORloadings
-from .figure2 import plotPCA, plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
+from ..pca import plotPCA
+from .figure2 import plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
 from .figureM5 import plot_NetPhoresScoreByKinGroup
 from ..clustering import compute_control_pssm
 from ..binomial import AAlist
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():
@@ -24,7 +25,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data
     x = preprocess_ebdt_mcf7()
@@ -32,7 +33,7 @@ def makeFigure():
     i = x.select_dtypes(include=[object])
 
     # Fit DDMC and find centers
-    model = MassSpecClustering(i, ncl=20, SeqWeight=5, distance_method="Binomial").fit(d)
+    model = MassSpecClustering(i, ncl=20, SeqWeight=5, distance_method="Binomial", random_state=10).fit(d)
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.n_components) + 1
     centers.insert(0, "Inhibitor", x.columns[3:])
@@ -61,8 +62,13 @@ def makeFigure():
     plotMotifs([erk2], axes=[ax[5]], titles=["ERK2"])
 
     # ERK2 prediction
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model_cptac = pickle.load(p)[0]
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
+
+    # Fit DDMC
+    model_cptac = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     s_pssms = ShuffleClusters([7, 9, 13, 21], model_cptac, additional=erk2)
     plotDistanceToUpstreamKinase(model_cptac, [7, 9, 13, 21], additional_pssms=s_pssms + [erk2], add_labels=["7_S", "9_S", "13_S", "21_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
@@ -70,11 +76,9 @@ def makeFigure():
     return f
 
 
-def plotMCF7AKTclustermap():
+def plotMCF7AKTclustermap(model, cluster):
     """Code to create hierarchical clustering of cluster 1 across treatments"""
-    with open('msresist/data/pickled_models/ebdt_mcf7_binom_CL20_W5', 'rb') as m:
-        model = pickle.load(m)
-    c1 = pd.DataFrame(model.transform()[:, 0])
+    c1 = pd.DataFrame(model.transform()[:, cluster - 1])
     X = pd.read_csv("msresist/data/Validations/Computational/ebdt_mcf7.csv")
     index = [col.split("7.")[1].split(".")[0] for col in X.columns[2:]]
     c1["Inhibitor"] = index

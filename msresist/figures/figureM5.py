@@ -31,9 +31,6 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    matplotlib.rcParams['font.sans-serif'] = "Helvetica"
-    matplotlib.rcParams['font.family'] = "sans-serif"
-
     # Import signaling data
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
-from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold
 
 
@@ -67,7 +67,7 @@ def plotROC(ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False):
 
     for _, (train, test) in enumerate(cv.split(d, y)):
         classifier.fit(d[train], y[train])
-        viz = plot_roc_curve(classifier, d[test], y[test], name="", alpha=0.0, lw=1)
+        viz = RocCurveDisplay.from_estimator(classifier, d[test], y[test])
         plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0

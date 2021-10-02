@@ -14,7 +14,7 @@ from fancyimpute import IterativeSVD
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((10, 10), (2, 2), multz={0: 1})
+    ax, f = getSetup((10, 10), (3, 3), multz={0: 2})
 
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
@@ -25,15 +25,27 @@ def makeFigure():
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    # Perform inputation
-    dataW = ErrorAcross("Binomial", weights=np.arange(0, 55, 5), n_clusters=[20] * 11)
-    dataC = ErrorAcross("Binomial", [10] * 12, n_clusters=np.arange(1, 37, 3))
-
     # Imputation error across Cluster numbers
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC, "Clusters")
+    dataC_W0 = ErrorAcross("Binomial", [10] * 12, n_clusters=np.arange(1, 37, 3), n_runs=3)
+    dataC_W25 = ErrorAcross("Binomial", [25] * 12, n_clusters=np.arange(1, 37, 3), n_runs=3)
+    dataC_W100 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 37, 3), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
+    print("W0 complete.")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
+    print("W25 complete.")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
+    print("W100 complete.")
 
-    # Imputation error across different Weights
-    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataW, "Weight", legend=False)
+    # # Imputation error across different Weights
+    dataW_10C = ErrorAcross("Binomial", weights=np.arange(0, 55, 5), n_clusters=[10] * 11, n_runs=3)
+    dataW_20C = ErrorAcross("Binomial", weights=np.arange(0, 55, 5), n_clusters=[20] * 11, n_runs=3)
+    dataW_30C = ErrorAcross("Binomial", weights=np.arange(0, 55, 5), n_clusters=[30] * 11, n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_10C, "Weight", legend=False)
+    print("10C complete.")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
+    print("20C complete.")
+    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_30C, "Weight", legend=False)
+    print("30C complete.")
 
     return f
 
@@ -82,7 +94,6 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
     df = pd.DataFrame(columns=["N_Run", "Clusters", "Weight", "DDMC", "Average", "Zero", "Minimum", "PCA"])
 
     for ii in range(n_runs):
-        print("Run: ", ii)
         Xmiss = IncorporateMissingValues(X, tmtIDX)
         baseline_errors = ComputeBaselineErrors(X, Xmiss)
 
@@ -91,7 +102,6 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
             eDDMC = np.nansum(np.square(X - model.impute(Xmiss)))
             dfs = pd.Series([ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns)
             df = df.append(dfs, ignore_index=True)
-        print(df)
 
     return df
 
