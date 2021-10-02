@@ -9,7 +9,6 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
-from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, TumorType
