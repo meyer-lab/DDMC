@@ -2,7 +2,6 @@
 This creates Figure 2: Model figure
 """
 
-import pickle
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -14,14 +13,12 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import cross_val_predict
 from sklearn.cluster import KMeans
-from pomegranate import GeneralMixtureModel, NormalDistribution
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering, PSPLdict, KinToPhosphotypeDict
+from ..clustering import MassSpecClustering, KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
-from ..pca import plotPCA
 
 
 def makeFigure():
@@ -33,12 +30,16 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Load DDMC
-    with open("msresist/data/pickled_models/AXLmodel_PAM250_W2-5_5CL", "rb") as m:
-        model = pickle.load(m)
-    centers = model.transform()
+    # Import siganling data
+    X = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    d = X.select_dtypes(include=['float64']).T
+    i = X.select_dtypes(include=['object'])
+
+    # Fit DDMC
+    ddmc = MassSpecClustering(i, ncl=5, SeqWeight=2, distance_method="PAM250").fit(d)
+    centers = ddmc.transform()
 
     # Import phenotypes
     cv = import_phenotype_data(phenotype="Cell Viability")
@@ -55,10 +56,7 @@ def makeFigure():
     ax[1].axis("off")
 
     # Predictions
-    X = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
-    d = X.select_dtypes(include=['float64']).T
-    i = X.select_dtypes(include=['object'])
-    Xs, models = ComputeCenters(X, d, i, model, 5)
+    Xs, models = ComputeCenters(X, d, i, ddmc, 5)
     Xs.append(centers)
     models.append("DDMC mix")
     plotStripActualVsPred(ax[2], [3, 4, 2, 3, 4], Xs, y, models)
@@ -66,10 +64,10 @@ def makeFigure():
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, model.ncl, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
 
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(model, [1, 2, 3, 4, 5], ax[5], num_hits=10)
+    plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[5], num_hits=10)
 
     return f
 
@@ -108,10 +106,8 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_kmeans = x_.groupby("Cluster").mean().T
 
     # GMM
-    gmm = GeneralMixtureModel.from_samples(NormalDistribution, X=d.T, n_components=ncl, n_jobs=-1)
-    x_ = X.copy()
-    x_["Cluster"] = gmm.predict(d.T)
-    c_gmm = x_.groupby("Cluster").mean().T
+    ddmc_data = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method=ddmc.distance_method).fit(d)
+    c_gmm = ddmc_data.transform()
 
     # DDMC seq
     ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method).fit(d)
@@ -237,7 +233,7 @@ def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
     centers.columns = xlabels
     if drop:
         centers = centers.drop(drop)
-    num_peptides = [np.count_nonzero(model.labels() == jj) for jj in range(1, model.ncl + 1)]
+    num_peptides = [np.count_nonzero(model.labels() == jj) for jj in range(1, model.n_components + 1)]
     for i in range(centers.shape[0]):
         cl = pd.DataFrame(centers.iloc[i, :]).T
         m = pd.melt(cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines")
@@ -293,7 +289,7 @@ def plot_LassoCoef(ax, model, title=False):
 def store_cluster_members(X, model, filename, cols):
     """Save csv files with cluster members."""
     X["Cluster"] = model.labels()
-    for i in range(model.ncl):
+    for i in range(model.n_components):
         m = X[X["Cluster"] == i + 1][cols]
         m.index = np.arange(m.shape[0])
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")

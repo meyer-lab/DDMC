@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib
-import pickle
 import textwrap
 from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
+from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
@@ -31,14 +31,13 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    matplotlib.rcParams['font.sans-serif'] = "Helvetica"
-    matplotlib.rcParams['font.family'] = "sans-serif"
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
 
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     # first plot heatmap of clusters
     ax[0].axis("off")
@@ -47,14 +46,14 @@ def makeFigure():
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
 
     # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     plotPCA(ax[1:3], centers.reset_index(), 2, ["Patient_ID", "Type"], "Cluster", hue_scores="Type", style_scores="Type", pvals=pvals.iloc[:, -1].values)
     plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals, loc='lower left')
 

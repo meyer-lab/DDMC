@@ -1,92 +1,29 @@
 """PAM250 matrix to compute sequence distance between sequences and clusters."""
 
 import numpy as np
-import pandas as pd
-import scipy.stats as sp
-import scipy.special as sc
 from Bio.Align import substitution_matrices
 from numba import njit, prange
-from pomegranate.distributions import CustomDistribution
 
 
-class PAM250(CustomDistribution):
-    def __init__(self, seqs, SeqWeight, background=None):
-        self.background = background
+class PAM250():
+    def __init__(self, seqs):
+        # Compute all pairwise distances
+        self.background = MotifPam250Scores(seqs)
+        self.logWeights = 0.0
 
-        if background is None:
-            # Compute all pairwise distances
-            self.background = MotifPam250Scores(seqs)
+    def from_summaries(self, weightsIn):
+        """ Update the underlying distribution. """
+        sums = np.sum(weightsIn, axis=0)
+        sums = np.clip(sums, 0.0001, np.inf) # Avoid divide by 0 with empty cluster
 
-        super().__init__(self.background.shape[0])
-        self.seqs = seqs
-        self.name = "PAM250"
-        self.SeqWeight = SeqWeight
-        self.from_summaries()
-
-    def __reduce__(self):
-        """ Serialize the distribution for pickle. """
-        return unpackPAM, (self.seqs, self.SeqWeight, self.logWeights, self.frozen)
-
-    def copy(self):
-        return PAM250(self.seqs, self.SeqWeight, self.background)
-
-    def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
-        if np.sum(self.weightsIn) == 0.0:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, axis=0)
-        else:
-            self.logWeights[:] = self.SeqWeight * np.average(self.background, weights=self.weightsIn, axis=0)
-
-
-class fixedMotif(CustomDistribution):
-    def __init__(self, seqs, motif, SeqWeight):
-        # Compute log-likelihood of each peptide for the motif
-        self.background = np.zeros(seqs.shape[0])
-        for ii in range(seqs.shape[1]):
-            self.background += motif[seqs[:, ii], ii]
-        assert np.all(np.isfinite(self.background))
-
-        super().__init__(self.background.shape[0])
-        self.seqs = seqs
-        self.motif = motif
-        self.name = "fixedMotif"
-        self.SeqWeight = SeqWeight
-        self.from_summaries()
-
-    def __reduce__(self):
-        """Serialize the distribution for pickle."""
-        return unpackFixed, (self.seqs, self.motif, self.SeqWeight, self.logWeights, self.frozen)
-
-    def copy(self):
-        return fixedMotif(self.seqs, self.motif, self.SeqWeight)
-
-    def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
-        self.logWeights[:] = self.SeqWeight * self.background
-
-
-def unpackPAM(seqs, sw, lw, frozen):
-    """Unpack from pickling."""
-    clss = PAM250(seqs, sw)
-    clss.frozen = frozen
-    clss.weightsIn[:] = np.exp(lw)
-    clss.logWeights[:] = lw
-    return clss
-
-
-def unpackFixed(seqs, motif, sw, lw, frozen):
-    """Unpack from pickling."""
-    clss = fixedMotif(seqs, motif, sw)
-    clss.frozen = frozen
-    clss.weightsIn[:] = np.exp(lw)
-    clss.logWeights[:] = lw
-    return clss
+        mult = self.background @ weightsIn
+        self.logWeights = mult / sums
 
 
 def MotifPam250Scores(seqs):
     """ Calculate and store all pairwise pam250 distances before starting. """
     pam250 = substitution_matrices.load("PAM250")
-    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
+    seqs = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.int8)
 
     # WARNING this type can only hold -128 to 127
     out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)

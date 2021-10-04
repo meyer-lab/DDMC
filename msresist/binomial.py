@@ -3,11 +3,9 @@
 
 import numpy as np
 import pandas as pd
-import scipy.stats as sp
 import scipy.special as sc
 from Bio import motifs
 from Bio.Seq import Seq
-from pomegranate.distributions import CustomDistribution
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -129,51 +127,25 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
     return y_seqs + s_seqs + t_seqs
 
 
-class Binomial(CustomDistribution):
-    """Create a binomial distance distribution compatible with pomegranate. """
+class Binomial():
+    """Create a binomial distance distribution. """
+    def __init__(self, seq, seqs):
+        # Background sequences
+        background = position_weight_matrix(BackgroundSeqs(seq))
+        self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
 
-    def __init__(self, seq, seqs, SeqWeight, background=None):
-        self.background = background
-
-        if background is None:
-            # Background sequences
-            background = position_weight_matrix(BackgroundSeqs(seq))
-            self.background = (np.array([background[AA] for AA in AAlist]), GenerateBinarySeqID(seqs))
-
-        super().__init__(len(seqs))
-        self.seq = seq
-        self.seqs = seqs
-        self.name = "Binomial"
-        self.SeqWeight = SeqWeight
-        self.from_summaries()
+        self.logWeights = 0.0
         assert np.all(np.isfinite(self.background[0]))
         assert np.all(np.isfinite(self.background[1]))
 
-    def copy(self):
-        return Binomial(self.seq, self.seqs, self.SeqWeight, self.background)
-
-    def __reduce__(self):
-        """Serialize the distribution for pickle."""
-        return unpackBinomial, (self.seq, self.seqs, self.SeqWeight, self.logWeights, self.frozen)
-
-    def from_summaries(self, inertia=0.0):
-        """ Update the underlying distribution. No inertia used. """
-        k = np.dot(self.background[1].T, self.weightsIn).T
-
-        # The counts must be positive, so check this
-        betaA = np.sum(self.weightsIn) - k
+    def from_summaries(self, weightsIn):
+        """ Update the underlying distribution. """
+        k = np.einsum("kji,kl->lji", self.background[1], weightsIn)
+        betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
         betaA = np.clip(betaA, 0.01, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
-        self.logWeights[:] = self.SeqWeight * np.log(np.tensordot(self.background[1], probmat, axes=2))
-
-
-def unpackBinomial(seq, seqs, sw, lw, frozen):
-    """Unpack from pickling."""
-    clss = Binomial(seq, seqs, sw)
-    clss.frozen = frozen
-    clss.weightsIn[:] = np.exp(lw)
-    clss.logWeights[:] = lw
-    return clss
+        tempp = np.einsum("ijk,ljk->il", self.background[1], probmat)
+        self.logWeights = np.log(tempp)
 
 
 def CountPsiteTypes(X, cA):

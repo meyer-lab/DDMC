@@ -2,10 +2,7 @@
 
 import re
 import pandas as pd
-import numpy as np
-import seaborn as sns
 from .motifs import DictProteomeNameToSeq
-from .pre_processing import MeanCenter
 
 
 def preprocess_ebdt_mcf7():
