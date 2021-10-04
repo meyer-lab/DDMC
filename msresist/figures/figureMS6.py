@@ -1,7 +1,7 @@
 """
 This creates Supplemental Figure 6: Predicting EGFRm/ALKf using DDMC clusters.
 """
-import pickle
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -9,6 +9,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import subplotLabel, getSetup
+from ..clustering import MassSpecClustering
+from ..pre_processing import filter_NaNpeptides
 from .figureM4 import merge_binary_vectors, find_patients_with_NATandTumor
 from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals
 
@@ -24,9 +26,13 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Load Clustering Model from Figure 2
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
+
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     # Import Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
@@ -34,9 +40,8 @@ def makeFigure():
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
     # Find centers
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.set_index("Patient_ID")
 
@@ -44,7 +49,7 @@ def makeFigure():
     assert np.all(y['Sample.ID'] == centers.index)
     centers["EGFRm/ALKf"] = merge_binary_vectors(y, "EGFR.mutation.status", "ALK.fusion").values
     pvals = calculate_mannW_pvals(centers, "EGFRm/ALKf", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(0, "WT")
     centers["EGFRm/ALKf"] = centers["EGFRm/ALKf"].replace(1, "EGFRm/ALKf")
     plot_clusters_binaryfeatures(centers, "EGFRm/ALKf", ax[0], pvals=pvals)

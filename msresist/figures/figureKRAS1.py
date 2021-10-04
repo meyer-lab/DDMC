@@ -2,10 +2,10 @@
 This creates KRAS figure clustering all three cell lines together
 """
 
+
 import pandas as pd
 import numpy as np
 import seaborn as sns
-import pickle
 from scipy.stats import zscore
 from sklearn.cross_decomposition import PLSRegression
 from .common import subplotLabel, getSetup
@@ -42,13 +42,12 @@ def makeFigure():
     d = X.select_dtypes(include=[float]).T
     i = X.select_dtypes(include=[object])
 
-    # Unpickle DDMC model and find clusters
-    with open('msresist/data/pickled_models/KRAS_Haura_Binomial_CL15_W10', 'rb') as m:
-        model = pickle.load(m)
+    # Fit DDMC model and find clusters
+    model = MassSpecClustering(i, ncl=15, SeqWeight=10, distance_method="Binomial").fit(d)
 
     centers = pd.DataFrame(model.transform()).T
     centers.columns = d.index
-    centers.index = np.arange(model.ncl) + 1
+    centers.index = np.arange(model.n_components) + 1
 
     cols = centers.columns
     centers = centers.T
