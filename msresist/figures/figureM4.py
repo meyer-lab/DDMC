@@ -2,16 +2,15 @@
 This creates Figure 4: Predictive performance of DDMC clusters using different weights
 """
 
-import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import random
 from Bio.Align import substitution_matrices
-from numba import prange
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
+from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
@@ -27,10 +26,13 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
 
     # Plot mean AUCs per model
-    models = plotAUCs(ax[0], return_models=True)
+    models = plotAUCs(ax[0], X, return_models=True)
     ax[0].legend(prop={"size": 10}, loc="lower left")
 
     # Center to peptide distance
@@ -39,9 +41,7 @@ def makeFigure():
     # Position Enrichment
     boxplot_TotalPositionEnrichment(models, ax[2])
 
-    # Signaling data
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
+    # Find assignments for each model
     X["labels0"] = models[0].labels()
     X["labels20"] = models[1].labels()
     X["labels50"] = models[2].labels()
@@ -66,10 +66,11 @@ def makeFigure():
     return f
 
 
-def plotAUCs(ax, return_models=False):
+def plotAUCs(ax, X, return_models=False):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
 
     # Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
@@ -82,15 +83,10 @@ def plotAUCs(ax, return_models=False):
 
     folds = 5
     weights = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
     aucs = np.zeros((3, len(weights)), dtype=float)
     models = []
     for ii, w in enumerate(weights):
-        with open(path + str(w) + '_TMT2', 'rb') as m:
-            model = pickle.load(m)
-            if isinstance(model, list):
-                model = model[0]
-
+        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
         if return_models and w in [0, 25, 50]:
             models.append(model)
 
@@ -249,7 +245,7 @@ def TransformCenters(model, X):
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers1 = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
     centers2 = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
@@ -291,7 +287,7 @@ def PAMdistSeqtoClusters(seq, clusters, ax):
         seqs = [s.upper() for s in seqs]
         seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
         out = np.zeros((seqs.shape[0]))
-        for ii in prange(seqs.shape[0]):
+        for ii in range(seqs.shape[0]):
             for zz in range(seqs.shape[1]):
                 out[ii] += pam250m[seq[zz], seqs[ii, zz]]
         dists.append(np.mean(out))

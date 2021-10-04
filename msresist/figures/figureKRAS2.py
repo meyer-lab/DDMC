@@ -2,7 +2,6 @@
 This creates KRAS figure clustering only mesenchymal cell lines separately
 """
 
-import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,8 +36,7 @@ def makeFigure():
     dc = calu.select_dtypes(include=[float]).T
     ic = calu.select_dtypes(include=[object])
 
-    with open("msresist/data/pickled_models/kras/KRAS_Haura_Calu_Binomial_CL15_W30", 'rb') as m:
-        calu_model = pickle.load(m)
+    calu_model = MassSpecClustering(ic, ncl=15, SeqWeight=30, distance_method="Binomial").fit(dc)
     calu_centers = centers(calu_model, dc, scale=False)
 
     plotPCA(ax, calu_centers.reset_index(), 2, ["Time point"], "Cluster", hue_scores="Time point", style_scores="Time point")
@@ -51,11 +49,10 @@ def makeFigure():
     plotDistanceToUpstreamKinase(calu_model, [1, 4, 7, 10, 11, 14], ax, num_hits=4)
 
     # H1792 Clustering
-    with open("msresist/data/pickled_models/kras/KRAS_Haura_H1792_Binomial_CL15_W100", 'rb') as m:
-        h1792_model = pickle.load(m)
     h1792 = add_motifs(ms[list(ms.columns[:3]) + list(ms.columns[6:9])]).dropna()
     dh = h1792.select_dtypes(include=[float]).T
     ih = h1792.select_dtypes(include=[object])
+    h1792_model = MassSpecClustering(ih, ncl=15, SeqWeight=30, distance_method="Binomial").fit(dh)
 
     h1792_centers = centers(h1792_model, dh, scale=False)
 
@@ -88,7 +85,7 @@ def centers(model, d, scale=True):
     if scale:
         centers = pd.DataFrame(StandardScaler().fit_transform(centers))
     centers.columns = d.index
-    centers.index = np.arange(model.ncl) + 1
+    centers.index = np.arange(model.n_components) + 1
 
     cols = centers.columns
     centers = centers.T

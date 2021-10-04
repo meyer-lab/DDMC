@@ -1,92 +1,109 @@
 """ Clustering functions. """
 
+import warnings
 import glob
+from copy import deepcopy
 import itertools
-from copy import copy
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator
+from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
-from sklearn.manifold import MDS
-from sklearn.decomposition import PCA
-from Bio.Align import substitution_matrices
-from .expectation_maximization import EM_clustering_repeat
-from .motifs import ForegroundSeqs
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
-from .pam250 import PAM250, fixedMotif
+from .pam250 import PAM250
+from fancyimpute import SoftImpute
 
 
 # pylint: disable=W0201
 
 
-class MassSpecClustering(BaseEstimator):
+class MassSpecClustering(GaussianMixture):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
+    def __init__(self, info, ncl, SeqWeight, distance_method, random_state=None):
+        super().__init__(n_components=ncl, covariance_type="diag", n_init=2, max_iter=200, tol=1e-4, random_state=random_state)
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, background=False, pre_motifs=False, verbose=False):
         self.info = info
-        self.ncl = ncl
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
-        self.verbose = verbose
 
         seqs = [s.upper() for s in info["Sequence"]]
 
         if distance_method == "PAM250":
-            self.dist = PAM250(seqs, SeqWeight)
-
-        elif distance_method == "PAM250_fixed":
-            assert len(pre_motifs) <= ncl
-            pam250 = substitution_matrices.load("PAM250")
-            seqsArr = np.array([[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.intp)
-            seqsArr = np.delete(seqsArr, [5, 10], axis=1)  # Delelte P0 and P+5 (not in PSPL motifs)
-            PSPLs = PSPLdict()
-
-            self.pre_motifs = pre_motifs
-            self.dist = [fixedMotif(seqsArr, PSPLs[mm], SeqWeight) for mm in pre_motifs]
-
-            while len(self.dist) < ncl:
-                self.dist.append(Binomial(info["Sequence"], seqs, SeqWeight))
-
+            self.seqDist = PAM250(seqs)
         elif distance_method == "Binomial":
-            self.dist = Binomial(info["Sequence"], seqs, SeqWeight)
+            self.seqDist = Binomial(info["Sequence"], seqs)
+        else:
+            raise ValueError("Wrong distance type.")
 
-    def fit(self, X, y=None, nRepeats=1):
+    def _estimate_log_prob(self, X):
+        """ Estimate the log-probability of each point in each cluster. """
+        logp = super()._estimate_log_prob(X) # Do the regular work
+
+        # Add in the sequence effect
+        self.seq_scores_ = self.SeqWeight * self.seqDist.logWeights
+        logp += self.seq_scores_
+
+        return logp
+
+    def _m_step(self, X, log_resp):
+        """M step.
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        log_resp : array-like of shape (n_samples, n_components)
+            Logarithm of the posterior probabilities (or responsibilities) of
+            the point of each sample in X.
+        """
+        super()._m_step(X, log_resp) # Do the regular m step
+
+        # Do sequence m step
+        self.seqDist.from_summaries(np.exp(log_resp))
+
+    def fit(self, X, y=None):
         """Compute EM clustering"""
-        self.avgScores_, self.scores_, self.seq_scores_, self.gmm_ = EM_clustering_repeat(nRepeats, X, self.info, self.ncl, self.dist, None, self.verbose)
+        d = np.array(X.T)
 
+        if np.any(np.isnan(d)):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                d = SoftImpute(verbose=False).fit_transform(d)
+
+            assert np.all(np.isfinite(d))
+            imputt = True
+        else:
+            imputt = False
+
+        super().fit(d)
+        self.scores_ = self.predict_proba(d)
+
+        if imputt:
+            d = np.array(X.T)
+            d = self.impute(d)
+            super().fit(d)
+            self.scores_ = self.predict_proba(d)
+
+        assert np.all(np.isfinite(self.scores_))
+        assert np.all(np.isfinite(self.seq_scores_))
         return self
 
     def wins(self, X):
         """Find similarity of fitted model to data and sequence models"""
-        check_is_fitted(self, ["scores_", "seq_scores_", "gmm_"])
+        check_is_fitted(self, ["scores_", "seq_scores_"])
 
-        if self.distance_method == "PAM250_fixed":
-            wDist = [dd.copy() for dd in self.dist]
-            for dd in wDist:
-                dd.SeqWeight = 0.0
-        else:
-            wDist = self.dist.copy()
-            wDist.SeqWeight = 0.0
+        alt_model = deepcopy(self)
+        alt_model.SeqWeight = 0.0 # No influence
+        alt_model.fit(X)
+        data_model = alt_model.scores_
 
-        data_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
-
-        if self.distance_method == "PAM250_fixed":
-            for dd in wDist:
-                dd.SeqWeight = 10.0
-        else:
-            if self.distance_method == "Binomial":
-                wDist.SeqWeight = 50.0
-            elif self.distance_method == "PAM250":
-                wDist.SeqWeight = 15.0
-
-        seq_model = EM_clustering_repeat(3, X, self.info, self.ncl, wDist)[1]
+        alt_model.SeqWeight = 50.0 # Overwhelming influence
+        alt_model.fit(X)
+        seq_model = alt_model.scores_
 
         dataDist = np.linalg.norm(self.scores_ - data_model)
         seqDist = np.linalg.norm(self.scores_ - seq_model)
 
-        for i in itertools.permutations(np.arange(self.ncl)):
+        for i in itertools.permutations(np.arange(self.n_components)):
             dataDistTemp = np.linalg.norm(self.scores_ - data_model[:, i])
             seqDistTemp = np.linalg.norm(self.scores_ - seq_model[:, i])
 
@@ -96,24 +113,24 @@ class MassSpecClustering(BaseEstimator):
         return (dataDist, seqDist)
 
     def transform(self):
-        """Calculate cluster averages"""
-        check_is_fitted(self, ["gmm_"])
+        """ Calculate cluster averages. """
+        check_is_fitted(self, ["means_"])
+        return self.means_.T
 
-        centers = np.zeros((self.ncl, self.gmm_.distributions[0].d - 1))
+    def impute(self, X):
+        """ Impute a matching dataset. """
+        X = X.copy()
+        labels = self.labels() # cluster assignments
+        centers = self.transform() # samples x clusters
 
-        for ii, distClust in enumerate(self.gmm_.distributions):
-            for jj, dist in enumerate(distClust[:-1]):
-                centers[ii, jj] = dist.parameters[0]
+        assert len(labels) == X.shape[0]
+        for ii in range(X.shape[0]): # X is peptides x samples
+            X[ii, np.isnan(X[ii, :])] = centers[np.isnan(X[ii, :]), labels[ii] - 1]
 
-        return centers.T
+        assert np.all(np.isfinite(X))
+        return X
 
-    def labels(self):
-        """Find cluster assignment with highest likelihood for each peptide"""
-        check_is_fitted(self, ["gmm_"])
-
-        return np.argmax(self.scores_, axis=1) + 1
-
-    def pssms(self, PsP_background=False, erk_control=False):
+    def pssms(self, PsP_background=False):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus."""
@@ -123,9 +140,9 @@ class MassSpecClustering(BaseEstimator):
             back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
-        for ii in range(1, self.ncl + 1):
+        for ii in range(1, self.n_components + 1):
             # Check for empty clusters and ignore them, if there are
-            l1 = list(np.arange(self.ncl) + 1)
+            l1 = list(np.arange(self.n_components) + 1)
             l2 = list(set(self.labels()))
             ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
             if ii in ec:
@@ -171,7 +188,7 @@ class MassSpecClustering(BaseEstimator):
 
         return pssms, cl_num
 
-    def predict_UpstreamKinases(self, PsP_background=False, additional_pssms=False):
+    def predict_UpstreamKinases(self, additional_pssms=False):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
         PSSMs, cl_num = self.pssms(PsP_background=True)
@@ -192,29 +209,26 @@ class MassSpecClustering(BaseEstimator):
         return table
 
     def predict(self):
-        """Provided the current model parameters, predict the cluster each peptide belongs to"""
+        """ Provided the current model parameters, predict the cluster each peptide belongs to. """
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
 
+    def labels(self):
+        """ Find cluster assignment with highest likelihood for each peptide. """
+        return self.predict() + 1
+
     def score(self):
         """ Generate score of the fitting. """
-        check_is_fitted(self, ["avgScores_"])
-        return self.avgScores_
+        check_is_fitted(self, ["lower_bound_"])
+        return self.lower_bound_
 
     def get_params(self, deep=True):
-        """Returns a dict of the estimator parameters with their values"""
-        return {
-            "info": self.info,
-            "ncl": self.ncl,
-            "SeqWeight": self.SeqWeight,
-            "distance_method": self.distance_method
-        }
-
-    def set_params(self, **parameters):
-        """Necessary to make this estimator scikit learn-compatible"""
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
-        return self
+        """ Returns a dict of the estimator parameters with their values. """
+        dictt = super().get_params(deep=deep)
+        dictt["info"] = self.info
+        dictt["SeqWeight"] = self.SeqWeight
+        dictt["distance_method"] = self.distance_method
+        return dictt
 
 
 def PSPLdict():

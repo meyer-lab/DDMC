@@ -1,12 +1,13 @@
 """
 This creates Figure 6: STK11 analysis
 """
-import pickle
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
+from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
@@ -23,16 +24,16 @@ def makeFigure():
     # Add subplot labels
     subplotLabel(ax)
 
-    # Phosphoproteomic aberrations associated with molecular signatures
-    sns.set(style="whitegrid", font_scale=1.3, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    # Set plotting format
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    import matplotlib
-    matplotlib.rcParams['font.sans-serif'] = "Arial"
-    matplotlib.rcParams['font.family'] = "sans-serif"
+    # Import signaling data
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
 
-    # Load Clustering Model from Figure 2
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     # Import Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
@@ -40,9 +41,8 @@ def makeFigure():
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
     # Find centers
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.set_index("Patient_ID")
 
@@ -50,7 +50,7 @@ def makeFigure():
     assert np.all(y['Sample.ID'] == centers.index)
     centers["STK11"] = y["STK11.mutation.status"].values
     pvals = calculate_mannW_pvals(centers, "STK11", 1, 0)
-    pvals = build_pval_matrix(model.ncl, pvals)
+    pvals = build_pval_matrix(model.n_components, pvals)
     centers["STK11"] = centers["STK11"].replace(0, "STK11 WT")
     centers["STK11"] = centers["STK11"].replace(1, "STK11m")
     plot_clusters_binaryfeatures(centers, "STK11", ax[0], pvals=pvals)
