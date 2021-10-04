@@ -142,7 +142,7 @@ class Binomial():
         """ Update the underlying distribution. """
         k = np.einsum("kji,kl->lji", self.background[1], weightsIn)
         betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
-        betaA = np.clip(betaA, 0.01, np.inf)
+        betaA = np.clip(betaA, 0.001, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
         tempp = np.einsum("ijk,ljk->il", self.background[1], probmat)
         self.logWeights = np.log(tempp)
