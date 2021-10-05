@@ -20,6 +20,7 @@ class MassSpecClustering(GaussianMixture):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
+
     def __init__(self, info, ncl, SeqWeight, distance_method, random_state=None):
         super().__init__(n_components=ncl, covariance_type="diag", n_init=2, max_iter=200, tol=1e-4, random_state=random_state)
 
@@ -38,7 +39,7 @@ class MassSpecClustering(GaussianMixture):
 
     def _estimate_log_prob(self, X):
         """ Estimate the log-probability of each point in each cluster. """
-        logp = super()._estimate_log_prob(X) # Do the regular work
+        logp = super()._estimate_log_prob(X)  # Do the regular work
 
         # Add in the sequence effect
         self.seq_scores_ = self.SeqWeight * self.seqDist.logWeights
@@ -55,7 +56,7 @@ class MassSpecClustering(GaussianMixture):
             Logarithm of the posterior probabilities (or responsibilities) of
             the point of each sample in X.
         """
-        super()._m_step(X, log_resp) # Do the regular m step
+        super()._m_step(X, log_resp)  # Do the regular m step
 
         # Do sequence m step
         self.seqDist.from_summaries(np.exp(log_resp))
@@ -92,11 +93,11 @@ class MassSpecClustering(GaussianMixture):
         check_is_fitted(self, ["scores_", "seq_scores_"])
 
         alt_model = deepcopy(self)
-        alt_model.SeqWeight = 0.0 # No influence
+        alt_model.SeqWeight = 0.0  # No influence
         alt_model.fit(X)
         data_model = alt_model.scores_
 
-        alt_model.SeqWeight = 50.0 # Overwhelming influence
+        alt_model.SeqWeight = 50.0  # Overwhelming influence
         alt_model.fit(X)
         seq_model = alt_model.scores_
 
@@ -120,11 +121,11 @@ class MassSpecClustering(GaussianMixture):
     def impute(self, X):
         """ Impute a matching dataset. """
         X = X.copy()
-        labels = self.labels() # cluster assignments
-        centers = self.transform() # samples x clusters
+        labels = self.labels()  # cluster assignments
+        centers = self.transform()  # samples x clusters
 
         assert len(labels) == X.shape[0]
-        for ii in range(X.shape[0]): # X is peptides x samples
+        for ii in range(X.shape[0]):  # X is peptides x samples
             X[ii, np.isnan(X[ii, :])] = centers[np.isnan(X[ii, :]), labels[ii] - 1]
 
         assert np.all(np.isfinite(X))
