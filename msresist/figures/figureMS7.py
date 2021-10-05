@@ -2,7 +2,6 @@
 This creates Supplemental Figure 7: Predicting STK11 genotype using different clustering strategies.
 """
 
-import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -28,8 +27,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, cut=1)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
 
     # Fit DDMC to complete data
     d = np.array(X.select_dtypes(include=['float64']).T)
@@ -45,15 +43,14 @@ def makeFigure():
     centers_min["Patient_ID"] = X.columns[4:]
     centers_min = find_patients_with_NATandTumor(centers_min.copy(), "Patient_ID", conc=True)
 
-    # Load full DDMC
-    with open('msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W15_TMT2', 'rb') as p:
-        model = pickle.load(p)[0]
+    # Fit DDMC
+    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
 
     # Find and scale centers
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
     centers = centers.T
-    centers.columns = np.arange(model.ncl) + 1
+    centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
 

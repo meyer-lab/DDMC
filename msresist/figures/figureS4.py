@@ -1,8 +1,9 @@
 
-import pickle
 import seaborn as sns
 from .common import subplotLabel, getSetup
 from msresist.figures.figure2 import plotCenters, plotMotifs
+from ..clustering import MassSpecClustering
+from ..pre_processing import preprocessing
 
 
 def makeFigure():
@@ -17,9 +18,10 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Load DDMC
-    with open("msresist/data/pickled_models/AXLmodel_PAM250_W2-5_5CL", "rb") as m:
-        model = pickle.load(m)
-    centers = model.transform()
+    X = preprocessing(AXLwt_GF=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    data = X.select_dtypes(include=['float64']).T
+    info = X.select_dtypes(include=['object'])
+    model = MassSpecClustering(info, 5, SeqWeight=2, distance_method="PAM250").fit(X=data)
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
 
     # Centers

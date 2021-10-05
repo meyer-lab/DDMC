@@ -7,7 +7,7 @@ from msresist.pre_processing import Linear
 from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
-from sklearn.metrics import explained_variance_score, r2_score
+from sklearn.metrics import r2_score
 
 
 def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
@@ -25,10 +25,10 @@ def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
     return dScor, dLoad
 
 
-def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False):
+def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, quadrants=True):
     """ Plot PCA scores and loadings. """
     pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
+    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]))
     dLoad_ = pp.components_
     dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
     varExp = np.round(pp.explained_variance_ratio_, 2)
@@ -55,6 +55,12 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
     ax[1].legend(prop={'size': 8})
     for j, txt in enumerate(dLoad_[loadings_ind]):
         ax[1].annotate(txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10)
+
+    if quadrants:
+        ax[0].axhline(0, ls='--', color='lightgrey')
+        ax[0].axvline(0, ls='--', color='lightgrey')
+        ax[1].axhline(0, ls='--', color='lightgrey')
+        ax[1].axvline(0, ls='--', color='lightgrey')
 
 
 def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores", annotateScores=False):
@@ -315,7 +321,6 @@ def plotBootPCA(ax, means, stds, varExp, title=False, X="PC1", Y="PC2", LegOut=F
         pal = sns.xkcd_palette(colors)
         p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,
                              palette=pal, markers=["o", "X", "d", "*"], **{'linewidth': .5, 'edgecolor': "k"}, s=55)
-
 
     if not colors:
         p1 = sns.scatterplot(x=X, y=Y, data=means, hue=hue, style=style, ax=ax,

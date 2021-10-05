@@ -7,12 +7,16 @@ import matplotlib
 
 matplotlib.use("AGG")
 
-fdir = "./"
 cartoon_dir = r"./msresist/figures"
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 if __name__ == "__main__":
     nameOut = "figure" + sys.argv[1]
+
+    if "M" in nameOut:
+        fdir = "./output/method/"
+    else:
+        fdir = "./output/biol/"
 
     start = time.time()
 
@@ -50,7 +54,7 @@ if __name__ == "__main__":
     if sys.argv[1] == 'M2':
         # Overlay Figure missingness cartoon
         overlayCartoon(fdir + 'figureM2.svg',
-                       f'{cartoon_dir}/missingness_diagram.svg', 170, 0, scalee=1)
+                       f'{cartoon_dir}/missingness_diagram.svg', 75, 5, scalee=1.1)
 
     if sys.argv[1] == "M5":
         # Overlay Figure tumor vs NATs heatmap

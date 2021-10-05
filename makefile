@@ -1,34 +1,33 @@
-flist = S1 S2 S3 S4 MS3 MS4 MS6
+flist = 2 S1 S2 S3 S4
+fmlist = MS3 MS4 MS6
 
-all: $(patsubst %, figure%.svg, $(flist))
+all: $(patsubst %, output/biol/figure%.svg, $(flist)) $(patsubst %, output/method/figure%.svg, $(fmlist))
 
 # Figure rules
-figure%.svg: venv genFigure.py msresist/figures/figure%.py
+output/method/figureM%.svg: venv genFigure.py msresist/figures/figureM%.py
+	. venv/bin/activate && ./genFigure.py M$*
+
+output/biol/figure%.svg: venv genFigure.py msresist/figures/figure%.py
 	. venv/bin/activate && ./genFigure.py $*
 
 venv: venv/bin/activate
 
 venv/bin/activate: requirements.txt
 	test -d venv || virtualenv venv
-	. venv/bin/activate && pip install Cython scipy==1.6.2 numpy==1.20.2
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
-	. venv/bin/activate && pip install ./pomegranate
 	touch venv/bin/activate
 
 output/%/manuscript.md: venv manuscripts/%/*.md
-	mkdir -p ./output/%
 	. venv/bin/activate && manubot process --content-directory=manuscripts/$*/ --output-directory=output/$*/ --cache-directory=cache --skip-citations --log-level=INFO
 	git remote rm rootstock
 
-output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
-	cp *.svg output/$*/
+output/%/manuscript.html: venv output/%/manuscript.md $(patsubst %, output/biol/figure%.svg, $(flist)) $(patsubst %, output/method/figure%.svg, $(fmlist))
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=common.yaml \
 		--defaults=./common/templates/manubot/pandoc/html.yaml \
 		--output=output/$*/manuscript.html output/$*/manuscript.md
 
-output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, figure%.svg, $(flist))
-	cp *.svg output/$*/
+output/%/manuscript.docx: venv output/%/manuscript.md $(patsubst %, output/biol/figure%.svg, $(flist)) $(patsubst %, output/method/figure%.svg, $(fmlist))
 	. venv/bin/activate && pandoc --verbose \
 		--defaults=common.yaml \
 		--defaults=./common/templates/manubot/pandoc/docx.yaml \
@@ -52,6 +51,6 @@ testcover: venv
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
 
 clean:
-	rm -rf *.pdf venv pylint.log figure*.svg
+	rm -rf *.pdf venv pylint.log
 	git checkout HEAD -- output
 	git clean -ffdx output

@@ -2,14 +2,15 @@
 This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
-import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from .common import subplotLabel, getSetup
-from ..logistic_regression import plotROC
 from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor, merge_binary_vectors
+from ..pre_processing import filter_NaNpeptides
+from ..clustering import MassSpecClustering
+from ..logistic_regression import plotROC
 
 
 def makeFigure():
@@ -24,7 +25,9 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])
 
     # Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
@@ -37,10 +40,8 @@ def makeFigure():
 
     folds = 5
     weights = [0, 15, 20, 40, 50]
-    path = 'msresist/data/pickled_models/binomial/CPTACmodel_BINOMIAL_CL24_W'
     for ii, w in enumerate(weights):
-        with open(path + str(w) + '_TMT2', 'rb') as m:
-            model = pickle.load(m)[0]
+        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
