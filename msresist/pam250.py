@@ -13,7 +13,7 @@ class PAM250():
     def from_summaries(self, weightsIn):
         """ Update the underlying distribution. """
         sums = np.sum(weightsIn, axis=0)
-        sums = np.clip(sums, 0.00001, np.inf) # Avoid empty cluster divide by 0
+        sums = np.clip(sums, 0.00001, np.inf)  # Avoid empty cluster divide by 0
         self.logWeights = (self.background @ weightsIn) / sums
 
 

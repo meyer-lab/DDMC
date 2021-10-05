@@ -129,6 +129,7 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
 
 class Binomial():
     """Create a binomial distance distribution. """
+
     def __init__(self, seq, seqs):
         # Background sequences
         background = position_weight_matrix(BackgroundSeqs(seq))
