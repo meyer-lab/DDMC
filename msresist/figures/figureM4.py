@@ -32,41 +32,41 @@ def makeFigure():
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
 
     # Plot mean AUCs per model
-    models = plotAUCs(ax[0], X, return_models=True)
-    ax[0].legend(prop={"size": 10}, loc="lower left")
+    out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
+    out.to_csv("phenotype_preds.csv")
 
     # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+    # barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
+    # # Position Enrichment
+    # boxplot_TotalPositionEnrichment(models, ax[2])
 
-    # Find assignments for each model
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
+    # # Find assignments for each model
+    # X["labels0"] = models[0].labels()
+    # X["labels20"] = models[1].labels()
+    # X["labels50"] = models[2].labels()
 
-    # p-signal MSE
-    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
+    # # p-signal MSE
+    # plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
 
-    # Total enrichment across positions
-    plot_PeptidePositionEnrichment(X, models, ax[4])
+    # # Total enrichment across positions
+    # plot_PeptidePositionEnrichment(X, models, ax[4])
 
-    # Sequence-to-Cluster PAM250 distance
-    data = X[X["labels0"] == 22]["Sequence"].values
-    mix = X[X["labels0"] == 19]["Sequence"].values
-    seq = X[X["labels0"] == 15]["Sequence"].values
-    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
+    # # Sequence-to-Cluster PAM250 distance
+    # data = X[X["labels0"] == 22]["Sequence"].values
+    # mix = X[X["labels0"] == 19]["Sequence"].values
+    # seq = X[X["labels0"] == 15]["Sequence"].values
+    # PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
 
-    # Plot Motifs
-    clusters = [21, 18, 14]
-    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
+    # # Plot Motifs
+    # clusters = [21, 18, 14]
+    # pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
+    # plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
 
-    return f
+    # return f
 
 
-def plotAUCs(ax, X, return_models=False):
+def calculate_AUCs_phenotypes(ax, X, nRuns=3):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
     d = X.select_dtypes(include=[float]).T
@@ -79,40 +79,38 @@ def plotAUCs(ax, X, return_models=False):
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
 
     # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
-    folds = 5
-    weights = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    aucs = np.zeros((3, len(weights)), dtype=float)
-    models = []
-    for ii, w in enumerate(weights):
-        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
-        if return_models and w in [0, 25, 50]:
-            models.append(model)
+    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    run, ws, stk, ea, hcb = [], [], [], [], []
+    for w in weights:
+        for r in range(nRuns):
+            run.append(r)
+            ws.append(w)
+            model = MassSpecClustering(i, ncl=34, SeqWeight=w, distance_method="Binomial").fit(d)
 
-        # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
+            # Find and scale centers
+            centers_gen, centers_hcb = TransformCenters(model, X)
 
-        # STK11
-        aucs[0, ii] = plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, return_mAUC=True)
+            # STK11
+            stk.append(plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-        # EGFRm/ALKf
-        y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        aucs[1, ii] = plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=folds, return_mAUC=True)
+            # EGFRm/ALKf
+            y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
+            ea.append(plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-        # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        aucs[2, ii] = plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=folds, return_mAUC=True)
+            # Hot-Cold behavior
+            y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
+            hcb.append(plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-    res = pd.DataFrame(aucs)
-    res.columns = [str(w) for w in weights]
-    res["Phenotype"] = ["STK11m", "EGFRm/ALKf", "Infiltration"]
-    data = pd.melt(frame=res, id_vars="Phenotype", value_vars=res.columns[:-1], var_name="Weight", value_name="mean AUC")
-    sns.lineplot(data=data, x="Weight", y="mean AUC", hue="Phenotype", ax=ax)
-    ax.set_title("Predictive performance by Weight")
+    out = pd.DataFrame()
+    out["Run"] = run
+    out["Weight"] = ws
+    out["STK11"] = stk
+    out["EGFRm/ALKf"] = ea
+    out["Infiltration"] = hcb
 
-    if return_models:
-        return models
+    return out
 
 
 def barplot_PeptideToClusterDistances(models, ax, n=3000):
