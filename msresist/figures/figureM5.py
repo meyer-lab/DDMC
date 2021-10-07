@@ -5,7 +5,6 @@ This creates Figure 5: Tumor vs NAT analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import textwrap
 from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
@@ -15,9 +14,9 @@ from statsmodels.stats.multitest import multipletests
 from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
+from ..figures.figure2 import plotDistanceToUpstreamKinase
 from ..pca import plotPCA
-from ..pre_processing import MeanCenter, filter_NaNpeptides
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():

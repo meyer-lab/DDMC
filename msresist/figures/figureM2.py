@@ -28,25 +28,25 @@ def makeFigure():
     # Imputation error across Cluster numbers
     dataC_W0 = ErrorAcross("Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
     plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
-    print("W0 complete.")
+    ax[1].set_ylim(10.5, 12)
     dataC_W25 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
     plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
-    print("W25 complete.")
+    ax[2].set_ylim(10.5, 12)
     dataC_W100 = ErrorAcross("Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
     plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
-    print("W100 complete.")
+    ax[3].set_ylim(10.5, 12)
 
     # Imputation error across different Weights
-    # weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    # dataW_5C = ErrorAcross("Binomial", weights=weights, n_clusters=[5] * len(weights), n_runs=3)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_5C, "Weight", legend=False)
-    # ax[4].set_ylim(10.5, 12)
-    # dataW_15C = ErrorAcross("Binomial", weights=weights, n_clusters=[15] * len(weights), n_runs=3)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_15C, "Weight", legend=False)
-    # ax[5].set_ylim(10.5, 12)
-    # dataW_35C = ErrorAcross("Binomial", weights=weights, n_clusters=[35] * len(weights), n_runs=3)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_35C, "Weight", legend=False)
-    # ax[6].set_ylim(10.5, 12)
+    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    dataW_5C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_5C, "Weight", legend=False)
+    ax[4].set_ylim(10.5, 12)
+    dataW_15C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_15C, "Weight", legend=False)
+    ax[5].set_ylim(10.5, 12)
+    dataW_35C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_35C, "Weight", legend=False)
+    ax[6].set_ylim(10.5, 12)
 
     return f
 
@@ -65,14 +65,13 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
     # gm["Minimum"] = np.log(data.groupby([kind]).Minimum.apply(gmean).values)
     gm["PCA"] = np.log(data.groupby([kind]).PCA.apply(gmean).values)
 
+    gm.to_csv("WeightSearch.csv")
+
     sns.regplot(x=kind, y="DDMC", data=gm, scatter_kws={'alpha': 0.25}, color="darkblue", ax=ax, label="DDMC", lowess=True)
     sns.regplot(x=kind, y="Average", data=gm, color="black", scatter=False, ax=ax, label="Average")
     sns.regplot(x=kind, y="Zero", data=gm, color="lightblue", scatter=False, ax=ax, label="Zero")
     # sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")
     sns.regplot(x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA")
-    xt = list(set(gm[kind]))
-    ax.set_xticks(list(np.arange(len(xt))))
-    ax.set_xticklabels(xt)
     ax.set_title(title)
     ax.set_ylabel("log(MSE)—Actual vs Imputed")
     ax.legend(prop={'size': 10}, loc='upper left')
