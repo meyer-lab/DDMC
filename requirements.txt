@@ -9,14 +9,12 @@ pandoc-fignos==2.4.0
 pandoc-eqnos==2.5.0
 pandoc-tablenos==2.3.0
 pytest==6.2.5
-pytest-cov==2.12.1
+pytest-cov==3.0.0
 biopython==1.79
 scikit-learn==1.0
 jupyter==1.0.0
 astropy==4.3.1
-numba==0.54.0
-gprof2dot
 logomaker==0.8
 svgutils==0.3.4
 fancyimpute
-statsmodels
+statsmodels==0.13.0
