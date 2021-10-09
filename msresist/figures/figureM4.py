@@ -31,23 +31,25 @@ def makeFigure():
    
 
     # Plot mean AUCs per model
-    # out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
-    p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
-    p.iloc[-3:, 1] = 1250
-    xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
-    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
+    out.to_csv("preds_phenotypes_rs.csv")
 
-    # Fit Data, Mix, and Seq Models
-    dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
-    mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
-    seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
-    models = [dataM, mixM, seqM]
+    # p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
+    # p.iloc[-3:, 1] = 1250
+    # xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
+    # sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
 
-    # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+    # # Fit Data, Mix, and Seq Models
+    # dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
+    # mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
+    # seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
+    # models = [dataM, mixM, seqM]
 
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
+    # # Center to peptide distance
+    # barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+
+    # # Position Enrichment
+    # boxplot_TotalPositionEnrichment(models, ax[2])
 
     return f
 
@@ -73,7 +75,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3):
         for r in range(nRuns):
             run.append(r)
             ws.append(w)
-            model = MassSpecClustering(i, ncl=35, SeqWeight=w, distance_method="Binomial", random_state=7).fit(d)
+            model = MassSpecClustering(i, ncl=35, SeqWeight=w, distance_method="Binomial").fit(d)
 
             # Find and scale centers
             centers_gen, centers_hcb = TransformCenters(model, X)
