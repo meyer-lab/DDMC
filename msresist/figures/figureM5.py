@@ -37,7 +37,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial", n_init=5).fit(d)
+    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
 
     # first plot heatmap of clusters
     # lim = 1.5
@@ -61,13 +61,19 @@ def makeFigure():
     plot_clusters_binaryfeatures(centers, "Type", ax[3], pvals=pvals, loc='lower left')
 
     # Transform to Binary
+    c = centers.select_dtypes(include=['float64'])
     tt = centers.iloc[:, -1]
     tt = tt.replace("NAT", 0)
     tt = tt.replace("Tumor", 1)
 
     # Logistic Regression
     lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
+    mauc = plotROC(ax[4], lr, c.values, tt, cv_folds=4, return_mAUC=True)
     plotClusterCoefficients(ax[4], lr)
+    textstr = "$mAUC$ = " + str(np.round(mauc, 3))
+    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
+    ax[4].text(0.02, 0.1, textstr, transform=ax[4].transAxes, verticalalignment="top", bbox=props)
+    ax[4].set_xticklabels(centers.columns[:-1])
 
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [12, 20], ax[5], num_hits=1)

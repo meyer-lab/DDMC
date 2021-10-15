@@ -17,7 +17,7 @@ from ..pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((8, 8), (2, 2), multz={0: 1})
+    ax, f = getSetup((9, 4), (1, 4), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -31,25 +31,25 @@ def makeFigure():
    
 
     # Plot mean AUCs per model
-    out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
-    out.to_csv("preds_phenotypes_rs.csv")
+    # out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
+    # out.to_csv("preds_phenotypes_rs.csv")
 
-    # p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
-    # p.iloc[-3:, 1] = 1250
-    # xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
-    # sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
+    p.iloc[-3:, 1] = 1250
+    xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
+    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
 
-    # # Fit Data, Mix, and Seq Models
-    # dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
-    # mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
-    # seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
-    # models = [dataM, mixM, seqM]
+    # Fit Data, Mix, and Seq Models
+    dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
+    mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
+    seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
+    models = [dataM, mixM, seqM]
 
-    # # Center to peptide distance
-    # barplot_PeptideToClusterDistances(models, ax[1], n=2000)
+    # Center to peptide distance
+    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
-    # # Position Enrichment
-    # boxplot_TotalPositionEnrichment(models, ax[2])
+    # Position Enrichment
+    boxplot_TotalPositionEnrichment(models, ax[2])
 
     return f
 
