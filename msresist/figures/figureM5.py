@@ -118,7 +118,7 @@ def plot_enriched_processes(ax, X, y, f, cluster):
     out[f[0]] = out[f[0]].replace(1, f[2])
     dm = pd.melt(out, id_vars="Type", value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
     dm.iloc[:, -1] = dm.iloc[:, -1].astype(float)
-    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue="Type", ax=ax)
+    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue="Type", showfliers=False, ax=ax)
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
 

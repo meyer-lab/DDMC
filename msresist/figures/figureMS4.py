@@ -20,7 +20,7 @@ def makeFigure():
     ax, f = getSetup((14, 10), (3, 4), multz={1: 2, 6: 1, 10: 1})
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -40,8 +40,8 @@ def makeFigure():
     y = y.replace("Tumor", 1)
 
     # DDMC ROC
-    ncl = 35
-    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", n_init=5).fit(d)
+    ncl = 30
+    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
     lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
     plotROC(ax[0], lr, model.transform(), y, cv_folds=4, return_mAUC=False)
 
