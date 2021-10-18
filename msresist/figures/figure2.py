@@ -106,11 +106,11 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_kmeans = x_.groupby("Cluster").mean().T
 
     # GMM
-    ddmc_data = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method=ddmc.distance_method).fit(d)
+    ddmc_data = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method=ddmc.distance_method, random_state=ddmc.random_state).fit(d)
     c_gmm = ddmc_data.transform()
 
     # DDMC seq
-    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method).fit(d)
+    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method, random_state=ddmc.random_state).fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix

@@ -18,3 +18,4 @@ logomaker==0.8
 svgutils==0.3.4
 fancyimpute
 statsmodels==0.13.0
+git+https://github.com/biothings/mygene.py.git@master
