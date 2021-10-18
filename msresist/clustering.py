@@ -158,19 +158,20 @@ class MassSpecClustering(GaussianMixture):
                     if ii == 1 and not PsP_background:
                         back_pssm[AAlist.index(aa), kk] += 1.0
 
-            # Normalize by position across residues and remove negative outliers
+            # Normalize by position across residues
             for pos in range(pssm.shape[1]):
                 if pos == 5:
                     continue
                 pssm[:, pos] /= np.mean(pssm[:, pos])
                 if ii == 1 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+
+            # Normalize to background PSSM to account for AA frequencies per position
+            pssm /= back_pssm.copy()
+
+            # Log2 transform
             pssm = np.ma.log2(pssm)
             pssm = pssm.filled(0)
-            if ii == 1 and not PsP_background:
-                back_pssm = np.ma.log2(back_pssm)
-                back_pssm = back_pssm.filled(0)
-            pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist

@@ -5,8 +5,6 @@ This creates Figure 4: Predictive performance of DDMC clusters using different w
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import random
-from Bio.Align import substitution_matrices
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
@@ -14,13 +12,12 @@ from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
-from .figure2 import plotMotifs
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 8), (2, 5), multz={0: 1})
+    ax, f = getSetup((9, 4), (1, 4), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -28,12 +25,25 @@ def makeFigure():
     # Set plotting format
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    # Import signaling data
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    d = X.select_dtypes(include=[float]).T
+    i = X.select_dtypes(include=[object])# Import signaling data
+   
 
     # Plot mean AUCs per model
-    models = plotAUCs(ax[0], X, return_models=True)
-    ax[0].legend(prop={"size": 10}, loc="lower left")
+    # out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
+    # out.to_csv("preds_phenotypes_rs.csv")
+
+    p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
+    p.iloc[-3:, 1] = 1250
+    xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
+    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+
+    # Fit Data, Mix, and Seq Models
+    dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
+    mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
+    seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
+    models = [dataM, mixM, seqM]
 
     # Center to peptide distance
     barplot_PeptideToClusterDistances(models, ax[1], n=2000)
@@ -41,32 +51,10 @@ def makeFigure():
     # Position Enrichment
     boxplot_TotalPositionEnrichment(models, ax[2])
 
-    # Find assignments for each model
-    X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
-
-    # p-signal MSE
-    plot_PeptideToClusterMSE(X, models, ax[3], peptide="MGRKEsEEELE", yaxis=[0, 7])
-
-    # Total enrichment across positions
-    plot_PeptidePositionEnrichment(X, models, ax[4])
-
-    # Sequence-to-Cluster PAM250 distance
-    data = X[X["labels0"] == 22]["Sequence"].values
-    mix = X[X["labels0"] == 19]["Sequence"].values
-    seq = X[X["labels0"] == 15]["Sequence"].values
-    PAMdistSeqtoClusters("MGRKESEEELE", [data, mix, seq], ax[5])
-
-    # Plot Motifs
-    clusters = [21, 18, 14]
-    pssms = [model.pssms()[clusters[ii]] for ii, model in enumerate(models)]
-    plotMotifs(pssms, axes=ax[6:9], titles=["Data", "Mix", "Sequence"], yaxis=[0, 10])
-
     return f
 
 
-def plotAUCs(ax, X, return_models=False):
+def calculate_AUCs_phenotypes(ax, X, nRuns=3):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
     d = X.select_dtypes(include=[float]).T
@@ -79,40 +67,38 @@ def plotAUCs(ax, X, return_models=False):
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
 
     # LASSO
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
-    folds = 5
-    weights = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    aucs = np.zeros((3, len(weights)), dtype=float)
-    models = []
-    for ii, w in enumerate(weights):
-        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
-        if return_models and w in [0, 25, 50]:
-            models.append(model)
+    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    run, ws, stk, ea, hcb = [], [], [], [], []
+    for w in weights:
+        for r in range(nRuns):
+            run.append(r)
+            ws.append(w)
+            model = MassSpecClustering(i, ncl=35, SeqWeight=w, distance_method="Binomial").fit(d)
 
-        # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
+            # Find and scale centers
+            centers_gen, centers_hcb = TransformCenters(model, X)
 
-        # STK11
-        aucs[0, ii] = plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, return_mAUC=True)
+            # STK11
+            stk.append(plotROC(ax, lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-        # EGFRm/ALKf
-        y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        aucs[1, ii] = plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=folds, return_mAUC=True)
+            # EGFRm/ALKf
+            y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
+            ea.append(plotROC(ax, lr, centers_gen.values, y_EA, cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-        # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        aucs[2, ii] = plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=folds, return_mAUC=True)
+            # Hot-Cold behavior
+            y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
+            hcb.append(plotROC(ax, lr, centers_hcb.values, y_hcb, cv_folds=3, return_mAUC=True, kfold="Repeated"))
 
-    res = pd.DataFrame(aucs)
-    res.columns = [str(w) for w in weights]
-    res["Phenotype"] = ["STK11m", "EGFRm/ALKf", "Infiltration"]
-    data = pd.melt(frame=res, id_vars="Phenotype", value_vars=res.columns[:-1], var_name="Weight", value_name="mean AUC")
-    sns.lineplot(data=data, x="Weight", y="mean AUC", hue="Phenotype", ax=ax)
-    ax.set_title("Predictive performance by Weight")
+    out = pd.DataFrame()
+    out["Run"] = run
+    out["Weight"] = ws
+    out["STK11"] = stk
+    out["EGFRm/ALKf"] = ea
+    out["Infiltration"] = hcb
 
-    if return_models:
-        return models
+    return out
 
 
 def barplot_PeptideToClusterDistances(models, ax, n=3000):
@@ -122,10 +108,10 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
     X = filter_NaNpeptides(X, tmt=2)
     random_peptides = np.random.choice(list(np.arange(len(models[0].labels()))), n, replace=False)
     X["labels0"] = models[0].labels()
-    X["labels20"] = models[1].labels()
-    X["labels50"] = models[2].labels()
+    X["labels500"] = models[1].labels()
+    X["labels1M"] = models[2].labels()
     X = X.iloc[random_peptides, :]
-    labels = X.loc[:, ["labels0", "labels20", "labels50"]].values.T
+    labels = X.loc[:, ["labels0", "labels500", "labels1M"]].values.T
     d = X.select_dtypes(include=[float]).values
 
     psDist = np.zeros((3, d.shape[0]))
@@ -145,68 +131,19 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
 
 def boxplot_TotalPositionEnrichment(models, ax):
     """Position enrichment of cluster PSSMs"""
-    enr = np.zeros((3, 24), dtype=float)
+    enr = np.zeros((3, models[0].n_components), dtype=float)
     for ii, model in enumerate(models):
-        pssms = model.pssms()
-        for jj in range(models[0].ncl):
+        pssms = model.pssms()[0]
+        for jj in range(len(pssms)):
             enr[ii, jj] = np.sum(pssms[jj].sum().drop(5))
 
     enr = pd.DataFrame(enr)
-    enr.columns = np.arange(models[0].ncl) + 1
+    enr.columns = np.arange(models[0].n_components) + 1
     enr.insert(0, "Model", ["Data", "Mix", "Sequence"])
     dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Total information (bits)")
     sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
     sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax, fliersize=0)
     ax.set_title("Cumulative PSSM Enrichment")
-
-
-def plot_PeptideToClusterMSE(X, models, ax, peptide="MGRKEsEEELE", yaxis=False):
-    if not peptide:
-        peptide = random.sample(list(np.arange(len(models[0].labels()))), 1)
-        X = pd.DataFrame(X.iloc[peptide, :])
-    else:
-        X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-        X.columns = ["Sequence"] + list(X.columns)[1:]
-
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-
-    pds_names = [str(s).split("('")[1].split("')")[0].replace("'", "").replace(",", ";") for s in zip(list(X["Gene"]), list(X["Sequence"]))]
-    model_names = ["Data", "Mix", "Sequence"]
-
-    d = X.iloc[:, 4:-3].values.astype(float)
-    mat = np.zeros((3, 1))
-    for ii, model in enumerate(models):
-        # Distance Calculation
-        center = model.transform()[:, labels[ii] - 1]
-        idx_values = np.argwhere(~np.isnan(d))
-        idx_values = [w[1] for w in idx_values]
-        mat[ii, 0] = mean_squared_error(d[0][idx_values], center[idx_values])
-
-    # Plot
-    mat = pd.DataFrame(mat)
-    mat.columns = pds_names
-    mat.insert(0, "Model", model_names)
-    data = pd.melt(frame=mat, id_vars="Model", value_vars=mat.columns[1:], var_name="Peptide", value_name="p-signal MSE")
-    sns.barplot(data=data, x="Model", y="p-signal MSE", ax=ax)
-    ax.set_title("TBC1D5 S584-p signal MSE")
-    ax.legend(prop={'size': 8}, loc='lower right')
-
-
-def plot_PeptidePositionEnrichment(X, models, ax, peptide="MGRKEsEEELE"):
-    """Plot total sequence enrichment of a particular peptide across models"""
-    X = pd.DataFrame(X.set_index("Sequence").loc[peptide, :]).T.reset_index()
-    X.columns = ["Sequence"] + list(X.columns)[1:]
-    labels = np.squeeze(X.loc[:, ["labels0", "labels20", "labels50"]].values.T)
-    enr = np.zeros((3, 1), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()
-        enr[ii, 0] = np.sum(pssms[labels[ii] - 1].sum().drop(5))
-
-    enr = pd.DataFrame(enr).T
-    enr.columns = ["Data", "Mix", "Sequence"]
-    dd = pd.melt(frame=enr, value_vars=enr.columns, var_name="Model", value_name="Total Sequence Information (bits)")
-    sns.barplot(data=dd, x="Model", y="Total Sequence Information (bits)", ax=ax)
-    ax.set_title("TBC1D5 S584-p")
 
 
 def merge_binary_vectors(y, mutant1, mutant2):
@@ -272,29 +209,3 @@ def HotColdBehavior(centers):
     assert all(centers.index.values == y.index.values), "Samples don't match"
 
     return y, centers
-
-
-def PAMdistSeqtoClusters(seq, clusters, ax):
-    pam250 = substitution_matrices.load("PAM250")
-    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
-    dists = []
-    for ii in range(pam250m.shape[0]):
-        for jj in range(pam250m.shape[1]):
-            pam250m[ii, jj] = pam250[ii, jj]
-
-    seq = np.array([pam250.alphabet.find(aa) for aa in seq], dtype=np.intp)
-    for seqs in clusters:
-        seqs = [s.upper() for s in seqs]
-        seqs = np.array([[pam250.alphabet.find(aa) for aa in s] for s in seqs], dtype=np.intp)
-        out = np.zeros((seqs.shape[0]))
-        for ii in range(seqs.shape[0]):
-            for zz in range(seqs.shape[1]):
-                out[ii] += pam250m[seq[zz], seqs[ii, zz]]
-        dists.append(np.mean(out))
-
-    # plot
-    data = pd.DataFrame()
-    data["mean PAM250 score"] = dists
-    data["Model"] = ["Data", "Mix", "Seq"]
-    sns.barplot(data=data, x="Model", y="mean PAM250 score", ax=ax)
-    ax.set_title("Sequence-to-Cluster Similarity")

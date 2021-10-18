@@ -3,6 +3,7 @@ This creates Supplemental Figure 2: Cluster motifs
 """
 
 import pickle
+import pandas as pd
 import numpy as np
 import seaborn as sns
 from .common import subplotLabel, getSetup
@@ -14,7 +15,7 @@ from ..clustering import MassSpecClustering
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((7, 9), (6, 4))
+    ax, f = getSetup((7, 9), (6, 5))
 
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
@@ -24,7 +25,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
+    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
 
     pssms = model.pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 4)

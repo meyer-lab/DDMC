@@ -39,9 +39,9 @@ def makeFigure():
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     folds = 5
-    weights = [0, 15, 20, 40, 50]
+    weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
+        model = MassSpecClustering(i, ncl=30, SeqWeight=w, distance_method="Binomial").fit(d)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
