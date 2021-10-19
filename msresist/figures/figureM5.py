@@ -160,7 +160,6 @@ def TumorType(X):
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
-    ncl = centers.shape[1] - 1
     data = pd.melt(id_vars=id_var, value_vars=centers.columns[:-1], value_name="p-signal", var_name="Cluster", frame=centers)
     sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
     ax.legend(prop={'size': 8}, loc=loc)
@@ -207,9 +206,12 @@ def build_pval_matrix(ncl, pvals):
     return data
 
 
-def ExportClusterFile(cluster):
+def ExportClusterFile(cluster, cptac=False, mcf7=False):
     """Export cluster SVG file for NetPhorest and GO analysis."""
-    c = pd.read_csv("msresist/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster" + str(cluster) + ".csv")
+    if cptac:
+        c = pd.read_csv("msresist/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster" + str(cluster) + ".csv")
+    if mcf7:
+        c = pd.read_csv("msresist/data/cluster_members/msresist/data/cluster_members/CPTAC_MF7_20CL_W5_MembersCluster" + str(cluster) + ".csv")
     c["pos"] = [s.split(s[0])[1].split("-")[0] for s in c["Position"]]
     c["res"] = [s[0] for s in c["Position"]]
     c.insert(4, "Gene_Human", [s + "_HUMAN" for s in c["Gene"]])
