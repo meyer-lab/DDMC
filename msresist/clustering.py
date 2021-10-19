@@ -190,14 +190,15 @@ class MassSpecClustering(GaussianMixture):
 
         return pssms, cl_num
 
-    def predict_UpstreamKinases(self, additional_pssms=False):
+    def predict_UpstreamKinases(self, additional_pssms=False, add_labels=False, PsP_background=True):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
-        PSSMs, cl_num = self.pssms(PsP_background=True)
+        PSSMs, cl_num = self.pssms(PsP_background=PsP_background)
 
         # Optionally add external pssms
         if not isinstance(additional_pssms, bool):
             PSSMs += additional_pssms
+            cl_num += add_labels
         PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
 
         a = np.zeros((len(PSPLs), len(PSSMs)))
