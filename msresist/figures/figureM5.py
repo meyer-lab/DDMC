@@ -52,7 +52,7 @@ def makeFigure():
     centers["Patient_ID"] = X.columns[4:]
     centers = TumorType(centers).set_index("Patient_ID")
     centers["Type"] = centers["Type"].replace("Normal", "NAT")
-    centers = centers.drop(19, axis=1) #Drop cluster 19, contains only 1 peptide
+    centers = centers.drop(19, axis=1)  # Drop cluster 19, contains only 1 peptide
 
     # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
@@ -98,7 +98,7 @@ def make_BPtoGenes_table(X, cluster):
     for ii, arr in enumerate(gAr):
         gg = mg.querymany(list(arr[0].split("/")), scopes="entrezgene", fields="symbol", species="human", returnall=False, as_dataframe=True)
         BPtoGenesDict[bpAr[ii][0]] = list(gg["symbol"])
-    return pd.DataFrame(dict([(k,pd.Series(v)) for k, v in BPtoGenesDict.items()]))
+    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
 
 
 def plot_enriched_processes(ax, X, y, f, cluster):
