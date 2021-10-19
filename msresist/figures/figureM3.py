@@ -40,19 +40,19 @@ def makeFigure():
     centers["Inhibitor"] = [s.split(".")[1].split(".")[0] for s in centers["Inhibitor"]]
 
     # PCA AKT
-    AKTi = ["Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X", "AZD8055"]
+    AKTi = ["GSK690693", "Torin1", "HS173", "GDC0941", "Ku0063794", "AZ20", "MK2206", "AZD5363", "GDC0068", "AZD6738", "AT13148", "Edelfosine", "GF109203X", "AZD8055"]
     centers["AKTi"] = [drug in AKTi for drug in centers["Inhibitor"]]
     plotPCA(ax[:2], centers, 2, ["Inhibitor", "AKTi"], "Cluster", hue_scores="AKTi")
     ax[0].legend(loc='lower left', prop={'size': 9}, title="AKTi", fontsize=9)
 
     # Upstream Kinases AKT EBDT
-    plotDistanceToUpstreamKinase(model, [1], ax=ax[2], num_hits=1)
+    plotDistanceToUpstreamKinase(model, [16], ax=ax[2], num_hits=1)
 
     # first plot heatmap of clusters
     ax[3].axis("off")
 
     # AKT substrates bar plot
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/EBDT_NK_C1.csv", ax[4], title="Cluster 1 Kinase Predictions")
+    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/MCF7_NKIN_CL16.csv", ax[4], title="Cluster 16—Kinase Predictions", n=40)
 
     # ERK2 White lab motif
     erk2 = pd.read_csv("msresist/data/Validations/Computational/ERK2_substrates.csv")
@@ -68,10 +68,10 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model_cptac = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
+    model_cptac = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
 
-    s_pssms = ShuffleClusters([7, 9, 13, 21], model_cptac, additional=erk2)
-    plotDistanceToUpstreamKinase(model_cptac, [7, 9, 13, 21], additional_pssms=s_pssms + [erk2], add_labels=["7_S", "9_S", "13_S", "21_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
+    s_pssms = ShuffleClusters([21, 24, 27], model_cptac, additional=erk2)
+    plotDistanceToUpstreamKinase(model_cptac, [21, 24, 27], additional_pssms=s_pssms + [erk2], add_labels=["21_S", "24_S", "27_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
 
     return f
 

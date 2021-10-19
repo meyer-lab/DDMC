@@ -297,10 +297,9 @@ def store_cluster_members(X, model, filename, cols):
 
 def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, add_labels=False, title=False):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms)
+    ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms, add_labels=add_labels)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     if isinstance(add_labels, list):
-        ukin_mc.columns = ["Kinase"] + ukin_mc.columns[1:] + add_labels
         clusters += add_labels
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
     if kind == "heatmap":
@@ -316,8 +315,7 @@ def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, 
             data["Cluster"] = data["Cluster"].astype(str)
             d1 = data[~data["Cluster"].str.contains("_S")]
             sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
-            cc = clusters.copy()
-            AnnotateUpstreamKinases(model, [7, 9, 13, 21, "ERK2+"], ax[0], d1, 1)
+            AnnotateUpstreamKinases(model, [21, 24, 27, "ERK2+"], ax[0], d1, 1)
 
             # Shuffled
             d2 = data[data["Kinase"] == "ERK2"]
@@ -344,7 +342,10 @@ def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
         hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
         hits.index = np.arange(hits.shape[0])
         hits["Phosphoacceptor"] = [KinToPhosphotypeDict[kin] for kin in hits["Kinase"]]
-        cCP = pssms[c - 1].iloc[:, 5].idxmax()
+        try:
+            cCP = pssms[c - 1].iloc[:, 5].idxmax()
+        except:
+            cCP == "S/T"
         if cCP == "S" or cCP == "T":
             cCP = "S/T"
         hits = hits[hits["Phosphoacceptor"] == cCP]
@@ -372,8 +373,8 @@ def DrawArrows(ax, d2):
 
 def ShuffleClusters(shuffle, model, additional=False):
     """Returns PSSMs with shuffled positions"""
-    ClustersToShuffle = np.array(shuffle) - 1
-    pssms = model.pssms(PsP_background=True)
+    ClustersToShuffle = np.array(shuffle)
+    pssms, _ = model.pssms(PsP_background=False)
     s_pssms = []
     for s in ClustersToShuffle:
         mat = ShufflePositions(pssms[s])
