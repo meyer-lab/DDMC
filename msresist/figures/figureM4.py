@@ -27,8 +27,7 @@ def makeFigure():
 
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])# Import signaling data
-   
+    i = X.select_dtypes(include=[object])  # Import signaling data
 
     # Plot mean AUCs per model
     # out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3)
