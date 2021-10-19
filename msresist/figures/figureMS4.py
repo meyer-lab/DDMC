@@ -61,7 +61,6 @@ def makeFigure():
     plotROC(ax[3], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
     ax[3].set_title("k-means ROC")
 
-
     # GMM
     gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
