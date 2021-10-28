@@ -15,7 +15,8 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.cluster import KMeans
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering, KinToPhosphotypeDict
+from ..clustering import MassSpecClustering
+from ..motifs import KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
