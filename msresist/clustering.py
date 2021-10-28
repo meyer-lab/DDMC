@@ -56,6 +56,14 @@ class MassSpecClustering(GaussianMixture):
             Logarithm of the posterior probabilities (or responsibilities) of
             the point of each sample in X.
         """
+        if self._missing:
+            labels = np.argmax(log_resp, axis=1)
+            centers = self.means_.T  # samples x clusters
+
+            assert len(labels) == X.shape[0]
+            for ii in range(X.shape[0]):  # X is peptides x samples
+                X[ii, self.missing_d[ii, :]] = centers[self.missing_d[ii, :], labels[ii]]
+
         super()._m_step(X, log_resp)  # Do the regular m step
 
         # Do sequence m step
@@ -66,23 +74,17 @@ class MassSpecClustering(GaussianMixture):
         d = np.array(X.T)
 
         if np.any(np.isnan(d)):
+            self._missing = True
+            self.missing_d = np.isnan(d)
+
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 d = SoftImpute(verbose=False).fit_transform(d)
-
-            assert np.all(np.isfinite(d))
-            imputt = True
         else:
-            imputt = False
+            self._missing = False
 
         super().fit(d)
         self.scores_ = self.predict_proba(d)
-
-        if imputt:
-            d = np.array(X.T)
-            d = self.impute(d)
-            super().fit(d)
-            self.scores_ = self.predict_proba(d)
 
         assert np.all(np.isfinite(self.scores_))
         assert np.all(np.isfinite(self.seq_scores_))
