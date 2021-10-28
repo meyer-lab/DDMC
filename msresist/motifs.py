@@ -1,5 +1,6 @@
 """Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs."""
 
+import glob
 import pandas as pd
 import numpy as np
 import os

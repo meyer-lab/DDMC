@@ -1,7 +1,6 @@
 """ Clustering functions. """
 
 import warnings
-import glob
 from copy import deepcopy
 import itertools
 import numpy as np
