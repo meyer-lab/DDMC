@@ -22,7 +22,7 @@ class MassSpecClustering(GaussianMixture):
     should have a larger effect on the peptide assignment. """
 
     def __init__(self, info, ncl, SeqWeight, distance_method, random_state=None):
-        super().__init__(n_components=ncl, covariance_type="diag", n_init=2, max_iter=200, tol=1e-4, random_state=random_state)
+        super().__init__(n_components=ncl, covariance_type="diag", init_params="random", n_init=2, max_iter=500, tol=1e-5, random_state=random_state)
 
         self.info = info
         self.SeqWeight = SeqWeight
@@ -43,9 +43,7 @@ class MassSpecClustering(GaussianMixture):
 
         # Add in the sequence effect
         self.seq_scores_ = self.SeqWeight * self.seqDist.logWeights
-        logp += self.seq_scores_
-
-        return logp
+        return logp + self.seq_scores_
 
     def _m_step(self, X, log_resp):
         """M step.
@@ -56,13 +54,12 @@ class MassSpecClustering(GaussianMixture):
             Logarithm of the posterior probabilities (or responsibilities) of
             the point of each sample in X.
         """
-        if self._missing:
-            labels = np.argmax(log_resp, axis=1)
-            centers = self.means_.T  # samples x clusters
+        labels = np.argmax(log_resp, axis=1)
+        centers = self.means_.T  # samples x clusters
 
-            assert len(labels) == X.shape[0]
-            for ii in range(X.shape[0]):  # X is peptides x samples
-                X[ii, self.missing_d[ii, :]] = centers[self.missing_d[ii, :], labels[ii]]
+        assert len(labels) == X.shape[0]
+        for ii in range(X.shape[0]):  # X is peptides x samples
+            X[ii, self.missing_d[ii, :]] = centers[self.missing_d[ii, :], labels[ii]]
 
         super()._m_step(X, log_resp)  # Do the regular m step
 
@@ -71,17 +68,9 @@ class MassSpecClustering(GaussianMixture):
 
     def fit(self, X, y=None):
         """Compute EM clustering"""
-        d = np.array(X.T)
-
-        if np.any(np.isnan(d)):
-            self._missing = True
-            self.missing_d = np.isnan(d)
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                d = SoftImpute(verbose=False).fit_transform(d)
-        else:
-            self._missing = False
+        d = np.array(X.T, copy=True)
+        self.missing_d = np.isnan(d)
+        d = np.nan_to_num(d)
 
         super().fit(d)
         self.scores_ = self.predict_proba(d)
