@@ -11,7 +11,7 @@ from ..clustering import MassSpecClustering
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
-from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_GO, plotPeptidesByFeature
+from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_enriched_processes
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from .common import subplotLabel, getSetup
 
@@ -33,7 +33,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
+    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
 
     # Import Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
@@ -45,6 +45,7 @@ def makeFigure():
     centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = centers.set_index("Patient_ID")
+    centers = centers.drop(19, axis=1)  # Drop cluster 19, contains only 1 peptide
 
     # Hypothesis Testing
     assert np.all(y['Sample.ID'] == centers.index)
@@ -69,7 +70,7 @@ def makeFigure():
 
     # Logistic Regression
     centers["STK11"] = y_["STK11.mutation.status"].values
-    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=100000, tol=1e-4, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.1])
+    lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[1], class_weight="balanced", tol=1e-5)
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[1].legend(loc='lower right', prop={'size': 8})
     plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="")
@@ -78,18 +79,9 @@ def makeFigure():
     # plot Upstream Kinases
     plotDistanceToUpstreamKinase(model, [7, 8], ax[3], num_hits=3)
 
-    # GO cluster 7
-    X = filter_NaNpeptides(X, tmt=2)
-    X["cluster"] = model.labels()
-    c7 = X[X["cluster"] == 7].drop("cluster", axis=1)
-    y = y[["Sample.ID", "STK11.mutation.status"]]
-    d = {"NIPBL": "S280-p", "WAPL": "S221-p;S223-p", "RB1": "S795-p"}
-    plotPeptidesByFeature(c7, y, d, ["STK11 status", "WT", "Mutant"], ax[4], title="Cohesin loading peptides")
-
-    # GO cluster 8
-    plot_GO(8, ax[5], n=5, title="GO Cluster 8", max_width=20)
-    c8 = X[X["cluster"] == 8].drop("cluster", axis=1)
-    d = {"GOLPH3": "S36-p", "MYO18A": "S965-p", "GOLGA2": "S123-p"}
-    plotPeptidesByFeature(c8, y, d, ["STK11 status", "WT", "Mutant"], ax=ax[6], title="Golgi Fragmentation peptides")
+    # plot peptides pertaining to enriched BPs
+    X["Cluster"] = model.labels()
+    plot_enriched_processes(ax[4], X, centers["Type"].values, ["Type", "NAT", "Tumor"], 12)
+    plot_enriched_processes(ax[5], X, centers["Type"].values, ["Type", "NAT", "Tumor"], 20)
 
     return f

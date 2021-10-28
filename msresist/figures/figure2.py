@@ -295,9 +295,9 @@ def store_cluster_members(X, model, filename, cols):
         m.to_csv("msresist/data/cluster_members/" + filename + str(i + 1) + ".csv")
 
 
-def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, add_labels=False, title=False):
+def plotDistanceToUpstreamKinase(model, clusters, ax, kind="strip", num_hits=5, additional_pssms=False, add_labels=False, title=False, PsP_background=True):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms, add_labels=add_labels)
+    ukin = model.predict_UpstreamKinases(additional_pssms=additional_pssms, add_labels=add_labels, PsP_background=PsP_background)
     ukin_mc = MeanCenter(ukin, mc_col=True, mc_row=True)
     if isinstance(add_labels, list):
         clusters += add_labels

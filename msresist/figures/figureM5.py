@@ -101,9 +101,14 @@ def make_BPtoGenes_table(X, cluster):
     return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
 
 
-def plot_enriched_processes(ax, X, y, f, cluster):
+def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
     """"Plot BPs enriched per cluster"""""
-    gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    if gene_set == "WP":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    elif gene_set == "onco":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_ONCO_results.csv").iloc[:, 1:]
+    elif gene_set == "Immuno":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
     cc = make_BPtoGenes_table(gsea, cluster)
     cl = X[X["Cluster"] == cluster].set_index("Gene")
     dfs = []
@@ -116,9 +121,9 @@ def plot_enriched_processes(ax, X, y, f, cluster):
     out[f[0]] = y
     out[f[0]] = out[f[0]].replace(0, f[1])
     out[f[0]] = out[f[0]].replace(1, f[2])
-    dm = pd.melt(out, id_vars="Type", value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
+    dm = pd.melt(out, id_vars=f[0], value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
     dm.iloc[:, -1] = dm.iloc[:, -1].astype(float)
-    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue="Type", showfliers=False, ax=ax)
+    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue=f[0], showfliers=False, linewidth=0.5, ax=ax)
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
 
