@@ -1,4 +1,7 @@
-
+"""
+This creates Supplemental Figure 4: Motifs
+"""
+import matplotlib
 import seaborn as sns
 from .common import subplotLabel, getSetup
 from msresist.figures.figure2 import plotCenters, plotMotifs
@@ -15,6 +18,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Load DDMC

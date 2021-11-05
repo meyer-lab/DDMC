@@ -2,6 +2,7 @@
 This creates Supplemental Figure 2: Cell migration and island
 """
 
+import matplotlib
 import numpy as np
 import seaborn as sns
 from .common import subplotLabel, getSetup
@@ -18,6 +19,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Read in migration data
