@@ -5,6 +5,7 @@ This creates Figure 2: Validations
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 from ..clustering import MassSpecClustering
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
@@ -25,6 +26,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data

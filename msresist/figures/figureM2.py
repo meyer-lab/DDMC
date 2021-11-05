@@ -43,22 +43,22 @@ def makeFigure():
     # print("3/6")
 
     # Imputation error across different Weights
-    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    dataW_2C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
-    dataW_2C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
-    ax[4].set_ylim(10.5, 12)
-    print("4/6")
-    dataW_20C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
-    dataW_20C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
-    ax[5].set_ylim(10.5, 12)
-    print("5/6")
-    dataW_40C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
-    dataW_40C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
-    ax[6].set_ylim(10.5, 12)
-    print("6/6")
+    # weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    # dataW_2C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
+    # dataW_2C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
+    # ax[4].set_ylim(10.5, 12)
+    # print("4/6")
+    # dataW_20C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
+    # dataW_20C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
+    # ax[5].set_ylim(10.5, 12)
+    # print("5/6")
+    # dataW_40C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
+    # dataW_40C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
+    # ax[6].set_ylim(10.5, 12)
+    # print("6/6")
 
     return f
 

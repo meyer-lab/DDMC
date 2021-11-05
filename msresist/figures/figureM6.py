@@ -5,6 +5,7 @@ This creates Figure 6: STK11 analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from ..clustering import MassSpecClustering
@@ -25,6 +26,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data

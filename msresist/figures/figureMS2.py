@@ -2,7 +2,7 @@
 This creates Supplemental Figure 2: Cluster motifs
 """
 
-import pickle
+import matplotlib
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -17,6 +17,7 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((7, 9), (6, 5))
 
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data

@@ -5,6 +5,7 @@ This creates Figure 5: Tumor vs NAT analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import textwrap
 import mygene
 from scipy.stats import mannwhitneyu
@@ -29,6 +30,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data

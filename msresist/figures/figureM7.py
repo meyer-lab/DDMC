@@ -5,6 +5,7 @@ This creates Figure 7: Tumor infiltrating immune cells
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
@@ -22,6 +23,7 @@ def makeFigure():
     ax, f = getSetup((14, 13), (4, 3), multz={0: 1, 3: 1})
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
