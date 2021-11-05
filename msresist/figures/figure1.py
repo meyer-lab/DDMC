@@ -2,21 +2,19 @@
 This creates Figure 1: Phenotypic characterization of PC9 AXL mutants
 """
 
-from msresist.pre_processing import Linear
 import os
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils import resample
 from .common import subplotLabel, getSetup
 from ..motifs import MapMotifs
 from ..pca import plotPCA
-from ..pre_processing import preprocessing, y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels, CorrCoefFilter
-from ..distances import BarPlotRipleysK, DataFrameRipleysK, PlotRipleysK
+from ..pre_processing import y_pre, MapOverlappingPeptides, BuildMatrix, TripsMeanAndStd, FixColumnLabels, CorrCoefFilter
+from ..distances import DataFrameRipleysK, PlotRipleysK
+import matplotlib
 
 sns.set(color_codes=True)
 
@@ -39,6 +37,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Read in phenotype data
