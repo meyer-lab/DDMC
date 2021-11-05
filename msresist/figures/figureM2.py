@@ -1,6 +1,7 @@
 """
 This creates Figure 2: Evaluation of Imputating Missingness
 """
+import matplotlib
 import numpy as np
 from scipy.stats import gmean
 import pandas as pd
@@ -17,6 +18,7 @@ def makeFigure():
     ax, f = getSetup((10, 10), (3, 3), multz={0: 2})
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
@@ -26,27 +28,37 @@ def makeFigure():
     ax[0].axis("off")
 
     # Imputation error across Cluster numbers
-    dataC_W0 = ErrorAcross("Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
-    ax[1].set_ylim(10.5, 12)
-    dataC_W25 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
-    ax[2].set_ylim(10.5, 12)
-    dataC_W100 = ErrorAcross("Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
-    ax[3].set_ylim(10.5, 12)
+    # dataC_W0 = ErrorAcross("Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
+    # ax[1].set_ylim(10.5, 12)
+    # print("1/6 done.")
+    # dataC_W25 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    # dataC_W0.iloc[:, 2] = 1250
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
+    # ax[2].set_ylim(10.5, 12)
+    # print("2/6")
+    # dataC_W100 = ErrorAcross("Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
+    # ax[3].set_ylim(10.5, 12)
+    # print("3/6")
 
     # Imputation error across different Weights
-    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    dataW_5C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_5C, "Weight", legend=False)
-    ax[4].set_ylim(10.5, 12)
-    dataW_15C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_15C, "Weight", legend=False)
-    ax[5].set_ylim(10.5, 12)
-    dataW_35C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_35C, "Weight", legend=False)
-    ax[6].set_ylim(10.5, 12)
+    # weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    # dataW_2C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
+    # dataW_2C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
+    # ax[4].set_ylim(10.5, 12)
+    # print("4/6")
+    # dataW_20C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
+    # dataW_20C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
+    # ax[5].set_ylim(10.5, 12)
+    # print("5/6")
+    # dataW_40C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
+    # dataW_40C.replace(1000000, 1250)
+    # plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
+    # ax[6].set_ylim(10.5, 12)
+    # print("6/6")
 
     return f
 
