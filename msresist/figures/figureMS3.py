@@ -2,7 +2,7 @@
 This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
-import numpy as np
+import matplotlib
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
@@ -22,6 +22,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling

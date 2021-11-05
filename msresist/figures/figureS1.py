@@ -2,7 +2,7 @@
 This creates Supplemental Figure 1: Cell Viability and death
 """
 
-import numpy as np
+import matplotlib
 import seaborn as sns
 from .common import subplotLabel, getSetup
 from .figure1 import IndividualTimeCourses, import_phenotype_data, barplot_UtErlAF154
@@ -17,6 +17,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Read in viability and apoptosis data
