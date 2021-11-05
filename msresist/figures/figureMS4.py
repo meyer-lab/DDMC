@@ -2,6 +2,7 @@
 This creates Supplemental Figure 4: Predicting sample type with different modeling strategies
 """
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -20,6 +21,7 @@ def makeFigure():
     ax, f = getSetup((9, 6), (2, 3), multz={1: 1})
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels

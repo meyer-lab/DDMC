@@ -6,14 +6,14 @@ This creates KRAS figure clustering all three cell lines together
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from scipy.stats import zscore
+import matplotlib
 from sklearn.cross_decomposition import PLSRegression
 from .common import subplotLabel, getSetup
 from ..pre_processing import MeanCenter
 from ..validations import pos_to_motif
 from ..clustering import MassSpecClustering
 from ..pca import plotPCA
-from .figure2 import plotDistanceToUpstreamKinase, plotR2YQ2Y, plotScoresLoadings
+from .figure2 import plotDistanceToUpstreamKinase
 from .figureM5 import plot_GO
 
 
@@ -29,6 +29,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Preprocess mass spec data

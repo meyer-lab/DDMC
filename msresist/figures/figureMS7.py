@@ -2,6 +2,7 @@
 This creates Supplemental Figure 7: Predicting STK11 genotype using different clustering strategies.
 """
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -24,6 +25,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
