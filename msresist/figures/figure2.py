@@ -5,6 +5,7 @@ This creates Figure 2: Model figure
 import pandas as pd
 import numpy as np
 import seaborn as sns
+import matplotlib
 import scipy as sp
 import matplotlib.colors as colors
 import matplotlib.cm as cm
@@ -15,7 +16,8 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.cluster import KMeans
 from .common import subplotLabel, getSetup
 from ..pre_processing import preprocessing, MeanCenter
-from ..clustering import MassSpecClustering, KinToPhosphotypeDict
+from ..clustering import MassSpecClustering
+from ..motifs import KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
 from .figure1 import import_phenotype_data, formatPhenotypesForModeling
@@ -30,6 +32,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import siganling data

@@ -4,7 +4,7 @@ This creates KRAS figure clustering only mesenchymal cell lines separately
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from .common import subplotLabel, getSetup
@@ -23,6 +23,7 @@ def makeFigure():
     ax, f = getSetup((15, 15), (5, 4))
 
     # Add subplot labels
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     subplotLabel(ax)
 
     # Set plotting format
