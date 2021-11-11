@@ -18,41 +18,37 @@ from ..pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((9, 4), (1, 4), multz={0: 1})
+    ax, f = getSetup((5, 5), (2, 2), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
 
     # Set plotting format
     matplotlib.rcParams['font.sans-serif'] = "Arial"
-    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.set(style="whitegrid", font_scale=0.5, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])  # Import signaling data
+    i = X.select_dtypes(include=[object])
 
     # Plot mean AUCs per model
-    out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3, ncl=5)
-    out.to_csv("preds_phenotypes_rs_5cl.csv")
-    out = calculate_AUCs_phenotypes(ax[0], X, nRuns=3, ncl=10)
-    out.to_csv("preds_phenotypes_rs_10cl.csv")
+    p = pd.read_csv("msresist/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
+    p.iloc[-3:, 1] = 1250
+    xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
+    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    ax[0].legend(prop={'size': 5}, loc=0)
 
-    # p = pd.read_csv("msresist/data/Performance/phenotype_preds.csv").iloc[:, 1:]
-    # p.iloc[-3:, 1] = 1250
-    # xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
-    # sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    # Fit Data, Mix, and Seq Models
+    dataM = MassSpecClustering(i, ncl=30, SeqWeight=0, distance_method="Binomial", random_state=5).fit(d)
+    mixM = MassSpecClustering(i, ncl=30, SeqWeight=250, distance_method="Binomial", random_state=5).fit(d)
+    seqM = MassSpecClustering(i, ncl=30, SeqWeight=1e6, distance_method="Binomial", random_state=5).fit(d)
+    models = [dataM, mixM, seqM]
 
-    # # Fit Data, Mix, and Seq Models
-    # dataM = MassSpecClustering(i, ncl=35, SeqWeight=0, distance_method="Binomial", random_state=7).fit(d)
-    # mixM = MassSpecClustering(i, ncl=35, SeqWeight=500, distance_method="Binomial", random_state=7).fit(d)
-    # seqM = MassSpecClustering(i, ncl=35, SeqWeight=1e6, distance_method="Binomial", random_state=7).fit(d)
-    # models = [dataM, mixM, seqM]
+    # Center to peptide distance
+    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
 
-    # # Center to peptide distance
-    # barplot_PeptideToClusterDistances(models, ax[1], n=2000)
-
-    # # Position Enrichment
-    # boxplot_TotalPositionEnrichment(models, ax[2])
+    # Position Enrichment
+    boxplot_TotalPositionEnrichment(models, ax[2])
 
     return f
 
@@ -126,8 +122,8 @@ def barplot_PeptideToClusterDistances(models, ax, n=3000):
             psDist[ii, jj] = mean_squared_error(d[jj, idx_values], center[idx_values])
 
     psDist = pd.DataFrame(psDist).T
-    psDist.columns = ["Data", "Mix", "Sequence"]
-    ps_data = pd.melt(psDist, value_vars=["Data", "Mix", "Sequence"], var_name="Model", value_name="p-signal MSE")
+    psDist.columns = ["p-Abundance", "Mix", "Sequence"]
+    ps_data = pd.melt(psDist, value_vars=["p-Abundance", "Mix", "Sequence"], var_name="Model", value_name="p-signal MSE")
     sns.barplot(data=ps_data, x="Model", y="p-signal MSE", ci=None, ax=ax)
     ax.set_title("Peptide-to-Cluster signal MSE")
 
@@ -142,7 +138,7 @@ def boxplot_TotalPositionEnrichment(models, ax):
 
     enr = pd.DataFrame(enr)
     enr.columns = np.arange(models[0].n_components) + 1
-    enr.insert(0, "Model", ["Data", "Mix", "Sequence"])
+    enr.insert(0, "Model", ["p-Abundance", "Mix", "Sequence"])
     dd = pd.melt(frame=enr, id_vars="Model", value_vars=enr.columns[1:], var_name="Cluster", value_name="Total information (bits)")
     sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
     sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax, fliersize=0)
