@@ -56,7 +56,7 @@ def makeFigure():
     # AKT substrates bar plot
     plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/MCF7_NKIN_CL16.csv", ax[4], title="Cluster 16—Kinase Predictions", n=40)
 
-    # ERK2 White lab motif
+    # # ERK2 White lab motif
     erk2 = pd.read_csv("msresist/data/Validations/Computational/ERK2_substrates.csv")
     erk2 = compute_control_pssm([s.upper() for s in erk2["Peptide"]])
     erk2 = pd.DataFrame(np.clip(erk2, a_min=0, a_max=3))
@@ -70,10 +70,10 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model_cptac = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
+    model_cptac = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
-    s_pssms = ShuffleClusters([21, 24, 27], model_cptac, additional=erk2)
-    plotDistanceToUpstreamKinase(model_cptac, [21, 24, 27], additional_pssms=s_pssms + [erk2], add_labels=["21_S", "24_S", "27_S", "ERK2+_S", "ERK2+"], ax=ax[6:8], num_hits=1)
+    s_pssms = ShuffleClusters([3, 7, 21], model_cptac, additional=erk2)
+    plotDistanceToUpstreamKinase(model_cptac, [3, 7, 21], additional_pssms=s_pssms + [erk2], add_labels=["3_S", "7_S", "21_S", "ERK2+_S", "ERK2+"], ax=ax[-2:], num_hits=1)
 
     return f
 
