@@ -349,7 +349,7 @@ def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
         hits["Phosphoacceptor"] = [KinToPhosphotypeDict[kin] for kin in hits["Kinase"]]
         try:
             cCP = pssms[c - 1].iloc[:, 5].idxmax()
-        except:
+        except BaseException:
             cCP == "S/T"
         if cCP == "S" or cCP == "T":
             cCP = "S/T"
