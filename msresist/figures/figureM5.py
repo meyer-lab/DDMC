@@ -24,7 +24,7 @@ from ..pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 13), (3, 4), multz={0: 1, 4: 1})
+    ax, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -39,12 +39,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
-
-    # first plot heatmap of clusters
-    # lim = 1.5
-    # sns.clustermap(centers.set_index("Type").T, method="complete", cmap="bwr", vmax=lim, vmin=-lim,  figsize=(15, 9)) Run in notebook and save as svg
-    ax[0].axis("off")
+    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
     # Normalize
     centers = pd.DataFrame(model.transform()).T
@@ -53,8 +48,12 @@ def makeFigure():
     centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = TumorType(centers).set_index("Patient_ID")
-    centers["Type"] = centers["Type"].replace("Normal", "NAT")
-    centers = centers.drop(19, axis=1)  # Drop cluster 19, contains only 1 peptide
+    centers = centers.drop([14, 24], axis=1)  # Drop cluster 19, contains only 1 peptide
+
+    # first plot heatmap of clusters
+    # lim = 1.5
+    # sns.clustermap(centers.set_index("Type").T, method="complete", cmap="bwr", vmax=lim, vmin=-lim,  figsize=(15, 9)) Run in notebook and save as svg
+    ax[0].axis("off")
 
     # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
@@ -70,22 +69,12 @@ def makeFigure():
 
     # Logistic Regression
     lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
-    mauc = plotROC(ax[4], lr, c.values, tt, cv_folds=4, return_mAUC=True)
-    plotClusterCoefficients(ax[4], lr)
-    textstr = "$mAUC$ = " + str(np.round(mauc, 3))
-    props = dict(boxstyle="square", facecolor="none", alpha=0.5, edgecolor="black")
-    ax[4].text(0.02, 0.1, textstr, transform=ax[4].transAxes, verticalalignment="top", bbox=props)
-    ax[4].set_xticklabels(centers.columns[:-1])
+    plotROC(ax[4], lr, c.values, tt, cv_folds=4, return_mAUC=False)
+    plotClusterCoefficients(ax[5], lr)
+    ax[5].set_xticklabels(centers.columns[:-1])
 
-    # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [12, 20], ax[5], num_hits=1)
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/cl12_NKIN.csv", ax[6], n=40, title="Cluster 12 NetworKIN Predictions", color="royalblue")
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/cl20_NKIN.csv", ax[7], n=40, title="Cluster 20 NetworKIN Predictions", color="darkorange")
-
-    # plot peptides pertaining to enriched BPs
-    X["Cluster"] = model.labels()
-    plot_enriched_processes(ax[8], X, centers["Type"].values, ["Type", "NAT", "Tumor"], 12)
-    plot_enriched_processes(ax[9], X, centers["Type"].values, ["Type", "NAT", "Tumor"], 20)
+    # Upstream Kinases
+    plotDistanceToUpstreamKinase(model, [6, 15, 20], ax[6], num_hits=2, PsP_background=True)
 
     return f
 
@@ -103,9 +92,14 @@ def make_BPtoGenes_table(X, cluster):
     return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
 
 
-def plot_enriched_processes(ax, X, y, f, cluster):
+def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
     """"Plot BPs enriched per cluster"""""
-    gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    if gene_set == "WP":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    elif gene_set == "onco":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_ONCO_results.csv").iloc[:, 1:]
+    elif gene_set == "Immuno":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
     cc = make_BPtoGenes_table(gsea, cluster)
     cl = X[X["Cluster"] == cluster].set_index("Gene")
     dfs = []
@@ -118,9 +112,9 @@ def plot_enriched_processes(ax, X, y, f, cluster):
     out[f[0]] = y
     out[f[0]] = out[f[0]].replace(0, f[1])
     out[f[0]] = out[f[0]].replace(1, f[2])
-    dm = pd.melt(out, id_vars="Type", value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
+    dm = pd.melt(out, id_vars=f[0], value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
     dm.iloc[:, -1] = dm.iloc[:, -1].astype(float)
-    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue="Type", showfliers=False, ax=ax)
+    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue=f[0], showfliers=False, linewidth=0.5, ax=ax)
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
 
@@ -149,11 +143,11 @@ def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royal
 
 
 def TumorType(X):
-    """Add Normal vs Tumor column."""
+    """Add NAT vs Tumor column."""
     tumortype = []
     for i in range(X.shape[0]):
-        if ".N" in X["Patient_ID"][i]:
-            tumortype.append("Normal")
+        if X["Patient_ID"][i].endswith(".N"):
+            tumortype.append("NAT")
         else:
             tumortype.append("Tumor")
     X["Type"] = tumortype
@@ -163,7 +157,7 @@ def TumorType(X):
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
     data = pd.melt(id_vars=id_var, value_vars=centers.columns[:-1], value_name="p-signal", var_name="Cluster", frame=centers)
-    sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
+    sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.25, fliersize=2)
     ax.legend(prop={'size': 8}, loc=loc)
 
     if not isinstance(pvals, bool):

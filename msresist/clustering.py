@@ -234,4 +234,3 @@ class MassSpecClustering(GaussianMixture):
         dictt["SeqWeight"] = self.SeqWeight
         dictt["distance_method"] = self.distance_method
         return dictt
-
