@@ -267,7 +267,7 @@ def plotMotifs(pssms, axes, titles=False, yaxis=False):
                        flip_below=False,
                        center_values=False,
                        ax=ax)
-        logo.ax.set_ylabel('information (bits)')
+        logo.ax.set_ylabel('log_{2} (Enrichment Score)')
         logo.style_xticks(anchor=1, spacing=1)
         if titles:
             logo.ax.set_title(titles[i] + " Motif")
