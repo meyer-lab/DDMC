@@ -2,7 +2,7 @@ scipy==1.7.1
 matplotlib==3.4.3
 seaborn==0.11.2
 svgutils==0.3.4
-pandas==1.3.3
+pandas==1.3.4
 manubot==0.5.1
 panflute==2.1.0
 pandoc-fignos==2.4.0
@@ -18,3 +18,4 @@ logomaker==0.8
 svgutils==0.3.4
 fancyimpute
 statsmodels==0.13.0
+git+https://github.com/biothings/mygene.py.git@master

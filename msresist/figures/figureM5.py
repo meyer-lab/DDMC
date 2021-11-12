@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import textwrap
+import mygene
 from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
@@ -15,20 +16,21 @@ from statsmodels.stats.multitest import multipletests
 from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure2 import plotMotifs, plotDistanceToUpstreamKinase
+from ..figures.figure2 import plotDistanceToUpstreamKinase
 from ..pca import plotPCA
-from ..pre_processing import MeanCenter, filter_NaNpeptides
+from ..pre_processing import filter_NaNpeptides
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((15, 13), (4, 4), multz={0: 1, 4: 1, 12: 1, 14: 1})
+    ax, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
 
     # Add subplot labels
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data
@@ -37,10 +39,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=24, SeqWeight=15, distance_method="Binomial").fit(d)
-
-    # first plot heatmap of clusters
-    ax[0].axis("off")
+    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
     # Normalize
     centers = pd.DataFrame(model.transform()).T
@@ -49,7 +48,12 @@ def makeFigure():
     centers.columns = np.arange(model.n_components) + 1
     centers["Patient_ID"] = X.columns[4:]
     centers = TumorType(centers).set_index("Patient_ID")
-    centers["Type"] = centers["Type"].replace("Normal", "NAT")
+    centers = centers.drop([14, 24], axis=1)  # Drop cluster 19, contains only 1 peptide
+
+    # first plot heatmap of clusters
+    # lim = 1.5
+    # sns.clustermap(centers.set_index("Type").T, method="complete", cmap="bwr", vmax=lim, vmin=-lim,  figsize=(15, 9)) Run in notebook and save as svg
+    ax[0].axis("off")
 
     # PCA and Hypothesis Testing
     pvals = calculate_mannW_pvals(centers, "Type", "NAT", "Tumor")
@@ -64,101 +68,66 @@ def makeFigure():
     tt = tt.replace("Tumor", 1)
 
     # Logistic Regression
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
     plotROC(ax[4], lr, c.values, tt, cv_folds=4, return_mAUC=False)
     plotClusterCoefficients(ax[5], lr)
+    ax[5].set_xticklabels(centers.columns[:-1])
 
-    # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [11, 12], ax[6], num_hits=3)
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/CPTAC_NK_C12.csv", ax[7], n=5, title="Cluster 12 NetPhorest Predictions")
-
-    # GO Cluster 11
-    plot_GO(11, ax[8], n=5, title="GO Cluster 11")
-
-    # GO Cluster 12
-    plot_GO(12, ax[9], n=3, title="GO Cluster 12", max_width=20)
-
-    # Peptides Cluster 11
-    y = pd.DataFrame(centers["Type"]).reset_index()
-    y.columns = ["Sample.ID", "Type"]
-    X["cluster"] = model.labels()
-    c11 = X[X["cluster"] == 11].drop("cluster", axis=1)
-    d = {"PEAK1": "Y635-p", "ARHGEF7": "S703-p", "PAK4": "S181-p", "FLNA": "S2128-p", "PTPN11": "Y546-p", "HBA2": "T68-p", "HBB": "T88-p", "HBD": "S73-p", "HBG1": "S140-p"}
-    plotPeptidesByFeature(c11, y, d, ["Type", "Tumor", "NAT"], ax[10], title="Cluster 11: Gas Transport & Cytoskletal remodeling", TwoCols=True)
-
-    # Peptides Cluster 12
-    c12 = X[X["cluster"] == 12].drop("cluster", axis=1)
-    d = {
-        "MCM4": "S105-p",
-        "MCM3": "T722-p",
-        "TP53BP1": "T1672-p",
-        "MCM4": "S105-p",
-        "BRCA1": "S114-p",
-        "ATRX": "S1348-p",
-        "CDK1": "Y15-p;T14-p",
-        "CDK12": "S102-p;S105-p",
-        "CDK13": "S317-p",
-        "CDK16": "S119-p",
-        "CENPF": "T2997-p"}
-    plotPeptidesByFeature(c12, y, d, ["Type", "Tumor", "NAT"], ax[11], title="Cluster 12: DNA Damage", TwoCols=True)
+    # Upstream Kinases
+    plotDistanceToUpstreamKinase(model, [6, 15, 20], ax[6], num_hits=2, PsP_background=True)
 
     return f
 
 
-def plotPeptidesByFeature(X, y, d, feat_labels, ax, loc='best', title=False, TwoCols=False, legend_size=8):
-    """Plot and compare specific peptides by feature."""
-    x = X.set_index(["Gene", "Position"])
-    n = list(d.keys())
-    p = list(d.values())
+def make_BPtoGenes_table(X, cluster):
+    d = X[["Clusters", "Description", "geneID"]]
+    d = d[d["Clusters"] == cluster]
+    gAr = d[["geneID"]].values
+    bpAr = d[["Description"]].values
+    mg = mygene.MyGeneInfo()
+    BPtoGenesDict = {}
+    for ii, arr in enumerate(gAr):
+        gg = mg.querymany(list(arr[0].split("/")), scopes="entrezgene", fields="symbol", species="human", returnall=False, as_dataframe=True)
+        BPtoGenesDict[bpAr[ii][0]] = list(gg["symbol"])
+    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
+
+
+def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
+    """"Plot BPs enriched per cluster"""""
+    if gene_set == "WP":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    elif gene_set == "onco":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_ONCO_results.csv").iloc[:, 1:]
+    elif gene_set == "Immuno":
+        gsea = pd.read_csv("msresist/data/cluster_analysis/CPTAC_GSEA_WP_results.csv").iloc[:, 1:]
+    cc = make_BPtoGenes_table(gsea, cluster)
+    cl = X[X["Cluster"] == cluster].set_index("Gene")
     dfs = []
-    for i in range(len(n)):
-        ptd = pd.DataFrame(x.loc[n[i], p[i]]).T
-        if ptd.shape[1] == 1:
-            ptd = ptd.T
-        dfs.append(ptd)
-    c = pd.concat(dfs).reset_index()
-    c.columns = ["Gene", "Position"] + list(c.columns[2:])
+    for ii in range(cc.shape[1]):
+        ss = cl.loc[cc.iloc[:, ii].dropna()].reset_index()
+        ss["Process"] = cc.columns[ii]
+        dfs.append(ss)
 
-    # Farmat data to concatenate feature
-    c["SeqPos"] = [s + ";" + c["Position"].iloc[i] for i, s in enumerate(c["Gene"])]
-    c = c.set_index("SeqPos").T.iloc[4:, :].reset_index()
-
-    try:
-        assert np.all(list(c["index"]) == list(y["Sample.ID"]))
-        c = c.set_index("index")
-    except BaseException:
-        l1 = list(c["index"])
-        l2 = list(y["Sample.ID"])
-        dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-        c = c.set_index("index").drop(dif, axis=0)
-
-    # Add feature
-    f1, f2, f3 = feat_labels
-    c[f1] = y.iloc[:, 1].values
-    c[f1] = c[f1].replace(0, f2)
-    c[f1] = c[f1].replace(1, f3)
-
-    dm = pd.melt(c, id_vars=f1, value_vars=c.columns[:-1], var_name="p-site", value_name="mean log(p-signal)")
-
-    sns.barplot(data=dm, x=f1, y="mean log(p-signal)", hue="p-site", ci=None, ax=ax)
-    if title:
-        ax.set_title(title)
-
-    if TwoCols:
-        h, l = ax.get_legend_handles_labels()
-        ax.legend_.remove()
-        ax.legend(h, l, ncol=2, prop={'size': legend_size})
-    else:
-        ax.legend(prop={"size": legend_size}, loc=loc)
+    out = pd.concat(dfs).set_index("Process").select_dtypes(include=[float]).T
+    out[f[0]] = y
+    out[f[0]] = out[f[0]].replace(0, f[1])
+    out[f[0]] = out[f[0]].replace(1, f[2])
+    dm = pd.melt(out, id_vars=f[0], value_vars=out.columns, var_name="Process", value_name="mean log(p-signal)")
+    dm.iloc[:, -1] = dm.iloc[:, -1].astype(float)
+    sns.boxplot(data=dm, x="Process", y="mean log(p-signal)", hue=f[0], showfliers=False, linewidth=0.5, ax=ax)
+    ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
+    ax.set_title("Processes Cluster " + str(cluster))
 
 
-def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False):
+def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royalblue"):
     """Plot top scoring kinase groups"""
     NPtoCumScore = {}
     X = pd.read_csv(PathToFile)
     for ii in range(X.shape[0]):
         curr_NPgroup = X["netphorest_group"][ii]
-        if curr_NPgroup not in NPtoCumScore.keys():
+        if curr_NPgroup == "any_group":
+            continue
+        elif curr_NPgroup not in NPtoCumScore.keys():
             NPtoCumScore[curr_NPgroup] = X["netphorest_score"][ii]
         else:
             NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
@@ -166,34 +135,19 @@ def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False):
     X.columns = ["KIN Group", "NetPhorest Score"]
     X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
     X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
-    sns.barplot(data=X, y="KIN Group", x="NetPhorest Score", ax=ax, orient="h", color="darkblue", **{"linewidth": 2}, **{"edgecolor": "black"})
+    sns.stripplot(data=X, y="KIN Group", x="NetPhorest Score", ax=ax, orient="h", color=color, size=5, **{"linewidth": 1}, **{"edgecolor": "black"})
     if title:
         ax.set_title(title)
     else:
         ax.set_title("Kinase Predictions")
 
 
-def plot_GO(cluster, ax, n=5, title=False, max_width=25, analysis="CPTAC"):
-    """Plot top scoring gene ontologies in a cluster"""
-    X = pd.read_csv("msresist/data/cluster_analysis/" + str(analysis) + "_GO_C" + str(cluster) + ".csv")
-    X = X[["GO biological process complete", "upload_1 (fold Enrichment)"]].iloc[:n, :]
-    X.columns = ["Biological process", "Fold Enrichment"]
-    X["Fold Enrichment"] = X["Fold Enrichment"].astype(float)
-    X["Biological process"] = [s.split("(GO")[0] for s in X["Biological process"]]
-    sns.barplot(data=X, y="Biological process", x="Fold Enrichment", ax=ax, orient="h", color="lightgrey", **{"linewidth": 2}, **{"edgecolor": "black"})
-    ax.set_yticklabels(textwrap.fill(x.get_text(), max_width) for x in ax.get_yticklabels())
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("GO")
-
-
 def TumorType(X):
-    """Add Normal vs Tumor column."""
+    """Add NAT vs Tumor column."""
     tumortype = []
     for i in range(X.shape[0]):
-        if ".N" in X["Patient_ID"][i]:
-            tumortype.append("Normal")
+        if X["Patient_ID"][i].endswith(".N"):
+            tumortype.append("NAT")
         else:
             tumortype.append("Tumor")
     X["Type"] = tumortype
@@ -202,9 +156,8 @@ def TumorType(X):
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc='best'):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster """
-    ncl = centers.shape[1] - 1
     data = pd.melt(id_vars=id_var, value_vars=centers.columns[:-1], value_name="p-signal", var_name="Cluster", frame=centers)
-    sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.5, fliersize=2)
+    sns.violinplot(x="Cluster", y="p-signal", hue=id_var, data=data, dodge=True, ax=ax, linewidth=0.25, fliersize=2)
     ax.legend(prop={'size': 8}, loc=loc)
 
     if not isinstance(pvals, bool):
@@ -249,13 +202,16 @@ def build_pval_matrix(ncl, pvals):
     return data
 
 
-def ExportClusterFile(cluster):
+def ExportClusterFile(cluster, cptac=False, mcf7=False):
     """Export cluster SVG file for NetPhorest and GO analysis."""
-    c = pd.read_csv("msresist/data/cluster_members/CPTACmodel_Members_C" + str(cluster) + ".csv")
+    if cptac:
+        c = pd.read_csv("msresist/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster" + str(cluster) + ".csv")
+    if mcf7:
+        c = pd.read_csv("msresist/data/cluster_members/msresist/data/cluster_members/CPTAC_MF7_20CL_W5_MembersCluster" + str(cluster) + ".csv")
     c["pos"] = [s.split(s[0])[1].split("-")[0] for s in c["Position"]]
     c["res"] = [s[0] for s in c["Position"]]
     c.insert(4, "Gene_Human", [s + "_HUMAN" for s in c["Gene"]])
-    c = c.drop(["Position", "Cluster"], axis=1)
+    c = c.drop(["Position"], axis=1)
     drop_list = ["NHSL2", "MAGI3", "SYNC", "LMNB2", "PLS3", "PI4KA", "SYNM", "MAP2", "MIA2", "SPRY4", "KSR1", "RUFY2", "MAP11",
                  "MGA", "PRR12", "PCLO", "NCOR2", "BNIP3", "CENPF", "OTUD4", "RPA1", "CLU", "CDK18", "CHD1L", "DEF6", "MAST4", "SSR3"]
     for gene in drop_list:

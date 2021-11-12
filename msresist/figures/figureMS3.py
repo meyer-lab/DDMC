@@ -2,7 +2,7 @@
 This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
-import numpy as np
+import matplotlib
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
@@ -22,6 +22,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
@@ -39,9 +40,9 @@ def makeFigure():
     lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
 
     folds = 5
-    weights = [0, 15, 20, 40, 50]
+    weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = MassSpecClustering(i, ncl=24, SeqWeight=w, distance_method="Binomial").fit(d)
+        model = MassSpecClustering(i, ncl=30, SeqWeight=w, distance_method="Binomial").fit(d)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)

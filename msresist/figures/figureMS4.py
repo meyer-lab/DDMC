@@ -2,6 +2,7 @@
 This creates Supplemental Figure 4: Predicting sample type with different modeling strategies
 """
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -17,15 +18,16 @@ from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 10), (3, 4), multz={1: 2, 6: 1, 10: 1})
+    ax, f = getSetup((9, 6), (2, 3), multz={1: 1})
 
     # Set plotting format
-    sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Add subplot labels
     subplotLabel(ax)
 
-    # Tumor vs NAT unclustered
+    # Import data
     X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
     i = X.select_dtypes(include=['object'])
@@ -39,38 +41,36 @@ def makeFigure():
     y = y.replace("NAT", 0)
     y = y.replace("Tumor", 1)
 
-    lr = LogisticRegressionCV(Cs=10, cv=10, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    # DDMC ROC
+    ncl = 30
+    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
+    lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
+    plotROC(ax[2], lr, model.transform(), y, cv_folds=4, return_mAUC=False)
+    ax[2].set_title("DDMC ROC")
+
+    # Tumor vs NAT unclustered
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
+    ax[0].set_title("Unclustered ROC")
     plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
 
-    # Tumor vs NAT k-means
-    ncl = 24
+    # k-means
     labels = KMeans(n_clusters=ncl).fit(d.T).labels_
     x_ = X.copy()
     x_["Cluster"] = labels
     c_kmeans = x_.groupby("Cluster").mean().T
     c_kmeans.columns = list(np.arange(ncl) + 1)
     km_lr = lr.fit(c_kmeans, y)
-    plotROC(ax[2], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
-    plotClusterCoefficients(ax[3], lr, title="k-means")
-    c_kmeans["Type"] = z.iloc[:, -1].values
-    pvals = calculate_mannW_pvals(c_kmeans, "Type", "NAT", "Tumor")
-    pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_kmeans, "Type", ax[4], pvals=pvals)
+    plotROC(ax[3], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
+    ax[3].set_title("k-means ROC")
 
-    # Tumor vs NAT GMM
-    ncl = 15
+    # GMM
     gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
     gmm_lr = lr.fit(c_gmm, y)
-    plotROC(ax[5], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
-    plotClusterCoefficients(ax[6], gmm_lr, title="GMM")
-    c_gmm["Type"] = z.iloc[:, -1].values
-    pvals = calculate_mannW_pvals(c_gmm, "Type", "NAT", "Tumor")
-    pvals = build_pval_matrix(ncl, pvals)
-    plot_clusters_binaryfeatures(c_gmm, "Type", ax[7], pvals=pvals)
+    plotROC(ax[4], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
+    ax[4].set_title("GMM ROC")
 
     return f
 

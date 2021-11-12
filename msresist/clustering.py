@@ -1,7 +1,6 @@
 """ Clustering functions. """
 
 import warnings
-import glob
 from copy import deepcopy
 import itertools
 import numpy as np
@@ -10,6 +9,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
+from .motifs import PSPLdict, compute_control_pssm
 from fancyimpute import SoftImpute
 
 
@@ -56,6 +56,14 @@ class MassSpecClustering(GaussianMixture):
             Logarithm of the posterior probabilities (or responsibilities) of
             the point of each sample in X.
         """
+        if self._missing:
+            labels = np.argmax(log_resp, axis=1)
+            centers = self.means_.T  # samples x clusters
+
+            assert len(labels) == X.shape[0]
+            for ii in range(X.shape[0]):  # X is peptides x samples
+                X[ii, self.missing_d[ii, :]] = centers[self.missing_d[ii, :], labels[ii]]
+
         super()._m_step(X, log_resp)  # Do the regular m step
 
         # Do sequence m step
@@ -66,23 +74,17 @@ class MassSpecClustering(GaussianMixture):
         d = np.array(X.T)
 
         if np.any(np.isnan(d)):
+            self._missing = True
+            self.missing_d = np.isnan(d)
+
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 d = SoftImpute(verbose=False).fit_transform(d)
-
-            assert np.all(np.isfinite(d))
-            imputt = True
         else:
-            imputt = False
+            self._missing = False
 
         super().fit(d)
         self.scores_ = self.predict_proba(d)
-
-        if imputt:
-            d = np.array(X.T)
-            d = self.impute(d)
-            super().fit(d)
-            self.scores_ = self.predict_proba(d)
 
         assert np.all(np.isfinite(self.scores_))
         assert np.all(np.isfinite(self.seq_scores_))
@@ -97,7 +99,7 @@ class MassSpecClustering(GaussianMixture):
         alt_model.fit(X)
         data_model = alt_model.scores_
 
-        alt_model.SeqWeight = 50.0  # Overwhelming influence
+        alt_model.SeqWeight = 1000.0  # Overwhelming influence
         alt_model.fit(X)
         seq_model = alt_model.scores_
 
@@ -158,19 +160,20 @@ class MassSpecClustering(GaussianMixture):
                     if ii == 1 and not PsP_background:
                         back_pssm[AAlist.index(aa), kk] += 1.0
 
-            # Normalize by position across residues and remove negative outliers
+            # Normalize by position across residues
             for pos in range(pssm.shape[1]):
                 if pos == 5:
                     continue
                 pssm[:, pos] /= np.mean(pssm[:, pos])
                 if ii == 1 and not PsP_background:
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+
+            # Normalize to background PSSM to account for AA frequencies per position
+            pssm /= back_pssm.copy()
+
+            # Log2 transform
             pssm = np.ma.log2(pssm)
             pssm = pssm.filled(0)
-            if ii == 1 and not PsP_background:
-                back_pssm = np.ma.log2(back_pssm)
-                back_pssm = back_pssm.filled(0)
-            pssm -= back_pssm.copy()
             pssm = np.nan_to_num(pssm)
             pssm = pd.DataFrame(pssm)
             pssm.index = AAlist
@@ -189,14 +192,15 @@ class MassSpecClustering(GaussianMixture):
 
         return pssms, cl_num
 
-    def predict_UpstreamKinases(self, additional_pssms=False):
+    def predict_UpstreamKinases(self, additional_pssms=False, add_labels=False, PsP_background=True):
         """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
         PSPLs = PSPLdict()
-        PSSMs, cl_num = self.pssms(PsP_background=True)
+        PSSMs, cl_num = self.pssms(PsP_background=PsP_background)
 
         # Optionally add external pssms
         if not isinstance(additional_pssms, bool):
             PSSMs += additional_pssms
+            cl_num += add_labels
         PSSMs = [np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs]  # Remove P0 and P+5 from pssms
 
         a = np.zeros((len(PSPLs), len(PSSMs)))
@@ -230,121 +234,3 @@ class MassSpecClustering(GaussianMixture):
         dictt["SeqWeight"] = self.SeqWeight
         dictt["distance_method"] = self.distance_method
         return dictt
-
-
-def PSPLdict():
-    """Generate dictionary with kinase name-specificity profile pairs"""
-    pspl_dict = {}
-    # individual files
-    PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
-    for sp in PSPLs:
-        if sp == "./msresist/data/PSPL/pssm_data.csv":
-            continue
-        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
-
-        if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
-            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:-2, 1:].values
-        else:
-            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:, 1:].values
-
-        if np.all(sp_mat >= 0):
-            sp_mat = np.log2(sp_mat)
-
-        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
-
-    # NetPhores PSPL results
-    f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
-    matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
-    for ii in matIDX:
-        kin = f.iloc[ii[0], 0]
-        mat = f.iloc[ii[1:], :].T
-        mat.columns = np.arange(mat.shape[1])
-        mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
-        mat = np.ma.log2(mat)
-        mat = mat.filled(0)
-        mat = np.clip(mat, a_min=0, a_max=3)
-        pspl_dict[kin] = mat
-
-    return pspl_dict
-
-
-def compute_control_pssm(bg_sequences):
-    """Generate PSSM."""
-    back_pssm = np.zeros((len(AAlist), 11), dtype=float)
-    for _, seq in enumerate(bg_sequences):
-        for kk, aa in enumerate(seq):
-            back_pssm[AAlist.index(aa), kk] += 1.0
-    for pos in range(back_pssm.shape[1]):
-        back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
-    back_pssm = np.ma.log2(back_pssm)
-    return back_pssm.filled(0)
-
-
-KinToPhosphotypeDict = {
-    "ABL": "Y",
-    "AKT": "S/T",
-    "ALK": "Y",
-    "BLK": "Y",
-    "BRK": "Y",
-    "CK2": "S/T",
-    "ERK2": "S/T",
-    "FRK": "Y",
-    "HCK": "Y",
-    "INSR": "Y",
-    "LCK": "Y",
-    "LYN": "Y",
-    "MET": "Y",
-    "NEK1": "S/T",
-    "NEK2": "S/T",
-    "NEK3": "S/T",
-    "NEK4": "S/T",
-    "NEK5": "S/T",
-    "NEK6": "S/T",
-    "NEK7": "S/T",
-    "NEK8": "S/T",
-    "NEK9": "S/T",
-    "NEK10_S": "S/T",
-    "NEK10_Y": "Y",
-    "PKA": "S/T",
-    "PKC-theta": "S/T",
-    "PKD": "S/T",
-    "PLM2": "S/T",
-    "RET": "Y",
-    "SRC": "Y",
-    "TbetaRII": "S/T",
-    "YES": "Y",
-    "BRCA1": "S/T",
-    "AMPK": "S/T",
-    "CDK5": "S/T",
-    "CK1": "S/T",
-    "DMPK1": "S/T",
-    "EGFR": "Y",
-    "InsR": "Y",
-    "p38": "S/T",
-    "ERK1": "S/T",
-    "SHC1": "Y",
-    "SH2_PLCG1": "Y",
-    "SH2_INPP5D": "Y",
-    "SH2_SH3BP2": "Y",
-    "SH2_SHC2": "Y",
-    "SH2_SHE": "Y",
-    "SH2_Syk": "Y",
-    "SH2_TNS4": "Y",
-    "CLK2": "S/T",
-    "DAPK3": "S/T",
-    "ICK": "S/T",
-    "STK11": "S/T",
-    "MST1": "S/T",
-    "MST4": "S/T",
-    "PAK2": "S/T",
-    "Pim1": "S/T",
-    "Pim2": "S/T",
-    "SLK": "S/T",
-    "TGFbR2": "S/T",
-    "TLK1": "S/T",
-    "TNIK": "S/T",
-    "p70S6K": "S/T",
-    "EphA3": "Y"
-}

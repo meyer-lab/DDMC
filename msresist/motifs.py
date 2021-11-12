@@ -1,5 +1,8 @@
 """Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs."""
 
+import glob
+import pandas as pd
+import numpy as np
 import os
 import re
 from Bio import SeqIO
@@ -207,3 +210,121 @@ def ForegroundSeqs(sequences):
         assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
         seqs.append(Seq(motif, alphabet=AAlist))
     return seqs
+
+
+def PSPLdict():
+    """Generate dictionary with kinase name-specificity profile pairs"""
+    pspl_dict = {}
+    # individual files
+    PSPLs = glob.glob("./msresist/data/PSPL/*.csv")
+    for sp in PSPLs:
+        if sp == "./msresist/data/PSPL/pssm_data.csv":
+            continue
+        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
+
+        if sp_mat.shape[0] > 20:  # Remove profiling of fixed pY and pT, include only natural AA
+            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
+            sp_mat = sp_mat.iloc[:-2, 1:].values
+        else:
+            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
+            sp_mat = sp_mat.iloc[:, 1:].values
+
+        if np.all(sp_mat >= 0):
+            sp_mat = np.log2(sp_mat)
+
+        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
+
+    # NetPhores PSPL results
+    f = pd.read_csv("msresist/data/PSPL/pssm_data.csv", header=None)
+    matIDX = [np.arange(16) + i for i in range(0, f.shape[0], 16)]
+    for ii in matIDX:
+        kin = f.iloc[ii[0], 0]
+        mat = f.iloc[ii[1:], :].T
+        mat.columns = np.arange(mat.shape[1])
+        mat = mat.iloc[:-1, 2:12].drop(8, axis=1).astype("float64").values
+        mat = np.ma.log2(mat)
+        mat = mat.filled(0)
+        mat = np.clip(mat, a_min=0, a_max=3)
+        pspl_dict[kin] = mat
+
+    return pspl_dict
+
+
+def compute_control_pssm(bg_sequences):
+    """Generate PSSM."""
+    back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+    for _, seq in enumerate(bg_sequences):
+        for kk, aa in enumerate(seq):
+            back_pssm[AAlist.index(aa), kk] += 1.0
+    for pos in range(back_pssm.shape[1]):
+        back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
+    back_pssm = np.ma.log2(back_pssm)
+    return back_pssm.filled(0)
+
+
+KinToPhosphotypeDict = {
+    "ABL": "Y",
+    "AKT": "S/T",
+    "ALK": "Y",
+    "BLK": "Y",
+    "BRK": "Y",
+    "CK2": "S/T",
+    "ERK2": "S/T",
+    "FRK": "Y",
+    "HCK": "Y",
+    "INSR": "Y",
+    "LCK": "Y",
+    "LYN": "Y",
+    "MET": "Y",
+    "NEK1": "S/T",
+    "NEK2": "S/T",
+    "NEK3": "S/T",
+    "NEK4": "S/T",
+    "NEK5": "S/T",
+    "NEK6": "S/T",
+    "NEK7": "S/T",
+    "NEK8": "S/T",
+    "NEK9": "S/T",
+    "NEK10_S": "S/T",
+    "NEK10_Y": "Y",
+    "PKA": "S/T",
+    "PKC-theta": "S/T",
+    "PKD": "S/T",
+    "PLM2": "S/T",
+    "RET": "Y",
+    "SRC": "Y",
+    "TbetaRII": "S/T",
+    "YES": "Y",
+    "BRCA1": "S/T",
+    "AMPK": "S/T",
+    "CDK5": "S/T",
+    "CK1": "S/T",
+    "DMPK1": "S/T",
+    "EGFR": "Y",
+    "InsR": "Y",
+    "p38": "S/T",
+    "ERK1": "S/T",
+    "SHC1": "Y",
+    "SH2_PLCG1": "Y",
+    "SH2_INPP5D": "Y",
+    "SH2_SH3BP2": "Y",
+    "SH2_SHC2": "Y",
+    "SH2_SHE": "Y",
+    "SH2_Syk": "Y",
+    "SH2_TNS4": "Y",
+    "CLK2": "S/T",
+    "DAPK3": "S/T",
+    "ICK": "S/T",
+    "STK11": "S/T",
+    "MST1": "S/T",
+    "MST4": "S/T",
+    "PAK2": "S/T",
+    "Pim1": "S/T",
+    "Pim2": "S/T",
+    "SLK": "S/T",
+    "TGFbR2": "S/T",
+    "TLK1": "S/T",
+    "TNIK": "S/T",
+    "p70S6K": "S/T",
+    "EphA3": "Y"
+}
