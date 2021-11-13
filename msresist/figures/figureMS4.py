@@ -11,8 +11,8 @@ from sklearn.cluster import KMeans
 from ..clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
-from ..logistic_regression import plotClusterCoefficients, plotROC
-from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, TumorType
+from ..logistic_regression import plotROC
+from .figureM5 import TumorType
 
 
 def makeFigure():
@@ -43,7 +43,7 @@ def makeFigure():
 
     # DDMC ROC
     ncl = 30
-    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=7).fit(d)
+    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
     lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
     plotROC(ax[2], lr, model.transform(), y, cv_folds=4, return_mAUC=False)
     ax[2].set_title("DDMC ROC")
@@ -83,6 +83,7 @@ def plot_unclustered_LRcoef(ax, lr, d, title=False):
     coefs["Coefficients"] = list(cdic.keys())
     coefs["p-sites"] = list(cdic.values())
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
+    coefs = coefs[(coefs["Coefficients"] > 0.075) | (coefs["Coefficients"] < -0.075)]
     sns.barplot(data=coefs, x="p-sites", y="Coefficients", ax=ax, color="darkblue")
     ax.set_title("p-sites explaining tumor vs NATs ")
     ax.set_xticklabels(list(set(coefs["p-sites"])), rotation=90)
