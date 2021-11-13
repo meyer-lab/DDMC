@@ -17,8 +17,8 @@ def translate_geneIDs(X, labels, toID="entrezgene", export=False, outpath="GSEA_
     X["Clusters"] = labels
     X.index = list(range(X.shape[0]))
     mg = mygene.MyGeneInfo()
-    gg = mg.querymany(list(X["Gene"]), scopes="symbol", fields="entrezgene", species="human", returnall=False, as_dataframe=True)
-    aa = dict(zip(list(gg.index), list(gg["entrezgene"])))
+    gg = mg.querymany(list(X["Gene"]), scopes="symbol", fields=toID, species="human", returnall=False, as_dataframe=True)
+    aa = dict(zip(list(gg.index), list(gg[toID])))
     for ii in range(X.shape[0]):
         X.loc[ii, "Gene"] = aa[X.loc[ii, "Gene"]]
     if export:
