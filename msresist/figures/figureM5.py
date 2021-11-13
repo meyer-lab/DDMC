@@ -74,7 +74,7 @@ def makeFigure():
     ax[5].set_xticklabels(centers.columns[:-1])
 
     # Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [6, 15, 20], ax[6], num_hits=2, PsP_background=True)
+    plotDistanceToUpstreamKinase(model, [6, 15, 20], ax[6], num_hits=2)
 
     return f
 
