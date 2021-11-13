@@ -5,6 +5,7 @@ This creates Supplemental Figure 7: Predicting STK11 genotype using different cl
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
 from sklearn.cluster import KMeans, AffinityPropagation, Birch, SpectralClustering, MeanShift, AgglomerativeClustering
 from msresist.clustering import MassSpecClustering
 from .common import subplotLabel, getSetup
@@ -17,8 +18,9 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((8, 8), (1, 1))
 
-    # Add subplot labels
-    subplotLabel(ax)
+    # Set plotting format
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
+    sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
     X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
@@ -33,22 +35,18 @@ def makeFigure():
                MeanShift(),
                KMeans(n_clusters=15),
                AffinityPropagation(),
-               # OPTICS(), No clusters
-               # DBSCAN(), No clusters
                SpectralClustering(n_clusters=15, affinity="nearest_neighbors"),
                AgglomerativeClustering(n_clusters=15),
                AgglomerativeClustering(n_clusters=15, linkage="average"),
                AgglomerativeClustering(n_clusters=15, linkage="complete")]
 
-    labelsOut = np.empty((d.shape[1], len(methods) + 3), dtype=int)
+    labelsOut = np.empty((d.shape[1], len(methods) + 1), dtype=int)
 
     for ii, m in enumerate(methods):
         m.fit(d.T)
         labelsOut[:, ii] = m.labels_
 
-    labelsOut[:, -3] = MassSpecClustering(i, ncl=20, SeqWeight=0, distance_method="PAM250").fit(d).predict()
-    labelsOut[:, -2] = MassSpecClustering(i, ncl=20, SeqWeight=300, distance_method="Binomial").fit(d).predict()
-    labelsOut[:, -1] = MassSpecClustering(i, ncl=20, SeqWeight=10, distance_method="PAM250").fit(d).predict()
+    labelsOut[:, -1] = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d).predict()
 
     # How many clusters do we get in each instance
     print(np.amax(labelsOut, axis=0))
@@ -60,5 +58,8 @@ def makeFigure():
             mutInfo[jj, ii] = mutInfo[ii, jj]
 
     sns.heatmap(mutInfo, ax=ax[0])
+    labels = ["Birch", "MeanShift", "k-means", "Affinity Propagation", "SpectralClustering", "Agglomerative Clustering—Ward", "Agglomerative Clustering—Average", "Agglomerative Clustering—Commplete", "DDMC"]
+    ax[0].set_xticklabels(labels, rotation=90)
+    ax[0].set_yticklabels(labels, rotation=0)
 
     return f
