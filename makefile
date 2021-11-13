@@ -1,9 +1,5 @@
 flist = 2 S1 S2 S3 S4
-<<<<<<< HEAD
 fmlist = MS3 MS4 MS6 MS8
-=======
-fmlist = MS3 MS4
->>>>>>> 5800cd26bb3f5793fb007f9d4692820120159d09
 
 all: $(patsubst %, output/biol/figure%.svg, $(flist)) $(patsubst %, output/method/figure%.svg, $(fmlist))
 
