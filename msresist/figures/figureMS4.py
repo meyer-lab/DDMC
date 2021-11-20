@@ -51,7 +51,7 @@ def makeFigure():
     # Tumor vs NAT unclustered
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
     ax[0].set_title("Unclustered ROC")
-    plot_unclustered_LRcoef(ax[1], lr.fit(d, y), z)
+    plot_unclustered_LRcoef(ax[1], lr, d, y, z)
 
     # k-means
     labels = KMeans(n_clusters=ncl).fit(d.T).labels_
@@ -75,16 +75,21 @@ def makeFigure():
     return f
 
 
-def plot_unclustered_LRcoef(ax, lr, d, title=False):
+def plot_unclustered_LRcoef(ax, lr, d, y, z, title=False):
     """Plot logistic regression coefficients of unclustered data"""
-    ws = lr.coef_[0]
-    cdic = dict(zip(ws, d.columns))
-    coefs = pd.DataFrame()
-    coefs["Coefficients"] = list(cdic.keys())
-    coefs["p-sites"] = list(cdic.values())
+    weights = []
+    w = pd.DataFrame()
+    for _ in range(3):
+        lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
+        w["Coefficients"] = lr.fit(d, y).coef_[0] 
+        w["p-sites"] = z.columns[2:]
+        weights.append(w)
+
+    coefs = pd.concat(weights)
     coefs.sort_values(by="Coefficients", ascending=False, inplace=True)
     coefs = coefs[(coefs["Coefficients"] > 0.075) | (coefs["Coefficients"] < -0.075)]
     sns.barplot(data=coefs, x="p-sites", y="Coefficients", ax=ax, color="darkblue")
     ax.set_title("p-sites explaining tumor vs NATs ")
     ax.set_xticklabels(list(set(coefs["p-sites"])), rotation=90)
-    ax.set_xlabel("p-sites ")
+    ax.set_xlabel("p-sites")
+    return coefs

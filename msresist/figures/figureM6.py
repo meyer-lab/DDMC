@@ -82,7 +82,7 @@ def makeFigure():
     ax[2].legend(loc='lower left', prop={'size': 10})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [5, 16, 27], ax[3], num_hits=3)
+    plotDistanceToUpstreamKinase(model, [5, 16, 27], ax[3], num_hits=3, PsP_background=False)
 
     # volcano protein expression
     ax[-1].axis("off")
