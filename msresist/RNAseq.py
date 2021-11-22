@@ -9,4 +9,11 @@ def import_RNAseq():
         condition = name[10:-4]
         data = data.set_index("target_id")
         tpm_table = tpm_table.append(data.iloc[:, -1].rename(condition))
+    tpm_table = tpm_table.T.sort_index(axis=1).T
+    tpm_table["Sum"] = tpm_table.sum(axis=1)
+    tpm_table = tpm_table[tpm_table["Sum"] > 0].drop("Sum", axis=1)
+    tpm_table = tpm_table.reset_index()
+    tpm_table = tpm_table.rename(columns={"index": "Cell Line"}).reset_index()
+    
+
     return tpm_table.T.sort_index(axis=1)
