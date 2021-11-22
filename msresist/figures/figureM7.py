@@ -68,7 +68,7 @@ def makeFigure():
     plotClusterCoefficients(ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TI weights")
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [17, 20, 21], ax[3], num_hits=3, PsP_background=False)
+    plotDistanceToUpstreamKinase(model, [17, 20, 21], ax[3], num_hits=3)
 
     return f
 

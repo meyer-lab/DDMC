@@ -19,7 +19,7 @@ from .common import subplotLabel, getSetup
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((11, 7), (2, 3), multz={0: 1, 3: 1})
+    ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -61,7 +61,7 @@ def makeFigure():
 
     # Reshape data (Patients vs NAT and tumor sample per cluster)
     centers = centers.reset_index().set_index("STK11")
-    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=True)
+    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=False)
     y_ = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
     assert all(centers.index.values == y_.index.values), "Samples don't match"
 
@@ -72,13 +72,15 @@ def makeFigure():
 
     # Logistic Regression
     centers["STK11"] = y_["STK11.mutation.status"].values
-    lr = LogisticRegressionCV(cv=15, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced")
+    lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced", random_state=10)
     plotROC(ax[1], lr, centers.iloc[:, :-1].values, centers["STK11"], cv_folds=4, title="ROC STK11")
     ax[1].legend(loc='lower right', prop={'size': 8})
-    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), list(centers.columns[:-1]), title="")
+    plotClusterCoefficients(ax[2], lr.fit(centers.iloc[:, :-1], centers["STK11"].values), xlabels=list(centers.columns[:-1]), title="")
     ax[2].legend(loc='lower left', prop={'size': 10})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [16, 18], ax[3], num_hits=3, PsP_background=False)
+    plotDistanceToUpstreamKinase(model, [9, 11, 16, 18], ax[3], num_hits=1)
+
+    ax[-1].axis("off")
 
     return f
