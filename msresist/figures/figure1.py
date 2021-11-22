@@ -341,6 +341,20 @@ def plotClustergram(data, title=False, lim=False, robust=True, ylabel="", ytickl
     ax.set_ylabel(ylabel)
 
 
+def add_row_colors(centers, y, mNames):
+    """ Add row colors to highlight row groups in clustermap. """
+    # y.columns = [s.split(".")[0] + s.split(".")[1][0] for s in y.columns]
+    row_colors = []
+    for mName in mNames:
+        centers[mName] = y[mName].values
+        m = centers.pop(mName)
+        lut = dict(zip([0, 1], ["white", "black"]))
+        out = m.map(lut)
+        row_colors.append(out)
+
+    return pd.DataFrame(row_colors).T
+
+
 def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
     """ Plot variability of overlapping peptides across MS biological replicates. """
     ABC = MapMotifs(ABC, list(ABC.iloc[:, 0]))

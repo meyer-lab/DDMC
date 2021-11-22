@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from .common import subplotLabel, getSetup
-from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor, merge_binary_vectors
+from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
 from ..pre_processing import filter_NaNpeptides
 from ..clustering import MassSpecClustering
 from ..logistic_regression import plotROC
@@ -57,9 +57,8 @@ def makeFigure():
         # STK11
         plotROC(ax[ii], lr, centers_gen.values, y["STK11.mutation.status"], cv_folds=folds, title="STK11m " + "w=" + str(model.SeqWeight) + prio)
 
-        # EGFRm/ALKf
-        y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-        plotROC(ax[ii + 5], lr, centers_gen.values, y_EA, cv_folds=folds, title="EGFRm/ALKf " + "w=" + str(model.SeqWeight) + prio)
+        # EGFRm
+        plotROC(ax[ii + 5], lr, centers_gen.values, y["EGFR.mutation.status"], cv_folds=folds, title="EGFRm " + "w=" + str(model.SeqWeight) + prio)
 
         # Hot-Cold behavior
         y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
