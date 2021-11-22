@@ -1,5 +1,4 @@
 flist = 2 S1 S2 S3 S4
-fmlist = MS3 MS4 MS6 MS8
 
 all: $(patsubst %, output/biol/figure%.svg, $(flist)) $(patsubst %, output/method/figure%.svg, $(fmlist))
 
