@@ -11,7 +11,7 @@ output/biol/figure%.svg: venv genFigure.py msresist/figures/figure%.py
 
 venv: venv/bin/activate
 
-venv/bin/activate: requirements.txt
+venv/bin/activate: requirements.txt msresist/data/AXLmutants_RNAseq_merged.feather
 	test -d venv || virtualenv venv
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
@@ -45,6 +45,9 @@ figprofile: venv
 
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
+
+msresist/data/AXLmutants_RNAseq_merged.feather: msresist/data/AXLmutants_RNAseq_merged.feather.xz
+	xz -v -d $< $@
 
 %.pdf: %.ipynb
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
