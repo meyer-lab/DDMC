@@ -1,5 +1,5 @@
 """
-This creates Supplemental Figure 7: Adjusted Mutual Information across clustering methods 
+This creates Supplemental Figure 7: Adjusted Mutual Information across clustering methods
 """
 
 import numpy as np
@@ -58,7 +58,16 @@ def makeFigure():
             mutInfo[jj, ii] = mutInfo[ii, jj]
 
     sns.heatmap(mutInfo, ax=ax[0])
-    labels = ["Birch", "MeanShift", "k-means", "Affinity Propagation", "SpectralClustering", "Agglomerative Clustering—Ward", "Agglomerative Clustering—Average", "Agglomerative Clustering—Commplete", "DDMC"]
+    labels = [
+        "Birch",
+        "MeanShift",
+        "k-means",
+        "Affinity Propagation",
+        "SpectralClustering",
+        "Agglomerative Clustering—Ward",
+        "Agglomerative Clustering—Average",
+        "Agglomerative Clustering—Commplete",
+        "DDMC"]
     ax[0].set_xticklabels(labels, rotation=90)
     ax[0].set_yticklabels(labels, rotation=0)
 
