@@ -47,7 +47,7 @@ testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
 msresist/data/AXLmutants_RNAseq_merged.feather: msresist/data/AXLmutants_RNAseq_merged.feather.xz
-	xz -v -d $< $@
+	xz -vk -d $<
 
 %.pdf: %.ipynb
 	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
