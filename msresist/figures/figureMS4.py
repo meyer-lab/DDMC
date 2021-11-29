@@ -81,7 +81,7 @@ def plot_unclustered_LRcoef(ax, lr, d, y, z, title=False):
     w = pd.DataFrame()
     for _ in range(3):
         lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
-        w["Coefficients"] = lr.fit(d, y).coef_[0] 
+        w["Coefficients"] = lr.fit(d, y).coef_[0]
         w["p-sites"] = z.columns[2:]
         weights.append(w)
 
