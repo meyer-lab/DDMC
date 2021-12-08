@@ -11,13 +11,13 @@ from msresist.pre_processing import preprocessing, filter_NaNpeptides
 path = "/Users/creixell/Desktop/"
 
 
-def translate_geneIDs(X, labels, toID="entrezgene", export=False, outpath="GSEA_Input.csv"):
+def translate_geneIDs(X, labels, scopes="symbol", toID="entrezgene", export=False, outpath="GSEA_Input.csv"):
     """ Generate GSEA clusterProfiler input data. Translate gene accessions.
     In this case to ENTREZID by default. """
     X["Clusters"] = labels
     X.index = list(range(X.shape[0]))
     mg = mygene.MyGeneInfo()
-    gg = mg.querymany(list(X["Gene"]), scopes="symbol", fields=toID, species="human", returnall=False, as_dataframe=True)
+    gg = mg.querymany(list(X["Gene"]), scopes=scopes, fields=toID, species="human", returnall=False, as_dataframe=True)
     aa = dict(zip(list(gg.index), list(gg[toID])))
     for ii in range(X.shape[0]):
         X.loc[ii, "Gene"] = aa[X.loc[ii, "Gene"]]

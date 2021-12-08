@@ -20,13 +20,13 @@ from ..clustering import MassSpecClustering
 from ..motifs import KinToPhosphotypeDict
 from ..binomial import AAlist
 from ..plsr import R2Y_across_components
-from .figure1 import import_phenotype_data, formatPhenotypesForModeling
+from .figure1 import import_phenotype_data, formatPhenotypesForModeling, plot_AllSites
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 6), (2, 4), multz={0: 1, 2: 1})
+    ax, f = getSetup((10, 9), (3, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -37,11 +37,12 @@ def makeFigure():
 
     # Import siganling data
     X = preprocessing(AXLm_ErlAF154=True, Vfilter=True, FCfilter=True, log2T=True, mc_row=True)
+    X = X.rename(columns={"PC9 A":"WT", "KO A":"KO", "Kd A":"KDead", "KI A":"KI","M4 A": "Y634F", "M5 A":"Y643F", "M7 A":"Y698F", "M10 A":"Y726F", "M11 A":"Y750F", "M15 A":"Y821F"})
     d = X.select_dtypes(include=['float64']).T
     i = X.select_dtypes(include=['object'])
 
     # Fit DDMC
-    ddmc = MassSpecClustering(i, ncl=5, SeqWeight=2, distance_method="PAM250").fit(d)
+    ddmc = MassSpecClustering(i, ncl=5, SeqWeight=2, distance_method="PAM250", random_state=5).fit(d)
     centers = ddmc.transform()
 
     # Import phenotypes
@@ -58,19 +59,35 @@ def makeFigure():
     # Mass spec clustermap
     ax[1].axis("off")
 
+    # AXL sites
+    plot_AllSites(ax[2], X, "AXL", "AXL", ylim=False)
+    ax[2].legend(prop={'size':8}, loc="upper left")
+
+    # Cluster Centers
+    c = pd.DataFrame(ddmc.transform()).T
+    c.columns = X.columns[7:]
+    c["Cluster"] = [1, 2, 3, 4, 5]
+    m = pd.melt(c, id_vars=["Cluster"], value_vars=list(c.columns), value_name="p-signal", var_name="Lines")
+    m["p-signal"] = m["p-signal"].astype("float64")
+    sns.set_context("paper", rc={'lines.linewidth': 1}) 
+    palette ={1: "C0", 2: "C1", 3: "C2", 4: "C3", 5: "k"}
+    sns.pointplot(ax=ax[3] , x="Lines", y="p-signal", data=m, hue="Cluster", palette=palette, dashes=False, **{"linewidth": 0})
+    ax[3].legend(prop={"size":8})
+    ax[3].set_xticklabels(c.columns[:-1], rotation=45)
+
     # Predictions
     Xs, models = ComputeCenters(X, d, i, ddmc, 5)
     Xs.append(centers)
     models.append("DDMC mix")
-    plotStripActualVsPred(ax[2], [3, 4, 2, 3, 4], Xs, y, models)
+    plotStripActualVsPred(ax[4], [3, 4, 2, 3, 4], Xs, y, models)
 
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[5:7], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
 
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[5], num_hits=10)
+    plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[7], num_hits=10)
 
     return f
 
@@ -113,7 +130,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     c_gmm = ddmc_data.transform()
 
     # DDMC seq
-    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 20, distance_method=ddmc.distance_method, random_state=ddmc.random_state).fit(d)
+    ddmc_seq = MassSpecClustering(i, ncl=ncl, SeqWeight=ddmc.SeqWeight + 100, distance_method=ddmc.distance_method, random_state=ddmc.random_state).fit(d)
     ddmc_seq_c = ddmc_seq.transform()
 
     # DDMC mix

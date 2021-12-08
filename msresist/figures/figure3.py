@@ -107,14 +107,14 @@ def MeanTRs(X):
 
 def plotHyerGeomTestDasDRGenes(ax):
     """Data from https://systems.crump.ucla.edu/hypergeometric/index.php where:
-    - N = common peptides across both expts
+    - N = 33 peptides across both expts
     - M = cluster 4 among N
     - s = das responding among N
     - k = overlap
     Counts generated using GenerateHyperGeomTestParameters()."""
     hg = pd.DataFrame()
     hg["Cluster"] = np.arange(5) + 1
-    hg["p_value"] = [0.160, 0.260, 0.013, 0.578, 0.0328]
+    hg["p_value"] = [0.527, 0.003, 0.002, 0.404, 0.557]
     sns.barplot(data=hg, x="Cluster", y="p_value", ax=ax, color="darkblue", **{"linewidth": 1}, **{"edgecolor": "black"})
     ax.set_title("Enrichment of Das-responsive Peptides")
     ax.set_ylim((0, 0.55))

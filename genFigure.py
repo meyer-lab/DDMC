@@ -49,7 +49,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "2":
         # Overlay Figure 2 heatmap
         overlayCartoon(fdir + 'figure2.svg',
-                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 560, 0, scalee=0.09)
+                       f'{cartoon_dir}/AXL_MS_heatmap.svg', 500, 0, scalee=0.30)
 
     if sys.argv[1] == 'M2':
         # Overlay Figure missingness cartoon

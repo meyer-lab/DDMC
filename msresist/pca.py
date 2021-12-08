@@ -63,9 +63,12 @@ def plotPCA(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, styl
         ax[1].axvline(0, ls='--', color='lightgrey')
 
 
-def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores", annotateScores=False):
+def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_scores=None, style_scores=None, pvals=None, style_load=None, legendOut=False, plot="scores", annotateScores=False, method="PCA", pcX="PC1", pcY="PC2"):
     """Plot PCA scores only"""
-    pp = PCA(n_components=n_components)
+    if method == "PCA":
+        pp = PCA(n_components=n_components)
+    else:
+        pp = NMF(n_components=n_components, max_iter=10000, solver="mu", beta_loss="frobenius", init='nndsvdar')
     dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]).values)
     dLoad_ = pp.components_
     dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
@@ -73,15 +76,15 @@ def plotPCA_scoresORloadings(ax, d, n_components, scores_ind, loadings_ind, hue_
 
     # Scores
     if plot == "scores":
-        sns.scatterplot(x="PC1", y="PC2", data=dScor_, hue=hue_scores, style=style_scores, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
+        sns.scatterplot(x=pcX, y=pcY, data=dScor_, hue=hue_scores, style=style_scores, ax=ax, **{"linewidth": 0.5, "edgecolor": "k"})
         ax.set_title("PCA Scores")
-        ax.set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-        ax.set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+        ax.set_xlabel(pcX + "(" + str(int(varExp[int(pcX[-1]) -1] * 100)) + "%)", fontsize=10)
+        ax.set_ylabel(pcY + "(" + str(int(varExp[int(pcY[-1]) -1] * 100)) + "%)", fontsize=10)
         if legendOut:
             ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0, labelspacing=0.2, prop={'size': 8})
         if annotateScores:
             for j, txt in enumerate(d[scores_ind[0]]):
-                ax.annotate(txt, (dScor_["PC1"][j] + 0.001, dScor_["PC2"][j] + 0.001), fontsize=10)
+                ax.annotate(txt, (dScor_[pcX][j] + 0.001, dScor_[pcY][j] + 0.001), fontsize=10)
 
     # Loadings
     elif plot == "loadings":
