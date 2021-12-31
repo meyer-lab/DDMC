@@ -12,7 +12,7 @@ from ..pre_processing import preprocessing
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((12, 5), (2, 5))
+    ax, f = getSetup((12, 4), (1, 5))
 
     # Add subplot labels
     subplotLabel(ax)
@@ -26,13 +26,9 @@ def makeFigure():
     data = X.select_dtypes(include=['float64']).T
     info = X.select_dtypes(include=['object'])
     model = MassSpecClustering(info, 5, SeqWeight=2, distance_method="PAM250").fit(X=data)
-    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
-
-    # Centers
-    plotCenters(ax[:5], model, lines)
 
     # Plot motifs
     pssms, _ = model.pssms(PsP_background=True)
-    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[5:10], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[0, 11])
+    plotMotifs([pssms[0], pssms[1], pssms[2], pssms[3], pssms[4]], axes=ax[:5], titles=["Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"], yaxis=[0, 11])
 
     return f
