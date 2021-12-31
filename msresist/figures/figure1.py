@@ -31,7 +31,7 @@ itp = 24
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((16, 12), (4, 4), multz={0: 1, 3: 1})
+    ax, f = getSetup((16, 12), (3, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -45,48 +45,23 @@ def makeFigure():
     red = import_phenotype_data(phenotype="Cell Death")
     sw = import_phenotype_data(phenotype="Migration")
     c = import_phenotype_data(phenotype="Island")
+    y = formatPhenotypesForModeling(cv, red, sw, c)
 
     # AXL mutants cartoon
     ax[0].axis("off")
 
-    # AXL expression data
-    axl = pd.read_csv("msresist/data/Phenotypic_data/AXLmutants/AXLexpression.csv")
-    axl = pd.melt(axl, value_vars=["AXL", "GFP"], id_vars="AXL mutants Y—>F", value_name="% Cells", var_name="Signal")
-    sns.barplot(data=axl, x="AXL mutants Y—>F", y="% Cells", hue="Signal", ax=ax[1], palette=sns.xkcd_palette(["white", "darkgreen"]), **{"linewidth": 0.5}, **{"edgecolor": "black"})
-    ax[1].set_title("Ectopic AXL expression")
-    ax[1].legend(prop={'size': 8})
+    # Phenotypes diagram
+    ax[1].axis("off")
 
-    # Migration images
-    ax[2].axis("off")
-
-    # Islands images
-    ax[3].axis("off")
+    # Heatmaps
+    plot_phenotype_heatmap(ax[2], y[["Lines", "Treatment", "Viability"]])
+    plot_phenotype_heatmap(ax[3], y[["Lines", "Treatment", "Apoptosis"]])
+    plot_phenotype_heatmap(ax[4], y[["Lines", "Treatment", "Migration"]])
+    plot_phenotype_heatmap(ax[5], y[["Lines", "Treatment", "Island"]])
 
     # PCA phenotypes
     y = formatPhenotypesForModeling(cv, red, sw, c)
-    plotPCA(ax[4:6], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
-
-    # Labels
-    tr1 = ["-UT", "-E", "-A/E"]
-    tr2 = ["Untreated", "Erlotinib", "Erl + AF154"]
-
-    # Cell Viability
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y698F", ax_=ax[6], ylim=[0.8, 3.5], title="Viability Y698F")
-    IndividualTimeCourses(cv, 96, all_lines, tr1, tr2, "fold-change confluency", TimePointFC=itp, TreatmentFC="-E", plot="Y821F", ax_=ax[7], ylim=[0.8, 3.5], title="Viability Y821F")
-
-    # Cell Death
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y821F", ax_=ax[8], ylim=[0, 13], title="Death Y821F")
-    IndividualTimeCourses(red, 96, all_lines, tr1, tr2, "fold-change apoptosis (YOYO+)", TimePointFC=itp, plot="Y750F", ax_=ax[9], ylim=[0, 13], title="Death Y750F")
-
-    # Cell Migration
-    t1 = ["UT", "AF", "-E", "A/E"]
-    t2 = ["Untreated", "AF154", "Erlotinib", "Erl + AF154"]
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y726F", ax_=ax[10], title="Migration Y726F")
-    IndividualTimeCourses(sw, 24, all_lines, t1, t2, "RWD %", plot="Y821F", ax_=ax[11], title="Migration Y821F")
-
-    # Island Effect
-    PlotRipleysK('48hrs', 'M7', ['ut', 'e', 'ae'], 6, ax=ax[12], title="Island Y726F")
-    PlotRipleysK('48hrs', 'M4', ['ut', 'e', 'ae'], 6, ax=ax[13], title="Island Y750F")
+    plotPCA(ax[6:8], y, 3, ["Lines", "Treatment"], "Phenotype", hue_scores="Lines", style_scores="Treatment", legendOut=True)
 
     return f
 
@@ -394,7 +369,7 @@ def plotVarReplicates(ax, ABC, Set_CorrCoefFilter=False, StdFilter=False):
     ax[1].text(0.75, 0.96, textstr, transform=ax[1].transAxes, verticalalignment="top", bbox=props)
 
 
-def plot_AllSites(ax, x, prot, title, ylim=False):
+def plot_AllSites(ax, x, prot, title, ylim=False, type="Heatmap"):
     """ Plot all phosphopeptides for a given protein. """
     x = x.set_index(["Gene"])
     peptides = pd.DataFrame(x.loc[prot])
@@ -406,21 +381,28 @@ def plot_AllSites(ax, x, prot, title, ylim=False):
         d = peptides.select_dtypes(include=["float64"])
 
     positions = x.loc[prot]["Position"]
+    d = d.reset_index().drop("Gene", axis=1)
+    d.columns = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
 
-    colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
-    for i in range(peptides.shape[0]):
-        if peptides.shape[0] == 1:
-            label = positions
-        else:
-            label = positions[i]
-        ax.plot(d.iloc[i, :], label=label, color=colors_[i])
+    if type == "Heatmap":
+        d.insert(0, "Positions", list(positions))
+        g = sns.clustermap(d.set_index("Positions"), robust=True, cmap="bwr", figsize=(5, 5))
+        plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
 
-    ax.legend(loc=0)
-    lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F", "Y821F"]
-    ax.set_xticklabels(lines, rotation=45)
-    ax.set_ylabel("$Log2$ (p-site)")
-    ax.set_title(title)
-    ax.legend(prop={'size': 8})
+    else:
+        colors_ = cm.rainbow(np.linspace(0, 1, peptides.shape[0]))
+        for i in range(peptides.shape[0]):
+            if peptides.shape[0] == 1:
+                label = positions
+            else:
+                label = positions[i]
+            ax.plot(d.iloc[i, :], label=label, color=colors_[i])
+
+        ax.legend(loc=0)
+        ax.set_xticklabels(lines, rotation=45)
+        ax.set_ylabel("$Log2$ (p-site)")
+        ax.set_title(title)
+        ax.legend(prop={'size': 8})
 
     if ylim:
         ax.set_ylim(ylim)
@@ -480,3 +462,11 @@ def selectpeptides(x, koi):
     ms = pd.concat(l, axis=1).T.reset_index()
     ms.columns = x.reset_index().columns
     return ms
+
+
+def plot_phenotype_heatmap(ax, d):
+    """Make phenotype heatmap"""
+    phe = pd.concat([d.iloc[:10, 0], d.iloc[:10, -1], d.iloc[10:20, -1], d.iloc[20:, -1]], axis=1)
+    phe.columns = ["Cell Lines", "UT", "Erlotinib", "Erl + AF154"]
+    sns.heatmap(phe.set_index("Cell Lines"), robust=True, cmap="bwr", ax=ax)
+    ax.set_yticklabels(phe["Cell Lines"], rotation=0)

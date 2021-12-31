@@ -9,7 +9,6 @@ import matplotlib
 import textwrap
 import mygene
 from scipy.stats import mannwhitneyu
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests

@@ -187,7 +187,9 @@ def plot_siRNA_TimeLapse(ax, target, time=96, itp=24, trs=2):
 
 
 def plot_pAblSrcYap(ax):
-    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127.
+    Here, dose responses look great, and there's a consistent difference between WT and KO in p-YAP 
+    but controls are missing."""
     mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/DasatinibDR_newMEK_lysisbuffer.csv")
     mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line", "Lysis_Buffer"], value_vars=["p-MEK", "p-YAP", "p-ABL", "p-SRC"], var_name="Protein", value_name="p-Signal")
     mfi_YAP = pd.read_csv("msresist/data/Validations/Luminex/DasatinibDR_pYAP127_check.csv")
@@ -213,32 +215,34 @@ def plot_pAblSrcYap(ax):
     ax[2].set_xticklabels(yap["Treatment"][:6], rotation=90)
 
 
-def plot_pAblSrcYap2(ax, line="WT"):
-    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+def plot_pAblSrcYap2(ax):
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127.
+    Here, despite some outliers, SRC and YAP look good, but ABL's signal is really low."""
     mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/ABL_SRC_YAP_DasDR.csv")
     mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line"], value_vars=["p-YAP S127", "p-SRC Y416", "p-ABL Y245"], var_name="Protein", value_name="p-Signal")
-    mfi_AS = mfi_AS[mfi_AS["Line"] == line]
 
     abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL Y245")]
     src = mfi_AS[(mfi_AS["Protein"] == "p-SRC Y416")]
     yap = mfi_AS[(mfi_AS["Protein"] == "p-YAP S127")]
 
-    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", ax=ax[0])
+    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", hue="Line", ax=ax[0])
     a.set_title("p-ABL Y245")
     a.set_xticklabels(a.get_xticklabels(), rotation=90)
-    s = sns.barplot(data=src, x="Treatment", y="p-Signal", ax=ax[1])
+    s = sns.barplot(data=src, x="Treatment", y="p-Signal", hue="Line", ax=ax[1])
     s.set_title("p-SRC Y416")
     s.set_xticklabels(s.get_xticklabels(), rotation=90)
-    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2])
+    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", hue="Line", ax=ax[2])
     y.set_title("p-YAP S127")
     y.set_xticklabels(y.get_xticklabels(), rotation=90)
 
 
-def plot_pAblSrcYap3(ax, line="WT"):
-    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127."""
+def plot_pAblSrcYap3(ax, exp="New"):
+    """Plot luminex p-signal of p-ABL, p-SRC, and p-YAP 127.
+    Here, we have data for two protocols 'old' vs 'new'. Both show decent dose responses
+    except ABL in KO cells. There appears to be no difference between p-YAP in WT vs KO. """
     mfi_AS = pd.read_csv("msresist/data/Validations/Luminex/20210730 ABL_SRC_YAP_DasDR 2_20210730_182250.csv")
     mfi_AS = pd.melt(mfi_AS, id_vars=["Treatment", "Line", "Experiment"], value_vars=["p-YAP S127", "p-SRC Y416", "p-ABL Y245"], var_name="Protein", value_name="p-Signal")
-    mfi_AS = mfi_AS[mfi_AS["Line"] == line]
+    mfi_AS = mfi_AS[mfi_AS["Experiment"] == exp]
 
     abl = mfi_AS[(mfi_AS["Protein"] == "p-ABL Y245")]
     abl["Treatment"] = [t.replace("A", "(A)") for t in abl["Treatment"]]
@@ -247,13 +251,13 @@ def plot_pAblSrcYap3(ax, line="WT"):
     yap = mfi_AS[(mfi_AS["Protein"] == "p-YAP S127")]
     yap["Treatment"] = [t.replace("A", "(A)") for t in yap["Treatment"]]
 
-    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", ax=ax[0], hue="Experiment")
+    a = sns.barplot(data=abl, x="Treatment", y="p-Signal", ax=ax[0], hue="Line")
     a.set_title("p-ABL Y245")
     a.set_xticklabels(a.get_xticklabels(), rotation=90)
-    s = sns.barplot(data=src, x="Treatment", y="p-Signal", ax=ax[1], hue="Experiment")
+    s = sns.barplot(data=src, x="Treatment", y="p-Signal", ax=ax[1], hue="Line")
     s.set_title("p-SRC Y416")
     s.set_xticklabels(s.get_xticklabels(), rotation=90)
-    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2], hue="Experiment")
+    y = sns.barplot(data=yap, x="Treatment", y="p-Signal", ax=ax[2], hue="Line")
     y.set_title("p-YAP S127")
     y.set_xticklabels(y.get_xticklabels(), rotation=90)
 

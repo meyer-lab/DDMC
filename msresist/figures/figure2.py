@@ -26,7 +26,7 @@ from .figure1 import import_phenotype_data, formatPhenotypesForModeling
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((14, 6), (2, 4), multz={0: 1, 2: 1})
+    ax, f = getSetup((14, 12), (3, 3), multz={0: 1})
 
     # Add subplot labels
     subplotLabel(ax)
@@ -41,7 +41,7 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     # Fit DDMC
-    ddmc = MassSpecClustering(i, ncl=5, SeqWeight=2, distance_method="PAM250").fit(d)
+    ddmc = MassSpecClustering(i, ncl=5, SeqWeight=2, distance_method="PAM250", random_state=5).fit(d)
     centers = ddmc.transform()
 
     # Import phenotypes
@@ -58,19 +58,26 @@ def makeFigure():
     # Mass spec clustermap
     ax[1].axis("off")
 
+    # AXL p-sites clustermap
+    # plot_AllSites("", X, "AXL", "AXL", ylim=False, type="Heatmap")
+    ax[2].axis("off")
+
+    # Centers
+    plotCenters_together(ddmc, X, ax[3])
+
     # Predictions
     Xs, models = ComputeCenters(X, d, i, ddmc, 5)
     Xs.append(centers)
     models.append("DDMC mix")
-    plotStripActualVsPred(ax[2], [3, 4, 2, 3, 4], Xs, y, models)
+    plotStripActualVsPred(ax[4], [3, 4, 2, 3, 4], Xs, y, models)
 
     # Scores & Loadings
     lines = ["WT", "KO", "KD", "KI", "Y634F", "Y643F", "Y698F", "Y726F", "Y750F ", "Y821F"]
     plsr = PLSRegression(n_components=4)
-    plotScoresLoadings(ax[3:5], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
+    plotScoresLoadings(ax[5:7], plsr.fit(centers, y), centers, y, ddmc.n_components, lines, pcX=1, pcY=2)
 
     # Plot upstream kinases heatmap
-    plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[5], num_hits=10)
+    plotDistanceToUpstreamKinase(ddmc, [1, 2, 3, 4, 5], ax[7], num_hits=10)
 
     return f
 
@@ -231,7 +238,8 @@ def plotScoresLoadings(ax, model, X, Y, ncl, treatments, pcX=1, pcY=2, data="clu
     ax[1].axvline(x=0, color="0.25", linestyle="--")
 
 
-def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
+def plotCenters_individually(ax, model, xlabels, yaxis=False, drop=False):
+    """Plot Cluster Centers separately in different subplots"""
     centers = pd.DataFrame(model.transform()).T
     centers.columns = xlabels
     if drop:
@@ -250,6 +258,17 @@ def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
         ax[i].set_title("Cluster " + str(centers.index[i] + 1) + " Center " + "(" + "n=" + str(num_peptides[i]) + ")")
         if yaxis:
             ax[i].set_ylim([yaxis[0], yaxis[1]])
+
+def plotCenters_together(ddmc, X, ax):
+    """Plot Cluster Centers together in same plot"""
+    centers = pd.DataFrame(ddmc.transform()).T
+    centers.columns = X.columns[7:]
+    centers["Cluster"] = [1, 2, 3, 4, 5]
+    m = pd.melt(centers, id_vars=["Cluster"], value_vars=list(centers.columns), value_name="p-signal", var_name="Lines")
+    m["p-signal"] = m["p-signal"].astype("float64")
+    sns.set_context("paper", rc={'lines.linewidth': 1}) 
+    palette ={1: "C0", 2: "C1", 3: "C2", 4: "C3", 5: "k"}
+    sns.pointplot(x="Lines", y="p-signal", data=m, hue="Cluster", ax=ax, palette=palette, dashes=False, **{"linewidth": 0})
 
 
 def plotMotifs(pssms, axes, titles=False, yaxis=False):
@@ -421,3 +440,15 @@ def label_point(X, model, clusters, pspl, ax, n_neighbors=5):
         a.columns = ["val", "x", "y"]
         for _, point in a.iterrows():
             ax.text(point['x'] + .02, point['y'], str(point['val']))
+
+
+def MS_clustermap_svg(X):
+    """Export SVG clustermap of MS data."""
+    import matplotlib.pyplot as plt
+    X.insert(0, "Peptide", [g + ": " + p for g, p in zip(X["Gene"], X["Position"])])
+    dd = X.set_index("Peptide").select_dtypes(include=[float])
+    dd.columns = ["WT", "KO", "KD", "KI", "Y634F", "643", "698", "726", "750", "821"]
+    sns.set(style="whitegrid", font_scale=1.25, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
+    sns.clustermap(dd.drop("WT", axis=1).T, method="centroid", cmap="bwr", robust=True, figsize=(10, 6))
+    plt.xlabel("AXL Y—F mutants")
+    plt.savefig("MS_hm.svg")
