@@ -11,7 +11,7 @@ output/biol/figure%.svg: venv genFigure.py msresist/figures/figure%.py
 
 venv: venv/bin/activate
 
-venv/bin/activate: requirements.txt msresist/data/AXLmutants_RNAseq_merged.feather
+venv/bin/activate: requirements.txt msresist/data/RNAseq/AXLmutants_RNAseq_merged.feather
 	test -d venv || virtualenv venv
 	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
 	touch venv/bin/activate
