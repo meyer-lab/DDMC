@@ -31,14 +31,14 @@ def makeFigure():
 
     assert np.all(np.isfinite(d))
 
-    methods = [Birch(n_clusters=15),
+    methods = [Birch(n_clusters=30),
                MeanShift(),
-               KMeans(n_clusters=15),
+               KMeans(n_clusters=30),
                AffinityPropagation(),
-               SpectralClustering(n_clusters=15, affinity="nearest_neighbors"),
-               AgglomerativeClustering(n_clusters=15),
-               AgglomerativeClustering(n_clusters=15, linkage="average"),
-               AgglomerativeClustering(n_clusters=15, linkage="complete")]
+               SpectralClustering(n_clusters=30, affinity="nearest_neighbors"),
+               AgglomerativeClustering(n_clusters=30),
+               AgglomerativeClustering(n_clusters=30, linkage="average"),
+               AgglomerativeClustering(n_clusters=30, linkage="complete")]
 
     labelsOut = np.empty((d.shape[1], len(methods) + 1), dtype=int)
 
