@@ -46,7 +46,7 @@ figprofile: venv
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
-msresist/data/AXLmutants_RNAseq_merged.feather: msresist/data/AXLmutants_RNAseq_merged.feather.xz
+msresist/data/AXLmutants_RNAseq_merged.feather: msresist/data/RNAseq/AXLmutants_RNAseq_merged.feather.xz
 	xz -vk -d $<
 
 %.pdf: %.ipynb
