@@ -27,9 +27,6 @@ figprofile: venv
 testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
-%.pdf: %.ipynb
-	. venv/bin/activate && jupyter nbconvert --execute --ExecutePreprocessor.timeout=6000 --to pdf $< --output $@
-
 clean:
 	rm -rf *.pdf venv pylint.log
 	git checkout HEAD -- output
