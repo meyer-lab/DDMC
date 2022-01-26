@@ -10,11 +10,10 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from msresist.clustering import MassSpecClustering
-from .common import subplotLabel, getSetup
+from msresist.clustering import DDMC
+from .common import subplotLabel, getSetup, find_patients_with_NATandTumor
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
-from .figureM4 import find_patients_with_NATandTumor
 
 
 def makeFigure():
@@ -37,7 +36,7 @@ def makeFigure():
     i = X.select_dtypes(include=['object'])
 
     assert np.all(np.isfinite(d))
-    model_min = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial").fit(d)
+    model_min = DDMC(i, ncl=30, SeqWeight=100, distance_method="Binomial").fit(d)
 
     centers_min = pd.DataFrame(model_min.transform()).T
     centers_min.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers_min.iloc[:, :])
@@ -47,7 +46,7 @@ def makeFigure():
     centers_min = find_patients_with_NATandTumor(centers_min.copy(), "Patient_ID", conc=True)
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial").fit(d)
+    model = DDMC(i, ncl=30, SeqWeight=100, distance_method="Binomial").fit(d)
 
     # Find and scale centers
     centers = pd.DataFrame(model.transform()).T
@@ -109,7 +108,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y, lr, gene_label):
     plotROC(ax[3], lr, c_kmeansT.values, y, cv_folds=folds, title="k-means " + gene_label)
 
     # Run GMM
-    gmm = MassSpecClustering(i, ncl=30, SeqWeight=0, distance_method="Binomial", random_state=15).fit(d, "NA")
+    gmm = DDMC(i, ncl=30, SeqWeight=0, distance_method="Binomial", random_state=15).fit(d, "NA")
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
     c_gmm["Patient_ID"] = X.columns[4:]

@@ -1,10 +1,10 @@
 flist = $(wildcard msresist/figures/figureM*.py)
 
-all: $(patsubst msresist/figures/figure%.py, output/method/figure%.svg, $(flist))
+all: $(patsubst msresist/figures/figure%.py, output/figure%.svg, $(flist))
 
 # Figure rules
-output/method/figure%.svg: venv genFigure.py msresist/figures/figure%.py
-	mkdir -p output/method
+output/figure%.svg: venv genFigure.py msresist/figures/figure%.py
+	mkdir -p output
 	. venv/bin/activate && ./genFigure.py $*
 
 venv: venv/bin/activate

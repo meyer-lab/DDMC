@@ -9,9 +9,7 @@ import matplotlib
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import subplotLabel, getSetup
-from .figureM5 import build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
-from .figure2 import plotDistanceToUpstreamKinase
+from .common import subplotLabel, getSetup, plotDistanceToUpstreamKinase, build_pval_matrix, calculate_mannW_pvals, plot_clusters_binaryfeatures
 from ..clustering import MassSpecClustering
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides

@@ -7,7 +7,7 @@ from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
 from .common import subplotLabel, getSetup
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
 
@@ -28,37 +28,31 @@ def makeFigure():
     ax[0].axis("off")
 
     # Imputation error across Cluster numbers
-    # dataC_W0 = ErrorAcross("Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
-    # ax[1].set_ylim(10.5, 12)
-    # print("1/6 done.")
-    # dataC_W25 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    # dataC_W0.iloc[:, 2] = 1250
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
-    # ax[2].set_ylim(10.5, 12)
-    # print("2/6")
-    # dataC_W100 = ErrorAcross("Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
-    # ax[3].set_ylim(10.5, 12)
-    # print("3/6")
+    dataC_W0 = ErrorAcross("Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
+    ax[1].set_ylim(10.5, 12)
+    dataC_W25 = ErrorAcross("Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    dataC_W0.iloc[:, 2] = 1250
+    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
+    ax[2].set_ylim(10.5, 12)
+    dataC_W100 = ErrorAcross("Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
+    ax[3].set_ylim(10.5, 12)
 
     # Imputation error across different Weights
-    # weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    # dataW_2C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
-    # dataW_2C.replace(1000000, 1250)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
-    # ax[4].set_ylim(10.5, 12)
-    # print("4/6")
-    # dataW_20C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
-    # dataW_20C.replace(1000000, 1250)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
-    # ax[5].set_ylim(10.5, 12)
-    # print("5/6")
-    # dataW_40C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
-    # dataW_40C.replace(1000000, 1250)
-    # plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
-    # ax[6].set_ylim(10.5, 12)
-    # print("6/6")
+    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
+    dataW_2C = ErrorAcross("Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3)
+    dataW_2C.replace(1000000, 1250)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
+    ax[4].set_ylim(10.5, 12)
+    dataW_20C = ErrorAcross("Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3)
+    dataW_20C.replace(1000000, 1250)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
+    ax[5].set_ylim(10.5, 12)
+    dataW_40C = ErrorAcross("Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3)
+    dataW_40C.replace(1000000, 1250)
+    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
+    ax[6].set_ylim(10.5, 12)
 
     return f
 
@@ -112,7 +106,7 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
         baseline_errors = ComputeBaselineErrors(X, Xmiss)
 
         for jj, cluster in enumerate(n_clusters):
-            model = MassSpecClustering(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
+            model = DDMC(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
             eDDMC = np.nansum(np.square(X - model.impute(Xmiss)))
             dfs = pd.Series([ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns)
             df = df.append(dfs, ignore_index=True)

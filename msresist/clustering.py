@@ -16,13 +16,13 @@ from fancyimpute import SoftImpute
 # pylint: disable=W0201
 
 
-class MassSpecClustering(GaussianMixture):
+class DDMC(GaussianMixture):
     """ Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment. """
 
-    def __init__(self, info, ncl, SeqWeight, distance_method, random_state=None):
-        super().__init__(n_components=ncl, covariance_type="diag", n_init=2, max_iter=200, tol=1e-4, random_state=random_state)
+    def __init__(self, info, n_components, SeqWeight, distance_method, random_state=None):
+        super().__init__(n_components=n_components, covariance_type="diag", n_init=2, max_iter=200, tol=1e-4, random_state=random_state)
 
         self.info = info
         self.SeqWeight = SeqWeight

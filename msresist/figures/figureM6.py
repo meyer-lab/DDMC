@@ -11,13 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from bioinfokit import visuz
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
-from .figure2 import plotDistanceToUpstreamKinase
-from .figureM4 import find_patients_with_NATandTumor
-from .figureM5 import plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, plot_enriched_processes
 from ..logistic_regression import plotROC, plotClusterCoefficients
-from .common import subplotLabel, getSetup
+from .common import subplotLabel, getSetup, plotDistanceToUpstreamKinase, plot_clusters_binaryfeatures, build_pval_matrix, calculate_mannW_pvals, find_patients_with_NATandTumor
 
 
 def makeFigure():
@@ -38,7 +35,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
+    model = DDMC(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
     # Import Genotype data
     mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")

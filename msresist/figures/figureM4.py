@@ -7,10 +7,9 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
-from ..clustering import MassSpecClustering
-from .common import subplotLabel, getSetup
+from ..clustering import DDMC
+from .common import subplotLabel, getSetup, find_patients_with_NATandTumor, TransformCenters, merge_binary_vectors, HotColdBehavior
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
 
@@ -39,9 +38,9 @@ def makeFigure():
     ax[0].legend(prop={'size': 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
-    dataM = MassSpecClustering(i, ncl=30, SeqWeight=0, distance_method="Binomial", random_state=5).fit(d)
-    mixM = MassSpecClustering(i, ncl=30, SeqWeight=250, distance_method="Binomial", random_state=5).fit(d)
-    seqM = MassSpecClustering(i, ncl=30, SeqWeight=1e6, distance_method="Binomial", random_state=5).fit(d)
+    dataM = DDMC(i, ncl=30, SeqWeight=0, distance_method="Binomial", random_state=5).fit(d)
+    mixM = DDMC(i, ncl=30, SeqWeight=250, distance_method="Binomial", random_state=5).fit(d)
+    seqM = DDMC(i, ncl=30, SeqWeight=1e6, distance_method="Binomial", random_state=5).fit(d)
     models = [dataM, mixM, seqM]
 
     # Center to peptide distance
@@ -74,7 +73,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, ncl=35):
         for r in range(nRuns):
             run.append(r)
             ws.append(w)
-            model = MassSpecClustering(i, ncl=ncl, SeqWeight=w, distance_method="Binomial").fit(d)
+            model = DDMC(i, ncl=ncl, SeqWeight=w, distance_method="Binomial").fit(d)
 
             # Find and scale centers
             centers_gen, centers_hcb = TransformCenters(model, X)
@@ -143,68 +142,3 @@ def boxplot_TotalPositionEnrichment(models, ax):
     sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
     sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax, fliersize=0)
     ax.set_title("Cumulative PSSM Enrichment")
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
-
-
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped."""
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
-
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_Normal" for i in xN.columns]
-        X.columns = [str(i) + "_Tumor" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X
-
-
-def TransformCenters(model, X):
-    """For a given model, find centers and transform for regression."""
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.iloc[:, :])
-    centers = centers.T
-    centers.columns = np.arange(model.n_components) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers1 = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    centers2 = centers.loc[~centers["Patient_ID"].str.endswith(".N"), :].sort_values(by="Patient_ID").set_index("Patient_ID")
-    return centers1, centers2
-
-
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    return y, centers

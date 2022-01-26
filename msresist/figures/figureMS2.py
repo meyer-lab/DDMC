@@ -6,10 +6,9 @@ import matplotlib
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from .common import subplotLabel, getSetup
-from .figure2 import plotMotifs
+from .common import getSetup, plotMotifs
 from ..pre_processing import filter_NaNpeptides
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 
 
 def makeFigure():
@@ -26,7 +25,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
+    model = DDMC(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
     pssms, cl_num = model.pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 5)

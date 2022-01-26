@@ -8,11 +8,10 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
-from ..clustering import MassSpecClustering
-from .common import subplotLabel, getSetup
+from ..clustering import DDMC
+from .common import subplotLabel, getSetup, TumorType
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
-from .figureM5 import TumorType
 
 
 def makeFigure():
@@ -43,7 +42,7 @@ def makeFigure():
 
     # DDMC ROC
     ncl = 30
-    model = MassSpecClustering(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
+    model = DDMC(i, ncl=ncl, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
     lr = LogisticRegressionCV(cv=3, solver="saga", max_iter=10000, n_jobs=-1, penalty="elasticnet", l1_ratios=[0.85], class_weight="balanced")
     plotROC(ax[2], lr, model.transform(), y, cv_folds=4, return_mAUC=False)
     ax[2].set_title("DDMC ROC")
@@ -64,7 +63,7 @@ def makeFigure():
     ax[3].set_title("k-means ROC")
 
     # GMM
-    gmm = MassSpecClustering(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
+    gmm = DDMC(i, ncl=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
