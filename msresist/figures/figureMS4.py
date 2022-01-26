@@ -27,7 +27,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import data
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
     i = X.select_dtypes(include=['object'])
     X["Gene/Pos"] = X["Gene"] + ": " + X["Position"]

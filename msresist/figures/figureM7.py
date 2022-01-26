@@ -28,14 +28,14 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import signaling data
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
     model = MassSpecClustering(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.n_components) + 1
@@ -73,7 +73,7 @@ def makeFigure():
 
 def FormatXYmatrices(centers):
     """Make sure Y matrix has the same matching samples has the signaling centers"""
-    y = pd.read_csv("msresist/data/MS/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
+    y = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC/Hot_Cold.csv").dropna(axis=1).sort_values(by="Sample ID")
     y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
     l1 = list(centers.index)
     l2 = list(y.index)

@@ -29,7 +29,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1.2, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
 
     # Fit DDMC to complete data
     d = np.array(X.select_dtypes(include=['float64']).T)
@@ -58,7 +58,7 @@ def makeFigure():
 
     # Predicting STK11
     lr = LogisticRegressionCV(cv=5, solver="saga", max_iter=10000, n_jobs=-1, penalty="l1", class_weight="balanced", random_state=10)
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
+    mutations = pd.read_csv("msresist/data/CPTAC_LUAD/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)

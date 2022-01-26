@@ -17,7 +17,7 @@ from ..pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((5, 5), (2, 2), multz={0: 1})
+    ax, f = getSetup((8, 4), (1, 3))
 
     # Add subplot labels
     subplotLabel(ax)
@@ -26,15 +26,16 @@ def makeFigure():
     matplotlib.rcParams['font.sans-serif'] = "Arial"
     sns.set(style="whitegrid", font_scale=0.5, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
     i = X.select_dtypes(include=[object])
 
     # Plot mean AUCs per model
-    p = pd.read_csv("msresist/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
-    p.iloc[-3:, 1] = 1250
-    xx = pd.melt(p, id_vars=["Run", "Weight"], value_vars=p.columns[2:], value_name="AUC", var_name="Phenotypes")
-    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    p = pd.read_csv("msresist/data/Validations/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
+    p = p.melt(id_vars=["Run", "Weight"], value_vars=d.columns[2:], value_name="p-signal", var_name="Phenotype")
+    out = d[(d["Weight"] == 0) | (d["Phenotype"] == "STK11") & (d["Weight"] == 1000) | (d["Phenotype"] == "EGFRm/ALKf") & (d["Weight"] == 250) | (d["Phenotype"] == "Infiltration") & (d["Weight"] == 250)]
+    out["Model"] = ["DDMC" if s != 0 else "GMM" for s in out["Weight"]]
+    sns.barplot(data=out, x="Phenotype", y="p-signal", hue="Model", ci=68, ax=ax[0])
     ax[0].legend(prop={'size': 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
@@ -59,7 +60,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, ncl=35):
     i = X.select_dtypes(include=[object])
 
     # Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
+    mutations = pd.read_csv("msresist/data/CPTAC_LUAD/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
     y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
@@ -102,7 +103,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, ncl=35):
 def barplot_PeptideToClusterDistances(models, ax, n=3000):
     """Compute and plot p-signal-to-center and motif to cluster distance for n peptides across weights."""
     # Import signaling data, select random peptides, and find cluster assignments
-    X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+    X = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, tmt=2)
     random_peptides = np.random.choice(list(np.arange(len(models[0].labels()))), n, replace=False)
     X["labels0"] = models[0].labels()

@@ -23,7 +23,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Signaling
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], cut=1)
 
     # Fit DDMC to complete data
     d = np.array(X.select_dtypes(include=['float64']).T)

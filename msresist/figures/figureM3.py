@@ -53,7 +53,7 @@ def makeFigure():
     ax[3].axis("off")
 
     # AKT substrates bar plot
-    plot_NetPhoresScoreByKinGroup("msresist/data/cluster_analysis/MCF7_NKIN_CL16.csv", ax[4], title="Cluster 16—Kinase Predictions", n=40)
+    plot_NetPhoresScoreByKinGroup("msresist/data/Validations/MCF7_NKIN_CL16.csv", ax[4], title="Cluster 16—Kinase Predictions", n=40)
 
     # # ERK2 White lab motif
     erk2 = pd.read_csv("msresist/data/Validations/Computational/ERK2_substrates.csv")
@@ -64,7 +64,7 @@ def makeFigure():
 
     # ERK2 prediction
     # Import signaling data
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
     i = X.select_dtypes(include=[object])
 

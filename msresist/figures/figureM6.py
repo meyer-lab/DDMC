@@ -30,7 +30,7 @@ def makeFigure():
     sns.set(style="whitegrid", font_scale=1, color_codes=True, palette="colorblind", rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6})
 
     # Import signaling data
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=2)
     d = X.select_dtypes(include=[float]).T
     i = X.select_dtypes(include=[object])
 
@@ -38,7 +38,7 @@ def makeFigure():
     model = DDMC(i, ncl=30, SeqWeight=100, distance_method="Binomial", random_state=5).fit(d)
 
     # Import Genotype data
-    mutations = pd.read_csv("msresist/data/MS/CPTAC/Patient_Mutations.csv")
+    mutations = pd.read_csv("msresist/data/CPTAC_LUAD/Patient_Mutations.csv")
     mOI = mutations[["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]]
     y = mOI[~mOI["Sample.ID"].str.contains("IR")]
 
@@ -91,7 +91,7 @@ def make_EGFRvolcano_plot(centers, y):
     """ Make volcano plot with differential protein expression between EGFRm and WT. """
     y = y.drop("C3N.00545")
     centers = centers.drop("C3N.00545")
-    prot = pd.read_csv("msresist/data/MS/CPTAC/CPTAC_LUAD_Protein.csv").iloc[:, 15:].dropna().drop("id.1", axis=1).drop_duplicates()
+    prot = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC_LUAD_Protein.csv").iloc[:, 15:].dropna().drop("id.1", axis=1).drop_duplicates()
     prot = prot.set_index("GeneSymbol").T.sort_index().reset_index()
     prot = prot[~prot["index"].str.endswith(".N")].set_index("index")
     prot.columns.name = None

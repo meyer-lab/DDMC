@@ -88,12 +88,12 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
 def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
     """ Calculate missingness error across different number of clusters. """
     assert len(weights) == len(n_clusters)
-    X = filter_NaNpeptides(pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
+    X = filter_NaNpeptides(pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:], tmt=tmt)
     X.index = np.arange(X.shape[0])
     md = X.copy()
     info = md.select_dtypes(include=['object'])
     X = X.select_dtypes(include=['float64'])
-    StoE = pd.read_csv("msresist/data/MS/CPTAC/IDtoExperiment.csv")
+    StoE = pd.read_csv("msresist/data/CPTAC_LUAD/IDtoExperiment.csv")
     assert all(StoE.iloc[:, 0] == X.columns), "Sample labels don't match."
     X = X.to_numpy()
     tmtIDX = StoE["Experiment (TMT10plex)"].to_numpy()
