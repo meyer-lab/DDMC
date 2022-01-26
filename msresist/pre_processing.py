@@ -72,12 +72,12 @@ def preprocessing(
 
 def preprocessCPTAC():
     """ Replace patient identifiers, fill NaNs, and make it compatible with current code. """
-    X = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/CPTAC3_Lung_Adeno_Carcinoma_Phosphoproteome.phosphopeptide.tmt10.csv"))
+    X = pd.read_csv(os.path.join(path, "./data/CPTAC_LUAD/CPTAC3_Lung_Adeno_Carcinoma_Phosphoproteome.phosphopeptide.tmt10.csv"))
     d = X.iloc[:, 1:-3]
     X = pd.concat([X.iloc[:, 0], X.iloc[:, -3:], d.loc[:, d.columns.str.contains("CPT")]], axis=1)
     X = filter_NaNpeptides(X, cut=0.2)
 
-    n = pd.read_csv(os.path.join(path, "./data/MS/CPTAC/S046_BI_CPTAC3_LUAD_Discovery_Cohort_Samples_r1_May2019.csv"))
+    n = pd.read_csv(os.path.join(path, "./data/CPTAC_LUAD/S046_BI_CPTAC3_LUAD_Discovery_Cohort_Samples_r1_May2019.csv"))
     bi_id = list(n[~n["Broad Sample.ID"].str.contains("IR")].iloc[:, 1])
     X.columns = ["Sequence"] + list(X.columns[1:4]) + bi_id
 
@@ -103,7 +103,7 @@ def FindIdxValues(X):
     data = X.select_dtypes(include=["float64"])
     idx = np.argwhere(~np.isnan(data.values))
     idx[:, 1] += 4  # add ID variable columns
-    StoE = pd.read_csv("msresist/data/MS/CPTAC/IDtoExperiment.csv")
+    StoE = pd.read_csv("msresist/data/CPTAC_LUAD/IDtoExperiment.csv")
     assert all(StoE.iloc[:, 0] == data.columns), "Sample labels don't match."
     StoE = StoE.iloc[:, 1].values
     tmt = [[StoE[idx[ii][1] - 4]] for ii in range(idx.shape[0])]
