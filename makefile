@@ -1,6 +1,6 @@
-flist = $(wildcard msresist/figures/figure*.py)
+flist = $(wildcard msresist/figures/figureM*.py)
 
-all: $(patsubst msresist/figures/figure%.py, output/figure%.svg, $(flist))
+all: $(patsubst msresist/figures/figure%.py, output/method/figure%.svg, $(flist))
 
 # Figure rules
 output/method/figure%.svg: venv genFigure.py msresist/figures/figure%.py
