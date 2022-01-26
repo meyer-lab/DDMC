@@ -11,7 +11,7 @@ jobs:
       run: git submodule update --init --recursive
     - name: Install dependencies
       run: |
-        git submodule update --init --recursive && make clean
+        make clean
         make venv
     - name: Test with pytest
       run: |
