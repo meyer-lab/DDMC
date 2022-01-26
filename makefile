@@ -21,6 +21,4 @@ testcover: venv
 	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
 
 clean:
-	rm -rf *.pdf venv pylint.log
-	git checkout HEAD -- output
-	git clean -ffdx output
+	rm -rf *.pdf venv pylint.log output
