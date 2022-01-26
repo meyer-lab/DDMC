@@ -10,7 +10,7 @@ from collections import Counter
 from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 
-X = pd.read_csv("msresist/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+X = pd.read_csv("msresist/data/CPTAC_LUAD/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 X = filter_NaNpeptides(X, tmt=25)
 d = X.select_dtypes(include=['float64']).T
 i = X.select_dtypes(include=['object'])
