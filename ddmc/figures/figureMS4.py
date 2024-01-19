@@ -8,7 +8,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
@@ -49,7 +49,7 @@ def makeFigure():
 
     # DDMC ROC
     ncl = 30
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=ncl, SeqWeight=100, distance_method="Binomial", random_state=5
     ).fit(d)
     lr = LogisticRegressionCV(
@@ -80,7 +80,7 @@ def makeFigure():
     ax[3].set_title("k-means ROC")
 
     # GMM
-    gmm = MassSpecClustering(
+    gmm = DDMC(
         i, n_components=ncl, SeqWeight=0, distance_method="Binomial"
     ).fit(d)
     x_ = X.copy()

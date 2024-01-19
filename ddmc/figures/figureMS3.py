@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from .common import subplotLabel, getSetup
 from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
 from ..pre_processing import filter_NaNpeptides
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..logistic_regression import plotROC
 
 
@@ -61,7 +61,7 @@ def makeFigure():
     folds = 5
     weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = MassSpecClustering(
+        model = DDMC(
             i, n_components=30, SeqWeight=w, distance_method="Binomial"
         ).fit(d)
 

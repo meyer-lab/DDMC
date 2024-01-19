@@ -19,10 +19,7 @@ def preprocessing(
     Vfilter=False,
     FCfilter=False,
     log2T=False,
-    FCtoUT=False,
     rawdata=False,
-    mc_row=True,
-    mc_col=False,
     corrCut=0.5,
 ):
     """Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
@@ -93,8 +90,9 @@ def preprocessing(
     FCto = data_headers[0]
     X = Log2T(pd.concat(filesin))
 
-    if mc_row or mc_col:
-        X = MeanCenter(X, mc_row, mc_col)
+    # mean center rows
+    numeric_cols = X.select_dtypes(include=["float64"]).columns
+    X[numeric_cols] = X[numeric_cols].sub(X[numeric_cols].mean(axis=1), axis=0)
 
     fullnames, genes = FormatName(X)
     X["Protein"] = fullnames
@@ -118,10 +116,7 @@ def preprocessing(
         X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.40)
 
     if not log2T:
-        if FCtoUT:
-            X = LinearFoldChange(X, data_headers, FCto)
-        if not FCtoUT:
-            X = Linear(X, data_headers)
+        X = Linear(X, data_headers)
 
     return X
 
@@ -180,7 +175,7 @@ def FindIdxValues(X):
 
 def MergeDfbyMean(X, values, indices):
     """Compute mean across duplicates."""
-    return pd.pivot_table(X, values=values, index=indices, aggfunc=np.mean)
+    return pd.pivot_table(X, values=values, index=indices, aggfunc="mean")
 
 
 def LinearFoldChange(X, data_headers, FCto):
@@ -207,16 +202,6 @@ def Log2T(X):
     """Convert to log2 scale keeping original sign."""
     data_headers = X.select_dtypes(include=["float64"]).columns
     X[data_headers] = np.log2(X[data_headers])
-    return X
-
-
-def MeanCenter(X, mc_row, mc_col):
-    """Mean centers each row of values. logT also optionally log2-transforms."""
-    data_headers = X.select_dtypes(include=["float64"]).columns
-    if mc_row:
-        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=1), axis=0)
-    if mc_col:
-        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=0), axis=1)
     return X
 
 
@@ -357,7 +342,7 @@ def TripsMeanAndStd(triplicates, merging_indices, data_headers):
     meaning we have 2 values for each condition (eg within Erlotinib -> Mean | Std)."""
     func_tri = {}
     for i in triplicates[data_headers].columns:
-        func_tri[i] = np.mean, np.std
+        func_tri[i] = "mean", "std"
     X = pd.pivot_table(
         triplicates,
         values=triplicates[data_headers].columns,

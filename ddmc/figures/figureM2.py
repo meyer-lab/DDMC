@@ -7,7 +7,7 @@ from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
 from .common import subplotLabel, getSetup
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
 
@@ -153,7 +153,7 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
         baseline_errors = ComputeBaselineErrors(X, Xmiss)
 
         for jj, cluster in enumerate(n_clusters):
-            model = MassSpecClustering(info, cluster, weights[jj], distance_method).fit(
+            model = DDMC(info, cluster, weights[jj], distance_method).fit(
                 Xmiss.T
             )
             eDDMC = np.nansum(np.square(X - model.impute(Xmiss)))

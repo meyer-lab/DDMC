@@ -10,7 +10,7 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from ddmc.clustering import MassSpecClustering
+from ddmc.clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
@@ -46,7 +46,7 @@ def makeFigure():
     i = X.select_dtypes(include=["object"])
 
     assert np.all(np.isfinite(d))
-    model_min = MassSpecClustering(
+    model_min = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial"
     ).fit(d)
 
@@ -62,7 +62,7 @@ def makeFigure():
     )
 
     # Fit DDMC
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial"
     ).fit(d)
 
@@ -163,7 +163,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y, lr, gene_label):
     )
 
     # Run GMM
-    gmm = MassSpecClustering(
+    gmm = DDMC(
         i, n_components=30, SeqWeight=0, distance_method="Binomial", random_state=15
     ).fit(d, "NA")
     x_["Cluster"] = gmm.labels()

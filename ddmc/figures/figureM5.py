@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from ..figures.figure2 import plotDistanceToUpstreamKinase
@@ -48,7 +48,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 
@@ -282,55 +282,3 @@ def build_pval_matrix(ncl, pvals):
             signif.append("NS")
     data["Significant"] = signif
     return data
-
-
-def ExportClusterFile(cluster, cptac=False, mcf7=False):
-    """Export cluster SVG file for NetPhorest and GO analysis."""
-    if cptac:
-        c = pd.read_csv(
-            "ddmc/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster"
-            + str(cluster)
-            + ".csv"
-        )
-    if mcf7:
-        c = pd.read_csv(
-            "ddmc/data/cluster_members/ddmc/data/cluster_members/CPTAC_MF7_20CL_W5_MembersCluster"
-            + str(cluster)
-            + ".csv"
-        )
-    c["pos"] = [s.split(s[0])[1].split("-")[0] for s in c["Position"]]
-    c["res"] = [s[0] for s in c["Position"]]
-    c.insert(4, "Gene_Human", [s + "_HUMAN" for s in c["Gene"]])
-    c = c.drop(["Position"], axis=1)
-    drop_list = [
-        "NHSL2",
-        "MAGI3",
-        "SYNC",
-        "LMNB2",
-        "PLS3",
-        "PI4KA",
-        "SYNM",
-        "MAP2",
-        "MIA2",
-        "SPRY4",
-        "KSR1",
-        "RUFY2",
-        "MAP11",
-        "MGA",
-        "PRR12",
-        "PCLO",
-        "NCOR2",
-        "BNIP3",
-        "CENPF",
-        "OTUD4",
-        "RPA1",
-        "CLU",
-        "CDK18",
-        "CHD1L",
-        "DEF6",
-        "MAST4",
-        "SSR3",
-    ]
-    for gene in drop_list:
-        c = c[c["Gene"] != gene]
-    c.to_csv("Cluster_" + str(cluster) + ".csv")

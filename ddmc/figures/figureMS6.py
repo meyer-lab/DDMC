@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from .figure2 import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
@@ -47,7 +47,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 

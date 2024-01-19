@@ -14,7 +14,7 @@ from sklearn.cluster import (
     MeanShift,
     AgglomerativeClustering,
 )
-from ddmc.clustering import MassSpecClustering
+from ddmc.clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
 from sklearn.metrics import adjusted_mutual_info_score
@@ -65,7 +65,7 @@ def makeFigure():
         labelsOut[:, ii] = m.labels_
 
     labelsOut[:, -1] = (
-        MassSpecClustering(
+        DDMC(
             i,
             n_components=30,
             SeqWeight=100,
