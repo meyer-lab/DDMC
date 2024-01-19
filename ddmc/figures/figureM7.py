@@ -15,7 +15,7 @@ from .figureM5 import (
     calculate_mannW_pvals,
     plot_clusters_binaryfeatures,
 )
-from .figure2 import plotDistanceToUpstreamKinase
+from .commmon import plotDistanceToUpstreamKinase
 from ..clustering import DDMC
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides

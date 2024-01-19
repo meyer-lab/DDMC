@@ -16,7 +16,7 @@ from statsmodels.stats.multitest import multipletests
 from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from ..figures.figure2 import plotDistanceToUpstreamKinase
+from .common import plotDistanceToUpstreamKinase
 from ..pca import plotPCA
 from ..pre_processing import filter_NaNpeptides
 

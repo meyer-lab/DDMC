@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
-from .figure2 import plotDistanceToUpstreamKinase
+from .common import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
 from .figureM5 import (
     plot_clusters_binaryfeatures,
