@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from ..pca import plotPCA
@@ -41,7 +41,7 @@ def makeFigure():
     i = x.select_dtypes(include=[object])
 
     # Fit DDMC and find centers
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=20, SeqWeight=5, distance_method="Binomial", random_state=10
     ).fit(d)
     centers = pd.DataFrame(model.transform())
@@ -101,7 +101,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model_cptac = MassSpecClustering(
+    model_cptac = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 

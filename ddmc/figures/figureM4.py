@@ -9,7 +9,7 @@ import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
@@ -54,13 +54,13 @@ def makeFigure():
     ax[0].legend(prop={"size": 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
-    dataM = MassSpecClustering(
+    dataM = DDMC(
         i, n_components=30, SeqWeight=0, distance_method="Binomial", random_state=5
     ).fit(d)
-    mixM = MassSpecClustering(
+    mixM = DDMC(
         i, n_components=30, SeqWeight=250, distance_method="Binomial", random_state=5
     ).fit(d)
-    seqM = MassSpecClustering(
+    seqM = DDMC(
         i, n_components=30, SeqWeight=1e6, distance_method="Binomial", random_state=5
     ).fit(d)
     models = [dataM, mixM, seqM]
@@ -104,7 +104,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
         for r in range(nRuns):
             run.append(r)
             ws.append(w)
-            model = MassSpecClustering(
+            model = DDMC(
                 i, n_components=ncl, SeqWeight=w, distance_method="Binomial"
             ).fit(d)
 

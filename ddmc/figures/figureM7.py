@@ -16,7 +16,7 @@ from .figureM5 import (
     plot_clusters_binaryfeatures,
 )
 from .figure2 import plotDistanceToUpstreamKinase
-from ..clustering import MassSpecClustering
+from ..clustering import DDMC
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides
 
@@ -48,7 +48,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Fit DDMC
-    model = MassSpecClustering(
+    model = DDMC(
         i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 
