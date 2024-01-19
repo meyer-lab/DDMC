@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from .common import subplotLabel, getSetup
-from .figure2 import plotMotifs
+from .common import plotMotifs
 from ..pre_processing import filter_NaNpeptides
 from ..clustering import DDMC
 

@@ -12,115 +12,6 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 
 ###-------------------------- Pre-processing MS data --------------------------###
-def preprocessing(
-    AXLwt_GF=False,
-    AXLm_ErlAF154=False,
-    AXL_Das_DR=False,
-    Vfilter=False,
-    FCfilter=False,
-    log2T=False,
-    rawdata=False,
-    corrCut=0.5,
-):
-    """Input: Raw MS bio-replicates. Output: Mean-centered merged data set.
-    1. Concatenation, 2. log-2 transformation, 3. Mean-Center, 4. Merging, 5. Fold-change,
-    6. Filters: 'Vfilter' filters by correlation when 2 overlapping peptides or std cutoff if >= 3.
-    Note 1: 'motifs' redefines peptide sequences as XXXXXyXXXXX which affects merging.
-    Note 2: Data is converted back to linear scale before filtering so 'log2T=True' to use log-scale for analysis.
-    Note 3: CPTAC is already normalized, so: mc_row and mc_col = False"""
-    filesin = list()
-
-    if AXLwt_GF:
-        filesin.append(
-            pd.read_csv(
-                os.path.join(
-                    path,
-                    "./data/MS/GrowthFactors/20180817_JG_AM_TMT10plex_R1_psms_raw.csv",
-                )
-            )
-        )
-        filesin.append(
-            pd.read_csv(
-                os.path.join(
-                    path,
-                    "./data/MS/GrowthFactors/20190214_JG_AM_PC9_AXL_TMT10_AC28_R2_PSMs_raw.csv",
-                )
-            )
-        )
-        filesin.append(
-            pd.read_csv(
-                os.path.join(path, "./data/MS/GrowthFactors/CombinedBR3_TR1&2_raw.csv")
-            )
-        )
-    if AXLm_ErlAF154:
-        filesin.append(
-            pd.read_csv(
-                os.path.join(
-                    path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR1_raw_wAcc.csv"
-                )
-            )
-        )
-        filesin.append(
-            pd.read_csv(
-                os.path.join(
-                    path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR3_raw_wAcc.csv"
-                )
-            )
-        )
-        filesin.append(
-            pd.read_csv(
-                os.path.join(
-                    path, "./data/MS/AXL/PC9_mutants_ActivatingAb_BR4_raw_wAcc.csv"
-                )
-            )
-        )
-    if AXL_Das_DR:
-        filesin.append(
-            pd.read_csv(
-                "ddmc/data/Validations/Experimental/MassSpec/06232021-DasDR_BR1_raw.csv"
-            ).iloc[:, 1:]
-        )
-        filesin.append(
-            pd.read_csv(
-                "ddmc/data/Validations/Experimental/MassSpec/06232021-DasDR_BR2_raw.csv"
-            ).iloc[:, 1:]
-        )
-
-    data_headers = list(filesin[0].select_dtypes(include=["float64"]).columns)
-    FCto = data_headers[0]
-    X = Log2T(pd.concat(filesin))
-
-    # mean center rows
-    numeric_cols = X.select_dtypes(include=["float64"]).columns
-    X[numeric_cols] = X[numeric_cols].sub(X[numeric_cols].mean(axis=1), axis=0)
-
-    fullnames, genes = FormatName(X)
-    X["Protein"] = fullnames
-    X.insert(3, "Gene", genes)
-    merging_indices = list(X.select_dtypes(include=["object"]).columns)
-
-    if rawdata:
-        return X
-
-    X = MapMotifs(X, genes)
-    merging_indices.insert(3, "Position")
-
-    if Vfilter:
-        X = VFilter(X, merging_indices, data_headers, corrCut=corrCut, stdCut=0.6)
-
-    X = MergeDfbyMean(X.copy(), data_headers, merging_indices).reset_index()[
-        merging_indices + data_headers
-    ]
-
-    if FCfilter:
-        X = FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.40)
-
-    if not log2T:
-        X = Linear(X, data_headers)
-
-    return X
-
-
 def preprocessCPTAC():
     """Replace patient identifiers, fill NaNs, and make it compatible with current code."""
     X = pd.read_csv(
@@ -350,6 +241,16 @@ def TripsMeanAndStd(triplicates, merging_indices, data_headers):
         aggfunc=func_tri,
     )
     return X.reset_index()
+
+
+def MeanCenter(X, mc_row, mc_col):
+    """ Mean centers each row of values. logT also optionally log2-transforms. """
+    data_headers = X.select_dtypes(include=["float64"]).columns
+    if mc_row:
+        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=1), axis=0)
+    if mc_col:
+        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=0), axis=1)
+    return X
 
 
 def FilterByRange(X, rangeCut=0.4):

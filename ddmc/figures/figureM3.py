@@ -10,7 +10,7 @@ from ..clustering import DDMC
 from ..validations import preprocess_ebdt_mcf7
 from .common import subplotLabel, getSetup
 from ..pca import plotPCA
-from .figure2 import plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
+from .common import plotDistanceToUpstreamKinase, plotMotifs, ShuffleClusters
 from .figureM5 import plot_NetPhoresScoreByKinGroup
 from ..clustering import compute_control_pssm
 from ..binomial import AAlist

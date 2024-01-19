@@ -4,11 +4,13 @@ Testing file for the clustering methods by data and sequence.
 
 import pytest
 import numpy as np
+import pandas as pd
 from ..clustering import DDMC
-from ..pre_processing import preprocessing
+from ..pre_processing import filter_NaNpeptides
 
 
-X = preprocessing(AXLwt_GF=True, Vfilter=True, FCfilter=True, log2T=True)
+X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
+X = filter_NaNpeptides(X, tmt=25)
 data = X.select_dtypes(include=["float64"]).T
 info = X.select_dtypes(include=["object"])
 
