@@ -187,7 +187,8 @@ class DDMC(GaussianMixture):
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
 
             # Normalize to background PSSM to account for AA frequencies per position
-            pssm /= back_pssm.copy()
+            with np.seterr(divide='ignore', invalid='ignore'):
+                pssm /= back_pssm.copy()
 
             # Log2 transform
             pssm = np.ma.log2(pssm)
