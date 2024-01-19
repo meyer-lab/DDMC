@@ -61,9 +61,7 @@ def makeFigure():
     folds = 5
     weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = DDMC(
-            i, n_components=30, SeqWeight=w, distance_method="Binomial"
-        ).fit(d)
+        model = DDMC(i, n_components=30, SeqWeight=w, distance_method="Binomial").fit(d)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
