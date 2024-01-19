@@ -14,3 +14,6 @@ coverage.xml:
 
 clean:
 	rm -rf *.pdf pylint.log output
+
+mypy:
+	poetry run mypy --install-types --non-interactive --ignore-missing-imports ddmc

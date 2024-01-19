@@ -6,15 +6,13 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install dependencies
-      run: |
-        make clean
-        make venv
+      run: poetry install
     - name: Build figures
       run: make -j 3 all
     - name: Upload files
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: files
         path: output

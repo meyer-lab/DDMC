@@ -3,14 +3,10 @@
 import glob
 import pandas as pd
 import numpy as np
-import os
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
 from .binomial import AAlist
-
-
-path = os.path.dirname(os.path.abspath(__file__))
 
 
 def MapMotifs(X, names):
@@ -153,7 +149,7 @@ def GeneratingKinaseMotifs(names, seqs):
     """Main function to generate motifs using 'findmotif'."""
     motif_size = 5
     proteome = open(
-        os.path.join(path, "./data/Sequence_analysis/proteome_uniprot2019.fa"), "r"
+        "./data/Sequence_analysis/proteome_uniprot2019.fa", "r"
     )
     ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
     protnames, seqs, Xidx = MatchProtNames(ProteomeDict, names, seqs)

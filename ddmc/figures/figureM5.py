@@ -238,7 +238,6 @@ def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):
         dodge=True,
         ax=ax,
         linewidth=0.25,
-        fliersize=2,
     )
     ax.legend(prop={"size": 8}, loc=loc)
 

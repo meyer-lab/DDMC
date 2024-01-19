@@ -2,10 +2,7 @@
 All functions relaed to GSEA analysis of clusters
 """
 
-import pickle
-import pandas as pd
 import mygene
-from ddmc.pre_processing import preprocessing, filter_NaNpeptides
 
 
 path = "/Users/creixell/Desktop/"

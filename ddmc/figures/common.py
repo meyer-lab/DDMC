@@ -9,9 +9,7 @@ import seaborn as sns
 import svgutils.transform as st
 import numpy as np
 import pandas as pd
-import scipy as sp
 import seaborn as sns
-import textwrap
 import mygene
 from matplotlib import gridspec, pyplot as plt
 from string import ascii_uppercase
@@ -468,13 +466,13 @@ def ExportClusterFile(cluster, cptac=False, mcf7=False):
     """Export cluster SVG file for NetPhorest and GO analysis."""
     if cptac:
         c = pd.read_csv(
-            "msresist/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster"
+            "ddmc/data/cluster_members/CPTAC_DDMC_35CL_W100_MembersCluster"
             + str(cluster)
             + ".csv"
         )
     if mcf7:
         c = pd.read_csv(
-            "msresist/data/cluster_members/msresist/data/cluster_members/CPTAC_MF7_20CL_W5_MembersCluster"
+            "ddmc/data/cluster_members/msresist/data/cluster_members/CPTAC_MF7_20CL_W5_MembersCluster"
             + str(cluster)
             + ".csv"
         )
@@ -622,7 +620,7 @@ def TransformCenters(model, X):
 def HotColdBehavior(centers):
     # Import Cold-Hot Tumor data
     y = (
-        pd.read_csv("msresist/data/CPTAC_LUAD/Hot_Cold.csv")
+        pd.read_csv("ddmc/data/CPTAC_LUAD/Hot_Cold.csv")
         .dropna(axis=1)
         .sort_values(by="Sample ID")
     )
