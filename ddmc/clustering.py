@@ -1,5 +1,6 @@
 """ Clustering functions. """
 
+from typing import Literal
 import warnings
 from copy import deepcopy
 import itertools
@@ -22,7 +23,12 @@ class DDMC(GaussianMixture):
     should have a larger effect on the peptide assignment."""
 
     def __init__(
-        self, info, n_components, SeqWeight, distance_method, random_state=None
+        self,
+        info: pd.DataFrame,
+        n_components: int,
+        SeqWeight: float,
+        distance_method: Literal["PAM250", "Binomial"],
+        random_state=None,
     ):
         super().__init__(
             n_components=n_components,
@@ -40,7 +46,7 @@ class DDMC(GaussianMixture):
         seqs = [s.upper() for s in info["Sequence"]]
 
         if distance_method == "PAM250":
-            self.seqDist = PAM250(seqs)
+            self.seqDist: PAM250 | Binomial = PAM250(seqs)
         elif distance_method == "Binomial":
             self.seqDist = Binomial(info["Sequence"], seqs)
         else:

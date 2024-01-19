@@ -9,13 +9,12 @@ import matplotlib
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import subplotLabel, getSetup
+from .common import subplotLabel, getSetup, plotDistanceToUpstreamKinase
 from .figureM5 import (
     build_pval_matrix,
     calculate_mannW_pvals,
     plot_clusters_binaryfeatures,
 )
-from .commmon import plotDistanceToUpstreamKinase
 from ..clustering import DDMC
 from ..logistic_regression import plotROC, plotClusterCoefficients
 from ..pre_processing import filter_NaNpeptides

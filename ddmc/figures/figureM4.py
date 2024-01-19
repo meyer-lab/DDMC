@@ -41,7 +41,7 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Plot mean AUCs per model
-    p = pd.read_csv("ddmc/data/Validations/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
+    p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
     p = p.melt(
         id_vars=["Run", "Weight"],
         value_vars=d.columns[2:],
@@ -110,7 +110,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
             run.append(r)
             ws.append(w)
             model = DDMC(
-                i, n_components=ncl, SeqWeight=w, distance_method="Binomial"
+                i, n_components=n_components, SeqWeight=w, distance_method="Binomial"
             ).fit(d)
 
             # Find and scale centers

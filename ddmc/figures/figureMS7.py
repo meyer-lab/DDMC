@@ -5,7 +5,6 @@ This creates Supplemental Figure 7: Predicting STK11 genotype using different cl
 import matplotlib
 import numpy as np
 import pandas as pd
-from scipy.sparse.construct import random
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
