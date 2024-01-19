@@ -19,9 +19,7 @@ i = X.select_dtypes(include=["object"])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_ClusterVar(distance_method):
     """Test minimum variance of output cluster centers"""
-    model = DDMC(i, 6, SeqWeight=3, distance_method=distance_method).fit(
-        X=d
-    )
+    model = DDMC(i, 6, SeqWeight=3, distance_method=distance_method).fit(X=d)
     centers = model.transform()
 
     # Get pairwise cluster distances

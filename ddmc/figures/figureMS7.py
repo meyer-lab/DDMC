@@ -46,9 +46,9 @@ def makeFigure():
     i = X.select_dtypes(include=["object"])
 
     assert np.all(np.isfinite(d))
-    model_min = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial"
-    ).fit(d)
+    model_min = DDMC(i, n_components=30, SeqWeight=100, distance_method="Binomial").fit(
+        d
+    )
 
     centers_min = pd.DataFrame(model_min.transform()).T
     centers_min.iloc[:, :] = StandardScaler(with_std=False).fit_transform(
@@ -62,9 +62,7 @@ def makeFigure():
     )
 
     # Fit DDMC
-    model = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial"
-    ).fit(d)
+    model = DDMC(i, n_components=30, SeqWeight=100, distance_method="Binomial").fit(d)
 
     # Find and scale centers
     centers = pd.DataFrame(model.transform()).T

@@ -244,7 +244,7 @@ def TripsMeanAndStd(triplicates, merging_indices, data_headers):
 
 
 def MeanCenter(X, mc_row, mc_col):
-    """ Mean centers each row of values. logT also optionally log2-transforms. """
+    """Mean centers each row of values. logT also optionally log2-transforms."""
     data_headers = X.select_dtypes(include=["float64"]).columns
     if mc_row:
         X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=1), axis=0)

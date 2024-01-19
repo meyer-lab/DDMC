@@ -80,9 +80,7 @@ def makeFigure():
     ax[3].set_title("k-means ROC")
 
     # GMM
-    gmm = DDMC(
-        i, n_components=ncl, SeqWeight=0, distance_method="Binomial"
-    ).fit(d)
+    gmm = DDMC(i, n_components=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T
