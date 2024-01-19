@@ -1,24 +1,16 @@
-flist = $(wildcard msresist/figures/figureM*.py)
+flist = $(wildcard ddmc/figures/figureM*.py)
 
-all: $(patsubst msresist/figures/figure%.py, output/method/figure%.svg, $(flist))
+all: $(patsubst ddmc/figures/figure%.py, output/figure%.svg, $(flist))
 
-# Figure rules
-output/method/figure%.svg: venv genFigure.py msresist/figures/figure%.py
-	mkdir -p output/method
-	. venv/bin/activate && ./genFigure.py $*
+output/figure%.svg: ddmc/figures/figure%.py
+	@ mkdir -p ./output
+	poetry run fbuild $*
 
-venv: venv/bin/activate
+test:
+	poetry run pytest -s -x -v
 
-venv/bin/activate: requirements.txt
-	test -d venv || virtualenv venv
-	. venv/bin/activate && pip install --prefer-binary -Uqr requirements.txt
-	touch venv/bin/activate
-
-test: venv
-	. venv/bin/activate && pytest -s -v -x msresist
-
-testcover: venv
-	. venv/bin/activate && pytest --junitxml=junit.xml --cov=msresist --cov-report xml:coverage.xml
+coverage.xml:
+	poetry run pytest --cov=ddmc --cov-report=xml
 
 clean:
-	rm -rf *.pdf venv pylint.log output
+	rm -rf *.pdf pylint.log output

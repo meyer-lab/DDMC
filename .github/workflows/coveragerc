@@ -1,4 +1,4 @@
 [run]
 
 omit = 
-  msresist/figures/*
+  ddmc/figures/*
