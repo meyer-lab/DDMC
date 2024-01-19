@@ -18,7 +18,7 @@ from ..pre_processing import filter_NaNpeptides
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((5, 5), (2, 2), multz={0: 1})
+    ax, f = getSetup((8, 4), (1, 3))
 
     # Add subplot labels
     subplotLabel(ax)
@@ -41,16 +41,21 @@ def makeFigure():
     i = X.select_dtypes(include=[object])
 
     # Plot mean AUCs per model
-    p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
-    p.iloc[-3:, 1] = 1250
-    xx = pd.melt(
-        p,
+    p = pd.read_csv("ddmc/data/Validations/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
+    p = p.melt(
         id_vars=["Run", "Weight"],
-        value_vars=p.columns[2:],
-        value_name="AUC",
-        var_name="Phenotypes",
+        value_vars=d.columns[2:],
+        value_name="p-signal",
+        var_name="Phenotype",
     )
-    sns.lineplot(data=xx, x="Weight", y="AUC", hue="Phenotypes", ax=ax[0])
+    out = d[
+        (d["Weight"] == 0)
+        | (d["Phenotype"] == "STK11") & (d["Weight"] == 1000)
+        | (d["Phenotype"] == "EGFRm/ALKf") & (d["Weight"] == 250)
+        | (d["Phenotype"] == "Infiltration") & (d["Weight"] == 250)
+    ]
+    out["Model"] = ["DDMC" if s != 0 else "GMM" for s in out["Weight"]]
+    sns.barplot(data=out, x="Phenotype", y="p-signal", hue="Model", ci=68, ax=ax[0])
     ax[0].legend(prop={"size": 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
