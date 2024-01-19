@@ -1,0 +1,20 @@
+name: Build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        make clean
+        make venv
+    - name: Build figures
+      run: make -j 3 all
+    - name: Upload files
+      uses: actions/upload-artifact@v2
+      with:
+        name: files
+        path: output

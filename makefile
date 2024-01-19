@@ -1,0 +1,16 @@
+flist = $(wildcard ddmc/figures/figureM*.py)
+
+all: $(patsubst ddmc/figures/figure%.py, output/figure%.svg, $(flist))
+
+output/figure%.svg: ddmc/figures/figure%.py
+	@ mkdir -p ./output
+	poetry run fbuild $*
+
+test:
+	poetry run pytest -s -x -v
+
+coverage.xml:
+	poetry run pytest --cov=ddmc --cov-report=xml
+
+clean:
+	rm -rf *.pdf pylint.log output
