@@ -36,7 +36,6 @@ def makeFigure():
     # Import data
     X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
     X = filter_NaNpeptides(X, cut=1)
-    i = X.select_dtypes(include=["object"])
     X["Gene/Pos"] = X["Gene"] + ": " + X["Position"]
     d = X.set_index("Gene/Pos").select_dtypes(include=["float64"]).T.reset_index()
     d.rename(columns={"index": "Patient_ID"}, inplace=True)
@@ -50,7 +49,11 @@ def makeFigure():
     # DDMC ROC
     ncl = 30
     model = DDMC(
-        i, n_components=ncl, SeqWeight=100, distance_method="Binomial", random_state=5
+        X["Sequence"],
+        n_components=ncl,
+        SeqWeight=100,
+        distance_method="Binomial",
+        random_state=5,
     ).fit(d)
     lr = LogisticRegressionCV(
         cv=3,
@@ -80,7 +83,9 @@ def makeFigure():
     ax[3].set_title("k-means ROC")
 
     # GMM
-    gmm = DDMC(i, n_components=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
+    gmm = DDMC(
+        X["Sequence"], n_components=ncl, SeqWeight=0, distance_method="Binomial"
+    ).fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T

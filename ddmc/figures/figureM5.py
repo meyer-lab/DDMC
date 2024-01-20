@@ -45,7 +45,7 @@ def makeFigure():
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Fit DDMC
     model = DDMC(
@@ -174,39 +174,6 @@ def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
     )
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
-
-
-def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royalblue"):
-    """Plot top scoring kinase groups"""
-    NPtoCumScore = {}
-    X = pd.read_csv(PathToFile)
-    for ii in range(X.shape[0]):
-        curr_NPgroup = X["netphorest_group"][ii]
-        if curr_NPgroup == "any_group":
-            continue
-        elif curr_NPgroup not in NPtoCumScore.keys():
-            NPtoCumScore[curr_NPgroup] = X["netphorest_score"][ii]
-        else:
-            NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
-    X = pd.DataFrame.from_dict(NPtoCumScore, orient="index").reset_index()
-    X.columns = ["KIN Group", "NetPhorest Score"]
-    X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
-    sns.stripplot(
-        data=X,
-        y="KIN Group",
-        x="NetPhorest Score",
-        ax=ax,
-        orient="h",
-        color=color,
-        size=5,
-        **{"linewidth": 1},
-        **{"edgecolor": "black"}
-    )
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Kinase Predictions")
 
 
 def TumorType(X):

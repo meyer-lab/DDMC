@@ -44,7 +44,7 @@ def makeFigure():
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Fit DDMC
     model = DDMC(

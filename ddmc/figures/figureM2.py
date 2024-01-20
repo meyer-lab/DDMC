@@ -124,7 +124,7 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
         ax.legend().remove()
 
 
-def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
+def ErrorAcross(distance_method, weights, n_clusters, n_runs: int = 1, tmt=6):
     """Calculate missingness error across different number of clusters."""
     assert len(weights) == len(n_clusters)
     X = filter_NaNpeptides(
@@ -132,8 +132,7 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
         tmt=tmt,
     )
     X.index = np.arange(X.shape[0])
-    md = X.copy()
-    info = md.select_dtypes(include=["object"])
+    info = X["Sequence"]
     X = X.select_dtypes(include=["float64"])
     StoE = pd.read_csv("ddmc/data/MS/CPTAC/IDtoExperiment.csv")
     assert all(StoE.iloc[:, 0] == X.columns), "Sample labels don't match."
@@ -141,18 +140,17 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
     tmtIDX = StoE["Experiment (TMT10plex)"].to_numpy()
     assert X.shape[1] == tmtIDX.size
 
-    df = pd.DataFrame(
-        columns=[
-            "N_Run",
-            "Clusters",
-            "Weight",
-            "DDMC",
-            "Average",
-            "Zero",
-            "Minimum",
-            "PCA",
-        ]
-    )
+    df_columns = [
+        "N_Run",
+        "Clusters",
+        "Weight",
+        "DDMC",
+        "Average",
+        "Zero",
+        "Minimum",
+        "PCA",
+    ]
+    df_list = []
 
     for ii in range(n_runs):
         Xmiss = IncorporateMissingValues(X, tmtIDX)
@@ -162,13 +160,11 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
             model = DDMC(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
             eDDMC = np.nansum(np.square(X - model.impute(Xmiss)))
             dfs = pd.Series(
-                [ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns
+                [ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df_columns
             )
-            print(df)
-            print(dfs)
-            df = pd.concat([df, dfs], ignore_index=True)
+            df_list.append(dfs)
 
-    return df
+    return pd.concat(df_list)
 
 
 def IncorporateMissingValues(X, tmtIDX):
@@ -180,7 +176,7 @@ def IncorporateMissingValues(X, tmtIDX):
     return X
 
 
-def ComputeBaselineErrors(X, d, ncomp=5):
+def ComputeBaselineErrors(X, d, ncomp: int = 5) -> tuple[float, float, float, float]:
     """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
     dmean = d.copy()
     np.copyto(dmean, np.nanmean(d, axis=0, keepdims=True), where=np.isnan(d))

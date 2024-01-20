@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from ..clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import subplotLabel, getSetup, HotColdBehavior
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
 
@@ -38,7 +38,9 @@ def makeFigure():
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
+
+    return f # TODO: This code is broken.
 
     # Plot mean AUCs per model
     p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
@@ -83,7 +85,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
@@ -273,29 +275,3 @@ def TransformCenters(model, X):
         .set_index("Patient_ID")
     )
     return centers1, centers2
-
-
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = (
-        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
-        .dropna(axis=1)
-        .sort_values(by="Sample ID")
-    )
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    return y, centers

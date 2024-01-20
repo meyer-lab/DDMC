@@ -69,7 +69,14 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 
 
 def plotROC(
-    ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False, kfold="Stratified"
+    ax,
+    classifier,
+    d,
+    y,
+    cv_folds: int = 4,
+    title: bool | str = False,
+    return_mAUC=False,
+    kfold="Stratified",
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     y = y.values

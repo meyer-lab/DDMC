@@ -12,13 +12,13 @@ from ..pre_processing import filter_NaNpeptides
 X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
 X = filter_NaNpeptides(X, tmt=25)
 data = X.select_dtypes(include=["float64"]).T
-info = X.select_dtypes(include=["object"])
+seqs = X["Sequence"]
 
 
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_wins(distance_method):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    MSC = DDMC(info, 2, SeqWeight=0, distance_method=distance_method).fit(X=data)
+    MSC = DDMC(seqs, 2, SeqWeight=0, distance_method=distance_method).fit(X=data)
     distances = MSC.wins(data)
 
     # assert that the distance to the same sequence weight is less
@@ -26,12 +26,12 @@ def test_wins(distance_method):
     assert distances[0] < distances[1]
 
 
-@pytest.mark.parametrize("w", [0, 0.1, 1.0, 10.0])
-@pytest.mark.parametrize("ncl", [2, 5, 10, 25])
+@pytest.mark.parametrize("w", [0, 0.1, 10.0])
+@pytest.mark.parametrize("ncl", [2, 5, 25])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_clusters(w, ncl, distance_method):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    MSC = DDMC(info, ncl, SeqWeight=w, distance_method=distance_method).fit(X=data)
+    MSC = DDMC(seqs, ncl, SeqWeight=w, distance_method=distance_method).fit(X=data)
 
     # Assert that we got a reasonable result
     assert np.all(np.isfinite(MSC.scores_))

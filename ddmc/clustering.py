@@ -14,9 +14,6 @@ from .motifs import PSPLdict, compute_control_pssm
 from fancyimpute import SoftImpute
 
 
-# pylint: disable=W0201
-
-
 class DDMC(GaussianMixture):
     """Cluster peptides by both sequence similarity and data behavior following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
@@ -24,7 +21,7 @@ class DDMC(GaussianMixture):
 
     def __init__(
         self,
-        info: pd.DataFrame,
+        sequences: pd.Series,
         n_components: int,
         SeqWeight: float,
         distance_method: Literal["PAM250", "Binomial"],
@@ -39,20 +36,20 @@ class DDMC(GaussianMixture):
             random_state=random_state,
         )
 
-        self.info = info
+        self.sequences = sequences
         self.SeqWeight = SeqWeight
         self.distance_method = distance_method
 
-        seqs = [s.upper() for s in info["Sequence"]]
+        seqs = sequences.str.upper().to_list()
 
         if distance_method == "PAM250":
             self.seqDist: PAM250 | Binomial = PAM250(seqs)
         elif distance_method == "Binomial":
-            self.seqDist = Binomial(info["Sequence"], seqs)
+            self.seqDist = Binomial(sequences, seqs)
         else:
             raise ValueError("Wrong distance type.")
 
-    def _estimate_log_prob(self, X):
+    def _estimate_log_prob(self, X: np.ndarray):
         """Estimate the log-probability of each point in each cluster."""
         logp = super()._estimate_log_prob(X)  # Do the regular work
 
@@ -62,7 +59,7 @@ class DDMC(GaussianMixture):
 
         return logp
 
-    def _m_step(self, X, log_resp):
+    def _m_step(self, X: np.ndarray, log_resp: np.ndarray):
         """M step.
         Parameters
         ----------
@@ -86,7 +83,7 @@ class DDMC(GaussianMixture):
         # Do sequence m step
         self.seqDist.from_summaries(np.exp(log_resp))
 
-    def fit(self, X, y=None):
+    def fit(self, X: np.ndarray | pd.DataFrame, y=None):
         """Compute EM clustering"""
         d = np.array(X.T)
 
@@ -132,12 +129,12 @@ class DDMC(GaussianMixture):
 
         return (dataDist, seqDist)
 
-    def transform(self):
+    def transform(self) -> np.ndarray:
         """Calculate cluster averages."""
         check_is_fitted(self, ["means_"])
         return self.means_.T
 
-    def impute(self, X):
+    def impute(self, X: np.ndarray) -> np.ndarray:
         """Impute a matching dataset."""
         X = X.copy()
         labels = self.labels()  # cluster assignments
@@ -157,7 +154,7 @@ class DDMC(GaussianMixture):
         """
         pssms, cl_num = [], []
         if PsP_background:
-            bg_seqs = BackgroundSeqs(self.info["Sequence"])
+            bg_seqs = BackgroundSeqs(self.sequences)
             back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
@@ -171,7 +168,7 @@ class DDMC(GaussianMixture):
 
             # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
-            for jj, seq in enumerate(self.info["Sequence"]):
+            for jj, seq in enumerate(self.sequences):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii - 1]
@@ -187,8 +184,9 @@ class DDMC(GaussianMixture):
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
 
             # Normalize to background PSSM to account for AA frequencies per position
-            with np.seterr(divide='ignore', invalid='ignore'):
-                pssm /= back_pssm.copy()
+            old_settings = np.seterr(divide="ignore", invalid="ignore")
+            pssm /= back_pssm.copy()
+            np.seterr(**old_settings)
 
             # Log2 transform
             pssm = np.ma.log2(pssm)
@@ -198,7 +196,7 @@ class DDMC(GaussianMixture):
             pssm.index = AAlist
 
             # Normalize phosphoacceptor position to frequency
-            df = pd.DataFrame(self.info["Sequence"].str.upper())
+            df = pd.DataFrame(self.sequences.str.upper())
             df["Cluster"] = self.labels()
             clSeq = df[df["Cluster"] == ii]["Sequence"]
             clSeq = pd.DataFrame(frequencies(clSeq)).T
@@ -236,24 +234,24 @@ class DDMC(GaussianMixture):
         table.insert(0, "Kinase", list(PSPLdict().keys()))
         return table
 
-    def predict(self):
+    def predict(self) -> np.ndarray:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
 
-    def labels(self):
+    def labels(self) -> np.ndarray:
         """Find cluster assignment with highest likelihood for each peptide."""
         return self.predict() + 1
 
-    def score(self):
+    def score(self) -> float:
         """Generate score of the fitting."""
         check_is_fitted(self, ["lower_bound_"])
         return self.lower_bound_
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True):
         """Returns a dict of the estimator parameters with their values."""
         dictt = super().get_params(deep=deep)
-        dictt["info"] = self.info
+        dictt["sequences"] = self.sequences
         dictt["SeqWeight"] = self.SeqWeight
         dictt["distance_method"] = self.distance_method
         return dictt

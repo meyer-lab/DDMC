@@ -6,13 +6,8 @@ import time
 from string import ascii_uppercase
 from matplotlib import gridspec, pyplot as plt
 import seaborn as sns
-import svgutils.transform as st
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import mygene
-from matplotlib import gridspec, pyplot as plt
-from string import ascii_uppercase
 import svgutils.transform as st
 import logomaker as lm
 from sklearn.preprocessing import StandardScaler
@@ -22,7 +17,6 @@ from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from ..pre_processing import MeanCenter
 from ..motifs import KinToPhosphotypeDict
-from ..binomial import AAlist
 
 
 def getSetup(figsize, gridd, multz=None):
@@ -360,33 +354,6 @@ def DrawArrows(ax, d2):
         )
 
 
-def ShuffleClusters(shuffle, model, additional=False):
-    """Returns PSSMs with shuffled positions"""
-    ClustersToShuffle = np.array(shuffle)
-    pssms, _ = model.pssms(PsP_background=False)
-    s_pssms = []
-    for s in ClustersToShuffle:
-        mat = ShufflePositions(pssms[s])
-        s_pssms.append(mat)
-
-    if not isinstance(additional, bool):
-        mat = ShufflePositions(additional)
-        s_pssms.append(mat)
-
-    return s_pssms
-
-
-def ShufflePositions(pssm):
-    """Shuffles the positions of input PSSMs"""
-    pssm = np.array(pssm)
-    mat = pssm[:, np.random.permutation([0, 1, 2, 3, 4, 6, 7, 8, 9])]
-    mat = np.insert(mat, 5, pssm[:, 5], axis=1)
-    mat = np.insert(mat, 1, pssm[:, -1], axis=1)
-    mat = pd.DataFrame(mat)
-    mat.index = AAlist
-    return mat
-
-
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster"""
     data = pd.melt(
@@ -512,70 +479,6 @@ def ExportClusterFile(cluster, cptac=False, mcf7=False):
     for gene in drop_list:
         c = c[c["Gene"] != gene]
     c.to_csv("Cluster_" + str(cluster) + ".csv")
-
-
-def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royalblue"):
-    """Plot top scoring kinase groups"""
-    NPtoCumScore = {}
-    X = pd.read_csv(PathToFile)
-    for ii in range(X.shape[0]):
-        curr_NPgroup = X["netphorest_group"][ii]
-        if curr_NPgroup == "any_group":
-            continue
-        elif curr_NPgroup not in NPtoCumScore.keys():
-            NPtoCumScore[curr_NPgroup] = X["netphorest_score"][ii]
-        else:
-            NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
-    X = pd.DataFrame.from_dict(NPtoCumScore, orient="index").reset_index()
-    X.columns = ["KIN Group", "NetPhorest Score"]
-    X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
-    sns.stripplot(
-        data=X,
-        y="KIN Group",
-        x="NetPhorest Score",
-        ax=ax,
-        orient="h",
-        color=color,
-        size=5,
-        **{"linewidth": 1},
-        **{"edgecolor": "black"},
-    )
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Kinase Predictions")
-
-
-def make_BPtoGenes_table(X, cluster):
-    d = X[["Clusters", "Description", "geneID"]]
-    d = d[d["Clusters"] == cluster]
-    gAr = d[["geneID"]].values
-    bpAr = d[["Description"]].values
-    mg = mygene.MyGeneInfo()
-    BPtoGenesDict = {}
-    for ii, arr in enumerate(gAr):
-        gg = mg.querymany(
-            list(arr[0].split("/")),
-            scopes="entrezgene",
-            fields="symbol",
-            species="human",
-            returnall=False,
-            as_dataframe=True,
-        )
-        BPtoGenesDict[bpAr[ii][0]] = list(gg["symbol"])
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
 
 
 def find_patients_with_NATandTumor(X, label, conc=False):

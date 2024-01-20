@@ -2,6 +2,7 @@
 This creates Figure 2: Validations
 """
 
+import re
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -38,7 +39,7 @@ def makeFigure():
     # Import signaling data
     x = preprocess_ebdt_mcf7()
     d = x.select_dtypes(include=[float]).T
-    i = x.select_dtypes(include=[object])
+    i = x["Sequence"]
 
     # Fit DDMC and find centers
     model = DDMC(
@@ -98,7 +99,7 @@ def makeFigure():
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Fit DDMC
     model_cptac = DDMC(

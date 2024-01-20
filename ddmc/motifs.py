@@ -148,9 +148,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
 def GeneratingKinaseMotifs(names, seqs):
     """Main function to generate motifs using 'findmotif'."""
     motif_size = 5
-    proteome = open(
-        "./data/Sequence_analysis/proteome_uniprot2019.fa", "r"
-    )
+    proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa", "r")
     ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
     protnames, seqs, Xidx = MatchProtNames(ProteomeDict, names, seqs)
     (
@@ -245,16 +243,8 @@ def PSPLdict():
     for sp in PSPLs:
         if sp == "./ddmc/data/PSPL/pssm_data.csv":
             continue
-        sp_mat = pd.read_csv(sp).sort_values(by="Unnamed: 0")
-
-        if (
-            sp_mat.shape[0] > 20
-        ):  # Remove profiling of fixed pY and pT, include only natural AA
-            assert np.all(sp_mat.iloc[:-2, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:-2, 1:].values
-        else:
-            assert np.all(sp_mat.iloc[:, 0] == AAlist), "aa don't match"
-            sp_mat = sp_mat.iloc[:, 1:].values
+        sp_mat = pd.read_csv(sp, index_col=0)
+        sp_mat = sp_mat.loc[AAlist]
 
         if np.all(sp_mat >= 0):
             sp_mat = np.log2(sp_mat)
@@ -277,7 +267,7 @@ def PSPLdict():
     return pspl_dict
 
 
-def compute_control_pssm(bg_sequences):
+def compute_control_pssm(bg_sequences) -> np.ndarray:
     """Generate PSSM."""
     back_pssm = np.zeros((len(AAlist), 11), dtype=float)
     for _, seq in enumerate(bg_sequences):
@@ -285,8 +275,8 @@ def compute_control_pssm(bg_sequences):
             back_pssm[AAlist.index(aa), kk] += 1.0
     for pos in range(back_pssm.shape[1]):
         back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
-    back_pssm = np.ma.log2(back_pssm)
-    return back_pssm.filled(0)
+    back_pssm = np.log2(back_pssm)
+    return np.nan_to_num(back_pssm)
 
 
 KinToPhosphotypeDict = {
