@@ -70,13 +70,11 @@ class DDMC(GaussianMixture):
         """
         if self._missing:
             labels = np.argmax(log_resp, axis=1)
-            centers = self.means_.T  # samples x clusters
+            centers = np.array(self.means_)  # samples x clusters
+            centers_fill = centers[labels, :]
 
-            assert len(labels) == X.shape[0]
-            for ii in range(X.shape[0]):  # X is peptides x samples
-                X[ii, self.missing_d[ii, :]] = centers[
-                    self.missing_d[ii, :], labels[ii]
-                ]
+            assert centers_fill.shape == X.shape
+            X[self.missing_d] = centers_fill[self.missing_d]
 
         super()._m_step(X, log_resp)  # Do the regular m step
 

@@ -46,9 +46,9 @@ def makeFigure():
     ax[0].legend(prop={"size": 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
-    dataM = getDDMC_CPTAC(n_components=30, SeqWeight=0.0)
-    mixM = getDDMC_CPTAC(n_components=30, SeqWeight=250.0)
-    seqM = getDDMC_CPTAC(n_components=30, SeqWeight=1.0e6)
+    dataM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=0.0)
+    mixM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=250.0)
+    seqM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=1.0e6)
     models = [dataM, mixM, seqM]
 
     # Center to peptide distance

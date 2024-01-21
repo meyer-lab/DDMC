@@ -24,14 +24,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
 
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-
     # Fit DDMC
-    model = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
+    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Normalize
     centers = pd.DataFrame(model.transform()).T

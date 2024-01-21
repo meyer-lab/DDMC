@@ -4,10 +4,8 @@ This creates Supplemental Figure 3: Predictive performance of DDMC clusters usin
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
-from .common import getSetup
+from .common import getSetup, getDDMC_CPTAC
 from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
-from ..pre_processing import filter_NaNpeptides
-from ..clustering import DDMC
 from ..logistic_regression import plotROC
 
 
@@ -15,14 +13,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((15, 10), (3, 5))
-
-    # Signaling
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X["Sequence"]
 
     # Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
@@ -46,7 +36,7 @@ def makeFigure():
     folds = 5
     weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = DDMC(i, n_components=30, SeqWeight=w, distance_method="Binomial").fit(d)
+        model, X = getDDMC_CPTAC(n_components=30, SeqWeight=w)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
@@ -63,7 +53,7 @@ def makeFigure():
             ax[ii],
             lr,
             centers_gen.values,
-            y["STK11.mutation.status"],
+            y["STK11.mutation.status"].values, # type: ignore
             cv_folds=folds,
             title="STK11m " + "w=" + str(model.SeqWeight) + prio,
         )
@@ -73,7 +63,7 @@ def makeFigure():
             ax[ii + 5],
             lr,
             centers_gen.values,
-            y["EGFR.mutation.status"],
+            y["EGFR.mutation.status"].values, # type: ignore
             cv_folds=folds,
             title="EGFRm " + "w=" + str(model.SeqWeight) + prio,
         )
@@ -84,7 +74,7 @@ def makeFigure():
             ax[ii + 10],
             lr,
             centers_hcb.values,
-            y_hcb,
+            y_hcb.values,
             cv_folds=folds,
             title="Infiltration " + "w=" + str(model.SeqWeight) + prio,
         )

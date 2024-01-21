@@ -22,7 +22,7 @@ def makeFigure():
     ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
 
     # Fit DDMC
-    model = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
+    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Import Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")

@@ -126,7 +126,7 @@ def genFigure():
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
 
 
-def getDDMC_CPTAC(n_components: int, SeqWeight: float) -> DDMC:
+def getDDMC_CPTAC(n_components: int, SeqWeight: float):
     # Import signaling data
     X = filter_NaNpeptides(
         pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
@@ -143,7 +143,7 @@ def getDDMC_CPTAC(n_components: int, SeqWeight: float) -> DDMC:
         distance_method="Binomial",
         random_state=5,
     ).fit(d)
-    return model
+    return model, X
 
 
 def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
