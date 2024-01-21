@@ -2,7 +2,6 @@
 This creates Supplemental Figure 4: Predicting sample type with different modeling strategies
 """
 
-import matplotlib
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -10,7 +9,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import label_binarize
 from ..clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
 from .figureM5 import TumorType
@@ -20,19 +19,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((9, 6), (2, 3), multz={1: 1})
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
 
     # Import data
     X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]

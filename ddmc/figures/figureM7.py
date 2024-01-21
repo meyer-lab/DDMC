@@ -5,11 +5,10 @@ This creates Figure 7: Tumor infiltrating immune cells
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import subplotLabel, getSetup, plotDistanceToUpstreamKinase
+from .common import getSetup, plotDistanceToUpstreamKinase
 from .figureM5 import (
     build_pval_matrix,
     calculate_mannW_pvals,
@@ -24,19 +23,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
 
     # Import signaling data
     X = filter_NaNpeptides(

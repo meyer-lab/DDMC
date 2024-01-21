@@ -2,11 +2,9 @@
 This creates Supplemental Figure 2: Cluster motifs
 """
 
-import matplotlib
 import pandas as pd
 import numpy as np
-import seaborn as sns
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from .common import plotMotifs
 from ..pre_processing import filter_NaNpeptides
 from ..clustering import DDMC
@@ -16,15 +14,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((9, 9), (5, 5))
-
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="white",
-        font_scale=1.2,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
 
     # Import signaling data
     X = filter_NaNpeptides(
@@ -51,8 +40,5 @@ def makeFigure():
         if ii not in xlabels:
             ax[ii].set_xlabel("")
             ax[ii].get_xaxis().set_visible(False)
-
-    # Add subplot labels
-    # subplotLabel(ax) Too many plots to label A-Z
 
     return f

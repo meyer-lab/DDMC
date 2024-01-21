@@ -2,11 +2,9 @@
 This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
 """
 
-import matplotlib
 import pandas as pd
-import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
 from ..pre_processing import filter_NaNpeptides
 from ..clustering import DDMC
@@ -17,19 +15,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((15, 10), (3, 5))
-
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1.2,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
 
     # Signaling
     X = filter_NaNpeptides(

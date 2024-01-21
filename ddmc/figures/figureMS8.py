@@ -5,7 +5,6 @@ This creates Supplemental Figure 7: Adjusted Mutual Information across clusterin
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 from sklearn.cluster import (
     KMeans,
     AffinityPropagation,
@@ -15,7 +14,7 @@ from sklearn.cluster import (
     AgglomerativeClustering,
 )
 from ddmc.clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..pre_processing import filter_NaNpeptides
 from sklearn.metrics import adjusted_mutual_info_score
 
@@ -23,17 +22,7 @@ from sklearn.metrics import adjusted_mutual_info_score
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((8, 8), (1, 1))
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
+    ax, f = getSetup((8, 8), (1, 1), labels=False)
 
     # Signaling
     X = filter_NaNpeptides(

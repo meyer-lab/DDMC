@@ -1,12 +1,11 @@
 """
 This creates Figure 2: Evaluation of Imputating Missingness
 """
-import matplotlib
 import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
@@ -16,19 +15,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((10, 10), (3, 3), multz={0: 2})
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
 
     # diagram explaining reconstruction process
     ax[0].axis("off")

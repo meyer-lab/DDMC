@@ -5,7 +5,6 @@ This creates Figure 5: Tumor vs NAT analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import textwrap
 import mygene
 from scipy.stats import mannwhitneyu
@@ -13,8 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
-from ..clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup, getDDMC_CPTAC
 from ..logistic_regression import plotClusterCoefficients, plotROC
 from .common import plotDistanceToUpstreamKinase, TumorType
 from ..pca import plotPCA
@@ -26,31 +24,14 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
     # Import signaling data
     X = filter_NaNpeptides(
         pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
         tmt=2,
     )
-    d = X.select_dtypes(include=[float]).T
-    i = X["Sequence"]
 
     # Fit DDMC
-    model = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
+    model = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Normalize
     centers = pd.DataFrame(model.transform()).T

@@ -2,15 +2,13 @@
 This creates Supplemental Figure 7: Predicting STK11 genotype using different clustering strategies.
 """
 
-import matplotlib
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from ddmc.clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..pre_processing import filter_NaNpeptides
 from ..logistic_regression import plotROC
 from .figureM4 import find_patients_with_NATandTumor
@@ -20,19 +18,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((20, 10), (2, 5))
-
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1.2,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
 
     # Signaling
     X = filter_NaNpeptides(
@@ -144,6 +129,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y, lr, gene_label):
     d = d.iloc[:, 1:]
     x_ = X.copy()
     x_["Cluster"] = KMeans(n_clusters=ncl).fit(d.T).labels_
+    print(x_)
     c_kmeans = x_.groupby("Cluster").mean().T
     c_kmeans["Patient_ID"] = X.columns[4:]
     c_kmeans.columns = list(np.arange(ncl) + 1) + ["Patient_ID"]

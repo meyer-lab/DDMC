@@ -4,21 +4,29 @@ This file contains functions that are used in multiple figures.
 import sys
 import time
 from string import ascii_uppercase
-from matplotlib import gridspec, pyplot as plt, axes
+from matplotlib import gridspec, pyplot as plt, axes, rcParams
 import seaborn as sns
 import numpy as np
 import pandas as pd
 import svgutils.transform as st
 import logomaker as lm
 from sklearn.preprocessing import StandardScaler
+from ..pre_processing import filter_NaNpeptides
+from ..clustering import DDMC
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from ..pre_processing import MeanCenter
 from ..motifs import KinToPhosphotypeDict
 
 
+rcParams["font.sans-serif"] = "Arial"
+
+
 def getSetup(
-    figsize: tuple[int, int], gridd: tuple[int, int], multz: None | dict = None
+    figsize: tuple[int, int],
+    gridd: tuple[int, int],
+    multz: None | dict = None,
+    labels=True,
 ) -> tuple:
     """Establish figure set-up with subplots."""
     sns.set(
@@ -47,6 +55,9 @@ def getSetup(
             x += multz[x]
         x += 1
 
+    if labels:
+        subplotLabel(ax)
+
     return (ax, f)
 
 
@@ -64,7 +75,9 @@ def subplotLabel(axs: list[axes.Axes]):
         )
 
 
-def overlayCartoon(figFile, cartoonFile, x, y, scalee: float = 1.0):
+def overlayCartoon(
+    figFile: str, cartoonFile: str, x: float, y: float, scalee: float = 1.0
+):
     """Add cartoon to a figure file."""
 
     # Overlay Figure cartoons
@@ -113,6 +126,26 @@ def genFigure():
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
 
 
+def getDDMC_CPTAC(n_components: int, SeqWeight: float) -> DDMC:
+    # Import signaling data
+    X = filter_NaNpeptides(
+        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
+        tmt=2,
+    )
+    d = X.select_dtypes(include=[float]).T
+    i = X["Sequence"]
+
+    # Fit DDMC
+    model = DDMC(
+        i,
+        n_components=n_components,
+        SeqWeight=SeqWeight,
+        distance_method="Binomial",
+        random_state=5,
+    ).fit(d)
+    return model
+
+
 def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     pssm = pssm.T
@@ -140,11 +173,10 @@ def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
 
 
 def plotDistanceToUpstreamKinase(
-    model,
-    clusters,
+    model: DDMC,
+    clusters: list[int],
     ax,
-    kind="strip",
-    num_hits=5,
+    num_hits: int = 5,
     additional_pssms=False,
     add_labels=False,
     title=False,
@@ -161,52 +193,45 @@ def plotDistanceToUpstreamKinase(
     if isinstance(add_labels, list):
         clusters += add_labels
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
-    if kind == "heatmap":
-        sns.heatmap(data.T, ax=ax, xticklabels=data.index)
-        cbar = ax.collections[0].colorbar
-        cbar.ax.tick_params(labelsize=7)
-        ax.set_ylabel("Cluster")
 
-    elif kind == "strip":
-        data = pd.melt(
-            data.reset_index(),
-            id_vars="Kinase",
-            value_vars=list(data.columns),
-            var_name="Cluster",
-            value_name="Frobenius Distance",
+    data = pd.melt(
+        data.reset_index(),
+        id_vars="Kinase",
+        value_vars=list(data.columns),
+        var_name="Cluster",
+        value_name="Frobenius Distance",
+    )
+    if isinstance(add_labels, list):
+        # Actual ERK predictions
+        data["Cluster"] = data["Cluster"].astype(str)
+        d1 = data[~data["Cluster"].str.contains("_S")]
+        sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
+        print(cOG)
+        AnnotateUpstreamKinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
+
+        # Shuffled
+        d2 = data[data["Kinase"] == "ERK2"]
+        d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
+        d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
+        sns.stripplot(
+            data=d2,
+            x="Cluster",
+            y="Frobenius Distance",
+            hue="Shuffled",
+            ax=ax[1],
+            size=8,
         )
-        if isinstance(add_labels, list):
-            # Actual ERK predictions
-            data["Cluster"] = data["Cluster"].astype(str)
-            d1 = data[~data["Cluster"].str.contains("_S")]
-            sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
-            print(cOG)
-            AnnotateUpstreamKinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
-
-            # Shuffled
-            d2 = data[data["Kinase"] == "ERK2"]
-            d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
-            d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
-            sns.stripplot(
-                data=d2,
-                x="Cluster",
-                y="Frobenius Distance",
-                hue="Shuffled",
-                ax=ax[1],
-                size=8,
-            )
-            ax[1].set_title("ERK2 Shuffled Positions")
-            ax[1].legend(prop={"size": 10}, loc="lower left")
-            DrawArrows(ax[1], d2)
-
-        else:
-            sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-            AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
-            if title:
-                ax.set_title(title)
+        ax[1].set_title("ERK2 Shuffled Positions")
+        ax[1].legend(prop={"size": 10}, loc="lower left")
+        DrawArrows(ax[1], d2)
+    else:
+        sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
+        AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
+        if title:
+            ax.set_title(title)
 
 
-def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
+def AnnotateUpstreamKinases(model: DDMC, clusters, ax, data, num_hits: int = 1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
     pssms, _ = model.pssms()
