@@ -43,7 +43,7 @@ def makeFigure():
 
     # Fit DDMC to complete data
     d = np.array(X.select_dtypes(include=["float64"]).T)
-    i = X.select_dtypes(include=["object"])
+    i = X["Sequence"]
 
     assert np.all(np.isfinite(d))
 

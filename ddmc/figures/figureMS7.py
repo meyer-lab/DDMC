@@ -42,7 +42,7 @@ def makeFigure():
 
     # Fit DDMC to complete data
     d = np.array(X.select_dtypes(include=["float64"]).T)
-    i = X.select_dtypes(include=["object"])
+    i = X["Sequence"]
 
     assert np.all(np.isfinite(d))
     model_min = DDMC(i, n_components=30, SeqWeight=100, distance_method="Binomial").fit(

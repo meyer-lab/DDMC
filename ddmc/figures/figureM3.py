@@ -90,7 +90,7 @@ def makeFigure():
     erk2 = compute_control_pssm([s.upper() for s in erk2["Peptide"]])
     erk2 = pd.DataFrame(np.clip(erk2, a_min=0, a_max=3))
     erk2.index = AAlist
-    plotMotifs([erk2], axes=[ax[5]], titles=["ERK2"])
+    plotMotifs(erk2, axes=ax[5], titles="ERK2")
 
     # ERK2 prediction
     # Import signaling data

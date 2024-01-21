@@ -44,7 +44,7 @@ def makeFigure():
     xlabels = [20, 21, 22, 23, 24, 25]
     for ii, cc in enumerate(cl_num):
         cluster = "Cluster " + str(cc)
-        plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[0, 10])
+        plotMotifs(pssms[ii], axes=ax[ii], titles=cluster, yaxis=[0, 10])
         if ii not in ylabels:
             ax[ii].set_ylabel("")
             ax[ii].get_yaxis().set_visible(False)

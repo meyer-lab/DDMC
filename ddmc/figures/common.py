@@ -4,22 +4,22 @@ This file contains functions that are used in multiple figures.
 import sys
 import time
 from string import ascii_uppercase
-from matplotlib import gridspec, pyplot as plt
+from matplotlib import gridspec, pyplot as plt, axes
 import seaborn as sns
 import numpy as np
 import pandas as pd
 import svgutils.transform as st
 import logomaker as lm
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
-from ..clustering import DDMC
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from ..pre_processing import MeanCenter
 from ..motifs import KinToPhosphotypeDict
 
 
-def getSetup(figsize, gridd, multz=None):
+def getSetup(
+    figsize: tuple[int, int], gridd: tuple[int, int], multz: None | dict = None
+) -> tuple:
     """Establish figure set-up with subplots."""
     sns.set(
         style="whitegrid",
@@ -34,7 +34,7 @@ def getSetup(figsize, gridd, multz=None):
 
     # Setup plotting space and grid
     f = plt.figure(figsize=figsize, constrained_layout=True)
-    gs1 = gridspec.GridSpec(*gridd, figure=f)
+    gs1 = gridspec.GridSpec(gridd[0], gridd[1], figure=f)
 
     # Get list of axis objects
     x = 0
@@ -50,7 +50,7 @@ def getSetup(figsize, gridd, multz=None):
     return (ax, f)
 
 
-def subplotLabel(axs):
+def subplotLabel(axs: list[axes.Axes]):
     """Place subplot labels on the list of axes."""
     for ii, ax in enumerate(axs):
         ax.text(
@@ -64,18 +64,14 @@ def subplotLabel(axs):
         )
 
 
-def overlayCartoon(
-    figFile, cartoonFile, x, y, scalee=1, scale_x=1, scale_y=1, rotate=None
-):
+def overlayCartoon(figFile, cartoonFile, x, y, scalee: float = 1.0):
     """Add cartoon to a figure file."""
 
     # Overlay Figure cartoons
     template = st.fromfile(figFile)
     cartoon = st.fromfile(cartoonFile).getroot()
 
-    cartoon.moveto(x, y, scale_x=scalee * scale_x, scale_y=scalee * scale_y)
-    if rotate:
-        cartoon.rotate(rotate, x, y)
+    cartoon.moveto(x, y, scale_x=scalee, scale_y=scalee)  # type: ignore
 
     template.append(cartoon)
     template.save(figFile)
@@ -117,124 +113,30 @@ def genFigure():
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
 
 
-def ComputeCenters(X, d, i, ddmc, ncl):
-    """Calculate cluster centers of  different algorithms."""
-    # k-means
-    labels = KMeans(n_clusters=ncl).fit(d.T).labels_
-    x_ = X.copy()
-    x_["Cluster"] = labels
-    c_kmeans = x_.groupby("Cluster").mean().T
-
-    # GMM
-    ddmc_data = DDMC(
-        i,
-        ncl=ncl,
-        SeqWeight=0,
-        distance_method=ddmc.distance_method,
-        random_state=ddmc.random_state,
-    ).fit(d)
-    c_gmm = ddmc_data.transform()
-
-    # DDMC seq
-    ddmc_seq = DDMC(
-        i,
-        ncl=ncl,
-        SeqWeight=ddmc.SeqWeight + 20,
-        distance_method=ddmc.distance_method,
-        random_state=ddmc.random_state,
-    ).fit(d)
-    ddmc_seq_c = ddmc_seq.transform()
-
-    # DDMC mix
-    ddmc_c = ddmc.transform()
-    return [c_kmeans, c_gmm, ddmc_seq_c, ddmc_c], [
-        "Unclustered",
-        "k-means",
-        "GMM",
-        "DDMC seq",
-        "DDMC mix",
-    ]
-
-
-def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
-    centers = pd.DataFrame(model.transform()).T
-    centers.columns = xlabels
-    if drop:
-        centers = centers.drop(drop)
-    num_peptides = [
-        np.count_nonzero(model.labels() == jj)
-        for jj in range(1, model.n_components + 1)
-    ]
-    for i in range(centers.shape[0]):
-        cl = pd.DataFrame(centers.iloc[i, :]).T
-        m = pd.melt(
-            cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines"
-        )
-        m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(
-            x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i], linewidth=2
-        )
-        ax[i].set_xticklabels(xlabels, rotation=45)
-        ax[i].set_xticks(np.arange(len(xlabels)))
-        ax[i].set_ylabel("$log_{10}$ p-signal")
-        ax[i].xaxis.set_tick_params(bottom=True)
-        ax[i].set_xlabel("")
-        ax[i].set_title(
-            "Cluster "
-            + str(centers.index[i] + 1)
-            + " Center "
-            + "("
-            + "n="
-            + str(num_peptides[i])
-            + ")"
-        )
-        if yaxis:
-            ax[i].set_ylim([yaxis[0], yaxis[1]])
-
-
-def plotMotifs(pssms, axes, titles=False, yaxis=False):
+def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
-    for i, ax in enumerate(axes):
-        pssm = pssms[i].T
-        if pssm.shape[0] == 11:
-            pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-        elif pssm.shape[0] == 9:
-            pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
-        logo = lm.Logo(
-            pssm,
-            font_name="Arial",
-            vpad=0.1,
-            width=0.8,
-            flip_below=False,
-            center_values=False,
-            ax=ax,
-        )
-        logo.ax.set_ylabel("log_{2} (Enrichment Score)")
-        logo.style_xticks(anchor=1, spacing=1)
-        if titles:
-            logo.ax.set_title(titles[i] + " Motif")
-        else:
-            logo.ax.set_title("Motif Cluster " + str(i + 1))
-        if yaxis:
-            logo.ax.set_ylim([yaxis[0], yaxis[1]])
-
-
-def plot_LassoCoef(ax, model, title=False):
-    """Plot Lasso Coefficients"""
-    coefs = pd.DataFrame(model.coef_).T
-    coefs.index += 1
-    coefs = coefs.reset_index()
-    coefs.columns = ["Cluster", "Viability", "Apoptosis", "Migration", "Island"]
-    m = pd.melt(
-        coefs,
-        id_vars="Cluster",
-        value_vars=list(coefs.columns)[1:],
-        var_name="Phenotype",
-        value_name="Coefficient",
+    pssm = pssm.T
+    if pssm.shape[0] == 11:
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+    elif pssm.shape[0] == 9:
+        pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
+    logo = lm.Logo(
+        pssm,
+        font_name="Arial",
+        vpad=0.1,
+        width=0.8,
+        flip_below=False,
+        center_values=False,
+        ax=ax,
     )
-    sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
-    if title:
-        ax.set_title(title)
+    logo.ax.set_ylabel("log_{2} (Enrichment Score)")
+    logo.style_xticks(anchor=1, spacing=1)
+    if titles:
+        logo.ax.set_title(titles + " Motif")
+    else:
+        logo.ax.set_title("Motif Cluster 1")
+    if yaxis:
+        logo.ax.set_ylim([yaxis[0], yaxis[1]])
 
 
 def plotDistanceToUpstreamKinase(
@@ -400,7 +302,7 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
     return dict(zip(clus, multipletests(pvals)[1]))
 
 
-def build_pval_matrix(ncl, pvals):
+def build_pval_matrix(ncl, pvals) -> pd.DataFrame:
     """Build data frame with pvalues per cluster"""
     data = pd.DataFrame()
     data["Clusters"] = pvals.keys()
@@ -417,7 +319,7 @@ def build_pval_matrix(ncl, pvals):
     return data
 
 
-def TumorType(X):
+def TumorType(X: pd.DataFrame) -> pd.DataFrame:
     """Add NAT vs Tumor column."""
     tumortype = []
     for i in range(X.shape[0]):
@@ -523,7 +425,7 @@ def TransformCenters(model, X):
 def HotColdBehavior(centers):
     # Import Cold-Hot Tumor data
     y = (
-        pd.read_csv("ddmc/data/CPTAC_LUAD/Hot_Cold.csv")
+        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
         .dropna(axis=1)
         .sort_values(by="Sample ID")
     )

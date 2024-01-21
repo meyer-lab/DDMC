@@ -8,6 +8,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import label_binarize
 from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..pre_processing import filter_NaNpeptides
@@ -42,9 +43,8 @@ def makeFigure():
     z = TumorType(d)
     z.iloc[:, -1] = z.iloc[:, -1].replace("Normal", "NAT")
     d = z.iloc[:, 1:-1]
-    y = z.iloc[:, -1]
-    y = y.replace("NAT", 0)
-    y = y.replace("Tumor", 1)
+
+    y = label_binarize(z["Type"], classes=["NAT", "Tumor"])
 
     # DDMC ROC
     ncl = 30
@@ -70,48 +70,32 @@ def makeFigure():
     # Tumor vs NAT unclustered
     plotROC(ax[0], lr, d.values, y, cv_folds=4, title="ROC unclustered")
     ax[0].set_title("Unclustered ROC")
-    plot_unclustered_LRcoef(ax[1], lr, d, y, z)
+    plot_unclustered_LRcoef(ax[1], lr, d, y)
 
     # k-means
-    labels = KMeans(n_clusters=ncl).fit(d.T).labels_
-    x_ = X.copy()
-    x_["Cluster"] = labels
-    c_kmeans = x_.groupby("Cluster").mean().T
-    c_kmeans.columns = list(np.arange(ncl) + 1)
-    km_lr = lr.fit(c_kmeans, y)
-    plotROC(ax[3], km_lr, c_kmeans.values, y, cv_folds=4, title="ROC k-means")
+    kmeans = KMeans(n_clusters=ncl).fit(d.T)
+
+    plotROC(ax[3], lr, kmeans.cluster_centers_.T, y, cv_folds=4, title="ROC k-means")
     ax[3].set_title("k-means ROC")
 
     # GMM
     gmm = DDMC(
         X["Sequence"], n_components=ncl, SeqWeight=0, distance_method="Binomial"
     ).fit(d)
-    x_ = X.copy()
-    x_["Cluster"] = gmm.labels()
-    c_gmm = x_.groupby("Cluster").mean().T
-    gmm_lr = lr.fit(c_gmm, y)
-    plotROC(ax[4], gmm_lr, c_gmm.values, y, cv_folds=4, title="ROC GMM")
+
+    plotROC(ax[4], lr, gmm.transform(), y, cv_folds=4, title="ROC GMM")
     ax[4].set_title("GMM ROC")
 
     return f
 
 
-def plot_unclustered_LRcoef(ax, lr, d, y, z, title=False):
+def plot_unclustered_LRcoef(ax, lr, X: pd.DataFrame, y: np.ndarray):
     """Plot logistic regression coefficients of unclustered data"""
     weights = []
     w = pd.DataFrame()
     for _ in range(3):
-        lr = LogisticRegressionCV(
-            cv=3,
-            solver="saga",
-            max_iter=10000,
-            n_jobs=-1,
-            penalty="elasticnet",
-            l1_ratios=[0.85],
-            class_weight="balanced",
-        )
-        w["Coefficients"] = lr.fit(d, y).coef_[0]
-        w["p-sites"] = z.columns[2:]
+        w["Coefficients"] = lr.fit(X, y).coef_[0]
+        w["p-sites"] = X.columns[2:]
         weights.append(w)
 
     coefs = pd.concat(weights)

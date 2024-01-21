@@ -40,7 +40,7 @@ def makeFigure():
     d = X.select_dtypes(include=[float]).T
     i = X["Sequence"]
 
-    return f # TODO: This code is broken.
+    return f  # TODO: This code is broken.
 
     # Plot mean AUCs per model
     p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]

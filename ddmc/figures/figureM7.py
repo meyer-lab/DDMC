@@ -83,7 +83,9 @@ def makeFigure():
     ax[0].legend(loc="lower left", prop={"size": 10})
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=15, solver="saga", n_jobs=-1, penalty="l1")
+    lr = LogisticRegressionCV(
+        cv=15, solver="saga", n_jobs=-1, penalty="l1", max_iter=10000
+    )
     plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TI")
     plotClusterCoefficients(
         ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TI weights"

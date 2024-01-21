@@ -16,7 +16,7 @@ from statsmodels.stats.multitest import multipletests
 from ..clustering import DDMC
 from .common import subplotLabel, getSetup
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from .common import plotDistanceToUpstreamKinase
+from .common import plotDistanceToUpstreamKinase, TumorType
 from ..pca import plotPCA
 from ..pre_processing import filter_NaNpeptides
 
@@ -174,18 +174,6 @@ def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
     )
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
-
-
-def TumorType(X):
-    """Add NAT vs Tumor column."""
-    tumortype = []
-    for i in range(X.shape[0]):
-        if X["Patient_ID"][i].endswith(".N"):
-            tumortype.append("NAT")
-        else:
-            tumortype.append("Tumor")
-    X["Type"] = tumortype
-    return X
 
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):
