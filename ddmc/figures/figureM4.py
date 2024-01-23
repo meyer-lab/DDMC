@@ -60,13 +60,13 @@ def makeFigure():
 
     # Fit Data, Mix, and Seq Models
     dataM = DDMC(
-        i, n_components=30, SeqWeight=0, distance_method="Binomial", random_state=5
+        i, n_components=30, seq_weight=0, distance_method="Binomial", random_state=5
     ).fit(d)
     mixM = DDMC(
-        i, n_components=30, SeqWeight=250, distance_method="Binomial", random_state=5
+        i, n_components=30, seq_weight=250, distance_method="Binomial", random_state=5
     ).fit(d)
     seqM = DDMC(
-        i, n_components=30, SeqWeight=1e6, distance_method="Binomial", random_state=5
+        i, n_components=30, seq_weight=1e6, distance_method="Binomial", random_state=5
     ).fit(d)
     models = [dataM, mixM, seqM]
 
@@ -110,7 +110,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
             run.append(r)
             ws.append(w)
             model = DDMC(
-                i, n_components=n_components, SeqWeight=w, distance_method="Binomial"
+                i, n_components=n_components, seq_weight=w, distance_method="Binomial"
             ).fit(d)
 
             # Find and scale centers

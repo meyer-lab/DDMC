@@ -26,29 +26,31 @@ class DDMC(GaussianMixture):
         self,
         info: pd.DataFrame,
         n_components: int,
-        SeqWeight: float,
+        seq_weight: float,
         distance_method: Literal["PAM250", "Binomial"],
         random_state=None,
+        max_iter=200,
+        tol=1e-4,
     ):
         super().__init__(
             n_components=n_components,
             covariance_type="diag",
             n_init=2,
-            max_iter=200,
-            tol=1e-4,
+            max_iter=max_iter,
+            tol=tol,
             random_state=random_state,
         )
 
         self.info = info
-        self.SeqWeight = SeqWeight
+        self.seq_weight = seq_weight
         self.distance_method = distance_method
 
         seqs = [s.upper() for s in info["Sequence"]]
 
         if distance_method == "PAM250":
-            self.seqDist: PAM250 | Binomial = PAM250(seqs)
+            self.seq_dist: PAM250 | Binomial = PAM250(seqs)
         elif distance_method == "Binomial":
-            self.seqDist = Binomial(info["Sequence"], seqs)
+            self.seq_dist = Binomial(info["Sequence"], seqs)
         else:
             raise ValueError("Wrong distance type.")
 
@@ -57,7 +59,7 @@ class DDMC(GaussianMixture):
         logp = super()._estimate_log_prob(X)  # Do the regular work
 
         # Add in the sequence effect
-        self.seq_scores_ = self.SeqWeight * self.seqDist.logWeights
+        self.seq_scores_ = self.seq_weight * self.seq_dist.logWeights
         logp += self.seq_scores_
 
         return logp
@@ -84,7 +86,7 @@ class DDMC(GaussianMixture):
         super()._m_step(X, log_resp)  # Do the regular m step
 
         # Do sequence m step
-        self.seqDist.from_summaries(np.exp(log_resp))
+        self.seq_dist.from_summaries(np.exp(log_resp))
 
     def fit(self, X, y=None):
         """Compute EM clustering"""
@@ -112,11 +114,11 @@ class DDMC(GaussianMixture):
         check_is_fitted(self, ["scores_", "seq_scores_"])
 
         alt_model = deepcopy(self)
-        alt_model.SeqWeight = 0.0  # No influence
+        alt_model.seq_weight = 0.0  # No influence
         alt_model.fit(X)
         data_model = alt_model.scores_
 
-        alt_model.SeqWeight = 1000.0  # Overwhelming influence
+        alt_model.seq_weight = 1000.0  # Overwhelming influence
         alt_model.fit(X)
         seq_model = alt_model.scores_
 
@@ -250,10 +252,3 @@ class DDMC(GaussianMixture):
         check_is_fitted(self, ["lower_bound_"])
         return self.lower_bound_
 
-    def get_params(self, deep=True):
-        """Returns a dict of the estimator parameters with their values."""
-        dictt = super().get_params(deep=deep)
-        dictt["info"] = self.info
-        dictt["SeqWeight"] = self.SeqWeight
-        dictt["distance_method"] = self.distance_method
-        return dictt

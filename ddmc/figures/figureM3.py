@@ -42,7 +42,7 @@ def makeFigure():
 
     # Fit DDMC and find centers
     model = DDMC(
-        i, n_components=20, SeqWeight=5, distance_method="Binomial", random_state=10
+        i, n_components=20, seq_weight=5, distance_method="Binomial", random_state=10
     ).fit(d)
     centers = pd.DataFrame(model.transform())
     centers.columns = np.arange(model.n_components) + 1
@@ -102,7 +102,7 @@ def makeFigure():
 
     # Fit DDMC
     model_cptac = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
+        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 
     s_pssms = ShuffleClusters([3, 7, 21], model_cptac, additional=erk2)

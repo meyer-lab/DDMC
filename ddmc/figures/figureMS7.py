@@ -45,7 +45,7 @@ def makeFigure():
     i = X.select_dtypes(include=["object"])
 
     assert np.all(np.isfinite(d))
-    model_min = DDMC(i, n_components=30, SeqWeight=100, distance_method="Binomial").fit(
+    model_min = DDMC(i, n_components=30, seq_weight=100, distance_method="Binomial").fit(
         d
     )
 
@@ -61,7 +61,7 @@ def makeFigure():
     )
 
     # Fit DDMC
-    model = DDMC(i, n_components=30, SeqWeight=100, distance_method="Binomial").fit(d)
+    model = DDMC(i, n_components=30, seq_weight=100, distance_method="Binomial").fit(d)
 
     # Find and scale centers
     centers = pd.DataFrame(model.transform()).T
@@ -161,7 +161,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y, lr, gene_label):
 
     # Run GMM
     gmm = DDMC(
-        i, n_components=30, SeqWeight=0, distance_method="Binomial", random_state=15
+        i, n_components=30, seq_weight=0, distance_method="Binomial", random_state=15
     ).fit(d, "NA")
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T

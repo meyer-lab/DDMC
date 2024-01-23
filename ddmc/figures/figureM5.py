@@ -49,7 +49,7 @@ def makeFigure():
 
     # Fit DDMC
     model = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
+        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
     ).fit(d)
 
     # Normalize

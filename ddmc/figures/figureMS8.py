@@ -68,7 +68,7 @@ def makeFigure():
         DDMC(
             i,
             n_components=30,
-            SeqWeight=100,
+            seq_weight=100,
             distance_method="Binomial",
             random_state=5,
         )

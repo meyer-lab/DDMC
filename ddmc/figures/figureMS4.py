@@ -50,7 +50,7 @@ def makeFigure():
     # DDMC ROC
     ncl = 30
     model = DDMC(
-        i, n_components=ncl, SeqWeight=100, distance_method="Binomial", random_state=5
+        i, n_components=ncl, seq_weight=100, distance_method="Binomial", random_state=5
     ).fit(d)
     lr = LogisticRegressionCV(
         cv=3,
@@ -80,7 +80,7 @@ def makeFigure():
     ax[3].set_title("k-means ROC")
 
     # GMM
-    gmm = DDMC(i, n_components=ncl, SeqWeight=0, distance_method="Binomial").fit(d)
+    gmm = DDMC(i, n_components=ncl, seq_weight=0, distance_method="Binomial").fit(d)
     x_ = X.copy()
     x_["Cluster"] = gmm.labels()
     c_gmm = x_.groupby("Cluster").mean().T

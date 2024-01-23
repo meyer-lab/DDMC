@@ -135,7 +135,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     ddmc_data = DDMC(
         i,
         ncl=ncl,
-        SeqWeight=0,
+        seq_weight=0,
         distance_method=ddmc.distance_method,
         random_state=ddmc.random_state,
     ).fit(d)
@@ -145,7 +145,7 @@ def ComputeCenters(X, d, i, ddmc, ncl):
     ddmc_seq = DDMC(
         i,
         ncl=ncl,
-        SeqWeight=ddmc.SeqWeight + 20,
+        seq_weight=ddmc.SeqWeight + 20,
         distance_method=ddmc.distance_method,
         random_state=ddmc.random_state,
     ).fit(d)

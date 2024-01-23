@@ -18,7 +18,7 @@ info = X.select_dtypes(include=["object"])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_wins(distance_method):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    MSC = DDMC(info, 2, SeqWeight=0, distance_method=distance_method).fit(X=data)
+    MSC = DDMC(info, 2, seq_weight=0, distance_method=distance_method).fit(X=data)
     distances = MSC.wins(data)
 
     # assert that the distance to the same sequence weight is less
@@ -31,7 +31,7 @@ def test_wins(distance_method):
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_clusters(w, ncl, distance_method):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    MSC = DDMC(info, ncl, SeqWeight=w, distance_method=distance_method).fit(X=data)
+    MSC = DDMC(info, ncl, seq_weight=w, distance_method=distance_method).fit(X=data)
 
     # Assert that we got a reasonable result
     assert np.all(np.isfinite(MSC.scores_))

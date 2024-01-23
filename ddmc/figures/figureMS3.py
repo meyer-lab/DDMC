@@ -61,7 +61,7 @@ def makeFigure():
     folds = 5
     weights = [0, 100, 500, 1000, 1000000]
     for ii, w in enumerate(weights):
-        model = DDMC(i, n_components=30, SeqWeight=w, distance_method="Binomial").fit(d)
+        model = DDMC(i, n_components=30, seq_weight=w, distance_method="Binomial").fit(d)
 
         # Find and scale centers
         centers_gen, centers_hcb = TransformCenters(model, X)
@@ -80,7 +80,7 @@ def makeFigure():
             centers_gen.values,
             y["STK11.mutation.status"],
             cv_folds=folds,
-            title="STK11m " + "w=" + str(model.SeqWeight) + prio,
+            title="STK11m " + "w=" + str(model.seq_weight) + prio,
         )
 
         # EGFRm
@@ -90,7 +90,7 @@ def makeFigure():
             centers_gen.values,
             y["EGFR.mutation.status"],
             cv_folds=folds,
-            title="EGFRm " + "w=" + str(model.SeqWeight) + prio,
+            title="EGFRm " + "w=" + str(model.seq_weight) + prio,
         )
 
         # Hot-Cold behavior
@@ -101,7 +101,7 @@ def makeFigure():
             centers_hcb.values,
             y_hcb,
             cv_folds=folds,
-            title="Infiltration " + "w=" + str(model.SeqWeight) + prio,
+            title="Infiltration " + "w=" + str(model.seq_weight) + prio,
         )
 
     return f
