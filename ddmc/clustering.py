@@ -44,12 +44,16 @@ class DDMC(GaussianMixture):
 
         seqs = sequences.str.upper().to_list()
 
+        
+    
+    def gen_peptide_distances(self, seqs, distance_method):
         if distance_method == "PAM250":
             self.seq_dist: PAM250 | Binomial = PAM250(seqs)
         elif distance_method == "Binomial":
             self.seq_dist = Binomial(sequences, seqs)
         else:
             raise ValueError("Wrong distance type.")
+
 
     def _estimate_log_prob(self, X: np.ndarray):
         """Estimate the log-probability of each point in each cluster."""
