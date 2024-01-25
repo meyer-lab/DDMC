@@ -4,28 +4,30 @@ This file contains functions that are used in multiple figures.
 import sys
 import time
 from string import ascii_uppercase
-from matplotlib import gridspec, pyplot as plt
+from matplotlib import gridspec, pyplot as plt, axes, rcParams
 import seaborn as sns
-import svgutils.transform as st
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import mygene
-from matplotlib import gridspec, pyplot as plt
-from string import ascii_uppercase
 import svgutils.transform as st
 import logomaker as lm
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
+from ..pre_processing import filter_NaNpeptides
 from ..clustering import DDMC
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from ..pre_processing import MeanCenter
 from ..motifs import KinToPhosphotypeDict
-from ..binomial import AAlist
 
 
-def getSetup(figsize, gridd, multz=None):
+rcParams["font.sans-serif"] = "Arial"
+
+
+def getSetup(
+    figsize: tuple[int, int],
+    gridd: tuple[int, int],
+    multz: None | dict = None,
+    labels=True,
+) -> tuple:
     """Establish figure set-up with subplots."""
     sns.set(
         style="whitegrid",
@@ -40,7 +42,7 @@ def getSetup(figsize, gridd, multz=None):
 
     # Setup plotting space and grid
     f = plt.figure(figsize=figsize, constrained_layout=True)
-    gs1 = gridspec.GridSpec(*gridd, figure=f)
+    gs1 = gridspec.GridSpec(gridd[0], gridd[1], figure=f)
 
     # Get list of axis objects
     x = 0
@@ -53,10 +55,13 @@ def getSetup(figsize, gridd, multz=None):
             x += multz[x]
         x += 1
 
+    if labels:
+        subplotLabel(ax)
+
     return (ax, f)
 
 
-def subplotLabel(axs):
+def subplotLabel(axs: list[axes.Axes]):
     """Place subplot labels on the list of axes."""
     for ii, ax in enumerate(axs):
         ax.text(
@@ -71,7 +76,7 @@ def subplotLabel(axs):
 
 
 def overlayCartoon(
-    figFile, cartoonFile, x, y, scalee=1, scale_x=1, scale_y=1, rotate=None
+    figFile: str, cartoonFile: str, x: float, y: float, scalee: float = 1.0
 ):
     """Add cartoon to a figure file."""
 
@@ -79,9 +84,7 @@ def overlayCartoon(
     template = st.fromfile(figFile)
     cartoon = st.fromfile(cartoonFile).getroot()
 
-    cartoon.moveto(x, y, scale_x=scalee * scale_x, scale_y=scalee * scale_y)
-    if rotate:
-        cartoon.rotate(rotate, x, y)
+    cartoon.moveto(x, y, scale_x=scalee, scale_y=scalee)  # type: ignore
 
     template.append(cartoon)
     template.save(figFile)
@@ -123,132 +126,57 @@ def genFigure():
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
 
 
-def ComputeCenters(X, d, i, ddmc, ncl):
-    """Calculate cluster centers of  different algorithms."""
-    # k-means
-    labels = KMeans(n_clusters=ncl).fit(d.T).labels_
-    x_ = X.copy()
-    x_["Cluster"] = labels
-    c_kmeans = x_.groupby("Cluster").mean().T
-
-    # GMM
-    ddmc_data = DDMC(
-        i,
-        ncl=ncl,
-        seq_weight=0,
-        distance_method=ddmc.distance_method,
-        random_state=ddmc.random_state,
-    ).fit(d)
-    c_gmm = ddmc_data.transform()
-
-    # DDMC seq
-    ddmc_seq = DDMC(
-        i,
-        ncl=ncl,
-        seq_weight=ddmc.SeqWeight + 20,
-        distance_method=ddmc.distance_method,
-        random_state=ddmc.random_state,
-    ).fit(d)
-    ddmc_seq_c = ddmc_seq.transform()
-
-    # DDMC mix
-    ddmc_c = ddmc.transform()
-    return [c_kmeans, c_gmm, ddmc_seq_c, ddmc_c], [
-        "Unclustered",
-        "k-means",
-        "GMM",
-        "DDMC seq",
-        "DDMC mix",
-    ]
-
-
-def plotCenters(ax, model, xlabels, yaxis=False, drop=False):
-    centers = pd.DataFrame(model.transform()).T
-    centers.columns = xlabels
-    if drop:
-        centers = centers.drop(drop)
-    num_peptides = [
-        np.count_nonzero(model.labels() == jj)
-        for jj in range(1, model.n_components + 1)
-    ]
-    for i in range(centers.shape[0]):
-        cl = pd.DataFrame(centers.iloc[i, :]).T
-        m = pd.melt(
-            cl, value_vars=list(cl.columns), value_name="p-signal", var_name="Lines"
-        )
-        m["p-signal"] = m["p-signal"].astype("float64")
-        sns.lineplot(
-            x="Lines", y="p-signal", data=m, color="#658cbb", ax=ax[i], linewidth=2
-        )
-        ax[i].set_xticklabels(xlabels, rotation=45)
-        ax[i].set_xticks(np.arange(len(xlabels)))
-        ax[i].set_ylabel("$log_{10}$ p-signal")
-        ax[i].xaxis.set_tick_params(bottom=True)
-        ax[i].set_xlabel("")
-        ax[i].set_title(
-            "Cluster "
-            + str(centers.index[i] + 1)
-            + " Center "
-            + "("
-            + "n="
-            + str(num_peptides[i])
-            + ")"
-        )
-        if yaxis:
-            ax[i].set_ylim([yaxis[0], yaxis[1]])
-
-
-def plotMotifs(pssms, axes, titles=False, yaxis=False):
-    """Generate logo plots of a list of PSSMs"""
-    for i, ax in enumerate(axes):
-        pssm = pssms[i].T
-        if pssm.shape[0] == 11:
-            pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-        elif pssm.shape[0] == 9:
-            pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
-        logo = lm.Logo(
-            pssm,
-            font_name="Arial",
-            vpad=0.1,
-            width=0.8,
-            flip_below=False,
-            center_values=False,
-            ax=ax,
-        )
-        logo.ax.set_ylabel("log_{2} (Enrichment Score)")
-        logo.style_xticks(anchor=1, spacing=1)
-        if titles:
-            logo.ax.set_title(titles[i] + " Motif")
-        else:
-            logo.ax.set_title("Motif Cluster " + str(i + 1))
-        if yaxis:
-            logo.ax.set_ylim([yaxis[0], yaxis[1]])
-
-
-def plot_LassoCoef(ax, model, title=False):
-    """Plot Lasso Coefficients"""
-    coefs = pd.DataFrame(model.coef_).T
-    coefs.index += 1
-    coefs = coefs.reset_index()
-    coefs.columns = ["Cluster", "Viability", "Apoptosis", "Migration", "Island"]
-    m = pd.melt(
-        coefs,
-        id_vars="Cluster",
-        value_vars=list(coefs.columns)[1:],
-        var_name="Phenotype",
-        value_name="Coefficient",
+def getDDMC_CPTAC(n_components: int, SeqWeight: float):
+    # Import signaling data
+    X = filter_NaNpeptides(
+        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
+        tmt=2,
     )
-    sns.barplot(x="Cluster", y="Coefficient", hue="Phenotype", data=m, ax=ax)
-    if title:
-        ax.set_title(title)
+    d = X.select_dtypes(include=[float]).T
+    i = X["Sequence"]
+
+    # Fit DDMC
+    model = DDMC(
+        i,
+        n_components=n_components,
+        SeqWeight=SeqWeight,
+        distance_method="Binomial",
+        random_state=5,
+    ).fit(d)
+    return model, X
+
+
+def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
+    """Generate logo plots of a list of PSSMs"""
+    pssm = pssm.T
+    if pssm.shape[0] == 11:
+        pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+    elif pssm.shape[0] == 9:
+        pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
+    logo = lm.Logo(
+        pssm,
+        font_name="Arial",
+        vpad=0.1,
+        width=0.8,
+        flip_below=False,
+        center_values=False,
+        ax=ax,
+    )
+    logo.ax.set_ylabel("log_{2} (Enrichment Score)")
+    logo.style_xticks(anchor=1, spacing=1)
+    if titles:
+        logo.ax.set_title(titles + " Motif")
+    else:
+        logo.ax.set_title("Motif Cluster 1")
+    if yaxis:
+        logo.ax.set_ylim([yaxis[0], yaxis[1]])
 
 
 def plotDistanceToUpstreamKinase(
-    model,
-    clusters,
+    model: DDMC,
+    clusters: list[int],
     ax,
-    kind="strip",
-    num_hits=5,
+    num_hits: int = 5,
     additional_pssms=False,
     add_labels=False,
     title=False,
@@ -265,52 +193,45 @@ def plotDistanceToUpstreamKinase(
     if isinstance(add_labels, list):
         clusters += add_labels
     data = ukin_mc.sort_values(by="Kinase").set_index("Kinase")[clusters]
-    if kind == "heatmap":
-        sns.heatmap(data.T, ax=ax, xticklabels=data.index)
-        cbar = ax.collections[0].colorbar
-        cbar.ax.tick_params(labelsize=7)
-        ax.set_ylabel("Cluster")
 
-    elif kind == "strip":
-        data = pd.melt(
-            data.reset_index(),
-            id_vars="Kinase",
-            value_vars=list(data.columns),
-            var_name="Cluster",
-            value_name="Frobenius Distance",
+    data = pd.melt(
+        data.reset_index(),
+        id_vars="Kinase",
+        value_vars=list(data.columns),
+        var_name="Cluster",
+        value_name="Frobenius Distance",
+    )
+    if isinstance(add_labels, list):
+        # Actual ERK predictions
+        data["Cluster"] = data["Cluster"].astype(str)
+        d1 = data[~data["Cluster"].str.contains("_S")]
+        sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
+        print(cOG)
+        AnnotateUpstreamKinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
+
+        # Shuffled
+        d2 = data[data["Kinase"] == "ERK2"]
+        d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
+        d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
+        sns.stripplot(
+            data=d2,
+            x="Cluster",
+            y="Frobenius Distance",
+            hue="Shuffled",
+            ax=ax[1],
+            size=8,
         )
-        if isinstance(add_labels, list):
-            # Actual ERK predictions
-            data["Cluster"] = data["Cluster"].astype(str)
-            d1 = data[~data["Cluster"].str.contains("_S")]
-            sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
-            print(cOG)
-            AnnotateUpstreamKinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
-
-            # Shuffled
-            d2 = data[data["Kinase"] == "ERK2"]
-            d2["Shuffled"] = ["_S" in s for s in d2["Cluster"]]
-            d2["Cluster"] = [s.split("_S")[0] for s in d2["Cluster"]]
-            sns.stripplot(
-                data=d2,
-                x="Cluster",
-                y="Frobenius Distance",
-                hue="Shuffled",
-                ax=ax[1],
-                size=8,
-            )
-            ax[1].set_title("ERK2 Shuffled Positions")
-            ax[1].legend(prop={"size": 10}, loc="lower left")
-            DrawArrows(ax[1], d2)
-
-        else:
-            sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-            AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
-            if title:
-                ax.set_title(title)
+        ax[1].set_title("ERK2 Shuffled Positions")
+        ax[1].legend(prop={"size": 10}, loc="lower left")
+        DrawArrows(ax[1], d2)
+    else:
+        sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
+        AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
+        if title:
+            ax.set_title(title)
 
 
-def AnnotateUpstreamKinases(model, clusters, ax, data, num_hits=1):
+def AnnotateUpstreamKinases(model: DDMC, clusters, ax, data, num_hits: int = 1):
     """Annotate upstream kinase predictions"""
     data.iloc[:, 1] = data.iloc[:, 1].astype(str)
     pssms, _ = model.pssms()
@@ -360,33 +281,6 @@ def DrawArrows(ax, d2):
         )
 
 
-def ShuffleClusters(shuffle, model, additional=False):
-    """Returns PSSMs with shuffled positions"""
-    ClustersToShuffle = np.array(shuffle)
-    pssms, _ = model.pssms(PsP_background=False)
-    s_pssms = []
-    for s in ClustersToShuffle:
-        mat = ShufflePositions(pssms[s])
-        s_pssms.append(mat)
-
-    if not isinstance(additional, bool):
-        mat = ShufflePositions(additional)
-        s_pssms.append(mat)
-
-    return s_pssms
-
-
-def ShufflePositions(pssm):
-    """Shuffles the positions of input PSSMs"""
-    pssm = np.array(pssm)
-    mat = pssm[:, np.random.permutation([0, 1, 2, 3, 4, 6, 7, 8, 9])]
-    mat = np.insert(mat, 5, pssm[:, 5], axis=1)
-    mat = np.insert(mat, 1, pssm[:, -1], axis=1)
-    mat = pd.DataFrame(mat)
-    mat.index = AAlist
-    return mat
-
-
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):
     """Plot p-signal of binary features (tumor vs NAT or mutational status) per cluster"""
     data = pd.melt(
@@ -433,7 +327,7 @@ def calculate_mannW_pvals(centers, col, feature1, feature2):
     return dict(zip(clus, multipletests(pvals)[1]))
 
 
-def build_pval_matrix(ncl, pvals):
+def build_pval_matrix(ncl, pvals) -> pd.DataFrame:
     """Build data frame with pvalues per cluster"""
     data = pd.DataFrame()
     data["Clusters"] = pvals.keys()
@@ -450,7 +344,7 @@ def build_pval_matrix(ncl, pvals):
     return data
 
 
-def TumorType(X):
+def TumorType(X: pd.DataFrame) -> pd.DataFrame:
     """Add NAT vs Tumor column."""
     tumortype = []
     for i in range(X.shape[0]):
@@ -514,70 +408,6 @@ def ExportClusterFile(cluster, cptac=False, mcf7=False):
     c.to_csv("Cluster_" + str(cluster) + ".csv")
 
 
-def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royalblue"):
-    """Plot top scoring kinase groups"""
-    NPtoCumScore = {}
-    X = pd.read_csv(PathToFile)
-    for ii in range(X.shape[0]):
-        curr_NPgroup = X["netphorest_group"][ii]
-        if curr_NPgroup == "any_group":
-            continue
-        elif curr_NPgroup not in NPtoCumScore.keys():
-            NPtoCumScore[curr_NPgroup] = X["netphorest_score"][ii]
-        else:
-            NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
-    X = pd.DataFrame.from_dict(NPtoCumScore, orient="index").reset_index()
-    X.columns = ["KIN Group", "NetPhorest Score"]
-    X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
-    sns.stripplot(
-        data=X,
-        y="KIN Group",
-        x="NetPhorest Score",
-        ax=ax,
-        orient="h",
-        color=color,
-        size=5,
-        **{"linewidth": 1},
-        **{"edgecolor": "black"},
-    )
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Kinase Predictions")
-
-
-def make_BPtoGenes_table(X, cluster):
-    d = X[["Clusters", "Description", "geneID"]]
-    d = d[d["Clusters"] == cluster]
-    gAr = d[["geneID"]].values
-    bpAr = d[["Description"]].values
-    mg = mygene.MyGeneInfo()
-    BPtoGenesDict = {}
-    for ii, arr in enumerate(gAr):
-        gg = mg.querymany(
-            list(arr[0].split("/")),
-            scopes="entrezgene",
-            fields="symbol",
-            species="human",
-            returnall=False,
-            as_dataframe=True,
-        )
-        BPtoGenesDict[bpAr[ii][0]] = list(gg["symbol"])
-    return pd.DataFrame(dict([(k, pd.Series(v)) for k, v in BPtoGenesDict.items()]))
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
-
-
 def find_patients_with_NATandTumor(X, label, conc=False):
     """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
     Note that to do so, samples that don't have their tumor/NAT counterpart are dropped.
@@ -620,7 +450,7 @@ def TransformCenters(model, X):
 def HotColdBehavior(centers):
     # Import Cold-Hot Tumor data
     y = (
-        pd.read_csv("ddmc/data/CPTAC_LUAD/Hot_Cold.csv")
+        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
         .dropna(axis=1)
         .sort_values(by="Sample ID")
     )

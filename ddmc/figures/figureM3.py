@@ -2,13 +2,13 @@
 This creates Figure 2: Validations
 """
 
+import re
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 from ..clustering import DDMC
 from ..binomial import AAlist
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..pca import plotPCA
 from .common import plotDistanceToUpstreamKinase, plotMotifs
 from ..clustering import compute_control_pssm
@@ -22,23 +22,10 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((12, 12), (3, 3), multz={3: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
     # Import signaling data
     x = preprocess_ebdt_mcf7()
     d = x.select_dtypes(include=[float]).T
-    i = x.select_dtypes(include=[object])
+    i = x["Sequence"]
 
     # Fit DDMC and find centers
     model = DDMC(
@@ -89,7 +76,7 @@ def makeFigure():
     erk2 = compute_control_pssm([s.upper() for s in erk2["Peptide"]])
     erk2 = pd.DataFrame(np.clip(erk2, a_min=0, a_max=3))
     erk2.index = AAlist
-    plotMotifs([erk2], axes=[ax[5]], titles=["ERK2"])
+    plotMotifs(erk2, ax=ax[5], titles="ERK2")
 
     # ERK2 prediction
     # Import signaling data
@@ -98,7 +85,7 @@ def makeFigure():
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Fit DDMC
     model_cptac = DDMC(

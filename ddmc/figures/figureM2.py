@@ -1,12 +1,11 @@
 """
 This creates Figure 2: Evaluation of Imputating Missingness
 """
-import matplotlib
 import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
@@ -16,19 +15,6 @@ def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
     ax, f = getSetup((10, 10), (3, 3), multz={0: 2})
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
 
     # diagram explaining reconstruction process
     ax[0].axis("off")
@@ -88,7 +74,6 @@ def plot_imputation_errs(ax, data, kind, legend=True):
     gm["DDMC"] = np.log(gm["DDMC"])
     gm["Average"] = np.log(data.groupby([kind]).Average.apply(gmean).values)
     gm["Zero"] = np.log(data.groupby([kind]).Zero.apply(gmean).values)
-    # gm["Minimum"] = np.log(data.groupby([kind]).Minimum.apply(gmean).values)
     gm["PCA"] = np.log(data.groupby([kind]).PCA.apply(gmean).values)
 
     gm.to_csv("WeightSearch.csv")
@@ -115,7 +100,6 @@ def plot_imputation_errs(ax, data, kind, legend=True):
     sns.regplot(
         x=kind, y="Zero", data=gm, color="lightblue", scatter=False, ax=ax, label="Zero"
     )
-    # sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")
     sns.regplot(
         x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA"
     )
@@ -176,7 +160,6 @@ def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1, tmt=
         ]
 
         for jj, cluster in enumerate(n_clusters):
-            print("hi")
             df.loc[len(df)] = [
                 ii,
                 cluster,
@@ -186,7 +169,6 @@ def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1, tmt=
                 ),
                 *baseline_errs,
             ]
-
     return df
 
 

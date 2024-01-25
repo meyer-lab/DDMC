@@ -5,12 +5,11 @@ This creates Figure 4: Predictive performance of DDMC clusters using different w
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from ..clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup, HotColdBehavior, getDDMC_CPTAC
 from ..logistic_regression import plotROC
 from ..pre_processing import filter_NaNpeptides
 
@@ -20,25 +19,13 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((8, 4), (1, 3))
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=0.5,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
     X = filter_NaNpeptides(
         pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+
+    return f  # TODO: This code is broken.
 
     # Plot mean AUCs per model
     p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
@@ -59,15 +46,9 @@ def makeFigure():
     ax[0].legend(prop={"size": 5}, loc=0)
 
     # Fit Data, Mix, and Seq Models
-    dataM = DDMC(
-        i, n_components=30, seq_weight=0, distance_method="Binomial", random_state=5
-    ).fit(d)
-    mixM = DDMC(
-        i, n_components=30, seq_weight=250, distance_method="Binomial", random_state=5
-    ).fit(d)
-    seqM = DDMC(
-        i, n_components=30, seq_weight=1e6, distance_method="Binomial", random_state=5
-    ).fit(d)
+    dataM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=0.0)
+    mixM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=250.0)
+    seqM, _ = getDDMC_CPTAC(n_components=30, SeqWeight=1.0e6)
     models = [dataM, mixM, seqM]
 
     # Center to peptide distance
@@ -79,11 +60,11 @@ def makeFigure():
     return f
 
 
-def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
+def calculate_AUCs_phenotypes(ax, X: pd.DataFrame, nRuns=3, n_components=35):
     """Plot mean AUCs per phenotype across weights."""
     # Signaling
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
@@ -122,7 +103,7 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
                     ax,
                     lr,
                     centers_gen.values,
-                    y["STK11.mutation.status"],
+                    y["STK11.mutation.status"].values,
                     cv_folds=3,
                     return_mAUC=True,
                     kfold="Repeated",
@@ -236,7 +217,7 @@ def merge_binary_vectors(y, mutant1, mutant2):
     return pd.Series(y_)
 
 
-def find_patients_with_NATandTumor(X, label, conc=False):
+def find_patients_with_NATandTumor(X: pd.DataFrame, label, conc=False) -> pd.DataFrame:
     """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
     Note that to do so, samples that don't have their tumor/NAT counterpart are dropped.
     """
@@ -257,7 +238,7 @@ def find_patients_with_NATandTumor(X, label, conc=False):
     return X
 
 
-def TransformCenters(model, X):
+def TransformCenters(model: DDMC, X: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """For a given model, find centers and transform for regression."""
     centers = pd.DataFrame(model.transform()).T
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(
@@ -273,29 +254,3 @@ def TransformCenters(model, X):
         .set_index("Patient_ID")
     )
     return centers1, centers2
-
-
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = (
-        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
-        .dropna(axis=1)
-        .sort_values(by="Sample ID")
-    )
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    return y, centers

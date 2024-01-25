@@ -5,7 +5,6 @@ This creates Figure 5: Tumor vs NAT analysis
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import textwrap
 import mygene
 from scipy.stats import mannwhitneyu
@@ -13,10 +12,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
-from ..clustering import DDMC
-from .common import subplotLabel, getSetup
+from .common import getSetup, getDDMC_CPTAC
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from .common import plotDistanceToUpstreamKinase
+from .common import plotDistanceToUpstreamKinase, TumorType
 from ..pca import plotPCA
 from ..pre_processing import filter_NaNpeptides
 
@@ -26,31 +24,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
     # Fit DDMC
-    model = DDMC(
-        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
+    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Normalize
     centers = pd.DataFrame(model.transform()).T
@@ -174,51 +149,6 @@ def plot_enriched_processes(ax, X, y, f, cluster, gene_set="WP"):
     )
     ax.set_xticklabels([textwrap.fill(t, 10) for t in list(cc.columns)], rotation=0)
     ax.set_title("Processes Cluster " + str(cluster))
-
-
-def plot_NetPhoresScoreByKinGroup(PathToFile, ax, n=5, title=False, color="royalblue"):
-    """Plot top scoring kinase groups"""
-    NPtoCumScore = {}
-    X = pd.read_csv(PathToFile)
-    for ii in range(X.shape[0]):
-        curr_NPgroup = X["netphorest_group"][ii]
-        if curr_NPgroup == "any_group":
-            continue
-        elif curr_NPgroup not in NPtoCumScore.keys():
-            NPtoCumScore[curr_NPgroup] = X["netphorest_score"][ii]
-        else:
-            NPtoCumScore[curr_NPgroup] += X["netphorest_score"][ii]
-    X = pd.DataFrame.from_dict(NPtoCumScore, orient="index").reset_index()
-    X.columns = ["KIN Group", "NetPhorest Score"]
-    X["KIN Group"] = [s.split("_")[0] for s in X["KIN Group"]]
-    X = X.sort_values(by="NetPhorest Score", ascending=False).iloc[:n, :]
-    sns.stripplot(
-        data=X,
-        y="KIN Group",
-        x="NetPhorest Score",
-        ax=ax,
-        orient="h",
-        color=color,
-        size=5,
-        **{"linewidth": 1},
-        **{"edgecolor": "black"}
-    )
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Kinase Predictions")
-
-
-def TumorType(X):
-    """Add NAT vs Tumor column."""
-    tumortype = []
-    for i in range(X.shape[0]):
-        if X["Patient_ID"][i].endswith(".N"):
-            tumortype.append("NAT")
-        else:
-            tumortype.append("Tumor")
-    X["Type"] = tumortype
-    return X
 
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):

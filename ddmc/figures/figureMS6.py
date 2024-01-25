@@ -1,15 +1,11 @@
 """
 This creates Figure 6: STK11 analysis
 """
-import matplotlib
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from ..clustering import DDMC
-from ..pre_processing import filter_NaNpeptides
-from .common import plotDistanceToUpstreamKinase
+from .common import plotDistanceToUpstreamKinase, getDDMC_CPTAC
 from .figureM4 import find_patients_with_NATandTumor
 from .figureM5 import (
     plot_clusters_binaryfeatures,
@@ -17,7 +13,7 @@ from .figureM5 import (
     calculate_mannW_pvals,
 )
 from ..logistic_regression import plotROC, plotClusterCoefficients
-from .common import subplotLabel, getSetup
+from .common import getSetup
 
 
 def makeFigure():
@@ -25,31 +21,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Phosphoproteomic aberrations associated with molecular signatures
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
     # Fit DDMC
-    model = DDMC(
-        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
+    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Import Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
@@ -106,7 +79,7 @@ def makeFigure():
         ax[1],
         lr,
         centers.iloc[:, :-1].values,
-        centers["STK11"],
+        centers["STK11"].values,
         cv_folds=4,
         title="ROC STK11",
     )

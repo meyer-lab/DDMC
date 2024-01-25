@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from scipy.stats import sem
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
@@ -11,7 +12,7 @@ from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
 
-def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
+def plotClusterCoefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -69,10 +70,16 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 
 
 def plotROC(
-    ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False, kfold="Stratified"
+    ax: Axes,
+    classifier,
+    X: np.ndarray,
+    y: np.ndarray,
+    cv_folds: int = 4,
+    title=False,
+    return_mAUC: bool = False,
+    kfold="Stratified",
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
-    y = y.values
     if kfold == "Stratified":
         cv = StratifiedKFold(n_splits=cv_folds)
     elif kfold == "Repeated":
@@ -81,9 +88,9 @@ def plotROC(
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
 
-    for _, (train, test) in enumerate(cv.split(d, y)):
-        classifier.fit(d[train], y[train])
-        viz = RocCurveDisplay.from_estimator(classifier, d[test], y[test])
+    for _, (train, test) in enumerate(cv.split(X, y)):
+        classifier.fit(X[train], y[train])
+        viz = RocCurveDisplay.from_estimator(classifier, X[test], y[test])
         plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0

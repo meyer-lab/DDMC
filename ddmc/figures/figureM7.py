@@ -5,11 +5,10 @@ This creates Figure 7: Tumor infiltrating immune cells
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import subplotLabel, getSetup, plotDistanceToUpstreamKinase
+from .common import getSetup, plotDistanceToUpstreamKinase
 from .figureM5 import (
     build_pval_matrix,
     calculate_mannW_pvals,
@@ -25,26 +24,13 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
 
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
-
     # Import signaling data
     X = filter_NaNpeptides(
         pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
         tmt=2,
     )
     d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    i = X["Sequence"]
 
     # Fit DDMC
     model = DDMC(
@@ -83,7 +69,9 @@ def makeFigure():
     ax[0].legend(loc="lower left", prop={"size": 10})
 
     # Logistic Regression
-    lr = LogisticRegressionCV(cv=15, solver="saga", n_jobs=-1, penalty="l1")
+    lr = LogisticRegressionCV(
+        cv=15, solver="saga", n_jobs=-1, penalty="l1", max_iter=10000
+    )
     plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TI")
     plotClusterCoefficients(
         ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TI weights"

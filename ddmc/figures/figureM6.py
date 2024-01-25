@@ -4,14 +4,11 @@ This creates Figure 6: STK11 analysis
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from bioinfokit import visuz
-from ..clustering import DDMC
 from ..pre_processing import filter_NaNpeptides
 from .common import plotDistanceToUpstreamKinase
 from .figureM4 import find_patients_with_NATandTumor
@@ -19,10 +16,9 @@ from .figureM5 import (
     plot_clusters_binaryfeatures,
     build_pval_matrix,
     calculate_mannW_pvals,
-    plot_enriched_processes,
 )
 from ..logistic_regression import plotROC, plotClusterCoefficients
-from .common import subplotLabel, getSetup
+from .common import getSetup, getDDMC_CPTAC
 
 
 def makeFigure():
@@ -30,31 +26,8 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
     # Fit DDMC
-    model = DDMC(
-        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
+    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
     # Import Genotype data
     mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
