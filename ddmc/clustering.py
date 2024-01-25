@@ -18,7 +18,7 @@ from fancyimpute import SoftImpute
 
 
 class DDMC(GaussianMixture):
-    """Cluster peptides by both sequence similarity and data behavior following an
+    """Cluster peptides by both sequence similarity and condition-wise phosphorylation following an
     expectation-maximization algorithm. SeqWeight specifies which method's expectation step
     should have a larger effect on the peptide assignment."""
 

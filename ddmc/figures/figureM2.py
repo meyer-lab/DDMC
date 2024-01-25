@@ -37,7 +37,7 @@ def makeFigure():
 
     # Imputation error across Cluster numbers
     dataC_W0 = run_repeated_imputation(
-        "Binomial", [0] * len(n_clusters), n_clusters=n_clusters, n_runs=1
+        "PAM250", [0] * len(n_clusters), n_clusters=n_clusters, n_runs=1
     )
     plot_imputation_errs(ax[1], dataC_W0, "Clusters")
     ax[1].set_ylim(10.5, 12)

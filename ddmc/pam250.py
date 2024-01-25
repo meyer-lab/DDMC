@@ -24,12 +24,8 @@ def MotifPam250Scores(seqs):
         [[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.int8
     )
 
-    # Move to a standard Numpy array
-    pam250m = np.ndarray(pam250.shape, dtype=np.int8)
-
-    for ii in range(pam250m.shape[0]):
-        for jj in range(pam250m.shape[1]):
-            pam250m[ii, jj] = pam250[ii, jj]
+    # convert to np array
+    pam250m = np.array(pam250.values(), dtype=np.int8).reshape(pam250.shape)
 
     out = distanceCalc(seqs, pam250m)
 
@@ -39,12 +35,12 @@ def MotifPam250Scores(seqs):
 
 
 def distanceCalc(seqs, pam250m):
-    """Perform all the pairwise distances."""
+    """Calculate all the pairwise distances."""
     # WARNING this type can only hold -128 to 127
     out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)
-
-    for ii in range(seqs.shape[0]):  # pylint: disable=not-an-iterable
-        for jj in range(ii + 1):
-            out[ii, jj] = np.sum(pam250m[seqs[ii, :], seqs[jj, :]])
+    
+    ii_indices, jj_indices = np.triu_indices(seqs.shape[0])
+    out[ii_indices, jj_indices] = np.sum(pam250m[seqs[ii_indices], seqs[jj_indices]], axis=1)
+    out = out.T
 
     return out
