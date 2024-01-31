@@ -114,7 +114,7 @@ def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1, tmt=
     """Calculate missingness error across different numbers of clusters and/or weights."""
     assert len(weights) == len(n_clusters)
     X_raw = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
+        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotifs.csv").iloc[:, 1:],
         tmt=tmt,
     )
     # reset index
@@ -122,7 +122,7 @@ def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1, tmt=
 
     info_cols = ["Sequence", "Protein", "Gene", "Position"]
     sample_cols = [col for col in X_raw.columns if col not in info_cols]
-    info = X_raw[info_cols].copy()
+    sequences = X_raw["Sequence"].copy()
     X = X_raw[sample_cols].copy()
 
     # the condition in which each sample was collected
@@ -165,7 +165,7 @@ def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1, tmt=
                 cluster,
                 weights[jj],
                 imputation_error(
-                    X, impute_ddmc(X, info, cluster, weights[jj], distance_method)
+                    X, impute_ddmc(X, sequences, cluster, weights[jj], distance_method)
                 ),
                 *baseline_errs,
             ]
@@ -211,8 +211,8 @@ def impute_pca(X, rank):
     return IterativeSVD(rank=rank, verbose=False).fit_transform(X)
 
 
-def impute_ddmc(X, info, n_clusters, weight, distance_method):
-    return DDMC(info, n_clusters, weight, distance_method, max_iter=1, tol=0.1).fit(X.T).impute(X)
+def impute_ddmc(X, sequences, n_clusters, weight, distance_method):
+    return DDMC(sequences, n_clusters, weight, distance_method, max_iter=1, tol=0.1).fit(X).impute(X)
 
 
 makeFigure()

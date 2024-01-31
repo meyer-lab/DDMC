@@ -4,7 +4,7 @@ This creates Supplemental Figure 2: Cluster motifs
 
 import numpy as np
 from .common import getSetup, getDDMC_CPTAC
-from .common import plotMotifs
+from .common import plot_motifs
 
 
 def makeFigure():
@@ -15,12 +15,12 @@ def makeFigure():
     # Fit DDMC
     model, _ = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
 
-    pssms, cl_num = model.pssms(PsP_background=False)
+    pssms, cl_num = model.get_pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 5)
     xlabels = [20, 21, 22, 23, 24, 25]
     for ii, cc in enumerate(cl_num):
         cluster = "Cluster " + str(cc)
-        plotMotifs(pssms[ii], ax=ax[ii], titles=cluster, yaxis=[0, 10])
+        plot_motifs(pssms[ii], ax=ax[ii], titles=cluster, yaxis=[0, 10])
         if ii not in ylabels:
             ax[ii].set_ylabel("")
             ax[ii].get_yaxis().set_visible(False)

@@ -235,9 +235,10 @@ def ForegroundSeqs(sequences):
     return seqs
 
 
-def PSPLdict():
+def get_pspls() -> tuple[np.ndarray, np.ndarray]:
     """Generate dictionary with kinase name-specificity profile pairs"""
-    pspl_dict = {}
+    pspls_arr = []
+    kinases = []
     # individual files
     PSPLs = glob.glob("./ddmc/data/PSPL/*.csv")
     for sp in PSPLs:
@@ -249,7 +250,8 @@ def PSPLdict():
         if np.all(sp_mat >= 0):
             sp_mat = np.log2(sp_mat)
 
-        pspl_dict[sp.split("PSPL/")[1].split(".csv")[0]] = sp_mat
+        kinases.append(sp.split("PSPL/")[1].split(".csv")[0])
+        pspls_arr.append(sp_mat.values)
 
     # NetPhores PSPL results
     f = pd.read_csv("ddmc/data/PSPL/pssm_data.csv", header=None)
@@ -262,9 +264,10 @@ def PSPLdict():
         mat = np.ma.log2(mat)
         mat = mat.filled(0)
         mat = np.clip(mat, a_min=0, a_max=3)
-        pspl_dict[kin] = mat
+        kinases.append(kin)
+        pspls_arr.append(mat)
 
-    return pspl_dict
+    return np.array(kinases), np.array(pspls_arr)
 
 
 def compute_control_pssm(bg_sequences) -> np.ndarray:

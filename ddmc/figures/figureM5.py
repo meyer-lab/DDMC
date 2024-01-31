@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 from .common import getSetup, getDDMC_CPTAC
 from ..logistic_regression import plotClusterCoefficients, plotROC
-from .common import plotDistanceToUpstreamKinase, TumorType
+from .common import plot_distance_to_upstream_kinase, TumorType
 from ..pca import plotPCA
 from ..pre_processing import filter_NaNpeptides
 
@@ -79,7 +79,7 @@ def makeFigure():
     ax[5].set_xticklabels(centers.columns[:-1])
 
     # Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [6, 15, 20], ax[6], num_hits=2)
+    plot_distance_to_upstream_kinase(model, [6, 15, 20], ax[6], num_hits=2)
 
     return f
 

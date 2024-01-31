@@ -1,6 +1,6 @@
 """ Clustering functions. """
 
-from typing import Literal
+from typing import Literal, List, Dict
 import warnings
 from copy import deepcopy
 import itertools
@@ -10,7 +10,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
-from .motifs import PSPLdict, compute_control_pssm
+from .motifs import get_pspls, compute_control_pssm
 from fancyimpute import SoftImpute
 
 
@@ -21,7 +21,7 @@ class DDMC(GaussianMixture):
 
     def __init__(
         self,
-        sequences: pd.Series,
+        sequences,
         n_components: int,
         seq_weight: float,
         distance_method: Literal["PAM250", "Binomial"],
@@ -37,23 +37,24 @@ class DDMC(GaussianMixture):
             tol=tol,
             random_state=random_state,
         )
-
-        self.sequences = sequences
+        self.gen_peptide_distances(sequences, distance_method)
         self.seq_weight = seq_weight
+
+    def gen_peptide_distances(self, seqs: np.ndarray | pd.DataFrame, distance_method):
+        # store parameters for sklearn's checks
         self.distance_method = distance_method
-
-        seqs = sequences.str.upper().to_list()
-
-        
-    
-    def gen_peptide_distances(self, seqs, distance_method):
+        if not isinstance(seqs, np.ndarray):
+            seqs = seqs.values
+        if seqs.dtype != str:
+            seqs = seqs.astype("str")
+        seqs = np.char.upper(seqs)
+        self.sequences = seqs
         if distance_method == "PAM250":
             self.seq_dist: PAM250 | Binomial = PAM250(seqs)
         elif distance_method == "Binomial":
-            self.seq_dist = Binomial(sequences, seqs)
+            self.seq_dist = Binomial(seqs)
         else:
             raise ValueError("Wrong distance type.")
-
 
     def _estimate_log_prob(self, X: np.ndarray):
         """Estimate the log-probability of each point in each cluster."""
@@ -87,9 +88,18 @@ class DDMC(GaussianMixture):
         # Do sequence m step
         self.seq_dist.from_summaries(np.exp(log_resp))
 
-    def fit(self, X: np.ndarray | pd.DataFrame, y=None):
-        """Compute EM clustering"""
-        d = np.array(X.T)
+    def fit(self, X: pd.DataFrame):
+        """
+        Compute EM clustering
+
+        Args:
+            X: dataframe consisting of a "Sequence" column, and sample
+                columns. Every column that is not named "Sequence" will be treated
+                as a sample.
+        """
+        # TODO: assert that the peptides passed in match the length of X
+        # TODO: probably just pass in sequences here
+        d = np.array(X)
 
         if np.any(np.isnan(d)):
             self._missing = True
@@ -151,12 +161,12 @@ class DDMC(GaussianMixture):
         assert np.all(np.isfinite(X))
         return X
 
-    def pssms(self, PsP_background=False):
+    def get_pssms(self, PsP_background=False, clusters: List=None):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus.
         """
-        pssms, cl_num = [], []
+        pssms, pssm_names = [], []
         if PsP_background:
             bg_seqs = BackgroundSeqs(self.sequences)
             back_pssm = compute_control_pssm(bg_seqs)
@@ -200,7 +210,7 @@ class DDMC(GaussianMixture):
             pssm.index = AAlist
 
             # Normalize phosphoacceptor position to frequency
-            df = pd.DataFrame(self.sequences.str.upper())
+            df = pd.DataFrame({"Sequence": self.sequences})
             df["Cluster"] = self.labels()
             clSeq = df[df["Cluster"] == ii]["Sequence"]
             clSeq = pd.DataFrame(frequencies(clSeq)).T
@@ -209,34 +219,33 @@ class DDMC(GaussianMixture):
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
             pssms.append(np.clip(pssm, a_min=0, a_max=3))
-            cl_num.append(ii)
+            pssm_names.append(ii)
+        
+        pssm_names, pssms = np.array(pssm_names), np.array(pssms)
+        
+        if clusters is not None:
+            return pssms[[np.where(pssm_names == cluster)[0][0] for cluster in clusters]]
 
-        return pssms, cl_num
+        return pssm_names, pssms
 
-    def predict_UpstreamKinases(
-        self, additional_pssms=False, add_labels=False, PsP_background=True
+    def predict_upstream_kinases(
+        self,
+        PsP_background=True,
     ):
-        """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
-        PSPLs = PSPLdict()
-        PSSMs, cl_num = self.pssms(PsP_background=PsP_background)
+        """Compute matrix-matrix similarity between kinase specificity profiles
+        and cluster PSSMs to identify upstream kinases regulating clusters."""
+        kinases, pspls = get_pspls()
+        clusters, pssms = self.get_pssms(PsP_background=PsP_background)
 
-        # Optionally add external pssms
-        if not isinstance(additional_pssms, bool):
-            PSSMs += additional_pssms
-            cl_num += add_labels
-        PSSMs = [
-            np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs
-        ]  # Remove P0 and P+5 from pssms
+        distances = get_pspl_pssm_distances(
+            pspls,
+            pssms,
+            as_df=True,
+            pssm_names=clusters,
+            kinases=kinases,
+        )
 
-        a = np.zeros((len(PSPLs), len(PSSMs)))
-        for ii, spec_profile in enumerate(PSPLs.values()):
-            for jj, pssm in enumerate(PSSMs):
-                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
-
-        table = pd.DataFrame(a)
-        table.columns = cl_num
-        table.insert(0, "Kinase", list(PSPLdict().keys()))
-        return table
+        return distances
 
     def predict(self) -> np.ndarray:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""
@@ -252,3 +261,19 @@ class DDMC(GaussianMixture):
         check_is_fitted(self, ["lower_bound_"])
         return self.lower_bound_
 
+
+def get_pspl_pssm_distances(
+    pspls: np.ndarray, pssms: np.ndarray, as_df=False, pssm_names=None, kinases=None
+) -> np.ndarray | pd.DataFrame:
+    """
+    Args:
+        pspls: kinase specificity profiles of shape (n_kinase, 20, 9)
+        pssms: position-specific scoring matrices of shape (n_peptides, 20, 11) 
+    """
+    assert pssms.shape[1:3] == (20, 11)
+    assert pspls.shape[1:3] == (20, 9)
+    pssms = np.delete(pssms, [5, 10], axis=2)
+    dists = np.linalg.norm(pspls[:, None, :, :] - pssms[None, :, :, :], axis=(2, 3))
+    if as_df:
+        dists = pd.DataFrame(dists, index=kinases, columns=pssm_names)
+    return dists

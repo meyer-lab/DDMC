@@ -15,8 +15,8 @@ from ..pre_processing import filter_NaNpeptides
 from ..clustering import DDMC
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
-from ..pre_processing import MeanCenter
 from ..motifs import KinToPhosphotypeDict
+from ddmc.binomial import AAlist
 
 
 rcParams["font.sans-serif"] = "Arial"
@@ -146,7 +146,7 @@ def getDDMC_CPTAC(n_components: int, SeqWeight: float):
     return model, X
 
 
-def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
+def plot_motifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     pssm = pssm.T
     if pssm.shape[0] == 11:
@@ -172,7 +172,52 @@ def plotMotifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
         logo.ax.set_ylim([yaxis[0], yaxis[1]])
 
 
-def plotDistanceToUpstreamKinase(
+def plot_cluster_kinase_distances(distances: pd.DataFrame, pssms: np.ndarray, ax, num_hits=1):
+    pssm_names = distances.columns
+
+    # melt distances
+    distances = distances.sub(distances.mean(axis=0), axis=1)
+    distances = pd.melt(
+        distances.reset_index(names="Kinase"),
+        id_vars="Kinase",
+        value_vars=list(distances.columns),
+        var_name="PSSM name",
+        value_name="Frobenius Distance",
+    )
+
+    sns.stripplot(data=distances, x="PSSM name", y="Frobenius Distance", ax=ax)
+
+    # Annotate upstream kinase predictions
+    for i, pssm_name in enumerate(pssm_names):
+        distances_pssm = distances[distances["PSSM name"] == pssm_name]
+        distances_pssm = distances_pssm.sort_values(
+            by="Frobenius Distance", ascending=True
+        )
+        distances_pssm = distances_pssm.reset_index(drop=True)
+        # assert that the kinase phosphoacceptor and most frequent phosphoacceptor in the pssm match
+        distances_pssm["Phosphoacceptor"] = [
+            KinToPhosphotypeDict[kin] for kin in distances_pssm["Kinase"]
+        ]
+        try:
+            most_frequent_phosphoacceptor = AAlist(pssms[i, 5].argmax())
+        except:
+            most_frequent_phosphoacceptor = "S/T"
+        if most_frequent_phosphoacceptor == "S" or most_frequent_phosphoacceptor == "T":
+            most_frequent_phosphoacceptor = "S/T"
+        distances_pssm = distances_pssm[
+            distances_pssm["Phosphoacceptor"] == most_frequent_phosphoacceptor
+        ]
+        for jj in range(num_hits):
+            ax.annotate(
+                distances_pssm["Kinase"].iloc[jj],
+                (i, distances_pssm["Frobenius Distance"].iloc[jj] - 0.01),
+                fontsize=8,
+            )
+    ax.legend().remove()
+    ax.set_title("Kinase vs Cluster Motif")
+
+
+def plot_distance_to_upstream_kinase(
     model: DDMC,
     clusters: list[int],
     ax,
@@ -183,7 +228,7 @@ def plotDistanceToUpstreamKinase(
     PsP_background=True,
 ):
     """Plot Frobenius norm between kinase PSPL and cluster PSSMs"""
-    ukin = model.predict_UpstreamKinases(
+    ukin = model.predict_upstream_kinases(
         additional_pssms=additional_pssms,
         add_labels=add_labels,
         PsP_background=PsP_background,
@@ -206,8 +251,7 @@ def plotDistanceToUpstreamKinase(
         data["Cluster"] = data["Cluster"].astype(str)
         d1 = data[~data["Cluster"].str.contains("_S")]
         sns.stripplot(data=d1, x="Cluster", y="Frobenius Distance", ax=ax[0])
-        print(cOG)
-        AnnotateUpstreamKinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
+        annotate_upstream_kinases(model, list(cOG) + ["ERK2+"], ax[0], d1, 1)
 
         # Shuffled
         d2 = data[data["Kinase"] == "ERK2"]
@@ -223,62 +267,12 @@ def plotDistanceToUpstreamKinase(
         )
         ax[1].set_title("ERK2 Shuffled Positions")
         ax[1].legend(prop={"size": 10}, loc="lower left")
-        DrawArrows(ax[1], d2)
+        draw_arrows(ax[1], d2)
     else:
         sns.stripplot(data=data, x="Cluster", y="Frobenius Distance", ax=ax)
-        AnnotateUpstreamKinases(model, clusters, ax, data, num_hits)
+        annotate_upstream_kinases(model, clusters, ax, data, num_hits)
         if title:
             ax.set_title(title)
-
-
-def AnnotateUpstreamKinases(model: DDMC, clusters, ax, data, num_hits: int = 1):
-    """Annotate upstream kinase predictions"""
-    data.iloc[:, 1] = data.iloc[:, 1].astype(str)
-    pssms, _ = model.pssms()
-    for ii, c in enumerate(clusters, start=1):
-        cluster = data[data.iloc[:, 1] == str(c)]
-        hits = cluster.sort_values(by="Frobenius Distance", ascending=True)
-        hits.index = np.arange(hits.shape[0])
-        hits["Phosphoacceptor"] = [KinToPhosphotypeDict[kin] for kin in hits["Kinase"]]
-        try:
-            cCP = pssms[c - 1].iloc[:, 5].idxmax()
-        except BaseException:
-            cCP == "S/T"
-        if cCP == "S" or cCP == "T":
-            cCP = "S/T"
-        hits = hits[hits["Phosphoacceptor"] == cCP]
-        for jj in range(num_hits):
-            ax.annotate(
-                hits["Kinase"].iloc[jj],
-                (ii - 1, hits["Frobenius Distance"].iloc[jj] - 0.01),
-                fontsize=8,
-            )
-    ax.legend().remove()
-    ax.set_title("Kinase vs Cluster Motif")
-
-
-def DrawArrows(ax, d2):
-    data_shuff = d2[d2["Shuffled"]]
-    actual_erks = d2[d2["Shuffled"] == False]
-    arrow_lengths = (
-        np.add(
-            data_shuff["Frobenius Distance"].values,
-            abs(actual_erks["Frobenius Distance"].values),
-        )
-        * -1
-    )
-    for dp in range(data_shuff.shape[0]):
-        ax.arrow(
-            dp,
-            data_shuff["Frobenius Distance"].iloc[dp] - 0.1,
-            0,
-            arrow_lengths[dp] + 0.3,
-            head_width=0.25,
-            head_length=0.15,
-            width=0.025,
-            fc="black",
-            ec="black",
-        )
 
 
 def plot_clusters_binaryfeatures(centers, id_var, ax, pvals=False, loc="best"):

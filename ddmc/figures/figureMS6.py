@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import plotDistanceToUpstreamKinase, getDDMC_CPTAC
+from .common import plot_distance_to_upstream_kinase, getDDMC_CPTAC
 from .figureM4 import find_patients_with_NATandTumor
 from .figureM5 import (
     plot_clusters_binaryfeatures,
@@ -93,7 +93,7 @@ def makeFigure():
     ax[2].legend(loc="lower left", prop={"size": 10})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [9, 11, 16, 18], ax[3], num_hits=1)
+    plot_distance_to_upstream_kinase(model, [9, 11, 16, 18], ax[3], num_hits=1)
 
     ax[-1].axis("off")
 

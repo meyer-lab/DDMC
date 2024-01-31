@@ -1,4 +1,5 @@
 """ PCA functions """
+from typing import List
 
 import pandas as pd
 import numpy as np
@@ -17,14 +18,15 @@ def pca_dfs(scores, loadings, df, n_components, sIDX, lIDX):
 
     for j in sIDX:
         dScor[j] = list(df[j])
+    # populate the "Cluster" col with the names of the clusters from df
     dLoad[lIDX] = df.select_dtypes(include=["float64"]).columns
     return dScor, dLoad
 
 
 def plotPCA(
-    ax,
-    d,
-    n_components,
+    axes: List,
+    cluster_centers: pd.DataFrame,
+    n_components: int,
     scores_ind,
     loadings_ind,
     hue_scores=None,
@@ -35,11 +37,11 @@ def plotPCA(
     quadrants=True,
 ):
     """Plot PCA scores and loadings."""
-    pp = PCA(n_components=n_components)
-    dScor_ = pp.fit_transform(d.select_dtypes(include=["float64"]))
-    dLoad_ = pp.components_
-    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, d, n_components, scores_ind, loadings_ind)
-    varExp = np.round(pp.explained_variance_ratio_, 2)
+    pca = PCA(n_components=n_components)
+    dScor_ = pca.fit_transform(cluster_centers.select_dtypes(include=["float64"]))
+    dLoad_ = pca.components_
+    dScor_, dLoad_ = pca_dfs(dScor_, dLoad_, cluster_centers, n_components, scores_ind, loadings_ind)
+    varExp = np.round(pca.explained_variance_ratio_, 2)
 
     # Scores
     sns.scatterplot(
@@ -48,15 +50,15 @@ def plotPCA(
         data=dScor_,
         hue=hue_scores,
         style=style_scores,
-        ax=ax[0],
+        ax=axes[0],
         **{"linewidth": 0.5, "edgecolor": "k"}
     )
-    ax[0].set_title("PCA Scores")
-    ax[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-    ax[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[0].legend(prop={"size": 8})
+    axes[0].set_title("PCA Scores")
+    axes[0].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+    axes[0].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    axes[0].legend(prop={"size": 8})
     if legendOut:
-        ax[0].legend(
+        axes[0].legend(
             bbox_to_anchor=(1.05, 1),
             loc=2,
             borderaxespad=0,
@@ -73,7 +75,7 @@ def plotPCA(
             data=dLoad_,
             hue="p-value",
             style=style_load,
-            ax=ax[1],
+            ax=axes[1],
             **{"linewidth": 0.5, "edgecolor": "k"}
         )
     else:
@@ -82,21 +84,21 @@ def plotPCA(
             y="PC2",
             data=dLoad_,
             style=style_load,
-            ax=ax[1],
+            ax=axes[1],
             **{"linewidth": 0.5, "edgecolor": "k"}
         )
 
-    ax[1].set_title("PCA Loadings")
-    ax[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
-    ax[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
-    ax[1].legend(prop={"size": 8})
+    axes[1].set_title("PCA Loadings")
+    axes[1].set_xlabel("PC1 (" + str(int(varExp[0] * 100)) + "%)", fontsize=10)
+    axes[1].set_ylabel("PC2 (" + str(int(varExp[1] * 100)) + "%)", fontsize=10)
+    axes[1].legend(prop={"size": 8})
     for j, txt in enumerate(dLoad_[loadings_ind]):
-        ax[1].annotate(
+        axes[1].annotate(
             txt, (dLoad_["PC1"][j] + 0.001, dLoad_["PC2"][j] + 0.001), fontsize=10
         )
 
     if quadrants:
-        ax[0].axhline(0, ls="--", color="lightgrey")
-        ax[0].axvline(0, ls="--", color="lightgrey")
-        ax[1].axhline(0, ls="--", color="lightgrey")
-        ax[1].axvline(0, ls="--", color="lightgrey")
+        axes[0].axhline(0, ls="--", color="lightgrey")
+        axes[0].axvline(0, ls="--", color="lightgrey")
+        axes[1].axhline(0, ls="--", color="lightgrey")
+        axes[1].axvline(0, ls="--", color="lightgrey")

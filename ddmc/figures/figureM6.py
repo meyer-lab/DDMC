@@ -10,7 +10,7 @@ from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from bioinfokit import visuz
 from ..pre_processing import filter_NaNpeptides
-from .common import plotDistanceToUpstreamKinase
+from .common import plot_distance_to_upstream_kinase
 from .figureM4 import find_patients_with_NATandTumor
 from .figureM5 import (
     plot_clusters_binaryfeatures,
@@ -93,7 +93,7 @@ def makeFigure():
     ax[2].legend(loc="lower left", prop={"size": 10})
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(
+    plot_distance_to_upstream_kinase(
         model, [5, 16, 27], ax[3], num_hits=3, PsP_background=False
     )
 

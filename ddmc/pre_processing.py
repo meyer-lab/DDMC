@@ -120,13 +120,14 @@ def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
     return X.iloc[Xidx, :]
 
 
-###------------ Filter by variance (stdev or range/pearson's) ------------------###
+def separate_sequence_and_abundance(ms_df: pd.DataFrame):
+    # by default, we assume that ms_df is composed of "Gene", "Sequence",
+    # "Position", and sample column
+    sample_cols = [
+        col
+        for col in ms_df.columns
+        if col not in ("Gene", "Sequence", "Position", "Protein")
+    ]
+    return ms_df["Sequence"].copy(), ms_df[sample_cols].copy()
 
-def MeanCenter(X, mc_row, mc_col):
-    """Mean centers each row of values. logT also optionally log2-transforms."""
-    data_headers = X.select_dtypes(include=["float64"]).columns
-    if mc_row:
-        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=1), axis=0)
-    if mc_col:
-        X[data_headers] = X[data_headers].sub(X[data_headers].mean(axis=0), axis=1)
-    return X
+

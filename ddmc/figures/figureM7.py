@@ -8,7 +8,7 @@ import seaborn as sns
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import getSetup, plotDistanceToUpstreamKinase
+from .common import getSetup, plot_distance_to_upstream_kinase
 from .figureM5 import (
     build_pval_matrix,
     calculate_mannW_pvals,
@@ -78,7 +78,7 @@ def makeFigure():
     )
 
     # plot Upstream Kinases
-    plotDistanceToUpstreamKinase(model, [17, 20, 21], ax[3], num_hits=3)
+    plot_distance_to_upstream_kinase(model, [17, 20, 21], ax[3], num_hits=3)
 
     return f
 

@@ -54,7 +54,7 @@ def GenerateBinarySeqID(seqs: list[str]) -> np.ndarray:
     return res
 
 
-def BackgroundSeqs(forseqs: pd.Series) -> list[str]:
+def BackgroundSeqs(forseqs: np.ndarray[str]) -> list[str]:
     """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
@@ -62,7 +62,7 @@ def BackgroundSeqs(forseqs: pd.Series) -> list[str]:
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926"""
     # Get porportion of psite types in foreground set
-    forw_pYn, forw_pSn, forw_pTn = CountPsiteTypes(forseqs.astype(str).tolist())
+    forw_pYn, forw_pSn, forw_pTn = CountPsiteTypes(forseqs)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
 
     pYf = forw_pYn / forw_tot
@@ -132,9 +132,9 @@ def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[s
 class Binomial:
     """Definition of the binomial sequence distance distribution."""
 
-    def __init__(self, seq: pd.Series, seqs: list[str]):
+    def __init__(self, seqs: np.ndarray[str]):
         # Background sequences
-        background = position_weight_matrix(BackgroundSeqs(seq))
+        background = position_weight_matrix(BackgroundSeqs(seqs))
         self.background = np.array([background[AA] for AA in AAlist])
         self.foreground: np.ndarray = GenerateBinarySeqID(seqs)
 
@@ -152,7 +152,7 @@ class Binomial:
         self.logWeights = np.log(tempp)
 
 
-def CountPsiteTypes(X: list[str]) -> tuple[int, int, int]:
+def CountPsiteTypes(X: np.ndarray[str]) -> tuple[int, int, int]:
     """Count the number of different phosphorylation types in an MS data set.
 
     Args:
@@ -161,11 +161,13 @@ def CountPsiteTypes(X: list[str]) -> tuple[int, int, int]:
     Returns:
         tuple[int, int, int]: The number of pY, pS, and pT sites.
     """
+    X = np.char.upper(X)
+
     # Find the center amino acid
     cA = int((len(X[0]) - 1) / 2)
 
-    positionSeq = [seq[cA] for seq in X]
-    pS = positionSeq.count("s")
-    pT = positionSeq.count("t")
-    pY = positionSeq.count("y")
+    phospho_aminos = [seq[cA] for seq in X]
+    pS = phospho_aminos.count("S")
+    pT = phospho_aminos.count("T")
+    pY = phospho_aminos.count("Y")
     return pY, pS, pT
