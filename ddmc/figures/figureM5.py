@@ -9,8 +9,7 @@ from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
-from ddmc.figures.common import getSetup
-from ddmc.figures.common import plot_cluster_kinase_distances
+from ddmc.figures.common import getSetup, plot_cluster_kinase_distances
 from ddmc.logistic_regression import plotClusterCoefficients, plotROC
 
 

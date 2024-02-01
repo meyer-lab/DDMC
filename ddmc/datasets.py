@@ -72,12 +72,14 @@ class CPTAC:
         nat_patients = np.char.replace(nat_samples, ".N", "")
         return np.intersect1d(tumor_patients, nat_patients)
 
-    def get_mutations(self, mutation_names: Sequence[str]):
+    def get_mutations(self, mutation_names: Sequence[str]=None):
         mutations = pd.read_csv(self.data_dir / "Patient_Mutations.csv")
         mutations = mutations.set_index("Sample.ID")
         patients = self.get_patients_with_nat_and_tumor(mutations.index.values)
         mutations = mutations.loc[patients]
-        return mutations[mutation_names]
+        if mutation_names is not None:
+            mutations = mutations[mutation_names]
+        return mutations
 
     def get_hot_cold_labels(self):
         hot_cold = (

@@ -1,75 +1,75 @@
-"""
-This creates Figure 6: STK11 analysis
-"""
-
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from bioinfokit import visuz
+from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
-from bioinfokit import visuz
-from ..pre_processing import filter_NaNpeptides
-from .common import plot_distance_to_upstream_kinase
-from .figureM4 import find_patients_with_NATandTumor
-from .figureM5 import (
-    plot_clusters_binaryfeatures,
-    build_pval_matrix,
-    calculate_mannW_pvals,
-)
-from ..logistic_regression import plotROC, plotClusterCoefficients
-from .common import getSetup, getDDMC_CPTAC
+
+from ddmc.clustering import DDMC
+from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.figures.common import getSetup, plot_cluster_kinase_distances
+from ddmc.logistic_regression import plotROC, plotClusterCoefficients
 
 
 def makeFigure():
-    """Get a list of the axis objects and create a figure"""
-    # Get list of axis objects
-    ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
-
-    # Fit DDMC
-    model, X = getDDMC_CPTAC(n_components=30, SeqWeight=100.0)
+    axes, f = getSetup((11, 7), (2, 3), multz={0: 1})
+    cptac = CPTAC()
+    p_signal = select_peptide_subset(cptac.get_p_signal(), keep_ratio=0.01)
+    model = DDMC(n_components=30, seq_weight=100, max_iter=10).fit(p_signal)
 
     # Import Genotype data
-    mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[
-        ["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]
-    ]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
+    egfrm = cptac.get_mutations(["EGFR.mutation.status"])
 
     # Find centers
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.n_components) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers = centers.set_index("Patient_ID")
-    centers = centers.drop(
-        [14, 24], axis=1
-    )  # Drop clusters 14&24, contain only 1 peptide
+    centers = model.transform(as_df=True).loc[egfrm.index]
 
-    # Hypothesis Testing
-    assert np.all(y["Sample.ID"] == centers.index)
-    centers["EGFRm"] = y["EGFR.mutation.status"].values
-    pvals = calculate_mannW_pvals(centers, "EGFRm", 1, 0)
-    pvals = build_pval_matrix(model.n_components, pvals)
-    centers["EGFRm"] = centers["EGFRm"].replace(0, "EGFR WT")
-    centers["EGFRm"] = centers["EGFRm"].replace(1, "EGFRm")
-    plot_clusters_binaryfeatures(centers, "EGFRm", ax[0], pvals=pvals)
-    ax[0].legend(loc="lower left", prop={"size": 10})
+    pvals = []
+    centers_m = centers[egfrm]
+    centers_wt = centers[~egfrm]
+    for col in centers.columns:
+        pvals.append(mannwhitneyu(centers_m[col], centers_wt[col])[1])
+    pvals = multipletests(pvals)[1]
 
-    # Reshape data (Patients vs NAT and tumor sample per cluster)
-    centers = centers.reset_index().set_index("EGFRm")
-    centers = find_patients_with_NATandTumor(centers, "Patient_ID", conc=False)
-    y_ = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
-    assert all(centers.index.values == y_.index.values), "Samples don't match"
+    # plot tumor vs nat by cluster
+    df_violin = (
+        centers.assign(m=egfrm)
+        .reset_index()
+        .melt(
+            id_vars="m",
+            value_vars=centers.columns,
+            value_name="p-signal",
+            var_name="Cluster",
+        )
+    )
+    sns.violinplot(
+        data=df_violin,
+        x="Cluster",
+        y="p-signal",
+        hue="m",
+        dodge=True,
+        ax=axes[0],
+        linewidth=0.25,
+    )
+    axes[0].legend(prop={"size": 8})
+
+    annotation_height = df_violin["p-signal"].max() + 0.02
+    for i, pval in enumerate(pvals):
+        if pval < 0.05:
+            annotation = "*"
+        elif pval < 0.01:
+            annotation = "**"
+        else:
+            continue
+        axes[0].text(
+            i, annotation_height, annotation, ha="center", va="bottom", fontsize=10
+        )
 
     # Normalize
-    centers = centers.T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(
-        centers.iloc[:, :]
-    )
-    centers = centers.T
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)
 
     # Logistic Regression
-    centers["EGFRm"] = y_["EGFR.mutation.status"].values
     lr = LogisticRegressionCV(
         cv=20,
         solver="saga",
@@ -78,31 +78,23 @@ def makeFigure():
         penalty="l1",
         class_weight="balanced",
     )
-    plotROC(
-        ax[1],
-        lr,
-        centers.iloc[:, :-1].values,
-        centers["EGFRm"],
-        cv_folds=4,
-        title="ROC EGFRm",
-    )
-    ax[1].legend(loc="lower right", prop={"size": 8})
-    plotClusterCoefficients(
-        ax[2], lr.fit(centers.iloc[:, :-1].values, centers["EGFRm"]), title=""
-    )
-    ax[2].legend(loc="lower left", prop={"size": 10})
+    plotROC(lr, centers.values, egfrm.values, cv_folds=3, title="ROC EGFRm", ax=axes[1])
+    axes[1].legend(loc="lower right", prop={"size": 8})
+
+    plotClusterCoefficients(axes[2], lr, title="")
+
+    top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
+    #  plot predicted kinases for most weighted clusters
+    distances = model.predict_upstream_kinases()[top_clusters]
 
     # plot Upstream Kinases
-    plot_distance_to_upstream_kinase(
-        model, [5, 16, 27], ax[3], num_hits=3, PsP_background=False
+    plot_cluster_kinase_distances(
+        distances, model.get_pssms(clusters=top_clusters), axes[3], num_hits=2
     )
-
-    # volcano protein expression
-    ax[-1].axis("off")
-
     return f
 
 
+# THIS FUNCTION IS NOT MAINTAINED
 def make_EGFRvolcano_plot(centers, y):
     """Make volcano plot with differential protein expression between EGFRm and WT."""
     y = y.drop("C3N.00545")
