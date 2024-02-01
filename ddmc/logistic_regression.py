@@ -11,7 +11,6 @@ from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
-
 def plotClusterCoefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
@@ -70,7 +69,6 @@ def plotConfusionMatrix(ax, lr, dd, yy):
 
 
 def plotROC(
-    ax: Axes,
     classifier,
     X: np.ndarray,
     y: np.ndarray,
@@ -78,6 +76,7 @@ def plotROC(
     title=False,
     return_mAUC: bool = False,
     kfold="Stratified",
+    ax: Axes = None,
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     if kfold == "Stratified":

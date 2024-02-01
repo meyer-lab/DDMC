@@ -3,6 +3,7 @@ This file contains functions that are used in multiple figures.
 """
 import sys
 import time
+from pathlib import Path
 from string import ascii_uppercase
 from matplotlib import gridspec, pyplot as plt, axes, rcParams
 import seaborn as sns

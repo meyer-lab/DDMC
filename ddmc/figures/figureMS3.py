@@ -5,7 +5,7 @@ This creates Supplemental Figure 3: Predictive performance of DDMC clusters usin
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
 from .common import getSetup, getDDMC_CPTAC
-from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
+from .figureM4 import transform_centers, get_hot_cold_labels, find_patients_with_NATandTumor
 from ..logistic_regression import plotROC
 
 
@@ -39,7 +39,7 @@ def makeFigure():
         model, X = getDDMC_CPTAC(n_components=30, SeqWeight=w)
 
         # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
+        centers_gen, centers_hcb = transform_centers(model, X)
 
         if w == 0:
             prio = " (data only)"
@@ -69,7 +69,7 @@ def makeFigure():
         )
 
         # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
+        y_hcb, centers_hcb = get_hot_cold_labels(centers_hcb)
         plotROC(
             ax[ii + 10],
             lr,

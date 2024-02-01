@@ -49,7 +49,6 @@ def filter_NaNpeptides(X, cut=False, tmt=False):
         Xidx = [len(set(dict_[i])) >= tmt for i in range(X.shape[0])]
     return X.iloc[Xidx, :]
 
-
 def FindIdxValues(X):
     """Find the patient indices corresponding to all non-missing values grouped in TMT experiments."""
     data = X.select_dtypes(include=["float64"])
@@ -122,7 +121,7 @@ def FoldChangeFilterBasedOnMaxFC(X, data_headers, cutoff=0.5):
 
 def separate_sequence_and_abundance(ms_df: pd.DataFrame):
     # by default, we assume that ms_df is composed of "Gene", "Sequence",
-    # "Position", and sample column
+    # "Position", and sample columns
     sample_cols = [
         col
         for col in ms_df.columns
