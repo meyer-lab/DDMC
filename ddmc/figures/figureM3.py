@@ -57,8 +57,7 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
     ).fit(abund)
 
     # get cluster centers
-    centers = pd.DataFrame(ddmc.transform())
-    centers.columns = np.arange(ddmc.n_components) + 1
+    centers = ddmc.transform(as_df=True)
 
     # parse inhibitor names from sample names
     inhibitors = [s.split(".")[1].split(".")[0] for s in abund.columns]
@@ -103,7 +102,6 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
     ax_a.set_title("PCA Scores")
     ax_a.set_xlabel("PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10)
     ax_a.set_ylabel("PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10)
-    ax_a.legend(prop={"size": 8})
 
     # plot loadings
     sns.scatterplot(

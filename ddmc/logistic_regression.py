@@ -19,7 +19,7 @@ def plotClusterCoefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
         coefs_["Sample"] = [l.split("_")[1] for l in hue]
         hue = "Sample"
     else:
-        coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
+        coefs_["Cluster"] = np.arange(coefs_.shape[0])
     if xlabels:
         coefs_["Cluster"] = xlabels
     p = sns.barplot(

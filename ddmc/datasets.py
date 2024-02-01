@@ -91,3 +91,6 @@ class CPTAC:
         hot_cold = hot_cold.replace("Hot-tumor enriched", 1)
         hot_cold = hot_cold.dropna()
         return np.squeeze(hot_cold)
+    
+    def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray[bool]:
+        return ~np.array([sample.endswith(".N") for sample in samples])

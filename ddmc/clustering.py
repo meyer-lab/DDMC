@@ -23,7 +23,7 @@ class DDMC(GaussianMixture):
         self,
         n_components: int,
         seq_weight: float,
-        distance_method: Literal["PAM250", "Binomial"],
+        distance_method: Literal["PAM250", "Binomial"] = "Binomial",
         random_state=None,
         max_iter=200,
         tol=1e-4,
