@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from bioinfokit import visuz
 from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
@@ -14,7 +13,7 @@ from ddmc.figures.common import (
     plot_cluster_kinase_distances,
     plot_p_signal_across_clusters_and_binary_feature,
 )
-from ddmc.logistic_regression import plotROC, plotClusterCoefficients
+from ddmc.logistic_regression import plot_roc, plot_cluster_regression_coefficients
 
 
 def makeFigure():
@@ -43,10 +42,10 @@ def makeFigure():
         penalty="l1",
         class_weight="balanced",
     )
-    plotROC(lr, centers.values, egfrm.values, cv_folds=3, title="ROC EGFRm", ax=axes[1])
+    plot_roc(lr, centers.values, egfrm.values, cv_folds=3, title="ROC EGFRm", ax=axes[1])
     axes[1].legend(loc="lower right", prop={"size": 8})
 
-    plotClusterCoefficients(axes[2], lr, title="")
+    plot_cluster_regression_coefficients(axes[2], lr, title="")
 
     top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
     #  plot predicted kinases for most weighted clusters

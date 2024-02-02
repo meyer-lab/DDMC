@@ -12,7 +12,7 @@ from .figureM5 import (
     build_pval_matrix,
     calculate_mannW_pvals,
 )
-from ..logistic_regression import plotROC, plotClusterCoefficients
+from ..logistic_regression import plot_roc, plot_cluster_regression_coefficients
 from .common import getSetup
 
 
@@ -75,7 +75,7 @@ def makeFigure():
         class_weight="balanced",
         random_state=10,
     )
-    plotROC(
+    plot_roc(
         ax[1],
         lr,
         centers.iloc[:, :-1].values,
@@ -84,7 +84,7 @@ def makeFigure():
         title="ROC STK11",
     )
     ax[1].legend(loc="lower right", prop={"size": 8})
-    plotClusterCoefficients(
+    plot_cluster_regression_coefficients(
         ax[2],
         lr.fit(centers.iloc[:, :-1], centers["STK11"].values),
         xlabels=list(centers.columns[:-1]),

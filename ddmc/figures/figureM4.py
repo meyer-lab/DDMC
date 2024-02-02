@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegressionCV
 
 from ddmc.clustering import DDMC
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plotROC
+from ddmc.logistic_regression import plot_roc
 from ddmc.datasets import CPTAC, select_peptide_subset
 
 
@@ -83,7 +83,7 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_pepti
             ).fit(p_signal)
             centers = ddmc.transform(as_df=True)
             # the available patients vary by label
-            stk11_auc = plotROC(
+            stk11_auc = plot_roc(
                 lr,
                 centers.loc[stk11.index].values,
                 stk11,
@@ -91,7 +91,7 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_pepti
                 return_mAUC=True,
                 kfold="Repeated",
             )
-            egfr_or_alk_auc = plotROC(
+            egfr_or_alk_auc = plot_roc(
                 lr,
                 centers.loc[egfr_or_alk.index].values,
                 egfr_or_alk,
@@ -99,7 +99,7 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_pepti
                 return_mAUC=True,
                 kfold="Repeated",
             )
-            hot_cold_auc = plotROC(
+            hot_cold_auc = plot_roc(
                 lr,
                 centers.loc[hot_cold.index].values,
                 hot_cold,

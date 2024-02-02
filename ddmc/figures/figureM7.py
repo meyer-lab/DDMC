@@ -2,10 +2,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import textwrap
-from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC
@@ -14,7 +12,7 @@ from ddmc.figures.common import (
     getSetup,
     plot_p_signal_across_clusters_and_binary_feature,
 )
-from ddmc.logistic_regression import plotROC, plotClusterCoefficients
+from ddmc.logistic_regression import plot_roc, plot_cluster_regression_coefficients
 
 
 def makeFigure():
@@ -39,10 +37,10 @@ def makeFigure():
     lr = LogisticRegressionCV(
         cv=3, solver="saga", n_jobs=1, penalty="l1", max_iter=10000
     )
-    plotROC(
+    plot_roc(
         lr, centers.values, is_hot.values, cv_folds=3, title="ROC TI", return_mAUC=True
     )
-    plotClusterCoefficients(axes[1], lr, title="")
+    plot_cluster_regression_coefficients(axes[1], lr, title="")
 
     top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
 

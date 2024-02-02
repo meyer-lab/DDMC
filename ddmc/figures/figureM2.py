@@ -1,14 +1,9 @@
-"""
-This creates Figure 2: Evaluation of Imputating Missingness
-"""
-
 import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
 from .common import getSetup
 from ..clustering import DDMC
-from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
 from ddmc.datasets import CPTAC
 

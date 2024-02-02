@@ -12,15 +12,15 @@ DATA_DIR = Path(__file__).parent / "data"
 
 def filter_incomplete_peptides(
     p_signal: pd.DataFrame,
-    sample_presence_perc: float = None,
+    sample_presence_ratio: float = None,
     min_experiments: int = None,
     sample_to_experiment: np.ndarray = None,
 ):
     # assume that X has sequences as the index and samples as columns
-    if sample_presence_perc is not None:
+    if sample_presence_ratio is not None:
         peptide_idx = (
             np.count_nonzero(~np.isnan(p_signal), axis=1) / p_signal.shape[1]
-            >= sample_presence_perc
+            >= sample_presence_ratio
         )
     else:
         assert min_experiments is not None

@@ -14,7 +14,7 @@ from ddmc.figures.common import (
     plot_p_signal_across_clusters_and_binary_feature,
     plot_pca_on_cluster_centers,
 )
-from ddmc.logistic_regression import plotClusterCoefficients, plotROC
+from ddmc.logistic_regression import plot_cluster_regression_coefficients, plot_roc
 
 
 def makeFigure():
@@ -55,9 +55,9 @@ def makeFigure():
         l1_ratios=[0.85],
         class_weight="balanced",
     )
-    plotROC(lr, centers.values, is_tumor, cv_folds=4, return_mAUC=False, ax=axes[4])
+    plot_roc(lr, centers.values, is_tumor, cv_folds=4, return_mAUC=False, ax=axes[4])
 
-    plotClusterCoefficients(axes[5], lr)
+    plot_cluster_regression_coefficients(axes[5], lr)
 
     top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
 

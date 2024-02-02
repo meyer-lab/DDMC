@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from ddmc.clustering import DDMC
 from .common import getSetup
 from ..pre_processing import filter_NaNpeptides
-from ..logistic_regression import plotROC
+from ..logistic_regression import plot_roc
 from .figureM4 import find_patients_with_NATandTumor
 
 
@@ -81,7 +81,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y: pd.Series, lr, gene_label):
     folds = 7
 
     # DDMC full
-    plotROC(
+    plot_roc(
         ax[0],
         lr,
         centers.values,
@@ -91,7 +91,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y: pd.Series, lr, gene_label):
     )
 
     # DDMC minimal
-    plotROC(
+    plot_roc(
         ax[1],
         lr,
         centers_min.values,
@@ -103,7 +103,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y: pd.Series, lr, gene_label):
     # Unclustered
     X_f = X.loc[:, centers.index].T
     X_f.index = np.arange(X_f.shape[0])
-    plotROC(ax[2], lr, X_f.values, y.values, cv_folds=folds, title="Unclustered " + gene_label)
+    plot_roc(ax[2], lr, X_f.values, y.values, cv_folds=folds, title="Unclustered " + gene_label)
 
     # Run k-means
     d = X.select_dtypes(include=["float64"]).T.reset_index()
@@ -116,7 +116,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y: pd.Series, lr, gene_label):
     c_kmeansT = reshapePatients(kmeans.cluster_centers_.T, X.columns[4:])
 
     # Regress k-means clusters against STK11 status
-    plotROC(
+    plot_roc(
         ax[3], lr, c_kmeansT.values, y.values, cv_folds=folds, title="k-means " + gene_label
     )
 
@@ -128,7 +128,7 @@ def plot_ROCs(ax, centers, centers_min, X, i, y: pd.Series, lr, gene_label):
     c_gmmT = reshapePatients(gmm.transform(), X.columns[4:])
 
     # Regress GMM clusters against STK11 status
-    plotROC(ax[4], lr, c_gmmT.values, y.values, cv_folds=folds, title="GMM " + gene_label)
+    plot_roc(ax[4], lr, c_gmmT.values, y.values, cv_folds=folds, title="GMM " + gene_label)
 
 
 def reshapePatients(centers, patients):

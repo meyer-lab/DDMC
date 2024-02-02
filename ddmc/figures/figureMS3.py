@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plotROC
+from ddmc.logistic_regression import plot_roc
 
 def makeFigure():
     cptac = CPTAC()
@@ -46,7 +46,7 @@ def makeFigure():
         centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.values)
 
         # STK11
-        plotROC(
+        plot_roc(
             lr,
             centers.loc[stk11.index].values,
             stk11,
@@ -55,7 +55,7 @@ def makeFigure():
             ax=ax[ii],
             title="STK11m " + "w=" + str(model.seq_weight),
         )
-        plotROC(
+        plot_roc(
             lr,
             centers.loc[egfr.index].values,
             egfr,
@@ -64,7 +64,7 @@ def makeFigure():
             ax=ax[ii + len(weights)],
             title="EGFRm " + "w=" + str(model.seq_weight),
         )
-        plotROC(
+        plot_roc(
             lr,
             centers.loc[hot_cold.index].values,
             hot_cold,

@@ -11,7 +11,7 @@ from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
-def plotClusterCoefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
+def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -68,7 +68,7 @@ def plotConfusionMatrix(ax, lr, dd, yy):
             ax.text(j, i, cm[i, j], ha="center", va="center", color="white")
 
 
-def plotROC(
+def plot_roc(
     classifier,
     X: np.ndarray,
     y: np.ndarray,

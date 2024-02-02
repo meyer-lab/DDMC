@@ -8,7 +8,6 @@ import seaborn as sns
 
 from ddmc.clustering import DDMC,compute_control_pssm, get_pspl_pssm_distances 
 from ddmc.binomial import AAlist
-from ddmc.figures.common import 
 from ddmc.figures.common import (
     getSetup,
     plot_motifs,
