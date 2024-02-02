@@ -37,9 +37,7 @@ def MotifPam250Scores(seqs: list[str]) -> np.ndarray:
 def distanceCalc(seqs, pam250m: np.ndarray):
     """Calculate all the pairwise distances."""
     # WARNING this type can only hold -128 to 127
-
     out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)
     i_idx, j_idx = np.tril_indices(seqs.shape[0])
     out[i_idx, j_idx] = np.sum(pam250m[seqs[i_idx], seqs[j_idx]], axis=1)
-
     return out

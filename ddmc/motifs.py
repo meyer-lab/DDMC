@@ -9,29 +9,7 @@ from Bio.Seq import Seq
 from .binomial import AAlist
 
 
-def MapMotifs(X, names):
-    """Generate pY motifs for pre-processing."""
-    names, seqs, pXpos, Xidx = GeneratingKinaseMotifs(names, FormatSeq(X))
-    X = X.iloc[Xidx, :]
-    X["Gene"] = names
-    X["Sequence"] = seqs
-    X.insert(3, "Position", pXpos)
-    return X[~X["Sequence"].str.contains("-")]
-
-
-def FormatName(X):
-    """Keep only the general protein name, without any other accession information"""
-    full = [v.split("OS")[0].strip() for v in X.iloc[:, 0]]
-    gene = [v.split("GN=")[1].split(" PE")[0].strip() for v in X.iloc[:, 0]]
-    return full, gene
-
-
-def FormatSeq(X):
-    """Deleting -1/-2 for mapping to uniprot's proteome"""
-    return [v.split("-")[0] for v in X["Sequence"]]
-
-
-def DictProteomeNameToSeq(X, n):
+def get_proteome_name_to_seq(X, n):
     """To generate proteom's dictionary"""
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
@@ -48,17 +26,17 @@ def DictProteomeNameToSeq(X, n):
     return DictProtToSeq_UP
 
 
-def getKeysByValue(dictOfElements, valueToFind):
+def get_keys_by_value(dictionary, value):
     """Find the key of a given value within a dictionary."""
     listOfKeys = list()
-    listOfItems = dictOfElements.items()
+    listOfItems = dictionary.items()
     for item in listOfItems:
-        if valueToFind in item[1]:
+        if value in item[1]:
             listOfKeys.append(item[0])
     return listOfKeys
 
 
-def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
+def match_protein_names(ProteomeDict, MS_names, MS_seqs):
     """Match protein names of MS and Uniprot's proteome."""
     matchedNames, seqs, Xidx = [], [], []
     counter = 0
@@ -71,7 +49,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
             matchedNames.append(MS_name)
         else:
             try:
-                newname = getKeysByValue(ProteomeDict, MS_seqU)[0]
+                newname = get_keys_by_value(ProteomeDict, MS_seqU)[0]
                 assert MS_seqU in ProteomeDict[newname]
                 Xidx.append(i)
                 seqs.append(MS_seq)
@@ -86,7 +64,7 @@ def MatchProtNames(ProteomeDict, MS_names, MS_seqs):
     return matchedNames, seqs, Xidx
 
 
-def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
+def find_motif(MS_seq, MS_name, ProteomeDict, motif_size):
     """For a given MS peptide, finds it in the ProteomeDict, and maps the +/-5 AA from the p-site, accounting
     for peptides phosphorylated multiple times concurrently."""
     MS_seqU = MS_seq.upper()
@@ -114,7 +92,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
             elif "t" in MS_seq or "s" in MS_seq:
                 DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
                 assert len(DoS_idx) != 0
-            mappedMotif, pidx = makeMotif(
+            mappedMotif, pidx = make_motif(
                 UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx
             )
             if len(pidx) == 1:
@@ -130,7 +108,7 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
             DoS_idx = None
             if len(pTS_idx) > 1:
                 DoS_idx = pTS_idx[1:]
-            mappedMotif, pidx = makeMotif(
+            mappedMotif, pidx = make_motif(
                 UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx
             )
             if len(pidx) == 1:
@@ -145,12 +123,12 @@ def findmotif(MS_seq, MS_name, ProteomeDict, motif_size):
     return pos, mappedMotif
 
 
-def GeneratingKinaseMotifs(names, seqs):
+def generate_kinase_motifs(names, seqs):
     """Main function to generate motifs using 'findmotif'."""
     motif_size = 5
     proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa", "r")
-    ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
-    protnames, seqs, Xidx = MatchProtNames(ProteomeDict, names, seqs)
+    ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
+    protnames, seqs, Xidx = match_protein_names(ProteomeDict, names, seqs)
     (
         MS_names,
         mapped_motifs,
@@ -162,7 +140,7 @@ def GeneratingKinaseMotifs(names, seqs):
     )
 
     for i, MS_seq in enumerate(seqs):
-        pos, mappedMotif = findmotif(MS_seq, protnames[i], ProteomeDict, motif_size)
+        pos, mappedMotif = find_motif(MS_seq, protnames[i], ProteomeDict, motif_size)
         MS_names.append(protnames[i])
         mapped_motifs.append(mappedMotif)
         uni_pos.append(pos)
@@ -171,7 +149,7 @@ def GeneratingKinaseMotifs(names, seqs):
     return MS_names, mapped_motifs, uni_pos, Xidx
 
 
-def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
+def make_motif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
     """Make a motif out of the matched sequences."""
     UP_seq_copy = list(
         UP_seq[max(0, ps_protein_idx - motif_size) : ps_protein_idx + motif_size + 1]
@@ -210,29 +188,6 @@ def makeMotif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_
                     )
 
     return "".join(UP_seq_copy), pidx
-
-
-def preprocess_seqs(X, pYTS):
-    """Filter out any sequences with different than the specified central p-residue
-    and/or any containing gaps."""
-    X = X[~X["Sequence"].str.contains("-")]
-
-    Xidx = []
-    for seq in X["Sequence"]:
-        Xidx.append(seq[5] == pYTS.lower())
-    return X.iloc[Xidx, :]
-
-
-def ForegroundSeqs(sequences):
-    """Build Background data set for either "Y", "S", or "T"."""
-    seqs = []
-    yts = ["Y", "T", "S"]
-    for motif in sequences:
-        motif = motif.upper()
-        assert "-" not in motif, "gap in motif"
-        assert motif[5] in yts, "WRONG CENTRAL AMINO ACID"
-        seqs.append(Seq(motif, alphabet=AAlist))
-    return seqs
 
 
 def get_pspls() -> tuple[np.ndarray, np.ndarray]:

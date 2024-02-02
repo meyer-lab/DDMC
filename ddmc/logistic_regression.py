@@ -11,6 +11,7 @@ from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
+
 def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
@@ -20,8 +21,6 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0])
-    if xlabels is not None:
-        coefs_["Cluster"] = xlabels
     p = sns.barplot(
         ax=ax,
         x="Cluster",
@@ -36,36 +35,6 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
     p.tick_params(axis="x", labelsize=6)
     if title:
         ax.set_title(title)
-
-
-def plotPredictionProbabilities(ax, lr, dd, yy):
-    """Plot LR predictions and prediction probabilities."""
-    res_ = pd.DataFrame()
-    res_["y, p(x)"] = lr.predict_proba(dd)[:, 1]
-    z = lr.predict(dd) == yy
-    res_["Correct_Prediction"] = z.values
-    res_["Prediction"] = lr.predict(dd).astype("int")
-    res_["Patients"] = np.arange(res_.shape[0]) + 1
-    sns.scatterplot(
-        ax=ax, x="Patients", y="Prediction", data=res_, hue="Correct_Prediction"
-    )
-    sns.lineplot(ax=ax, x="Patients", y="y, p(x)", data=res_, marker="s", color="gray")
-    ax.axhline(0.5, ls="--", color="r")
-
-
-def plotConfusionMatrix(ax, lr, dd, yy):
-    """Actual vs predicted outputs"""
-    cm = confusion_matrix(yy, lr.predict(dd))
-    n = lr.classes_.shape[0]
-    ax.imshow(cm)
-    ax.grid(False)
-    ax.set_xlabel("Predicted outputs", color="black")
-    ax.set_ylabel("Actual outputs", color="black")
-    ax.xaxis.set(ticks=range(n))
-    ax.yaxis.set(ticks=range(n))
-    for i in range(n):
-        for j in range(n):
-            ax.text(j, i, cm[i, j], ha="center", va="center", color="white")
 
 
 def plot_roc(

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from typing import Sequence
 
-from ddmc.motifs import DictProteomeNameToSeq
+from ddmc.motifs import get_proteome_name_to_seq
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -136,7 +136,7 @@ class EBDT:
         """Map p-site sequence position to uniprot's proteome and extract motifs."""
         proteome = open(DATA_DIR / "Sequence_analysis" / "proteome_uniprot2019.fa", "r")
         motif_size = 5
-        ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
+        ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
         motifs = []
         del_GeneToPos = []
         for gene, pos in list(zip(genes, pos)):
