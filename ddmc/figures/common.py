@@ -4,7 +4,6 @@ This file contains functions that are used in multiple figures.
 
 import sys
 import time
-from pathlib import Path
 from string import ascii_uppercase
 from matplotlib import gridspec, pyplot as plt, axes, rcParams
 import seaborn as sns
@@ -12,13 +11,11 @@ import numpy as np
 import pandas as pd
 import svgutils.transform as st
 import logomaker as lm
-from sklearn.preprocessing import StandardScaler
-from ..pre_processing import filter_NaNpeptides
-from ..clustering import DDMC
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from ..motifs import KinToPhosphotypeDict
 from ddmc.binomial import AAlist
+from sklearn.decomposition import PCA
 
 
 rcParams["font.sans-serif"] = "Arial"
@@ -247,6 +244,63 @@ def plot_p_signal_across_clusters_and_binary_feature(
         else:
             continue
         ax.text(i, annotation_height, annotation, ha="center", va="bottom", fontsize=10)
+
+
+def plot_pca_on_cluster_centers(
+    centers: pd.DataFrame,
+    axes,
+    hue_scores: np.ndarray = None,
+    hue_scores_title: str = None,
+    hue_loadings: np.ndarray = None,
+    hue_loadings_title: str = None,
+):
+    # run PCA on cluster centers
+    pca = PCA(n_components=2)
+    scores = pca.fit_transform(centers)  # sample by PCA component
+    loadings = pca.components_  # PCA component by cluster
+    variance_explained = np.round(pca.explained_variance_ratio_, 2)
+
+    # plot scores
+    sns.scatterplot(
+        x=scores[:, 0],
+        y=scores[:, 1],
+        hue=hue_scores,
+        ax=axes[0],
+        **{"linewidth": 0.5, "edgecolor": "k"},
+    )
+    if hue_scores_title:
+        axes[0].legend(
+            loc="lower left", prop={"size": 9}, title=hue_scores_title, fontsize=9
+        )
+    axes[0].set_title("PCA Scores")
+    axes[0].set_xlabel(
+        "PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10
+    )
+    axes[0].set_ylabel(
+        "PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10
+    )
+
+    # plot loadings
+    sns.scatterplot(
+        x=loadings[0],
+        y=loadings[1],
+        ax=axes[1],
+        hue=hue_loadings,
+        **{"linewidth": 0.5, "edgecolor": "k"},
+    )
+    if hue_loadings_title:
+        axes[1].legend(title="p < 0.01", prop={"size": 8})
+    axes[1].set_title("PCA Loadings")
+    axes[1].set_xlabel(
+        "PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10
+    )
+    axes[1].set_ylabel(
+        "PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10
+    )
+    for j, txt in enumerate(centers.columns):
+        axes[1].annotate(
+            txt, (loadings[0][j] + 0.001, loadings[1][j] + 0.001), fontsize=10
+        )
 
 
 def ExportClusterFile(cluster, cptac=False, mcf7=False):

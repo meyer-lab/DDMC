@@ -1,11 +1,9 @@
 import numpy as np
 import seaborn as sns
-from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
@@ -14,6 +12,7 @@ from ddmc.figures.common import (
     plot_cluster_kinase_distances,
     get_pvals_across_clusters,
     plot_p_signal_across_clusters_and_binary_feature,
+    plot_pca_on_cluster_centers,
 )
 from ddmc.logistic_regression import plotClusterCoefficients, plotROC
 
@@ -33,51 +32,18 @@ def makeFigure():
     # sns.clustermap(centers.set_index("Type").T, method="complete", cmap="bwr", vmax=lim, vmin=-lim,  figsize=(15, 9)) Run in notebook and save as svg
     axes[0].axis("off")
 
-    # run PCA on cluster centers
-    pca = PCA(n_components=2)
-    scores = pca.fit_transform(centers)  # sample by PCA component
-    loadings = pca.components_  # PCA component by cluster
-    variance_explained = np.round(pca.explained_variance_ratio_, 2)
-
-    # plot scores
-    sns.scatterplot(
-        x=scores[:, 0],
-        y=scores[:, 1],
-        hue=is_tumor,
-        ax=axes[1],
-        **{"linewidth": 0.5, "edgecolor": "k"},
-    )
-    axes[1].legend(loc="lower left", prop={"size": 9}, title="Tumor", fontsize=9)
-    axes[1].set_title("PCA Scores")
-    axes[1].set_xlabel(
-        "PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10
-    )
-    axes[1].set_ylabel(
-        "PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10
+    plot_pca_on_cluster_centers(
+        centers,
+        axes[1:3],
+        hue_scores=is_tumor,
+        hue_scores_title="Tumor?",
+        hue_loadings=get_pvals_across_clusters(is_tumor, centers) < 0.01,
+        hue_loadings_title="p < 0.01",
     )
 
-    # plot loadings
-    sns.scatterplot(
-        x=loadings[0],
-        y=loadings[1],
-        ax=axes[2],
-        hue=get_pvals_across_clusters(is_tumor, centers) < 0.01,
-        **{"linewidth": 0.5, "edgecolor": "k"},
+    plot_p_signal_across_clusters_and_binary_feature(
+        is_tumor, centers, "is_tumor", axes[4]
     )
-    axes[2].set_title("PCA Loadings")
-    axes[2].set_xlabel(
-        "PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10
-    )
-    axes[2].set_ylabel(
-        "PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10
-    )
-    axes[2].legend(title="p < 0.01", prop={"size": 8})
-    for j, txt in enumerate(centers.columns):
-        axes[2].annotate(
-            txt, (loadings[0][j] + 0.001, loadings[1][j] + 0.001), fontsize=10
-        )
-
-    plot_p_signal_across_clusters_and_binary_feature(is_tumor, centers, "is_tumor", axes[4])
 
     # Logistic Regression
     lr = LogisticRegressionCV(

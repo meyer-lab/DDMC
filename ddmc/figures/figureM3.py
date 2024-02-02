@@ -9,17 +9,15 @@ import seaborn as sns
 from ..clustering import DDMC
 from ..binomial import AAlist
 from .common import getSetup
-from ..pca import plotPCA
 from .common import (
-    plot_distance_to_upstream_kinase,
     plot_motifs,
     plot_cluster_kinase_distances,
+    plot_pca_on_cluster_centers,
 )
 from ..clustering import compute_control_pssm, get_pspl_pssm_distances
 from ..binomial import AAlist
 from ..motifs import DictProteomeNameToSeq, get_pspls
 from ..pre_processing import filter_NaNpeptides, separate_sequence_and_abundance
-from sklearn.decomposition import PCA
 
 
 def makeFigure():
@@ -84,37 +82,9 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
         for drug in inhibitors
     ]
 
-    # run PCA on cluster centers
-    pca = PCA(n_components=2)
-    scores = pca.fit_transform(centers)  # sample by PCA component
-    loadings = pca.components_  # PCA component by cluster
-    variance_explained = np.round(pca.explained_variance_ratio_, 2)
-
-    # plot scores
-    sns.scatterplot(
-        x=scores[:, 0],
-        y=scores[:, 1],
-        hue=is_AKTi,
-        ax=ax_a,
-        **{"linewidth": 0.5, "edgecolor": "k"},
+    plot_pca_on_cluster_centers(
+        centers, [ax_a, ax_b], hue_scores=is_AKTi, hue_scores_title="AKTi?"
     )
-    ax_a.legend(loc="lower left", prop={"size": 9}, title="AKTi", fontsize=9)
-    ax_a.set_title("PCA Scores")
-    ax_a.set_xlabel("PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10)
-    ax_a.set_ylabel("PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10)
-
-    # plot loadings
-    sns.scatterplot(
-        x=loadings[0], y=loadings[1], ax=ax_b, **{"linewidth": 0.5, "edgecolor": "k"}
-    )
-    ax_b.set_title("PCA Loadings")
-    ax_b.set_xlabel("PC1 (" + str(int(variance_explained[0] * 100)) + "%)", fontsize=10)
-    ax_b.set_ylabel("PC2 (" + str(int(variance_explained[1] * 100)) + "%)", fontsize=10)
-    ax_b.legend(prop={"size": 8})
-    for j, txt in enumerate(centers.columns):
-        ax_b.annotate(
-            txt, (loadings[0][j] + 0.001, loadings[1][j] + 0.001), fontsize=10
-        )
 
     # Plot kinase predictions for cluster 16
     plot_cluster_kinase_distances(
