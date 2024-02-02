@@ -1,8 +1,11 @@
+import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from typing import Sequence
 
-from pathlib import Path
+from ddmc.motifs import DictProteomeNameToSeq
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -45,7 +48,7 @@ def select_peptide_subset(
 class CPTAC:
     data_dir = DATA_DIR / "MS" / "CPTAC"
 
-    def load_sample_to_experiment(self, as_df=False):
+    def get_sample_to_experiment(self, as_df=False):
         sample_to_experiment = pd.read_csv(self.data_dir / "IDtoExperiment.csv")
         if as_df:
             return sample_to_experiment
@@ -60,7 +63,7 @@ class CPTAC:
         return filter_incomplete_peptides(
             p_signal,
             min_experiments=2,
-            sample_to_experiment=self.load_sample_to_experiment(),
+            sample_to_experiment=self.get_sample_to_experiment(),
         )
 
     def get_patients_with_nat_and_tumor(self, samples: np.ndarray[str]):
@@ -72,7 +75,7 @@ class CPTAC:
         nat_patients = np.char.replace(nat_samples, ".N", "")
         return np.intersect1d(tumor_patients, nat_patients)
 
-    def get_mutations(self, mutation_names: Sequence[str]=None):
+    def get_mutations(self, mutation_names: Sequence[str] = None):
         mutations = pd.read_csv(self.data_dir / "Patient_Mutations.csv")
         mutations = mutations.set_index("Sample.ID")
         patients = self.get_patients_with_nat_and_tumor(mutations.index.values)
@@ -94,6 +97,63 @@ class CPTAC:
         hot_cold = hot_cold.replace("Hot-tumor enriched", 1)
         hot_cold = hot_cold.dropna()
         return np.squeeze(hot_cold).astype(bool)
-    
+
     def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray[bool]:
         return ~np.array([sample.endswith(".N") for sample in samples])
+
+
+# MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)
+class EBDT:
+    def get_p_signal(self) -> pd.DataFrame:
+        """Preprocess"""
+        p_signal = (
+            pd.read_csv(DATA_DIR / "Validations" / "Computational" / "ebdt_mcf7.csv")
+            .drop("FDR", axis=1)
+            .set_index("sh.index.sites")
+            .drop("ARPC2_HUMAN;")
+            .reset_index()
+        )
+        p_signal.insert(
+            0, "Gene", [s.split("(")[0] for s in p_signal["sh.index.sites"]]
+        )
+        p_signal.insert(
+            1,
+            "Position",
+            [
+                re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)
+                for s in p_signal["sh.index.sites"]
+            ],
+        )
+        p_signal = p_signal.drop("sh.index.sites", axis=1)
+        motifs, del_ids = self.pos_to_motif(p_signal["Gene"], p_signal["Position"])
+        p_signal = p_signal.set_index(["Gene", "Position"]).drop(del_ids).reset_index()
+        p_signal.insert(0, "Sequence", motifs)
+        p_signal = p_signal.drop(columns=["Gene", "Position"])
+        p_signal = p_signal.set_index("Sequence")
+        return p_signal
+
+    def pos_to_motif(self, genes, pos):
+        """Map p-site sequence position to uniprot's proteome and extract motifs."""
+        proteome = open(DATA_DIR / "Sequence_analysis" / "proteome_uniprot2019.fa", "r")
+        motif_size = 5
+        ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
+        motifs = []
+        del_GeneToPos = []
+        for gene, pos in list(zip(genes, pos)):
+            try:
+                UP_seq = ProteomeDict[gene]
+            except BaseException:
+                del_GeneToPos.append([gene, pos])
+                continue
+            idx = int(pos[1:]) - 1
+            motif = list(UP_seq[max(0, idx - motif_size) : idx + motif_size + 1])
+            if (
+                len(motif) != motif_size * 2 + 1
+                or pos[0] != motif[motif_size]
+                or pos[0] not in ["S", "T", "Y"]
+            ):
+                del_GeneToPos.append([gene, pos])
+                continue
+            motif[motif_size] = motif[motif_size].lower()
+            motifs.append("".join(motif))
+        return motifs, del_GeneToPos

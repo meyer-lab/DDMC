@@ -2,22 +2,21 @@
 This creates Figure 2: Validations
 """
 
-import re
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from ..clustering import DDMC
-from ..binomial import AAlist
-from .common import getSetup
-from .common import (
+
+from ddmc.clustering import DDMC,compute_control_pssm, get_pspl_pssm_distances 
+from ddmc.binomial import AAlist
+from ddmc.figures.common import 
+from ddmc.figures.common import (
+    getSetup,
     plot_motifs,
     plot_cluster_kinase_distances,
     plot_pca_on_cluster_centers,
 )
-from ..clustering import compute_control_pssm, get_pspl_pssm_distances
-from ..binomial import AAlist
-from ..motifs import DictProteomeNameToSeq, get_pspls
-from ..pre_processing import filter_NaNpeptides, separate_sequence_and_abundance
+from ddmc.datasets import CPTAC, EBDT
+from ddmc.motifs import get_pspls
 
 
 def makeFigure():
@@ -38,27 +37,24 @@ def makeFigure():
 
     return f
 
-
 def plot_fig_3abd(ax_a, ax_b, ax_d):
     # Import signaling data
-    x = preprocess_ebdt_mcf7()
-    seqs, abund = separate_sequence_and_abundance(x)
+    p_signal = EBDT().get_p_signal()
 
     # Fit DDMC
-    ddmc = DDMC(
-        seqs,
+    model = DDMC(
         n_components=20,
         seq_weight=5,
         distance_method="Binomial",
         random_state=10,
         max_iter=1,
-    ).fit(abund)
+    ).fit(p_signal)
 
     # get cluster centers
-    centers = ddmc.transform(as_df=True)
+    centers = model.transform(as_df=True)
 
     # parse inhibitor names from sample names
-    inhibitors = [s.split(".")[1].split(".")[0] for s in abund.columns]
+    inhibitors = [s.split(".")[1].split(".")[0] for s in p_signal.columns]
 
     # create new bool array specifying whether each inhibitor is an AKT inhibitor
     is_AKTi = [
@@ -88,8 +84,8 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
 
     # Plot kinase predictions for cluster 16
     plot_cluster_kinase_distances(
-        ddmc.predict_upstream_kinases()[[16]],
-        ddmc.get_pssms(PsP_background=True, clusters=[16])[0],
+        model.predict_upstream_kinases()[[16]],
+        model.get_pssms(PsP_background=True, clusters=[16])[0],
         ax=ax_d,
     )
 
@@ -133,28 +129,19 @@ def plot_fig_3fgh(ax_f, ax_g, ax_h):
     erk2_pssm.index = AAlist
     plot_motifs(erk2_pssm, ax=ax_f, titles="ERK2")
 
-    # ERK2 prediction
-    # Import signaling data
-    seqs, abund = separate_sequence_and_abundance(
-        filter_NaNpeptides(
-            pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotifs.csv").iloc[:, 1:],
-            tmt=2,
-        )
-    )
+    p_signal = CPTAC().get_p_signal()
 
-    # Fit DDMC
-    ddmc_cptac = DDMC(
-        seqs,
+    model = DDMC(
         n_components=30,
         seq_weight=100,
         distance_method="Binomial",
         random_state=5,
         max_iter=1,
-    ).fit(abund)
+    ).fit(p_signal)
 
     clusters = [3, 7, 21]
     # get pssms from ddmc clusters
-    pssms = ddmc_cptac.get_pssms(PsP_background=True, clusters=clusters)
+    pssms = model.get_pssms(PsP_background=True, clusters=clusters)
 
     # append erk2+ pssm
     pssm_names = clusters + ["ERK2+"]
@@ -222,16 +209,24 @@ def shuffle_pssm(pssm):
     return np.insert(shuffled_pssm, 1, pssm[:, -1], axis=1)
 
 
-def plot_fig_3c(model, cluster):
-    """Code to create hierarchical clustering of cluster 1 across treatments"""
-    c1 = pd.DataFrame(model.transform()[:, cluster - 1])
-    X = pd.read_csv("ddmc/data/Validations/Computational/ebdt_mcf7.csv")
-    index = [col.split("7.")[1].split(".")[0] for col in X.columns[2:]]
-    c1["Inhibitor"] = index
-    c1 = c1.set_index("Inhibitor")
-    lim = np.max(np.abs(c1)) * 0.3
-    g = sns.clustermap(
-        c1,
+def plot_fig_3c():
+    """Code to create hierarchical clustering of cluster 0 across treatments"""
+    p_signal = EBDT().get_p_signal()
+    model = DDMC(
+        n_components=20,
+        seq_weight=5,
+        distance_method="Binomial",
+        random_state=10,
+        max_iter=1,
+    ).fit(p_signal)
+    centers = model.transform(as_df=True)
+    # the labels are structured as "MCF7.<drug>.fold"
+    centers.index = [i[5:-5] for i in centers.index]
+    # first cluster
+    center = centers.iloc[:, 0]
+    lim = np.max(np.abs(center)) * 0.3
+    sns.clustermap(
+        center,
         method="centroid",
         cmap="bwr",
         robust=True,
@@ -243,54 +238,3 @@ def plot_fig_3c(model, cluster):
         yticklabels=True,
         xticklabels=False,
     )
-
-
-def preprocess_ebdt_mcf7():
-    """Preprocess MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)"""
-    x = (
-        pd.read_csv("ddmc/data/Validations/Computational/ebdt_mcf7.csv")
-        .drop("FDR", axis=1)
-        .set_index("sh.index.sites")
-        .drop("ARPC2_HUMAN;")
-        .reset_index()
-    )
-    x.insert(0, "Gene", [s.split("(")[0] for s in x["sh.index.sites"]])
-    x.insert(
-        1,
-        "Position",
-        [re.search(r"\(([A-Za-z0-9]+)\)", s).group(1) for s in x["sh.index.sites"]],
-    )
-    x = x.drop("sh.index.sites", axis=1)
-    motifs, del_ids = pos_to_motif(x["Gene"], x["Position"], motif_size=5)
-    x = x.set_index(["Gene", "Position"]).drop(del_ids).reset_index()
-    x.insert(0, "Sequence", motifs)
-    return x
-
-
-def pos_to_motif(genes, pos, motif_size=5):
-    """Map p-site sequence position to uniprot's proteome and extract motifs."""
-    proteome = open("ddmc/data/Sequence_analysis/proteome_uniprot2019.fa", "r")
-    ProteomeDict = DictProteomeNameToSeq(proteome, n="gene")
-    motifs = []
-    del_GeneToPos = []
-    for gene, pos in list(zip(genes, pos)):
-        try:
-            UP_seq = ProteomeDict[gene]
-        except BaseException:
-            del_GeneToPos.append([gene, pos])
-            continue
-        idx = int(pos[1:]) - 1
-        motif = list(UP_seq[max(0, idx - motif_size) : idx + motif_size + 1])
-        if (
-            len(motif) != motif_size * 2 + 1
-            or pos[0] != motif[motif_size]
-            or pos[0] not in ["S", "T", "Y"]
-        ):
-            del_GeneToPos.append([gene, pos])
-            continue
-        motif[motif_size] = motif[motif_size].lower()
-        motifs.append("".join(motif))
-    return motifs, del_GeneToPos
-
-
-makeFigure()
