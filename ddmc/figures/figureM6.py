@@ -9,7 +9,11 @@ from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC
-from ddmc.figures.common import getSetup, plot_cluster_kinase_distances
+from ddmc.figures.common import (
+    getSetup,
+    plot_cluster_kinase_distances,
+    plot_p_signal_across_clusters_and_binary_feature,
+)
 from ddmc.logistic_regression import plotROC, plotClusterCoefficients
 
 
@@ -25,45 +29,7 @@ def makeFigure():
     # Find centers
     centers = model.transform(as_df=True).loc[egfrm.index]
 
-    pvals = []
-    centers_m = centers[egfrm]
-    centers_wt = centers[~egfrm]
-    for col in centers.columns:
-        pvals.append(mannwhitneyu(centers_m[col], centers_wt[col])[1])
-    pvals = multipletests(pvals)[1]
-
-    # plot tumor vs nat by cluster
-    df_violin = (
-        centers.assign(m=egfrm)
-        .reset_index()
-        .melt(
-            id_vars="m",
-            value_vars=centers.columns,
-            value_name="p-signal",
-            var_name="Cluster",
-        )
-    )
-    sns.violinplot(
-        data=df_violin,
-        x="Cluster",
-        y="p-signal",
-        hue="m",
-        dodge=True,
-        ax=axes[0],
-        linewidth=0.25,
-    )
-
-    annotation_height = df_violin["p-signal"].max() + 0.02
-    for i, pval in enumerate(pvals):
-        if pval < 0.05:
-            annotation = "*"
-        elif pval < 0.01:
-            annotation = "**"
-        else:
-            continue
-        axes[0].text(
-            i, annotation_height, annotation, ha="center", va="bottom", fontsize=10
-        )
+    plot_p_signal_across_clusters_and_binary_feature(egfrm, centers, "egfr mutation", axes[0])
 
     # Normalize
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)

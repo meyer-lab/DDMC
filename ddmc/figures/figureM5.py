@@ -9,7 +9,12 @@ from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
-from ddmc.figures.common import getSetup, plot_cluster_kinase_distances
+from ddmc.figures.common import (
+    getSetup,
+    plot_cluster_kinase_distances,
+    get_pvals_across_clusters,
+    plot_p_signal_across_clusters_and_binary_feature,
+)
 from ddmc.logistic_regression import plotClusterCoefficients, plotROC
 
 
@@ -27,14 +32,6 @@ def makeFigure():
     # lim = 1.5
     # sns.clustermap(centers.set_index("Type").T, method="complete", cmap="bwr", vmax=lim, vmin=-lim,  figsize=(15, 9)) Run in notebook and save as svg
     axes[0].axis("off")
-
-    # get p value of tumor vs NAT for each cluster
-    pvals = []
-    centers_tumor = centers[is_tumor]
-    centers_nat = centers[~is_tumor]
-    for col in centers.columns:
-        pvals.append(mannwhitneyu(centers_tumor[col], centers_nat[col])[1])
-    pvals = multipletests(pvals)[1]
 
     # run PCA on cluster centers
     pca = PCA(n_components=2)
@@ -64,7 +61,7 @@ def makeFigure():
         x=loadings[0],
         y=loadings[1],
         ax=axes[2],
-        hue=pvals < 0.01,
+        hue=get_pvals_across_clusters(is_tumor, centers) < 0.01,
         **{"linewidth": 0.5, "edgecolor": "k"},
     )
     axes[2].set_title("PCA Loadings")
@@ -80,39 +77,7 @@ def makeFigure():
             txt, (loadings[0][j] + 0.001, loadings[1][j] + 0.001), fontsize=10
         )
 
-    # plot tumor vs nat by cluster
-    df_violin = (
-        centers.assign(is_tumor=is_tumor)
-        .reset_index()
-        .melt(
-            id_vars="is_tumor",
-            value_vars=centers.columns,
-            value_name="p-signal",
-            var_name="Cluster",
-        )
-    )
-    sns.violinplot(
-        data=df_violin,
-        x="Cluster",
-        y="p-signal",
-        hue="is_tumor",
-        dodge=True,
-        ax=axes[3],
-        linewidth=0.25,
-    )
-    axes[3].legend(prop={"size": 8})
-
-    annotation_height = df_violin["p-signal"].max() + 0.02
-    for i, pval in enumerate(pvals):
-        if pval < 0.05:
-            annotation = "*"
-        elif pval < 0.01:
-            annotation = "**"
-        else:
-            continue
-        axes[3].text(
-            i, annotation_height, annotation, ha="center", va="bottom", fontsize=10
-        )
+    plot_p_signal_across_clusters_and_binary_feature(is_tumor, centers, "is_tumor", axes[4])
 
     # Logistic Regression
     lr = LogisticRegressionCV(

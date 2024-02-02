@@ -9,8 +9,13 @@ from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC
-from ddmc.figures.common import plot_cluster_kinase_distances, getSetup
+from ddmc.figures.common import (
+    plot_cluster_kinase_distances,
+    getSetup,
+    plot_p_signal_across_clusters_and_binary_feature,
+)
 from ddmc.logistic_regression import plotROC, plotClusterCoefficients
+
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
@@ -28,34 +33,7 @@ def makeFigure():
 
     centers = model.transform(as_df=True).loc[is_hot.index]
 
-    pvals = []
-    centers_m = centers[is_hot]
-    centers_wt = centers[~is_hot]
-    for col in centers.columns:
-        pvals.append(mannwhitneyu(centers_m[col], centers_wt[col])[1])
-    pvals = multipletests(pvals)[1]
-
-    # plot tumor vs nat by cluster
-    df_violin = (
-        centers.assign(is_hot=is_hot)
-        .reset_index()
-        .melt(
-            id_vars="is_hot",
-            value_vars=centers.columns,
-            value_name="p-signal",
-            var_name="Cluster",
-        )
-    )
-
-    sns.violinplot(
-        data=df_violin,
-        x="Cluster",
-        y="p-signal",
-        hue="is_hot",
-        dodge=True,
-        ax=axes[0],
-        linewidth=0.25,
-    )
+    plot_p_signal_across_clusters_and_binary_feature(is_hot, centers, "is_hot", axes[0])
 
     centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)
     lr = LogisticRegressionCV(
@@ -76,6 +54,7 @@ def makeFigure():
         distances, model.get_pssms(clusters=top_clusters), axes[2], num_hits=2
     )
     return f
+
 
 def plot_ImmuneGOs(cluster, ax, title=False, max_width=25, n=False, loc="best"):
     # THIS FUNCION IS NOT MAINTAINED
