@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.datasets import CPTAC
 from ddmc.figures.common import getSetup, plot_cluster_kinase_distances
 from ddmc.logistic_regression import plotROC, plotClusterCoefficients
 
@@ -16,7 +16,7 @@ from ddmc.logistic_regression import plotROC, plotClusterCoefficients
 def makeFigure():
     axes, f = getSetup((11, 7), (2, 3), multz={0: 1})
     cptac = CPTAC()
-    p_signal = select_peptide_subset(cptac.get_p_signal(), keep_ratio=0.01)
+    p_signal = cptac.get_p_signal()
     model = DDMC(n_components=30, seq_weight=100, max_iter=10).fit(p_signal)
 
     # Import Genotype data
@@ -52,7 +52,6 @@ def makeFigure():
         ax=axes[0],
         linewidth=0.25,
     )
-    axes[0].legend(prop={"size": 8})
 
     annotation_height = df_violin["p-signal"].max() + 0.02
     for i, pval in enumerate(pvals):

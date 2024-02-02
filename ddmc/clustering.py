@@ -97,7 +97,9 @@ class DDMC(GaussianMixture):
         # TODO: probably just pass in sequences here
         assert isinstance(p_signal, pd.DataFrame)
         sequences = p_signal.index.values
-        assert isinstance(sequences[0], str) and len(sequences[0]) == 11, "The index of p_signal must be the peptide sequences of length 11"
+        assert (
+            isinstance(sequences[0], str) and len(sequences[0]) == 11
+        ), "The index of p_signal must be the peptide sequences of length 11"
         self.p_signal = p_signal
         self.gen_peptide_distances(sequences, self.distance_method)
 
@@ -156,7 +158,11 @@ class DDMC(GaussianMixture):
         check_is_fitted(self, ["means_"])
         centers = self.means_.T
         if as_df:
-            centers = pd.DataFrame(centers, index=self.p_signal.columns, columns=np.arange(self.n_components))
+            centers = pd.DataFrame(
+                centers,
+                index=self.p_signal.columns,
+                columns=np.arange(self.n_components),
+            )
         return centers
 
     def impute(self, X: np.ndarray) -> np.ndarray:
@@ -172,7 +178,7 @@ class DDMC(GaussianMixture):
         assert np.all(np.isfinite(X))
         return X
 
-    def get_pssms(self, PsP_background=False, clusters: List=None):
+    def get_pssms(self, PsP_background=False, clusters: List = None):
         """Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus.
@@ -184,12 +190,13 @@ class DDMC(GaussianMixture):
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
 
-        l1 = list(np.arange(self.n_components) + 1)
+        l1 = list(np.arange(self.n_components))
         l2 = list(set(self.labels()))
         ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
-        for ii in range(1, self.n_components + 1):
+        for ii in range(self.n_components):
             # Check for empty clusters and ignore them, if there are
-            if ii in ec: continue
+            if ii in ec:
+                continue
 
             # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
@@ -231,11 +238,13 @@ class DDMC(GaussianMixture):
 
             pssms.append(np.clip(pssm, a_min=0, a_max=3))
             pssm_names.append(ii)
-        
+
         pssm_names, pssms = np.array(pssm_names), np.array(pssms)
-        
+
         if clusters is not None:
-            return pssms[[np.where(pssm_names == cluster)[0][0] for cluster in clusters]]
+            return pssms[
+                [np.where(pssm_names == cluster)[0][0] for cluster in clusters]
+            ]
 
         return pssm_names, pssms
 
@@ -258,6 +267,10 @@ class DDMC(GaussianMixture):
 
         return distances
 
+    def has_empty_clusters(self):
+        check_is_fitted(self, ["scores_"])
+        return np.unique(self.labels()).size != self.n_components
+
     def predict(self) -> np.ndarray:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""
         check_is_fitted(self, ["scores_"])
@@ -279,7 +292,7 @@ def get_pspl_pssm_distances(
     """
     Args:
         pspls: kinase specificity profiles of shape (n_kinase, 20, 9)
-        pssms: position-specific scoring matrices of shape (n_pssms, 20, 11) 
+        pssms: position-specific scoring matrices of shape (n_pssms, 20, 11)
     """
     assert pssms.shape[1:3] == (20, 11)
     assert pspls.shape[1:3] == (20, 9)

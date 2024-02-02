@@ -1,114 +1,84 @@
-"""
-This creates Figure 7: Tumor infiltrating immune cells
-"""
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import textwrap
+from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from .common import getSetup, plot_distance_to_upstream_kinase
-from .figureM5 import (
-    build_pval_matrix,
-    calculate_mannW_pvals,
-    plot_clusters_binaryfeatures,
-)
-from ..clustering import DDMC
-from ..logistic_regression import plotROC, plotClusterCoefficients
-from ..pre_processing import filter_NaNpeptides
+from statsmodels.stats.multitest import multipletests
 
+from ddmc.clustering import DDMC
+from ddmc.datasets import CPTAC
+from ddmc.figures.common import plot_cluster_kinase_distances, getSetup
+from ddmc.logistic_regression import plotROC, plotClusterCoefficients
 
 def makeFigure():
     """Get a list of the axis objects and create a figure"""
     # Get list of axis objects
-    ax, f = getSetup((11, 7), (2, 3), multz={0: 1})
-
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
+    axes, f = getSetup((11, 7), (2, 3), multz={0: 1, 4: 1})
+    cptac = CPTAC()
+    is_hot = cptac.get_hot_cold_labels()
+    p_signal = cptac.get_p_signal()
+    model = DDMC(n_components=30, seq_weight=100, max_iter=10, random_state=5).fit(
+        p_signal
     )
-    d = X.select_dtypes(include=[float]).T
-    i = X["Sequence"]
+    assert (
+        not model.has_empty_clusters()
+    ), "This plot assumes that every cluster will have at least one peptide. Please rerun with fewer components are more peptides."
 
-    # Fit DDMC
-    model = DDMC(
-        i, n_components=30, seq_weight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
+    centers = model.transform(as_df=True).loc[is_hot.index]
 
-    X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    centers = pd.DataFrame(model.transform())
-    centers.columns = np.arange(model.n_components) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers = (
-        centers.loc[~centers["Patient_ID"].str.endswith(".N"), :]
-        .sort_values(by="Patient_ID")
-        .set_index("Patient_ID")
+    pvals = []
+    centers_m = centers[is_hot]
+    centers_wt = centers[~is_hot]
+    for col in centers.columns:
+        pvals.append(mannwhitneyu(centers_m[col], centers_wt[col])[1])
+    pvals = multipletests(pvals)[1]
+
+    # plot tumor vs nat by cluster
+    df_violin = (
+        centers.assign(is_hot=is_hot)
+        .reset_index()
+        .melt(
+            id_vars="is_hot",
+            value_vars=centers.columns,
+            value_name="p-signal",
+            var_name="Cluster",
+        )
     )
-    centers = centers.drop(
-        [14, 24], axis=1
-    )  # Drop clusters 14&24, contain only 1 peptide
 
-    # Import Cold-Hot Tumor data
-    cent1, y = FormatXYmatrices(centers.copy())
+    sns.violinplot(
+        data=df_violin,
+        x="Cluster",
+        y="p-signal",
+        hue="is_hot",
+        dodge=True,
+        ax=axes[0],
+        linewidth=0.25,
+    )
 
-    # Normalize
-    cent1 = cent1.T
-    cent1.iloc[:, :] = StandardScaler(with_std=False).fit_transform(cent1.iloc[:, :])
-    cent1 = cent1.T
-
-    # Hypothesis Testing
-    cent1["TI"] = y.values
-    pvals = calculate_mannW_pvals(cent1, "TI", 1, 0)
-    pvals = build_pval_matrix(model.n_components, pvals)
-    cent1["TI"] = cent1["TI"].replace(0, "CTE")
-    cent1["TI"] = cent1["TI"].replace(1, "HTE")
-    plot_clusters_binaryfeatures(cent1, "TI", ax[0], pvals=pvals, loc="lower left")
-    ax[0].legend(loc="lower left", prop={"size": 10})
-
-    # Logistic Regression
+    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)
     lr = LogisticRegressionCV(
-        cv=15, solver="saga", n_jobs=-1, penalty="l1", max_iter=10000
+        cv=3, solver="saga", n_jobs=1, penalty="l1", max_iter=10000
     )
-    plotROC(ax[1], lr, cent1.iloc[:, :-1].values, y, cv_folds=4, title="ROC TI")
-    plotClusterCoefficients(
-        ax[2], lr.fit(cent1.iloc[:, :-1], y.values), title="TI weights"
+    plotROC(
+        lr, centers.values, is_hot.values, cv_folds=3, title="ROC TI", return_mAUC=True
     )
+    plotClusterCoefficients(axes[1], lr, title="")
 
-    # plot Upstream Kinases
-    plot_distance_to_upstream_kinase(model, [17, 20, 21], ax[3], num_hits=3)
+    top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
 
+    #  plot predicted kinases for most weighted clusters
+    distances = model.predict_upstream_kinases()[top_clusters]
+
+    # plot upstream Kinases
+    plot_cluster_kinase_distances(
+        distances, model.get_pssms(clusters=top_clusters), axes[2], num_hits=2
+    )
     return f
 
-
-def FormatXYmatrices(centers):
-    """Make sure Y matrix has the same matching samples has the signaling centers"""
-    y = (
-        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
-        .dropna(axis=1)
-        .sort_values(by="Sample ID")
-    )
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-    return centers, y
-
-
 def plot_ImmuneGOs(cluster, ax, title=False, max_width=25, n=False, loc="best"):
+    # THIS FUNCION IS NOT MAINTAINED
     """Plot immune-related GO"""
     go = pd.read_csv("ddmc/data/cluster_analysis/CPTAC_GO_C" + str(cluster) + ".csv")
     im = go[go["GO biological process complete"].str.contains("immune")]

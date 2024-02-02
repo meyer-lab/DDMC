@@ -23,14 +23,14 @@ def filter_incomplete_peptides(
         assert min_experiments is not None
         assert sample_to_experiment is not None
         unique_experiments = np.unique(sample_to_experiment)
-        experiments_grid, StoE_grid = np.meshgrid(
+        experiments_grid, s_to_e_grid = np.meshgrid(
             unique_experiments, sample_to_experiment, indexing="ij"
         )
-        bool_matrix = experiments_grid == StoE_grid
+        bool_matrix = experiments_grid == s_to_e_grid
         present = ~np.isnan(p_signal.values)
         peptide_idx = (present[None, :, :] & bool_matrix[:, None, :]).any(axis=2).sum(
             axis=0
-        ) > min_experiments
+        ) >= min_experiments
     return p_signal.iloc[peptide_idx]
 
 
@@ -79,7 +79,7 @@ class CPTAC:
         mutations = mutations.loc[patients]
         if mutation_names is not None:
             mutations = mutations[mutation_names]
-        return mutations
+        return mutations.astype(bool)
 
     def get_hot_cold_labels(self):
         hot_cold = (
@@ -88,11 +88,12 @@ class CPTAC:
             .sort_values(by="Sample ID")
             .set_index("Sample ID")
         )["Group"]
+        hot_cold = hot_cold[~hot_cold.index.str.endswith(".N")]
         hot_cold = hot_cold[hot_cold != "NAT enriched"]
         hot_cold = hot_cold.replace("Cold-tumor enriched", 0)
         hot_cold = hot_cold.replace("Hot-tumor enriched", 1)
         hot_cold = hot_cold.dropna()
-        return np.squeeze(hot_cold)
+        return np.squeeze(hot_cold).astype(bool)
     
     def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray[bool]:
         return ~np.array([sample.endswith(".N") for sample in samples])
