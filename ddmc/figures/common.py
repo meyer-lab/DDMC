@@ -131,10 +131,12 @@ def genFigure():
 def plot_motifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
     """Generate logo plots of a list of PSSMs"""
     pssm = pssm.T
+    pssm = pd.DataFrame(pssm)
     if pssm.shape[0] == 11:
         pssm.index = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
     elif pssm.shape[0] == 9:
         pssm.index = [-5, -4, -3, -2, -1, 1, 2, 3, 4]
+    pssm.columns = AAlist
     logo = lm.Logo(
         pssm,
         font_name="Arial",
@@ -202,7 +204,7 @@ def plot_cluster_kinase_distances(
 
 
 def get_pvals_across_clusters(
-    label: pd.Series[bool] | np.ndarray[bool], centers: pd.DataFrame | np.ndarray
+    label: pd.Series | np.ndarray[bool], centers: pd.DataFrame | np.ndarray
 ) -> np.ndarray[float]:
     pvals = []
     centers_pos = centers[label]
@@ -213,7 +215,7 @@ def get_pvals_across_clusters(
 
 
 def plot_p_signal_across_clusters_and_binary_feature(
-    label: pd.Series[bool] | np.ndarray[bool],
+    label: pd.Series | np.ndarray[bool],
     centers: pd.DataFrame | np.ndarray,
     label_name: str,
     ax,
