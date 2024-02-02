@@ -11,7 +11,7 @@ from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
 
-def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, xlabels=False, title=False):
+def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -20,7 +20,7 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, xlabels=False, 
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0])
-    if xlabels:
+    if xlabels is not None:
         coefs_["Cluster"] = xlabels
     p = sns.barplot(
         ax=ax,

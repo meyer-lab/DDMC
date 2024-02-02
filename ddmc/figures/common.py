@@ -204,6 +204,8 @@ def get_pvals_across_clusters(
     label: pd.Series | np.ndarray[bool], centers: pd.DataFrame | np.ndarray
 ) -> np.ndarray[float]:
     pvals = []
+    if isinstance(centers, pd.DataFrame):
+        centers = centers.values
     centers_pos = centers[label]
     centers_neg = centers[~label]
     for i in range(centers.shape[1]):
@@ -212,14 +214,15 @@ def get_pvals_across_clusters(
 
 
 def plot_p_signal_across_clusters_and_binary_feature(
-    label: pd.Series | np.ndarray[bool],
+    feature: pd.Series | np.ndarray[bool],
     centers: pd.DataFrame | np.ndarray,
     label_name: str,
     ax,
 ) -> None:
     centers = centers.copy()
-    centers[label_name] = label
-    df_violin = centers.reset_index().melt(
+    centers_labeled = centers.copy()
+    centers_labeled[label_name] = feature
+    df_violin = centers_labeled.reset_index().melt(
         id_vars=label_name,
         value_vars=centers.columns,
         value_name="p-signal",
@@ -236,7 +239,7 @@ def plot_p_signal_across_clusters_and_binary_feature(
     )
     ax.legend(prop={"size": 8})
     annotation_height = df_violin["p-signal"].max() + 0.02
-    for i, pval in enumerate(get_pvals_across_clusters(label, centers)):
+    for i, pval in enumerate(get_pvals_across_clusters(feature, centers)):
         if pval < 0.05:
             annotation = "*"
         elif pval < 0.01:
