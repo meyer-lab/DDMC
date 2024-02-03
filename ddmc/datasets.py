@@ -16,15 +16,31 @@ def filter_incomplete_peptides(
     min_experiments: int = None,
     sample_to_experiment: np.ndarray = None,
 ):
+    """
+    Filters out missing values from p-signal array.
+
+    Args:
+        sample_presence_ratio: the minimum fraction of non-missing values
+            allowed for a peptide before it is DROPPED.
+        min_experiments: the minimum number of experiments allowed for a peptide
+            before it is DROPPED. Must also pass in sample_to_experiment.
+        sample_to_experiment: array of shape `len(p_signal.columns)` that maps
+            each sample to an experiment (any identifier).
+
+    Returns:
+        Filtered data.
+    """
     # assume that X has sequences as the index and samples as columns
     if sample_presence_ratio is not None:
         peptide_idx = (
             np.count_nonzero(~np.isnan(p_signal), axis=1) / p_signal.shape[1]
             >= sample_presence_ratio
         )
-    else:
+    elif min_experiments is not None:
         assert min_experiments is not None
         assert sample_to_experiment is not None
+        # this is kind of confusing because of the use of numpy, but we're
+        # removing rows that have less than the minimum number of experiments
         unique_experiments = np.unique(sample_to_experiment)
         experiments_grid, s_to_e_grid = np.meshgrid(
             unique_experiments, sample_to_experiment, indexing="ij"
@@ -34,12 +50,19 @@ def filter_incomplete_peptides(
         peptide_idx = (present[None, :, :] & bool_matrix[:, None, :]).any(axis=2).sum(
             axis=0
         ) >= min_experiments
+    else:
+        raise ValueError(
+            "Must specify either a sample presence or n_experiments threshold"
+        )
     return p_signal.iloc[peptide_idx]
 
 
 def select_peptide_subset(
     p_signal: pd.DataFrame, keep_ratio: float = None, keep_num: int = None
 ):
+    """
+    Selects a random subset of peptides from p_signal.
+    """
     if keep_ratio is not None:
         keep_num = int(p_signal.shape[0] * keep_ratio)
     return p_signal.iloc[np.random.choice(p_signal.shape[0], keep_num)]
@@ -66,7 +89,10 @@ class CPTAC:
             sample_to_experiment=self.get_sample_to_experiment(),
         )
 
-    def get_patients_with_nat_and_tumor(self, samples: np.ndarray[str]):
+    def get_patients_with_nat_and_tumor(self, samples: np.ndarray[str]) -> np.ndarray:
+        """
+        Get patients that have both NAT and tumor samples.
+        """
         samples = samples.astype(str)
         samples = samples[np.char.find(samples, "IR") == -1]
         tumor_samples = np.sort(samples[~np.char.endswith(samples, ".N")])
@@ -75,7 +101,7 @@ class CPTAC:
         nat_patients = np.char.replace(nat_samples, ".N", "")
         return np.intersect1d(tumor_patients, nat_patients)
 
-    def get_mutations(self, mutation_names: Sequence[str] = None):
+    def get_mutations(self, mutation_names: Sequence[str] = None) -> pd.DataFrame:
         mutations = pd.read_csv(self.data_dir / "Patient_Mutations.csv")
         mutations = mutations.set_index("Sample.ID")
         patients = self.get_patients_with_nat_and_tumor(mutations.index.values)
@@ -84,7 +110,7 @@ class CPTAC:
             mutations = mutations[mutation_names]
         return mutations.astype(bool)
 
-    def get_hot_cold_labels(self):
+    def get_hot_cold_labels(self) -> pd.Series:
         hot_cold = (
             pd.read_csv(self.data_dir / "Hot_Cold.csv")
             .dropna(axis=1)
@@ -99,13 +125,16 @@ class CPTAC:
         return np.squeeze(hot_cold).astype(bool)
 
     def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray[bool]:
+        """
+        Get tumor vs NAT for each of samples. Returned array contains True if
+        tumor.
+        """
         return ~np.array([sample.endswith(".N") for sample in samples])
 
 
 # MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)
 class EBDT:
     def get_p_signal(self) -> pd.DataFrame:
-        """Preprocess"""
         p_signal = (
             pd.read_csv(DATA_DIR / "Validations" / "Computational" / "ebdt_mcf7.csv")
             .drop("FDR", axis=1)

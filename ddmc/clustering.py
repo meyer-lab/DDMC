@@ -1,6 +1,6 @@
 """ Clustering functions. """
 
-from typing import Literal, List, Dict
+from typing import Literal, List, Sequence, Tuple
 import warnings
 from copy import deepcopy
 import itertools
@@ -39,7 +39,6 @@ class DDMC(GaussianMixture):
         self.seq_weight = seq_weight
 
     def gen_peptide_distances(self, sequences: np.ndarray, distance_method):
-        # store parameters for sklearn's checks
         if sequences.dtype != str:
             sequences = sequences.astype("str")
         sequences = np.char.upper(sequences)
@@ -119,31 +118,6 @@ class DDMC(GaussianMixture):
         assert np.all(np.isfinite(self.seq_scores_))
         return self
 
-    def wins(self, X):
-        """Find similarity of fitted model to data and sequence models"""
-        check_is_fitted(self, ["scores_", "seq_scores_"])
-
-        alt_model = deepcopy(self)
-        alt_model.seq_weight = 0.0  # No influence
-        alt_model.fit(X)
-        data_model = alt_model.scores_
-
-        alt_model.seq_weight = 1000.0  # Overwhelming influence
-        alt_model.fit(X)
-        seq_model = alt_model.scores_
-
-        dataDist = np.linalg.norm(self.scores_ - data_model)
-        seqDist = np.linalg.norm(self.scores_ - seq_model)
-
-        for i in itertools.permutations(np.arange(self.n_components)):
-            dataDistTemp = np.linalg.norm(self.scores_ - data_model[:, i])
-            seqDistTemp = np.linalg.norm(self.scores_ - seq_model[:, i])
-
-            dataDist = np.minimum(dataDist, dataDistTemp)
-            seqDist = np.minimum(seqDist, seqDistTemp)
-
-        return (dataDist, seqDist)
-
     def transform(self, as_df=False) -> np.ndarray | pd.DataFrame:
         """
         Return cluster centers.
@@ -164,23 +138,38 @@ class DDMC(GaussianMixture):
             )
         return centers
 
-    def impute(self, X: np.ndarray) -> np.ndarray:
-        """Impute a matching dataset."""
-        X = X.copy()
+    def impute(self) -> pd.DataFrame:
+        """
+        Imputes missing values in the dataset passed in fit() and returns the
+        imputed dataset.
+        """
+        p_signal = self.p_signal.copy()
         labels = self.labels()  # cluster assignments
         centers = self.transform()  # samples x clusters
+        for ii in range(p_signal.shape[0]): 
+            p_signal[ii, np.isnan(p_signal[ii, :])] = centers[
+                np.isnan(p_signal[ii, :]), labels[ii] - 1
+            ]
+        assert np.all(np.isfinite(p_signal))
+        return p_signal
 
-        assert len(labels) == X.shape[0]
-        for ii in range(X.shape[0]):  # X is peptides x samples
-            X[ii, np.isnan(X[ii, :])] = centers[np.isnan(X[ii, :]), labels[ii] - 1]
-
-        assert np.all(np.isfinite(X))
-        return X
-
-    def get_pssms(self, PsP_background=False, clusters: List = None):
-        """Compute position-specific scoring matrix of each cluster.
+    def get_pssms(
+        self, PsP_background=False, clusters: List[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray] | np.ndarray:
+        """
+        Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus.
+
+        Args:
+            PsP_background: Whether or not PhosphoSitePlus should be used for background frequency.
+            clusters: cluster indices to get pssms for
+
+        Returns:
+            If the clusters argument is used, an array of shape (len(clusters), 20, 11),
+            else two arrays, where the first (of shape (n_pssms,))
+            contains the clusters of the pssms in the second
+            (of shape (n_pssms, 20, 11)).
         """
         pssm_names, pssms = [], []
         if PsP_background:
@@ -250,12 +239,11 @@ class DDMC(GaussianMixture):
     def predict_upstream_kinases(
         self,
         PsP_background=True,
-    ):
+    ) -> np.ndarray:
         """Compute matrix-matrix similarity between kinase specificity profiles
         and cluster PSSMs to identify upstream kinases regulating clusters."""
         kinases, pspls = get_pspls()
         clusters, pssms = self.get_pssms(PsP_background=PsP_background)
-
         distances = get_pspl_pssm_distances(
             pspls,
             pssms,
@@ -263,19 +251,21 @@ class DDMC(GaussianMixture):
             pssm_names=clusters,
             kinases=kinases,
         )
-
         return distances
 
-    def has_empty_clusters(self):
+    def has_empty_clusters(self) -> bool:
+        """
+        Checks whether the most recent call to fit() resulted in empty clusters.
+        """
         check_is_fitted(self, ["scores_"])
         return np.unique(self.labels()).size != self.n_components
 
-    def predict(self) -> np.ndarray:
+    def predict(self) -> np.ndarray[int]:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
 
-    def labels(self) -> np.ndarray:
+    def labels(self) -> np.ndarray[int]:
         """Find cluster assignment with highest likelihood for each peptide."""
         return self.predict()
 
@@ -286,12 +276,25 @@ class DDMC(GaussianMixture):
 
 
 def get_pspl_pssm_distances(
-    pspls: np.ndarray, pssms: np.ndarray, as_df=False, pssm_names=None, kinases=None
+    pspls: np.ndarray,
+    pssms: np.ndarray,
+    as_df=False,
+    pssm_names: Sequence[str] = None,
+    kinases: Sequence[str] = None,
 ) -> np.ndarray | pd.DataFrame:
     """
+    Computes a distance matrix between PSPLs and PSSMs.
+
     Args:
         pspls: kinase specificity profiles of shape (n_kinase, 20, 9)
         pssms: position-specific scoring matrices of shape (n_pssms, 20, 11)
+        as_df: Whether or not the returned matrix should be returned as a
+            dataframe. Requires pssm_names and kinases.
+        pssm_names: list of names for the pssms of shape (n_pssms,)
+        kinases: list of names for the pspls of shape (n_kinase,)
+
+    Returns:
+        Distance matrix of shape (n_kinase, n_pssms).
     """
     assert pssms.shape[1:3] == (20, 11)
     assert pspls.shape[1:3] == (20, 9)

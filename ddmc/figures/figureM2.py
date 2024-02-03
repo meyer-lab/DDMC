@@ -196,5 +196,5 @@ def impute_ddmc(p_signal, n_clusters, weight, distance_method):
     return (
         DDMC(n_clusters, weight, distance_method, max_iter=1)
         .fit(p_signal)
-        .impute(p_signal)
+        .impute()
     )
