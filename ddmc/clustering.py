@@ -98,7 +98,7 @@ class DDMC(GaussianMixture):
             isinstance(sequences[0], str) and len(sequences[0]) == 11
         ), "The index of p_signal must be the peptide sequences of length 11"
         assert all(
-            [token in AAlist for token in sequences[0]]
+            [token.upper() in AAlist for token in sequences[0]]
         ), "Sequence(s) contain invalid characters"
         assert (
             p_signal.select_dtypes(include=[np.number]).shape[1] == p_signal.shape[1]
