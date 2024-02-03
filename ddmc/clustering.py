@@ -38,7 +38,7 @@ class DDMC(GaussianMixture):
         self.distance_method = distance_method
         self.seq_weight = seq_weight
 
-    def gen_peptide_distances(self, sequences: np.ndarray, distance_method):
+    def _gen_peptide_distances(self, sequences: np.ndarray, distance_method):
         if sequences.dtype != str:
             sequences = sequences.astype("str")
         sequences = np.char.upper(sequences)
@@ -84,22 +84,28 @@ class DDMC(GaussianMixture):
 
     def fit(self, p_signal: pd.DataFrame):
         """
-        Compute EM clustering
+        Compute EM clustering.
 
         Args:
-            X: dataframe consisting of a "Sequence" column, and sample
-                columns. Every column that is not named "Sequence" will be treated
-                as a sample.
+            p_signal: Dataframe of shape (number of peptides, number of samples)
+                containing the phosphorylation signal. `p_signal.index` contains
+                the length-11 AA sequence of each peptide, containing the
+                phosphoacceptor in the middle and five AAs flanking it.
         """
-        # TODO: assert that the peptides passed in match the length of X
-        # TODO: probably just pass in sequences here
-        assert isinstance(p_signal, pd.DataFrame)
+        assert isinstance(p_signal, pd.DataFrame), "`p_signal` must be a pandas dataframe."
         sequences = p_signal.index.values
         assert (
             isinstance(sequences[0], str) and len(sequences[0]) == 11
         ), "The index of p_signal must be the peptide sequences of length 11"
+        assert all(
+            [token in AAlist for token in sequences[0]]
+        ), "Sequence(s) contain invalid characters"
+        assert (
+            p_signal.select_dtypes(include=[np.number]).shape[1] == p_signal.shape[1]
+        ), "All values in `p_signal` should be numerical"
+
         self.p_signal = p_signal
-        self.gen_peptide_distances(sequences, self.distance_method)
+        self._gen_peptide_distances(sequences, self.distance_method)
 
         if np.any(np.isnan(p_signal)):
             self._missing = True
@@ -146,7 +152,7 @@ class DDMC(GaussianMixture):
         p_signal = self.p_signal.copy()
         labels = self.labels()  # cluster assignments
         centers = self.transform()  # samples x clusters
-        for ii in range(p_signal.shape[0]): 
+        for ii in range(p_signal.shape[0]):
             p_signal[ii, np.isnan(p_signal[ii, :])] = centers[
                 np.isnan(p_signal[ii, :]), labels[ii] - 1
             ]
