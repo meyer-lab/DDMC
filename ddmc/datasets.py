@@ -77,7 +77,7 @@ class CPTAC:
             return sample_to_experiment
         return sample_to_experiment.iloc[:, 1].values
 
-    def get_p_signal(self) -> pd.DataFrame:
+    def get_p_signal(self, min_experiments=2) -> pd.DataFrame:
         p_signal = pd.read_csv(self.data_dir / "CPTAC-preprocessedMotifs.csv").iloc[
             :, 1:
         ]
@@ -85,7 +85,7 @@ class CPTAC:
         p_signal = p_signal.drop(columns=["Protein", "Gene", "Position"])
         return filter_incomplete_peptides(
             p_signal,
-            min_experiments=2,
+            min_experiments=min_experiments,
             sample_to_experiment=self.get_sample_to_experiment(),
         )
 

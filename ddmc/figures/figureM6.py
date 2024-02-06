@@ -3,7 +3,6 @@ import pandas as pd
 from bioinfokit import visuz
 from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
@@ -13,25 +12,32 @@ from ddmc.figures.common import (
     plot_cluster_kinase_distances,
     plot_p_signal_across_clusters_and_binary_feature,
 )
-from ddmc.logistic_regression import plot_roc, plot_cluster_regression_coefficients
+from ddmc.logistic_regression import (
+    plot_roc,
+    plot_cluster_regression_coefficients,
+    normalize_cluster_centers,
+    get_highest_weighted_clusters,
+)
 
 
 def makeFigure():
     axes, f = getSetup((11, 7), (2, 3), multz={0: 1})
     cptac = CPTAC()
     p_signal = cptac.get_p_signal()
-    model = DDMC(n_components=30, seq_weight=100, max_iter=10).fit(p_signal)
+    model = DDMC(n_components=30, seq_weight=100).fit(p_signal)
 
     # Import Genotype data
-    egfrm = cptac.get_mutations(["EGFR.mutation.status"])
+    egfrm = cptac.get_mutations(["EGFR.mutation.status"])["EGFR.mutation.status"]
 
     # Find centers
     centers = model.transform(as_df=True).loc[egfrm.index]
 
-    plot_p_signal_across_clusters_and_binary_feature(egfrm, centers, "egfr mutation", axes[0])
+    plot_p_signal_across_clusters_and_binary_feature(
+        egfrm, centers, "egfr mutation", axes[0]
+    )
 
     # Normalize
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)
+    centers.iloc[:, :] = normalize_cluster_centers(centers.values)
 
     # Logistic Regression
     lr = LogisticRegressionCV(
@@ -42,13 +48,15 @@ def makeFigure():
         penalty="l1",
         class_weight="balanced",
     )
-    plot_roc(lr, centers.values, egfrm.values, cv_folds=3, title="ROC EGFRm", ax=axes[1])
+    plot_roc(
+        lr, centers.values, egfrm.values, cv_folds=3, title="ROC EGFRm", ax=axes[1]
+    )
     axes[1].legend(loc="lower right", prop={"size": 8})
 
     plot_cluster_regression_coefficients(axes[2], lr, title="")
 
-    top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
-    #  plot predicted kinases for most weighted clusters
+    top_clusters = get_highest_weighted_clusters(model, lr.coef_)
+
     distances = model.predict_upstream_kinases()[top_clusters]
 
     # plot Upstream Kinases

@@ -4,7 +4,8 @@ from sklearn.preprocessing import StandardScaler
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc
+from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
+
 
 def makeFigure():
     cptac = CPTAC()
@@ -16,14 +17,14 @@ def makeFigure():
     egfr = mutations["EGFR.mutation.status"]
     hot_cold = cptac.get_hot_cold_labels()
 
-    p_signal = select_peptide_subset(CPTAC().get_p_signal(), keep_num=100)
+    p_signal = CPTAC().get_p_signal()
 
     # LASSO
     lr = LogisticRegressionCV(
         Cs=10,
         cv=10,
         solver="saga",
-        max_iter=1000,
+        max_iter=10000,
         n_jobs=-1,
         penalty="l1",
         class_weight="balanced",
@@ -38,12 +39,11 @@ def makeFigure():
             seq_weight=weight,
             distance_method="Binomial",
             random_state=5,
-            max_iter=10,
         ).fit(p_signal)
 
         # Find and scale centers
         centers = model.transform(as_df=True)
-        centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers.values)
+        centers.iloc[:, :] = normalize_cluster_centers(centers.values)
 
         # STK11
         plot_roc(

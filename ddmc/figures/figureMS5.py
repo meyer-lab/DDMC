@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
 from ddmc.clustering import DDMC
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc
+from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
 from ddmc.datasets import CPTAC, filter_incomplete_peptides
 
 
@@ -49,7 +49,9 @@ def makeFigure():
     sns.barplot(data=coefs, x="p-site", y="Coefficient", color="darkblue", ax=axes[3])
     axes[3].set_xticklabels(axes[3].get_xticklabels(), rotation=45)
 
-    plot_roc(lr, model_gmm.transform(), is_tumor, ax=axes[1])
+    centers = model_gmm.transform()
+    centers = normalize_cluster_centers(centers)
+    plot_roc(lr, centers, is_tumor, ax=axes[1])
     axes[1].set_title("GMM ROC")
 
     plot_roc(lr, model_kmeans.cluster_centers_.T, is_tumor, ax=axes[2])

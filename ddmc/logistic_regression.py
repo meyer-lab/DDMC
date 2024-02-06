@@ -6,10 +6,24 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from scipy.stats import sem
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
+from sklearn.preprocessing import StandardScaler
+from ddmc.clustering import DDMC
+
+
+def normalize_cluster_centers(centers: np.ndarray):
+    # normalize centers along along patient dimension
+    return StandardScaler(with_std=False).fit_transform(centers.T).T
+
+
+def get_highest_weighted_clusters(model: DDMC, coefficients: np.ndarray, n_clusters=3):
+    top_clusters = np.flip(np.argsort(np.abs(coefficients.squeeze())))
+    top_clusters = [
+        cluster for cluster in top_clusters if cluster in model.get_nonempty_clusters()
+    ]
+    return top_clusters[:n_clusters]
 
 
 def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):

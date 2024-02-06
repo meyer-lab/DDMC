@@ -92,7 +92,9 @@ class DDMC(GaussianMixture):
                 the length-11 AA sequence of each peptide, containing the
                 phosphoacceptor in the middle and five AAs flanking it.
         """
-        assert isinstance(p_signal, pd.DataFrame), "`p_signal` must be a pandas dataframe."
+        assert isinstance(
+            p_signal, pd.DataFrame
+        ), "`p_signal` must be a pandas dataframe."
         sequences = p_signal.index.values
         assert (
             isinstance(sequences[0], str) and len(sequences[0]) == 11
@@ -153,8 +155,8 @@ class DDMC(GaussianMixture):
         labels = self.labels()  # cluster assignments
         centers = self.transform()  # samples x clusters
         for ii in range(p_signal.shape[0]):
-            p_signal[ii, np.isnan(p_signal[ii, :])] = centers[
-                np.isnan(p_signal[ii, :]), labels[ii] - 1
+            p_signal.iloc[ii, np.isnan(p_signal.iloc[ii, :])] = centers[
+                np.isnan(p_signal.iloc[ii, :]), labels[ii] - 1
             ]
         assert np.all(np.isfinite(p_signal))
         return p_signal
@@ -259,12 +261,15 @@ class DDMC(GaussianMixture):
         )
         return distances
 
+    def get_nonempty_clusters(self) -> np.ndarray[int]:
+        return np.unique(self.labels())
+
     def has_empty_clusters(self) -> bool:
         """
         Checks whether the most recent call to fit() resulted in empty clusters.
         """
         check_is_fitted(self, ["scores_"])
-        return np.unique(self.labels()).size != self.n_components
+        return self.get_nonempty_clusters().size != self.n_components
 
     def predict(self) -> np.ndarray[int]:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""

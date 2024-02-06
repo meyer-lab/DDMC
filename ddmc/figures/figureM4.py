@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegressionCV
 
 from ddmc.clustering import DDMC
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc
+from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
 from ddmc.datasets import CPTAC, select_peptide_subset
 
 
@@ -15,32 +15,27 @@ def makeFigure():
     axes, f = getSetup((5, 5), (2, 2), multz={0: 1})
 
     # use small numbers here so it doesn't take forever
-    regression_results = do_phenotype_regression(
-        n_runs=1, n_cv_folds=2, ratio_peptides=0.01
-    )
+    regression_results = do_phenotype_regression(n_runs=1, n_cv_folds=2)
     plot_phenotype_regression(regression_results, axes[0])
-    p_signal = select_peptide_subset(CPTAC().get_p_signal(), keep_num=500)
+    p_signal = select_peptide_subset(CPTAC().get_p_signal(), keep_num=2000)
     models = [
         DDMC(
             n_components=30,
             seq_weight=0,
             distance_method="Binomial",
             random_state=5,
-            max_iter=10,
         ).fit(p_signal),
         DDMC(
             n_components=30,
             seq_weight=250,
             distance_method="Binomial",
             random_state=5,
-            max_iter=10,
         ).fit(p_signal),
         DDMC(
             n_components=30,
             seq_weight=1e6,
             distance_method="Binomial",
             random_state=5,
-            max_iter=10,
         ).fit(p_signal),
     ]
     plot_peptide_to_cluster_p_signal_distances(p_signal, models, axes[1])
@@ -48,10 +43,10 @@ def makeFigure():
     return f
 
 
-def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_peptides=1):
+def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3):
     """Plot mean AUCs per phenotype across weights."""
     cptac = CPTAC()
-    p_signal = select_peptide_subset(cptac.get_p_signal(), keep_ratio=ratio_peptides)
+    p_signal = cptac.get_p_signal()
 
     mutations = cptac.get_mutations(
         ["STK11.mutation.status", "EGFR.mutation.status", "ALK.fusion"]
@@ -65,7 +60,7 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_pepti
     lr = LogisticRegressionCV(
         cv=3,
         solver="saga",
-        max_iter=500,
+        max_iter=10000,
         n_jobs=-1,
         penalty="l1",
         class_weight="balanced",
@@ -79,9 +74,9 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3, ratio_pepti
                 n_components=n_components,
                 seq_weight=seq_weight,
                 distance_method="Binomial",
-                max_iter=10,
             ).fit(p_signal)
             centers = ddmc.transform(as_df=True)
+            centers.iloc[:, :] = normalize_cluster_centers(centers.values)
             # the available patients vary by label
             stk11_auc = plot_roc(
                 lr,

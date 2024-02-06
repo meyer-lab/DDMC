@@ -1,9 +1,7 @@
 import numpy as np
-import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, select_peptide_subset
@@ -14,17 +12,22 @@ from ddmc.figures.common import (
     plot_p_signal_across_clusters_and_binary_feature,
     plot_pca_on_cluster_centers,
 )
-from ddmc.logistic_regression import plot_cluster_regression_coefficients, plot_roc
+from ddmc.logistic_regression import (
+    plot_cluster_regression_coefficients,
+    plot_roc,
+    normalize_cluster_centers,
+    get_highest_weighted_clusters,
+)
 
 
 def makeFigure():
     axes, f = getSetup((11, 10), (3, 3), multz={0: 1, 4: 1})
     cptac = CPTAC()
-    p_signal = select_peptide_subset(cptac.get_p_signal(), keep_ratio=0.1)
-    model = DDMC(n_components=30, seq_weight=100, max_iter=5).fit(p_signal)
+    p_signal = cptac.get_p_signal()
+    model = DDMC(n_components=30, seq_weight=100).fit(p_signal)
 
     centers = model.transform(as_df=True)
-    centers.loc[:, :] = StandardScaler(with_std=False).fit_transform(centers.values)
+    centers.iloc[:, :] = normalize_cluster_centers(centers.values)
     is_tumor = cptac.get_tumor_or_nat(centers.index)
 
     # first plot heatmap of clusters
@@ -41,8 +44,9 @@ def makeFigure():
         hue_loadings_title="p < 0.01",
     )
 
+    print(is_tumor)
     plot_p_signal_across_clusters_and_binary_feature(
-        is_tumor, centers, "is_tumor", axes[4]
+        is_tumor, centers, "is_tumor", axes[3]
     )
 
     # Logistic Regression
@@ -59,7 +63,7 @@ def makeFigure():
 
     plot_cluster_regression_coefficients(axes[5], lr)
 
-    top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
+    top_clusters = get_highest_weighted_clusters(model, lr.coef_)
 
     # plot predicted kinases for most weighted clusters
     distances = model.predict_upstream_kinases()[top_clusters]

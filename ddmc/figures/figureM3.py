@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from ddmc.clustering import DDMC,compute_control_pssm, get_pspl_pssm_distances 
+from ddmc.clustering import DDMC, compute_control_pssm, get_pspl_pssm_distances
 from ddmc.binomial import AAlist
 from ddmc.figures.common import (
     getSetup,
@@ -36,6 +36,7 @@ def makeFigure():
 
     return f
 
+
 def plot_fig_3abd(ax_a, ax_b, ax_d):
     # Import signaling data
     p_signal = EBDT().get_p_signal()
@@ -46,7 +47,6 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
         seq_weight=5,
         distance_method="Binomial",
         random_state=10,
-        max_iter=1,
     ).fit(p_signal)
 
     # get cluster centers
@@ -135,10 +135,9 @@ def plot_fig_3fgh(ax_f, ax_g, ax_h):
         seq_weight=100,
         distance_method="Binomial",
         random_state=5,
-        max_iter=1,
     ).fit(p_signal)
 
-    clusters = [3, 7, 21]
+    clusters = [2, 6, 20]
     # get pssms from ddmc clusters
     pssms = model.get_pssms(PsP_background=True, clusters=clusters)
 
@@ -216,7 +215,6 @@ def plot_fig_3c():
         seq_weight=5,
         distance_method="Binomial",
         random_state=10,
-        max_iter=1,
     ).fit(p_signal)
     centers = model.transform(as_df=True)
     # the labels are structured as "MCF7.<drug>.fold"

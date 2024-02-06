@@ -3,16 +3,19 @@ import pandas as pd
 import seaborn as sns
 import textwrap
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC
+from ddmc.datasets import CPTAC, select_peptide_subset
 from ddmc.figures.common import (
     plot_cluster_kinase_distances,
     getSetup,
     plot_p_signal_across_clusters_and_binary_feature,
 )
-from ddmc.logistic_regression import plot_roc, plot_cluster_regression_coefficients
+from ddmc.logistic_regression import (
+    plot_roc,
+    plot_cluster_regression_coefficients,
+    normalize_cluster_centers,
+)
 
 
 def makeFigure():
@@ -22,9 +25,7 @@ def makeFigure():
     cptac = CPTAC()
     is_hot = cptac.get_hot_cold_labels()
     p_signal = cptac.get_p_signal()
-    model = DDMC(n_components=30, seq_weight=100, max_iter=10, random_state=5).fit(
-        p_signal
-    )
+    model = DDMC(n_components=30, seq_weight=100, random_state=5).fit(p_signal)
     assert (
         not model.has_empty_clusters()
     ), "This plot assumes that every cluster will have at least one peptide. Please rerun with fewer components are more peptides."
@@ -33,7 +34,7 @@ def makeFigure():
 
     plot_p_signal_across_clusters_and_binary_feature(is_hot, centers, "is_hot", axes[0])
 
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(centers)
+    centers.iloc[:, :] = normalize_cluster_centers(centers.values)
     lr = LogisticRegressionCV(
         cv=3, solver="saga", n_jobs=1, penalty="l1", max_iter=10000
     )

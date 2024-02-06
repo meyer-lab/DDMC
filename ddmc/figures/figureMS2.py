@@ -11,10 +11,10 @@ from ddmc.figures.common import getSetup, plot_motifs
 
 def makeFigure():
     # Increase number of peptides and components for actual figure
-    p_signal = select_peptide_subset(CPTAC().get_p_signal(), keep_num=500)
-    model = DDMC(n_components=5, seq_weight=100).fit(p_signal)
+    p_signal = CPTAC().get_p_signal()
+    model = DDMC(n_components=16, seq_weight=100).fit(p_signal)
 
-    ax, f = getSetup((9, 9), (5, 5))
+    ax, f = getSetup((9, 9), (4, 4))
     clusters, pssms = model.get_pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 5)
     xlabels = [20, 21, 22, 23, 24, 25]

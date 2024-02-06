@@ -9,13 +9,18 @@ from ddmc.figures.common import (
     plot_p_signal_across_clusters_and_binary_feature,
     getSetup,
 )
-from ddmc.logistic_regression import plot_roc, plot_cluster_regression_coefficients
+from ddmc.logistic_regression import (
+    plot_roc,
+    plot_cluster_regression_coefficients,
+    normalize_cluster_centers,
+    get_highest_weighted_clusters,
+)
 
 
 def makeFigure():
     axes, f = getSetup((11, 7), (2, 3), multz={0: 1})
     cptac = CPTAC()
-    p_signal = select_peptide_subset(cptac.get_p_signal(), keep_num=50)
+    p_signal = cptac.get_p_signal()
     stk11m = cptac.get_mutations(["STK11.mutation.status"])["STK11.mutation.status"]
 
     model = DDMC(n_components=30, seq_weight=100).fit(p_signal)
@@ -25,9 +30,7 @@ def makeFigure():
         stk11m.values, centers, "STK11M", axes[0]
     )
 
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(
-        centers.iloc[:, :]
-    )
+    centers.iloc[:, :] = normalize_cluster_centers(centers.values)
 
     # Logistic Regression
     lr = LogisticRegressionCV(
@@ -49,7 +52,8 @@ def makeFigure():
         lr,
     )
 
-    top_clusters = np.argsort(np.abs(lr.coef_.squeeze()))[-3:]
+    top_clusters = get_highest_weighted_clusters(model, lr.coef_)
+
     plot_cluster_kinase_distances(
         model.predict_upstream_kinases()[top_clusters],
         model.get_pssms(PsP_background=True, clusters=top_clusters)[0],

@@ -158,8 +158,12 @@ def plot_cluster_kinase_distances(
 ):
     pssm_names = distances.columns
 
-    # melt distances
+    # these centering lines make no sense, but they were used in the original
+    # publication-version of this code
+    distances = distances.sub(distances.mean(axis=1), axis=0)
     distances = distances.sub(distances.mean(axis=0), axis=1)
+
+    # melt distances
     distances = pd.melt(
         distances.reset_index(names="Kinase"),
         id_vars="Kinase",
