@@ -23,7 +23,7 @@ def makeFigure():
     p_signal = cptac.get_p_signal()
     stk11m = cptac.get_mutations(["STK11.mutation.status"])["STK11.mutation.status"]
 
-    model = DDMC(n_components=30, seq_weight=100).fit(p_signal)
+    model = DDMC(n_components=30, seq_weight=100, random_state=5).fit(p_signal)
     centers = model.transform(as_df=True)
     centers = centers.loc[stk11m.index]
     plot_p_signal_across_clusters_and_binary_feature(

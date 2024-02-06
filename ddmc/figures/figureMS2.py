@@ -12,7 +12,7 @@ from ddmc.figures.common import getSetup, plot_motifs
 def makeFigure():
     # Increase number of peptides and components for actual figure
     p_signal = CPTAC().get_p_signal()
-    model = DDMC(n_components=16, seq_weight=100).fit(p_signal)
+    model = DDMC(n_components=16, seq_weight=100, random_state=5).fit(p_signal)
 
     ax, f = getSetup((9, 9), (4, 4))
     clusters, pssms = model.get_pssms(PsP_background=False)
