@@ -39,17 +39,17 @@ def makeFigure():
     dataW_2C = run_repeated_imputation(
         "Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=1
     )
-    plot_imputation_errs(ax[4], dataW_2C, "Weight", legend=False)
+    plot_imputation_errs(ax[4], dataW_2C, "Weight")
 
     dataW_20C = run_repeated_imputation(
         "Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=1
     )
-    plot_imputation_errs(ax[5], dataW_20C, "Weight", legend=False)
+    plot_imputation_errs(ax[5], dataW_20C, "Weight")
 
     dataW_40C = run_repeated_imputation(
         "Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=1
     )
-    plot_imputation_errs(ax[6], dataW_40C, "Weight", legend=False)
+    plot_imputation_errs(ax[6], dataW_40C, "Weight")
 
     return f
 
