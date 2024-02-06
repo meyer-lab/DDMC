@@ -58,7 +58,7 @@ def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3):
     hot_cold = cptac.get_hot_cold_labels()
 
     lr = LogisticRegressionCV(
-        cv=3,
+        cv=n_cv_folds,
         solver="saga",
         max_iter=10000,
         n_jobs=-1,
