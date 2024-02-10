@@ -9,6 +9,10 @@ output/figure%.svg: ddmc/figures/figure%.py
 test:
 	poetry run pytest -s -x -v
 
+testprofile:
+	poetry run python3 -m cProfile -o profile -m pytest -s -v -x
+	gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
+
 coverage.xml:
 	poetry run pytest --cov=ddmc --cov-report=xml
 

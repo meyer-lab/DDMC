@@ -5,55 +5,34 @@ import numpy as np
 import pandas as pd
 import scipy.special as sc
 from Bio import motifs
-from Bio.Seq import Seq
+from collections import OrderedDict
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
 # Amino acids frequencies (http://www.tiem.utk.edu/~gross/bioed/webmodules/aminoacid.htm) used for pseudocounts,
-AAfreq = {
-    "A": 0.074,
-    "R": 0.042,
-    "N": 0.044,
-    "D": 0.059,
-    "C": 0.033,
-    "Q": 0.058,
-    "E": 0.037,
-    "G": 0.074,
-    "H": 0.029,
-    "I": 0.038,
-    "L": 0.076,
-    "K": 0.072,
-    "M": 0.018,
-    "F": 0.04,
-    "P": 0.05,
-    "S": 0.081,
-    "T": 0.062,
-    "W": 0.013,
-    "Y": 0.033,
-    "V": 0.068,
-}
-AAlist = [
-    "A",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "K",
-    "L",
-    "M",
-    "N",
-    "P",
-    "Q",
-    "R",
-    "S",
-    "T",
-    "V",
-    "W",
-    "Y",
-]
+AAfreq: OrderedDict[str, float] = OrderedDict()
+AAfreq["A"] = 0.074
+AAfreq["R"] = 0.042
+AAfreq["N"] = 0.044
+AAfreq["D"] = 0.059
+AAfreq["C"] = 0.033
+AAfreq["Q"] = 0.058
+AAfreq["E"] = 0.037
+AAfreq["G"] = 0.074
+AAfreq["H"] = 0.029
+AAfreq["I"] = 0.038
+AAfreq["L"] = 0.076
+AAfreq["K"] = 0.072
+AAfreq["M"] = 0.018
+AAfreq["F"] = 0.040
+AAfreq["P"] = 0.050
+AAfreq["S"] = 0.081
+AAfreq["T"] = 0.062
+AAfreq["W"] = 0.013
+AAfreq["Y"] = 0.033
+AAfreq["V"] = 0.068
+
+AAlist = list(AAfreq.keys())
 
 
 def position_weight_matrix(seqs, pseudoC=AAfreq):
@@ -61,20 +40,12 @@ def position_weight_matrix(seqs, pseudoC=AAfreq):
     return frequencies(seqs).normalize(pseudocounts=pseudoC)
 
 
-def frequencies(seqs):
+def frequencies(seqs: list[str]):
     """Build counts matrix of a given set of sequences."""
-    return motifs.create(seqs, alphabet=AAlist).counts
+    return motifs.create(seqs, alphabet="".join(AAlist)).counts
 
 
-def InformationContent(seqs):
-    """The mean of the PSSM is particularly important becuase its value is equal to the
-    Kullback-Leibler divergence or relative entropy, and is a measure for the information content
-    of the motif compared to the background."""
-    pssm = position_weight_matrix(seqs).log_odds(AAfreq)
-    return pssm.mean(AAfreq)
-
-
-def GenerateBinarySeqID(seqs):
+def GenerateBinarySeqID(seqs: list[str]) -> np.ndarray:
     """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
     res = np.zeros((len(seqs), len(AAlist), 11), dtype=bool)
     for ii, seq in enumerate(seqs):
@@ -83,7 +54,7 @@ def GenerateBinarySeqID(seqs):
     return res
 
 
-def BackgroundSeqs(forseqs):
+def BackgroundSeqs(forseqs: np.ndarray[str]) -> list[str]:
     """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
@@ -91,7 +62,7 @@ def BackgroundSeqs(forseqs):
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
     PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926"""
     # Get porportion of psite types in foreground set
-    forw_pYn, forw_pSn, forw_pTn, _ = CountPsiteTypes(forseqs, 5)
+    forw_pYn, forw_pSn, forw_pTn = CountPsiteTypes(forseqs)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
 
     pYf = forw_pYn / forw_tot
@@ -106,7 +77,7 @@ def BackgroundSeqs(forseqs):
     PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
     refseqs = list(PsP["SITE_+/-7_AA"])
     len_bg = int(len(refseqs))
-    backg_pYn, _, _, _ = CountPsiteTypes(refseqs, 7)
+    backg_pYn, _, _ = CountPsiteTypes(refseqs)
 
     # Make sure there are enough pY peptides to meet proportions
     if backg_pYn >= len_bg * pYf:
@@ -126,9 +97,12 @@ def BackgroundSeqs(forseqs):
     return bg_seqs
 
 
-def BackgProportions(refseqs, pYn, pSn, pTn):
+def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[str]:
     """Provided the proportions, add peptides to background set."""
-    y_seqs, s_seqs, t_seqs = [], [], []
+    y_seqs: list[str] = []
+    s_seqs: list[str] = []
+    t_seqs: list[str] = []
+
     pR = ["y", "t", "s"]
     for seq in refseqs:
         if seq[7] not in pR:
@@ -144,50 +118,56 @@ def BackgProportions(refseqs, pYn, pSn, pTn):
         ), "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
-            y_seqs.append(Seq(motif))
+            y_seqs.append(motif)
 
         if motif[5] == "S" and len(s_seqs) < pSn:
-            s_seqs.append(Seq(motif))
+            s_seqs.append(motif)
 
         if motif[5] == "T" and len(t_seqs) < pTn:
-            t_seqs.append(Seq(motif))
+            t_seqs.append(motif)
 
     return y_seqs + s_seqs + t_seqs
 
 
 class Binomial:
-    """Create a binomial distance distribution."""
+    """Definition of the binomial sequence distance distribution."""
 
-    def __init__(self, seq, seqs):
+    def __init__(self, seqs: np.ndarray[str]):
         # Background sequences
-        background = position_weight_matrix(BackgroundSeqs(seq))
-        self.background = (
-            np.array([background[AA] for AA in AAlist]),
-            GenerateBinarySeqID(seqs),
-        )
+        background = position_weight_matrix(BackgroundSeqs(seqs))
+        self.background = np.array([background[AA] for AA in AAlist])
+        self.foreground: np.ndarray = GenerateBinarySeqID(seqs)
 
         self.logWeights = 0.0
-        assert np.all(np.isfinite(self.background[0]))
-        assert np.all(np.isfinite(self.background[1]))
+        assert np.all(np.isfinite(self.background))
+        assert np.all(np.isfinite(self.foreground))
 
-    def from_summaries(self, weightsIn):
+    def from_summaries(self, weightsIn: np.ndarray):
         """Update the underlying distribution."""
-        k = np.einsum("kji,kl->lji", self.background[1], weightsIn)
+        k = np.einsum("kji,kl->lji", self.foreground, weightsIn)
         betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
         betaA = np.clip(betaA, 0.001, np.inf)
-        probmat = sc.betainc(betaA, k + 1, 1 - self.background[0])
-        tempp = np.einsum("ijk,ljk->il", self.background[1], probmat)
+        probmat = sc.betainc(betaA, k + 1, 1 - self.background)
+        tempp = np.einsum("ijk,ljk->il", self.foreground, probmat)
         self.logWeights = np.log(tempp)
 
 
-def CountPsiteTypes(X, cA):
-    """Count number of different phosphorylation types in a MS data set."""
-    positionSeq = [seq[cA] for seq in X]
-    pS = positionSeq.count("s")
-    pT = positionSeq.count("t")
-    pY = positionSeq.count("y")
+def CountPsiteTypes(X: np.ndarray[str]) -> tuple[int, int, int]:
+    """Count the number of different phosphorylation types in an MS data set.
 
-    countt = [sum(map(str.islower, seq)) for seq in X]
-    primed = sum(map(lambda i: i > 1, countt))
+    Args:
+        X (list[str]): The list of peptide sequences.
 
-    return pY, pS, pT, primed
+    Returns:
+        tuple[int, int, int]: The number of pY, pS, and pT sites.
+    """
+    X = np.char.upper(X)
+
+    # Find the center amino acid
+    cA = int((len(X[0]) - 1) / 2)
+
+    phospho_aminos = [seq[cA] for seq in X]
+    pS = phospho_aminos.count("S")
+    pT = phospho_aminos.count("T")
+    pY = phospho_aminos.count("Y")
+    return pY, pS, pT

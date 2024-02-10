@@ -2,57 +2,30 @@
 This creates Supplemental Figure 2: Cluster motifs
 """
 
-import matplotlib
-import pandas as pd
 import numpy as np
-import seaborn as sns
-from .common import subplotLabel, getSetup
-from .common import plotMotifs
-from ..pre_processing import filter_NaNpeptides
-from ..clustering import DDMC
+
+from ddmc.clustering import DDMC
+from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.figures.common import getSetup, plot_motifs
 
 
 def makeFigure():
-    """Get a list of the axis objects and create a figure"""
-    # Get list of axis objects
-    ax, f = getSetup((9, 9), (5, 5))
+    # Increase number of peptides and components for actual figure
+    p_signal = CPTAC().get_p_signal()
+    model = DDMC(n_components=16, seq_weight=100, random_state=5).fit(p_signal)
 
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="white",
-        font_scale=1.2,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Import signaling data
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
-    # Fit DDMC
-    model = DDMC(
-        i, n_components=30, SeqWeight=100, distance_method="Binomial", random_state=5
-    ).fit(d)
-
-    pssms, cl_num = model.pssms(PsP_background=False)
+    ax, f = getSetup((9, 9), (4, 4))
+    clusters, pssms = model.get_pssms(PsP_background=False)
     ylabels = np.arange(0, 21, 5)
     xlabels = [20, 21, 22, 23, 24, 25]
-    for ii, cc in enumerate(cl_num):
-        cluster = "Cluster " + str(cc)
-        plotMotifs([pssms[ii]], axes=[ax[ii]], titles=[cluster], yaxis=[0, 10])
-        if ii not in ylabels:
-            ax[ii].set_ylabel("")
-            ax[ii].get_yaxis().set_visible(False)
-        if ii not in xlabels:
-            ax[ii].set_xlabel("")
-            ax[ii].get_xaxis().set_visible(False)
-
-    # Add subplot labels
-    # subplotLabel(ax) Too many plots to label A-Z
+    for cluster in clusters:
+        cluster_label = "Cluster " + str(cluster)
+        plot_motifs(pssms[cluster], ax=ax[cluster], titles=cluster_label, yaxis=[0, 10])
+        if cluster not in ylabels:
+            ax[cluster].set_ylabel("")
+            ax[cluster].get_yaxis().set_visible(False)
+        if cluster not in xlabels:
+            ax[cluster].set_xlabel("")
+            ax[cluster].get_xaxis().set_visible(False)
 
     return f

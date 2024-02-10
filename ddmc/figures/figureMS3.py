@@ -1,51 +1,23 @@
-"""
-This creates Supplemental Figure 3: Predictive performance of DDMC clusters using different weights
-"""
-
-import matplotlib
-import pandas as pd
-import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
-from .common import subplotLabel, getSetup
-from .figureM4 import TransformCenters, HotColdBehavior, find_patients_with_NATandTumor
-from ..pre_processing import filter_NaNpeptides
-from ..clustering import DDMC
-from ..logistic_regression import plotROC
+from sklearn.preprocessing import StandardScaler
+
+from ddmc.clustering import DDMC
+from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.figures.common import getSetup
+from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
 
 
 def makeFigure():
-    """Get a list of the axis objects and create a figure"""
-    # Get list of axis objects
-    ax, f = getSetup((15, 10), (3, 5))
+    cptac = CPTAC()
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1.2,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
+    mutations = cptac.get_mutations(
+        ["STK11.mutation.status", "EGFR.mutation.status", "ALK.fusion"]
     )
+    stk11 = mutations["STK11.mutation.status"]
+    egfr = mutations["EGFR.mutation.status"]
+    hot_cold = cptac.get_hot_cold_labels()
 
-    # Signaling
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
-    # Genotype data
-    mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[
-        ["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]
-    ]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+    p_signal = CPTAC().get_p_signal()
 
     # LASSO
     lr = LogisticRegressionCV(
@@ -58,50 +30,48 @@ def makeFigure():
         class_weight="balanced",
     )
 
-    folds = 5
-    weights = [0, 100, 500, 1000, 1000000]
-    for ii, w in enumerate(weights):
-        model = DDMC(i, n_components=30, SeqWeight=w, distance_method="Binomial").fit(d)
+    folds = 3
+    weights = [0, 500, 1000000]
+    ax, f = getSetup((15, 10), (3, len(weights)))
+    for ii, weight in enumerate(weights):
+        model = DDMC(
+            n_components=30,
+            seq_weight=weight,
+            distance_method="Binomial",
+            random_state=5,
+        ).fit(p_signal)
 
         # Find and scale centers
-        centers_gen, centers_hcb = TransformCenters(model, X)
-
-        if w == 0:
-            prio = " (data only)"
-        elif w == 50:
-            prio = " (motif mainly)"
-        else:
-            prio = " (mix)"
+        centers = model.transform(as_df=True)
+        centers.iloc[:, :] = normalize_cluster_centers(centers.values)
 
         # STK11
-        plotROC(
-            ax[ii],
+        plot_roc(
             lr,
-            centers_gen.values,
-            y["STK11.mutation.status"],
+            centers.loc[stk11.index].values,
+            stk11,
             cv_folds=folds,
-            title="STK11m " + "w=" + str(model.SeqWeight) + prio,
+            return_mAUC=False,
+            ax=ax[ii],
+            title="STK11m " + "w=" + str(model.seq_weight),
         )
-
-        # EGFRm
-        plotROC(
-            ax[ii + 5],
+        plot_roc(
             lr,
-            centers_gen.values,
-            y["EGFR.mutation.status"],
+            centers.loc[egfr.index].values,
+            egfr,
             cv_folds=folds,
-            title="EGFRm " + "w=" + str(model.SeqWeight) + prio,
+            return_mAUC=False,
+            ax=ax[ii + len(weights)],
+            title="EGFRm " + "w=" + str(model.seq_weight),
         )
-
-        # Hot-Cold behavior
-        y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-        plotROC(
-            ax[ii + 10],
+        plot_roc(
             lr,
-            centers_hcb.values,
-            y_hcb,
+            centers.loc[hot_cold.index].values,
+            hot_cold,
             cv_folds=folds,
-            title="Infiltration " + "w=" + str(model.SeqWeight) + prio,
+            return_mAUC=False,
+            ax=ax[ii + len(weights) * 2],
+            title="Infiltration " + "w=" + str(model.seq_weight),
         )
 
     return f

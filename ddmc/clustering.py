@@ -1,6 +1,6 @@
 """ Clustering functions. """
 
-from typing import Literal
+from typing import Literal, List, Sequence, Tuple
 import warnings
 from copy import deepcopy
 import itertools
@@ -10,59 +10,57 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 from .binomial import Binomial, AAlist, BackgroundSeqs, frequencies
 from .pam250 import PAM250
-from .motifs import PSPLdict, compute_control_pssm
+from .motifs import get_pspls, compute_control_pssm
 from fancyimpute import SoftImpute
 
 
-# pylint: disable=W0201
-
-
 class DDMC(GaussianMixture):
-    """Cluster peptides by both sequence similarity and data behavior following an
-    expectation-maximization algorithm. SeqWeight specifies which method's expectation step
-    should have a larger effect on the peptide assignment."""
+    """Cluster peptides by both sequence similarity and condition-wise phosphorylation following an
+    expectation-maximization algorithm."""
 
     def __init__(
         self,
-        info: pd.DataFrame,
         n_components: int,
-        SeqWeight: float,
-        distance_method: Literal["PAM250", "Binomial"],
+        seq_weight: float,
+        distance_method: Literal["PAM250", "Binomial"] = "Binomial",
         random_state=None,
+        max_iter=200,
+        tol=1e-4,
     ):
         super().__init__(
             n_components=n_components,
             covariance_type="diag",
             n_init=2,
-            max_iter=200,
-            tol=1e-4,
+            max_iter=max_iter,
+            tol=tol,
             random_state=random_state,
         )
-
-        self.info = info
-        self.SeqWeight = SeqWeight
         self.distance_method = distance_method
+        self.seq_weight = seq_weight
 
-        seqs = [s.upper() for s in info["Sequence"]]
-
+    def _gen_peptide_distances(self, sequences: np.ndarray, distance_method):
+        if sequences.dtype != str:
+            sequences = sequences.astype("str")
+        sequences = np.char.upper(sequences)
+        self.sequences = sequences
         if distance_method == "PAM250":
-            self.seqDist: PAM250 | Binomial = PAM250(seqs)
+            self.seq_dist: PAM250 | Binomial = PAM250(sequences)
         elif distance_method == "Binomial":
-            self.seqDist = Binomial(info["Sequence"], seqs)
+            self.seq_dist = Binomial(sequences)
         else:
             raise ValueError("Wrong distance type.")
 
-    def _estimate_log_prob(self, X):
+    def _estimate_log_prob(self, X: np.ndarray):
         """Estimate the log-probability of each point in each cluster."""
         logp = super()._estimate_log_prob(X)  # Do the regular work
 
         # Add in the sequence effect
-        self.seq_scores_ = self.SeqWeight * self.seqDist.logWeights
+        self.seq_scores_ = self.seq_weight * self.seq_dist.logWeights
         logp += self.seq_scores_
 
         return logp
 
-    def _m_step(self, X, log_resp):
+    def _m_step(self, X: np.ndarray, log_resp: np.ndarray):
         """M step.
         Parameters
         ----------
@@ -73,105 +71,132 @@ class DDMC(GaussianMixture):
         """
         if self._missing:
             labels = np.argmax(log_resp, axis=1)
-            centers = self.means_.T  # samples x clusters
+            centers = np.array(self.means_)  # samples x clusters
+            centers_fill = centers[labels, :]
 
-            assert len(labels) == X.shape[0]
-            for ii in range(X.shape[0]):  # X is peptides x samples
-                X[ii, self.missing_d[ii, :]] = centers[
-                    self.missing_d[ii, :], labels[ii]
-                ]
+            assert centers_fill.shape == X.shape
+            X[self.missing_d] = centers_fill[self.missing_d]
 
         super()._m_step(X, log_resp)  # Do the regular m step
 
         # Do sequence m step
-        self.seqDist.from_summaries(np.exp(log_resp))
+        self.seq_dist.from_summaries(np.exp(log_resp))
 
-    def fit(self, X, y=None):
-        """Compute EM clustering"""
-        d = np.array(X.T)
+    def fit(self, p_signal: pd.DataFrame):
+        """
+        Compute EM clustering.
 
-        if np.any(np.isnan(d)):
+        Args:
+            p_signal: Dataframe of shape (number of peptides, number of samples)
+                containing the phosphorylation signal. `p_signal.index` contains
+                the length-11 AA sequence of each peptide, containing the
+                phosphoacceptor in the middle and five AAs flanking it.
+        """
+        assert isinstance(
+            p_signal, pd.DataFrame
+        ), "`p_signal` must be a pandas dataframe."
+        sequences = p_signal.index.values
+        assert (
+            isinstance(sequences[0], str) and len(sequences[0]) == 11
+        ), "The index of p_signal must be the peptide sequences of length 11"
+        assert all(
+            [token.upper() in AAlist for token in sequences[0]]
+        ), "Sequence(s) contain invalid characters"
+        assert (
+            p_signal.select_dtypes(include=[np.number]).shape[1] == p_signal.shape[1]
+        ), "All values in `p_signal` should be numerical"
+
+        self.p_signal = p_signal
+        self._gen_peptide_distances(sequences, self.distance_method)
+
+        if np.any(np.isnan(p_signal)):
             self._missing = True
-            self.missing_d = np.isnan(d)
+            self.missing_d = np.isnan(p_signal)
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                d = SoftImpute(verbose=False).fit_transform(d)
+                p_signal = SoftImpute(verbose=False).fit_transform(p_signal)
         else:
             self._missing = False
 
-        super().fit(d)
-        self.scores_ = self.predict_proba(d)
+        super().fit(p_signal)
+        self.scores_ = self.predict_proba(p_signal)
 
         assert np.all(np.isfinite(self.scores_))
         assert np.all(np.isfinite(self.seq_scores_))
         return self
 
-    def wins(self, X):
-        """Find similarity of fitted model to data and sequence models"""
-        check_is_fitted(self, ["scores_", "seq_scores_"])
+    def transform(self, as_df=False) -> np.ndarray | pd.DataFrame:
+        """
+        Return cluster centers.
 
-        alt_model = deepcopy(self)
-        alt_model.SeqWeight = 0.0  # No influence
-        alt_model.fit(X)
-        data_model = alt_model.scores_
+        Args:
+            as_df: Whether or not the result should be wrapped in a dataframe with labeled axes.
 
-        alt_model.SeqWeight = 1000.0  # Overwhelming influence
-        alt_model.fit(X)
-        seq_model = alt_model.scores_
-
-        dataDist = np.linalg.norm(self.scores_ - data_model)
-        seqDist = np.linalg.norm(self.scores_ - seq_model)
-
-        for i in itertools.permutations(np.arange(self.n_components)):
-            dataDistTemp = np.linalg.norm(self.scores_ - data_model[:, i])
-            seqDistTemp = np.linalg.norm(self.scores_ - seq_model[:, i])
-
-            dataDist = np.minimum(dataDist, dataDistTemp)
-            seqDist = np.minimum(seqDist, seqDistTemp)
-
-        return (dataDist, seqDist)
-
-    def transform(self):
-        """Calculate cluster averages."""
+        Returns:
+            The cluster centers, either a np array or pd df of shape (n_samples, n_components).
+        """
         check_is_fitted(self, ["means_"])
-        return self.means_.T
+        centers = self.means_.T
+        if as_df:
+            centers = pd.DataFrame(
+                centers,
+                index=self.p_signal.columns,
+                columns=np.arange(self.n_components),
+            )
+        return centers
 
-    def impute(self, X):
-        """Impute a matching dataset."""
-        X = X.copy()
+    def impute(self) -> pd.DataFrame:
+        """
+        Imputes missing values in the dataset passed in fit() and returns the
+        imputed dataset.
+        """
+        p_signal = self.p_signal.copy()
         labels = self.labels()  # cluster assignments
         centers = self.transform()  # samples x clusters
+        for ii in range(p_signal.shape[0]):
+            p_signal.iloc[ii, np.isnan(p_signal.iloc[ii, :])] = centers[
+                np.isnan(p_signal.iloc[ii, :]), labels[ii] - 1
+            ]
+        assert np.all(np.isfinite(p_signal))
+        return p_signal
 
-        assert len(labels) == X.shape[0]
-        for ii in range(X.shape[0]):  # X is peptides x samples
-            X[ii, np.isnan(X[ii, :])] = centers[np.isnan(X[ii, :]), labels[ii] - 1]
-
-        assert np.all(np.isfinite(X))
-        return X
-
-    def pssms(self, PsP_background=False):
-        """Compute position-specific scoring matrix of each cluster.
+    def get_pssms(
+        self, PsP_background=False, clusters: List[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray] | np.ndarray:
+        """
+        Compute position-specific scoring matrix of each cluster.
         Note, to normalize by amino acid frequency this uses either
         all the sequences in the data set or a collection of random MS phosphosites in PhosphoSitePlus.
+
+        Args:
+            PsP_background: Whether or not PhosphoSitePlus should be used for background frequency.
+            clusters: cluster indices to get pssms for
+
+        Returns:
+            If the clusters argument is used, an array of shape (len(clusters), 20, 11),
+            else two arrays, where the first (of shape (n_pssms,))
+            contains the clusters of the pssms in the second
+            (of shape (n_pssms, 20, 11)).
         """
-        pssms, cl_num = [], []
+        pssm_names, pssms = [], []
         if PsP_background:
-            bg_seqs = BackgroundSeqs(self.info["Sequence"])
+            bg_seqs = BackgroundSeqs(self.sequences)
             back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
-        for ii in range(1, self.n_components + 1):
+
+        l1 = list(np.arange(self.n_components))
+        l2 = list(set(self.labels()))
+        ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
+        for ii in range(self.n_components):
             # Check for empty clusters and ignore them, if there are
-            l1 = list(np.arange(self.n_components) + 1)
-            l2 = list(set(self.labels()))
-            ec = [i for i in l1 + l2 if i not in l1 or i not in l2]
             if ii in ec:
                 continue
 
             # Compute PSSM
             pssm = np.zeros((len(AAlist), 11), dtype=float)
-            for jj, seq in enumerate(self.info["Sequence"]):
+            for jj, seq in enumerate(self.sequences):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
                     pssm[AAlist.index(aa), kk] += self.scores_[jj, ii - 1]
@@ -187,8 +212,9 @@ class DDMC(GaussianMixture):
                     back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
 
             # Normalize to background PSSM to account for AA frequencies per position
-            with np.seterr(divide='ignore', invalid='ignore'):
-                pssm /= back_pssm.copy()
+            old_settings = np.seterr(divide="ignore", invalid="ignore")
+            pssm /= back_pssm.copy()
+            np.seterr(**old_settings)
 
             # Log2 transform
             pssm = np.ma.log2(pssm)
@@ -198,7 +224,7 @@ class DDMC(GaussianMixture):
             pssm.index = AAlist
 
             # Normalize phosphoacceptor position to frequency
-            df = pd.DataFrame(self.info["Sequence"].str.upper())
+            df = pd.DataFrame({"Sequence": self.sequences})
             df["Cluster"] = self.labels()
             clSeq = df[df["Cluster"] == ii]["Sequence"]
             clSeq = pd.DataFrame(frequencies(clSeq)).T
@@ -207,53 +233,84 @@ class DDMC(GaussianMixture):
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)
 
             pssms.append(np.clip(pssm, a_min=0, a_max=3))
-            cl_num.append(ii)
+            pssm_names.append(ii)
 
-        return pssms, cl_num
+        pssm_names, pssms = np.array(pssm_names), np.array(pssms)
 
-    def predict_UpstreamKinases(
-        self, additional_pssms=False, add_labels=False, PsP_background=True
-    ):
-        """Compute matrix-matrix similarity between kinase specificity profiles and cluster PSSMs to identify upstream kinases regulating clusters."""
-        PSPLs = PSPLdict()
-        PSSMs, cl_num = self.pssms(PsP_background=PsP_background)
+        if clusters is not None:
+            return pssms[
+                [np.where(pssm_names == cluster)[0][0] for cluster in clusters]
+            ]
 
-        # Optionally add external pssms
-        if not isinstance(additional_pssms, bool):
-            PSSMs += additional_pssms
-            cl_num += add_labels
-        PSSMs = [
-            np.delete(np.array(list(np.array(mat))), [5, 10], axis=1) for mat in PSSMs
-        ]  # Remove P0 and P+5 from pssms
+        return pssm_names, pssms
 
-        a = np.zeros((len(PSPLs), len(PSSMs)))
-        for ii, spec_profile in enumerate(PSPLs.values()):
-            for jj, pssm in enumerate(PSSMs):
-                a[ii, jj] = np.linalg.norm(pssm - spec_profile)
+    def predict_upstream_kinases(
+        self,
+        PsP_background=True,
+    ) -> np.ndarray:
+        """Compute matrix-matrix similarity between kinase specificity profiles
+        and cluster PSSMs to identify upstream kinases regulating clusters."""
+        kinases, pspls = get_pspls()
+        clusters, pssms = self.get_pssms(PsP_background=PsP_background)
+        distances = get_pspl_pssm_distances(
+            pspls,
+            pssms,
+            as_df=True,
+            pssm_names=clusters,
+            kinases=kinases,
+        )
+        return distances
 
-        table = pd.DataFrame(a)
-        table.columns = cl_num
-        table.insert(0, "Kinase", list(PSPLdict().keys()))
-        return table
+    def get_nonempty_clusters(self) -> np.ndarray[int]:
+        return np.unique(self.labels())
 
-    def predict(self):
+    def has_empty_clusters(self) -> bool:
+        """
+        Checks whether the most recent call to fit() resulted in empty clusters.
+        """
+        check_is_fitted(self, ["scores_"])
+        return self.get_nonempty_clusters().size != self.n_components
+
+    def predict(self) -> np.ndarray[int]:
         """Provided the current model parameters, predict the cluster each peptide belongs to."""
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
 
-    def labels(self):
+    def labels(self) -> np.ndarray[int]:
         """Find cluster assignment with highest likelihood for each peptide."""
-        return self.predict() + 1
+        return self.predict()
 
-    def score(self):
+    def score(self) -> float:
         """Generate score of the fitting."""
         check_is_fitted(self, ["lower_bound_"])
         return self.lower_bound_
 
-    def get_params(self, deep=True):
-        """Returns a dict of the estimator parameters with their values."""
-        dictt = super().get_params(deep=deep)
-        dictt["info"] = self.info
-        dictt["SeqWeight"] = self.SeqWeight
-        dictt["distance_method"] = self.distance_method
-        return dictt
+
+def get_pspl_pssm_distances(
+    pspls: np.ndarray,
+    pssms: np.ndarray,
+    as_df=False,
+    pssm_names: Sequence[str] = None,
+    kinases: Sequence[str] = None,
+) -> np.ndarray | pd.DataFrame:
+    """
+    Computes a distance matrix between PSPLs and PSSMs.
+
+    Args:
+        pspls: kinase specificity profiles of shape (n_kinase, 20, 9)
+        pssms: position-specific scoring matrices of shape (n_pssms, 20, 11)
+        as_df: Whether or not the returned matrix should be returned as a
+            dataframe. Requires pssm_names and kinases.
+        pssm_names: list of names for the pssms of shape (n_pssms,)
+        kinases: list of names for the pspls of shape (n_kinase,)
+
+    Returns:
+        Distance matrix of shape (n_kinase, n_pssms).
+    """
+    assert pssms.shape[1:3] == (20, 11)
+    assert pspls.shape[1:3] == (20, 9)
+    pssms = np.delete(pssms, [5, 10], axis=2)
+    dists = np.linalg.norm(pspls[:, None, :, :] - pssms[None, :, :, :], axis=(2, 3))
+    if as_df:
+        dists = pd.DataFrame(dists, index=kinases, columns=pssm_names)
+    return dists
