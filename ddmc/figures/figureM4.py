@@ -1,101 +1,64 @@
-"""
-This creates Figure 4: Predictive performance of DDMC clusters using different weights
-"""
+from typing import List
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error
-from ..clustering import DDMC
-from .common import subplotLabel, getSetup
-from ..logistic_regression import plotROC
-from ..pre_processing import filter_NaNpeptides
+
+from ddmc.clustering import DDMC
+from ddmc.figures.common import getSetup
+from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
+from ddmc.datasets import CPTAC, select_peptide_subset
 
 
 def makeFigure():
-    """Get a list of the axis objects and create a figure"""
-    # Get list of axis objects
-    ax, f = getSetup((8, 4), (1, 3))
+    axes, f = getSetup((5, 5), (2, 2), multz={0: 1})
 
-    # Add subplot labels
-    subplotLabel(ax)
-
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=0.5,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=2,
-    )
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
-
-    # Plot mean AUCs per model
-    p = pd.read_csv("ddmc/data/Performance/preds_phenotypes_rs_15cl.csv").iloc[:, 1:]
-    p = p.melt(
-        id_vars=["Run", "Weight"],
-        value_vars=d.columns[2:],
-        value_name="p-signal",
-        var_name="Phenotype",
-    )
-    out = d[
-        (d["Weight"] == 0)
-        | (d["Phenotype"] == "STK11") & (d["Weight"] == 1000)
-        | (d["Phenotype"] == "EGFRm/ALKf") & (d["Weight"] == 250)
-        | (d["Phenotype"] == "Infiltration") & (d["Weight"] == 250)
+    # use small numbers here so it doesn't take forever
+    regression_results = do_phenotype_regression(n_runs=1, n_cv_folds=2)
+    plot_phenotype_regression(regression_results, axes[0])
+    p_signal = select_peptide_subset(CPTAC().get_p_signal(), keep_num=2000)
+    models = [
+        DDMC(
+            n_components=30,
+            seq_weight=0,
+            distance_method="Binomial",
+            random_state=5,
+        ).fit(p_signal),
+        DDMC(
+            n_components=30,
+            seq_weight=250,
+            distance_method="Binomial",
+            random_state=5,
+        ).fit(p_signal),
+        DDMC(
+            n_components=30,
+            seq_weight=1e6,
+            distance_method="Binomial",
+            random_state=5,
+        ).fit(p_signal),
     ]
-    out["Model"] = ["DDMC" if s != 0 else "GMM" for s in out["Weight"]]
-    sns.barplot(data=out, x="Phenotype", y="p-signal", hue="Model", ci=68, ax=ax[0])
-    ax[0].legend(prop={"size": 5}, loc=0)
-
-    # Fit Data, Mix, and Seq Models
-    dataM = DDMC(
-        i, n_components=30, SeqWeight=0, distance_method="Binomial", random_state=5
-    ).fit(d)
-    mixM = DDMC(
-        i, n_components=30, SeqWeight=250, distance_method="Binomial", random_state=5
-    ).fit(d)
-    seqM = DDMC(
-        i, n_components=30, SeqWeight=1e6, distance_method="Binomial", random_state=5
-    ).fit(d)
-    models = [dataM, mixM, seqM]
-
-    # Center to peptide distance
-    barplot_PeptideToClusterDistances(models, ax[1], n=2000)
-
-    # Position Enrichment
-    boxplot_TotalPositionEnrichment(models, ax[2])
-
+    plot_peptide_to_cluster_p_signal_distances(p_signal, models, axes[1])
+    plot_total_position_enrichment(models, axes[2])
     return f
 
 
-def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
+def do_phenotype_regression(n_runs=3, n_components=35, n_cv_folds=3):
     """Plot mean AUCs per phenotype across weights."""
-    # Signaling
-    d = X.select_dtypes(include=[float]).T
-    i = X.select_dtypes(include=[object])
+    cptac = CPTAC()
+    p_signal = cptac.get_p_signal()
 
-    # Genotype data
-    mutations = pd.read_csv("ddmc/data/MS/CPTAC/Patient_Mutations.csv")
-    mOI = mutations[
-        ["Sample.ID"] + list(mutations.columns)[45:54] + list(mutations.columns)[61:64]
-    ]
-    y = mOI[~mOI["Sample.ID"].str.contains("IR")]
-    y = find_patients_with_NATandTumor(y.copy(), "Sample.ID", conc=False)
+    mutations = cptac.get_mutations(
+        ["STK11.mutation.status", "EGFR.mutation.status", "ALK.fusion"]
+    )
+    stk11 = mutations["STK11.mutation.status"]
+    egfr = mutations["EGFR.mutation.status"]
+    alk = mutations["ALK.fusion"]
+    egfr_or_alk = egfr | alk
+    hot_cold = cptac.get_hot_cold_labels()
 
-    # LASSO
     lr = LogisticRegressionCV(
-        cv=3,
+        cv=n_cv_folds,
         solver="saga",
         max_iter=10000,
         n_jobs=-1,
@@ -103,199 +66,114 @@ def calculate_AUCs_phenotypes(ax, X, nRuns=3, n_components=35):
         class_weight="balanced",
     )
 
-    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    run, ws, stk, ea, hcb = [], [], [], [], []
-    for w in weights:
-        for r in range(nRuns):
-            run.append(r)
-            ws.append(w)
-            model = DDMC(
-                i, n_components=n_components, SeqWeight=w, distance_method="Binomial"
-            ).fit(d)
+    results = pd.DataFrame(columns=["Weight", "STK11", "EGFRm/ALKf", "Infiltration"])
 
-            # Find and scale centers
-            centers_gen, centers_hcb = TransformCenters(model, X)
-
-            # STK11
-            stk.append(
-                plotROC(
-                    ax,
-                    lr,
-                    centers_gen.values,
-                    y["STK11.mutation.status"],
-                    cv_folds=3,
-                    return_mAUC=True,
-                    kfold="Repeated",
-                )
+    for seq_weight in [0, 1e2, 1e6]:
+        for _ in range(n_runs):
+            ddmc = DDMC(
+                n_components=n_components,
+                seq_weight=seq_weight,
+                distance_method="Binomial",
+            ).fit(p_signal)
+            centers = ddmc.transform(as_df=True)
+            centers.iloc[:, :] = normalize_cluster_centers(centers.values)
+            # the available patients vary by label
+            stk11_auc = plot_roc(
+                lr,
+                centers.loc[stk11.index].values,
+                stk11,
+                cv_folds=n_cv_folds,
+                return_mAUC=True,
+                kfold="Repeated",
             )
-
-            # EGFRm/ALKf
-            y_EA = merge_binary_vectors(y.copy(), "EGFR.mutation.status", "ALK.fusion")
-            ea.append(
-                plotROC(
-                    ax,
-                    lr,
-                    centers_gen.values,
-                    y_EA,
-                    cv_folds=3,
-                    return_mAUC=True,
-                    kfold="Repeated",
-                )
+            egfr_or_alk_auc = plot_roc(
+                lr,
+                centers.loc[egfr_or_alk.index].values,
+                egfr_or_alk,
+                cv_folds=n_cv_folds,
+                return_mAUC=True,
+                kfold="Repeated",
             )
-
-            # Hot-Cold behavior
-            y_hcb, centers_hcb = HotColdBehavior(centers_hcb)
-            hcb.append(
-                plotROC(
-                    ax,
-                    lr,
-                    centers_hcb.values,
-                    y_hcb,
-                    cv_folds=3,
-                    return_mAUC=True,
-                    kfold="Repeated",
-                )
+            hot_cold_auc = plot_roc(
+                lr,
+                centers.loc[hot_cold.index].values,
+                hot_cold,
+                cv_folds=n_cv_folds,
+                return_mAUC=True,
+                kfold="Repeated",
             )
+            results.loc[len(results)] = [
+                seq_weight,
+                stk11_auc,
+                egfr_or_alk_auc,
+                hot_cold_auc,
+            ]
 
-    out = pd.DataFrame()
-    out["Run"] = run
-    out["Weight"] = ws
-    out["STK11"] = stk
-    out["EGFRm/ALKf"] = ea
-    out["Infiltration"] = hcb
-
-    return out
+    return results
 
 
-def barplot_PeptideToClusterDistances(models, ax, n=3000):
-    """Compute and plot p-signal-to-center and motif to cluster distance for n peptides across weights."""
-    # Import signaling data, select random peptides, and find cluster assignments
-    X = pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:]
-    X = filter_NaNpeptides(X, tmt=2)
-    random_peptides = np.random.choice(
-        list(np.arange(len(models[0].labels()))), n, replace=False
+def plot_phenotype_regression(results: pd.DataFrame, ax) -> None:
+    df_melted = results.melt(
+        id_vars=["Weight"], var_name="Task", value_name="Performance"
     )
-    X["labels0"] = models[0].labels()
-    X["labels500"] = models[1].labels()
-    X["labels1M"] = models[2].labels()
-    X = X.iloc[random_peptides, :]
-    labels = X.loc[:, ["labels0", "labels500", "labels1M"]].values.T
-    d = X.select_dtypes(include=[float]).values
+    gmm = df_melted[df_melted["Weight"] == 0].copy()
+    ddmc = df_melted[df_melted["Weight"] != 0].copy()
+    best_ddmc = ddmc.loc[ddmc.groupby("Task")["Performance"].idxmax()]
+    gmm["Type"] = "GMM"
+    best_ddmc["Type"] = "DDMC"
+    plot_data = pd.concat([gmm, best_ddmc])
+    sns.barplot(data=plot_data, x="Task", y="Performance", hue="Type", ax=ax)
+    ax.set_title("Performance by Task and Weight Type")
+    ax.set_xlabel("Performance")
+    ax.set_ylabel("Regression Task")
 
-    psDist = np.zeros((3, d.shape[0]))
-    for ii, model in enumerate(models):
-        for jj in range(d.shape[0]):
-            # Data distance
-            center = model.transform()[:, labels[ii, jj] - 1]
-            idx_values = np.argwhere(~np.isnan(d[jj, :]))
-            psDist[ii, jj] = mean_squared_error(d[jj, idx_values], center[idx_values])
 
-    psDist = pd.DataFrame(psDist).T
-    psDist.columns = ["p-Abundance", "Mix", "Sequence"]
-    ps_data = pd.melt(
-        psDist,
-        value_vars=["p-Abundance", "Mix", "Sequence"],
-        var_name="Model",
+def plot_peptide_to_cluster_p_signal_distances(
+    p_signal: pd.DataFrame, models: List[DDMC], ax, n_peptides=100
+):
+    peptide_idx = np.random.choice(len(p_signal), n_peptides)
+    seq_weights = [model.seq_weight for model in models]
+    dists = pd.DataFrame(
+        np.zeros((n_peptides, len(models)), dtype=float), columns=seq_weights
+    )
+    for i, model in enumerate(models):
+        labels = model.labels()
+        centers = model.transform().T
+        dists.iloc[:, i] = np.nanmean(
+            (p_signal.iloc[peptide_idx] - centers[labels[peptide_idx]]) ** 2, axis=1
+        )
+    dists_melted = pd.melt(
+        dists,
+        value_vars=seq_weights,
+        var_name="Sequence Weight",
         value_name="p-signal MSE",
     )
-    sns.barplot(data=ps_data, x="Model", y="p-signal MSE", ci=None, ax=ax)
-    ax.set_title("Peptide-to-Cluster signal MSE")
+    sns.barplot(dists_melted, x="Sequence Weight", y="p-signal MSE", ax=ax)
+    ax.set_title("Peptide-to-cluster p-signal MSE")
 
 
-def boxplot_TotalPositionEnrichment(models, ax):
+def plot_total_position_enrichment(models: List[DDMC], ax):
     """Position enrichment of cluster PSSMs"""
-    enr = np.zeros((3, models[0].n_components), dtype=float)
-    for ii, model in enumerate(models):
-        pssms = model.pssms()[0]
-        for jj in range(len(pssms)):
-            enr[ii, jj] = np.sum(pssms[jj].sum().drop(5))
-
-    enr = pd.DataFrame(enr)
-    enr.columns = np.arange(models[0].n_components) + 1
-    enr.insert(0, "Model", ["p-Abundance", "Mix", "Sequence"])
-    dd = pd.melt(
-        frame=enr,
-        id_vars="Model",
-        value_vars=enr.columns[1:],
-        var_name="Cluster",
-        value_name="Total information (bits)",
+    enrichment = pd.DataFrame(
+        columns=["Sequence Weight", "Component", "Total information (bits)"]
     )
-    sns.stripplot(data=dd, x="Model", y="Total information (bits)", ax=ax)
-    sns.boxplot(data=dd, x="Model", y="Total information (bits)", ax=ax, fliersize=0)
+
+    # loop because it's not guaranteed that each cluster will contain a peptide
+    for model in models:
+        pssm_names, pssms = model.get_pssms()
+        for cluster, pssm in zip(pssm_names, pssms):
+            enrichment.loc[len(enrichment)] = [
+                model.seq_weight,
+                cluster,
+                np.sum(np.delete(pssm, 5, axis=1)),
+            ]
+
+    sns.stripplot(enrichment, x="Sequence Weight", y="Total information (bits)", ax=ax)
+    sns.boxplot(
+        enrichment,
+        x="Sequence Weight",
+        y="Total information (bits)",
+        ax=ax,
+        fliersize=0,
+    )
     ax.set_title("Cumulative PSSM Enrichment")
-
-
-def merge_binary_vectors(y, mutant1, mutant2):
-    """Merge binary mutation status vectors to identify all patients having one of the two mutations"""
-    y1 = y[mutant1]
-    y2 = y[mutant2]
-    y_ = np.zeros(y.shape[0])
-    for binary in [y1, y2]:
-        indices = [i for i, x in enumerate(binary) if x == 1]
-        y_[indices] = 1
-    return pd.Series(y_)
-
-
-def find_patients_with_NATandTumor(X, label, conc=False):
-    """Reshape data to display patients as rows and samples (Tumor and NAT per cluster) as columns.
-    Note that to do so, samples that don't have their tumor/NAT counterpart are dropped.
-    """
-    xT = X[~X[label].str.endswith(".N")].sort_values(by=label)
-    xN = X[X[label].str.endswith(".N")].sort_values(by=label)
-    l1 = list(xT[label])
-    l2 = [s.split(".N")[0] for s in xN[label]]
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    X = xT.set_index(label).drop(dif)
-    assert all(X.index.values == np.array(l2)), "Samples don't match"
-
-    if conc:
-        xN = xN.set_index(label)
-        xN.index = l2
-        xN.columns = [str(i) + "_Normal" for i in xN.columns]
-        X.columns = [str(i) + "_Tumor" for i in X.columns]
-        X = pd.concat([X, xN], axis=1)
-    return X
-
-
-def TransformCenters(model, X):
-    """For a given model, find centers and transform for regression."""
-    centers = pd.DataFrame(model.transform()).T
-    centers.iloc[:, :] = StandardScaler(with_std=False).fit_transform(
-        centers.iloc[:, :]
-    )
-    centers = centers.T
-    centers.columns = np.arange(model.n_components) + 1
-    centers["Patient_ID"] = X.columns[4:]
-    centers1 = find_patients_with_NATandTumor(centers.copy(), "Patient_ID", conc=True)
-    centers2 = (
-        centers.loc[~centers["Patient_ID"].str.endswith(".N"), :]
-        .sort_values(by="Patient_ID")
-        .set_index("Patient_ID")
-    )
-    return centers1, centers2
-
-
-def HotColdBehavior(centers):
-    # Import Cold-Hot Tumor data
-    y = (
-        pd.read_csv("ddmc/data/MS/CPTAC/Hot_Cold.csv")
-        .dropna(axis=1)
-        .sort_values(by="Sample ID")
-    )
-    y = y.loc[~y["Sample ID"].str.endswith(".N"), :].set_index("Sample ID")
-    l1 = list(centers.index)
-    l2 = list(y.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    centers = centers.drop(dif)
-
-    # Transform to binary
-    y = y.replace("Cold-tumor enriched", 0)
-    y = y.replace("Hot-tumor enriched", 1)
-    y = np.squeeze(y)
-
-    # Remove NAT-enriched samples
-    centers = centers.drop(y[y == "NAT enriched"].index)
-    y = y.drop(y[y == "NAT enriched"].index).astype(int)
-    assert all(centers.index.values == y.index.values), "Samples don't match"
-
-    return y, centers

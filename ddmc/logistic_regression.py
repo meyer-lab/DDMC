@@ -4,14 +4,29 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from scipy.stats import sem
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import auc
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import StratifiedKFold, RepeatedKFold
+from sklearn.preprocessing import StandardScaler
+from ddmc.clustering import DDMC
 
 
-def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
+def normalize_cluster_centers(centers: np.ndarray):
+    # normalize centers along along patient dimension
+    return StandardScaler(with_std=False).fit_transform(centers.T).T
+
+
+def get_highest_weighted_clusters(model: DDMC, coefficients: np.ndarray, n_clusters=3):
+    top_clusters = np.flip(np.argsort(np.abs(coefficients.squeeze())))
+    top_clusters = [
+        cluster for cluster in top_clusters if cluster in model.get_nonempty_clusters()
+    ]
+    return top_clusters[:n_clusters]
+
+
+def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
@@ -19,9 +34,7 @@ def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
         coefs_["Sample"] = [l.split("_")[1] for l in hue]
         hue = "Sample"
     else:
-        coefs_["Cluster"] = np.arange(coefs_.shape[0]) + 1
-    if xlabels:
-        coefs_["Cluster"] = xlabels
+        coefs_["Cluster"] = np.arange(coefs_.shape[0])
     p = sns.barplot(
         ax=ax,
         x="Cluster",
@@ -38,41 +51,17 @@ def plotClusterCoefficients(ax, lr, hue=None, xlabels=False, title=False):
         ax.set_title(title)
 
 
-def plotPredictionProbabilities(ax, lr, dd, yy):
-    """Plot LR predictions and prediction probabilities."""
-    res_ = pd.DataFrame()
-    res_["y, p(x)"] = lr.predict_proba(dd)[:, 1]
-    z = lr.predict(dd) == yy
-    res_["Correct_Prediction"] = z.values
-    res_["Prediction"] = lr.predict(dd).astype("int")
-    res_["Patients"] = np.arange(res_.shape[0]) + 1
-    sns.scatterplot(
-        ax=ax, x="Patients", y="Prediction", data=res_, hue="Correct_Prediction"
-    )
-    sns.lineplot(ax=ax, x="Patients", y="y, p(x)", data=res_, marker="s", color="gray")
-    ax.axhline(0.5, ls="--", color="r")
-
-
-def plotConfusionMatrix(ax, lr, dd, yy):
-    """Actual vs predicted outputs"""
-    cm = confusion_matrix(yy, lr.predict(dd))
-    n = lr.classes_.shape[0]
-    ax.imshow(cm)
-    ax.grid(False)
-    ax.set_xlabel("Predicted outputs", color="black")
-    ax.set_ylabel("Actual outputs", color="black")
-    ax.xaxis.set(ticks=range(n))
-    ax.yaxis.set(ticks=range(n))
-    for i in range(n):
-        for j in range(n):
-            ax.text(j, i, cm[i, j], ha="center", va="center", color="white")
-
-
-def plotROC(
-    ax, classifier, d, y, cv_folds=4, title=False, return_mAUC=False, kfold="Stratified"
+def plot_roc(
+    classifier,
+    X: np.ndarray,
+    y: np.ndarray,
+    cv_folds: int = 4,
+    title=False,
+    return_mAUC: bool = False,
+    kfold="Stratified",
+    ax: Axes = None,
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
-    y = y.values
     if kfold == "Stratified":
         cv = StratifiedKFold(n_splits=cv_folds)
     elif kfold == "Repeated":
@@ -81,9 +70,9 @@ def plotROC(
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
 
-    for _, (train, test) in enumerate(cv.split(d, y)):
-        classifier.fit(d[train], y[train])
-        viz = RocCurveDisplay.from_estimator(classifier, d[test], y[test])
+    for _, (train, test) in enumerate(cv.split(X, y)):
+        classifier.fit(X[train], y[train])
+        viz = RocCurveDisplay.from_estimator(classifier, X[test], y[test])
         plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0

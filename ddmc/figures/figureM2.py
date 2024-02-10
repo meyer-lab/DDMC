@@ -1,15 +1,11 @@
-"""
-This creates Figure 2: Evaluation of Imputating Missingness
-"""
-import matplotlib
 import numpy as np
 from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from .common import subplotLabel, getSetup
+from .common import getSetup
 from ..clustering import DDMC
-from ..pre_processing import filter_NaNpeptides
 from fancyimpute import IterativeSVD
+from ddmc.datasets import CPTAC
 
 
 def makeFigure():
@@ -17,65 +13,48 @@ def makeFigure():
     # Get list of axis objects
     ax, f = getSetup((10, 10), (3, 3), multz={0: 2})
 
-    # Set plotting format
-    matplotlib.rcParams["font.sans-serif"] = "Arial"
-    sns.set(
-        style="whitegrid",
-        font_scale=1,
-        color_codes=True,
-        palette="colorblind",
-        rc={"grid.linestyle": "dotted", "axes.linewidth": 0.6},
-    )
-
-    # Add subplot labels
-    subplotLabel(ax)
-
     # diagram explaining reconstruction process
     ax[0].axis("off")
 
-    # Imputation error across Cluster numbers
-    dataC_W0 = ErrorAcross(
-        "Binomial", [0] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3
-    )
-    plotErrorAcrossNumberOfClustersOrWeights(ax[1], dataC_W0, "Clusters")
-    ax[1].set_ylim(10.5, 12)
-    dataC_W25 = ErrorAcross(
-        "Binomial", [100] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3
-    )
-    dataC_W0.iloc[:, 2] = 1250
-    plotErrorAcrossNumberOfClustersOrWeights(ax[2], dataC_W25, "Clusters")
-    ax[2].set_ylim(10.5, 12)
-    dataC_W100 = ErrorAcross(
-        "Binomial", [1000000] * 12, n_clusters=np.arange(1, 46, 4), n_runs=3
-    )
-    plotErrorAcrossNumberOfClustersOrWeights(ax[3], dataC_W100, "Clusters")
-    ax[3].set_ylim(10.5, 12)
+    n_clusters = np.array([1, 45])
 
-    # Imputation error across different Weights
-    weights = [0, 50, 100, 250, 500, 750, 1000, 1000000]
-    dataW_2C = ErrorAcross(
-        "Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=3
+    # Imputation error across Cluster numbers
+    dataC_W0 = run_repeated_imputation(
+        "Binomial", [0] * len(n_clusters), n_clusters=n_clusters, n_runs=1
     )
-    dataW_2C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[4], dataW_2C, "Weight", legend=False)
-    ax[4].set_ylim(10.5, 12)
-    dataW_20C = ErrorAcross(
-        "Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=3
+    plot_imputation_errs(ax[1], dataC_W0, "Clusters")
+
+    dataC_W25 = run_repeated_imputation(
+        "Binomial", [100] * len(n_clusters), n_clusters=n_clusters, n_runs=1
     )
-    dataW_20C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[5], dataW_20C, "Weight", legend=False)
-    ax[5].set_ylim(10.5, 12)
-    dataW_40C = ErrorAcross(
-        "Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=3
+    plot_imputation_errs(ax[2], dataC_W25, "Clusters")
+
+    dataC_W100 = run_repeated_imputation(
+        "Binomial", [1000000] * len(n_clusters), n_clusters=n_clusters, n_runs=1
     )
-    dataW_40C.replace(1000000, 1250)
-    plotErrorAcrossNumberOfClustersOrWeights(ax[6], dataW_40C, "Weight", legend=False)
-    ax[6].set_ylim(10.5, 12)
+    plot_imputation_errs(ax[3], dataC_W100, "Clusters")
+
+    # Imputation error across different weights
+    weights = [0, 100]
+    dataW_2C = run_repeated_imputation(
+        "Binomial", weights=weights, n_clusters=[2] * len(weights), n_runs=1
+    )
+    plot_imputation_errs(ax[4], dataW_2C, "Weight")
+
+    dataW_20C = run_repeated_imputation(
+        "Binomial", weights=weights, n_clusters=[20] * len(weights), n_runs=1
+    )
+    plot_imputation_errs(ax[5], dataW_20C, "Weight")
+
+    dataW_40C = run_repeated_imputation(
+        "Binomial", weights=weights, n_clusters=[40] * len(weights), n_runs=1
+    )
+    plot_imputation_errs(ax[6], dataW_40C, "Weight")
 
     return f
 
 
-def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
+def plot_imputation_errs(ax, data, kind):
     """Plot artificial missingness error across different number of clusters or weighths."""
     if kind == "Weight":
         title = "Weight Selection"
@@ -86,18 +65,16 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
     gm["DDMC"] = np.log(gm["DDMC"])
     gm["Average"] = np.log(data.groupby([kind]).Average.apply(gmean).values)
     gm["Zero"] = np.log(data.groupby([kind]).Zero.apply(gmean).values)
-    # gm["Minimum"] = np.log(data.groupby([kind]).Minimum.apply(gmean).values)
     gm["PCA"] = np.log(data.groupby([kind]).PCA.apply(gmean).values)
-
-    gm.to_csv("WeightSearch.csv")
 
     sns.regplot(
         x=kind,
         y="DDMC",
         data=gm,
-        scatter_kws={"alpha": 0.25},
+        scatter_kws={"alpha": 0.5},
         color="darkblue",
         ax=ax,
+        ci=None,
         label="DDMC",
         lowess=True,
     )
@@ -105,41 +82,44 @@ def plotErrorAcrossNumberOfClustersOrWeights(ax, data, kind, legend=True):
         x=kind,
         y="Average",
         data=gm,
+        ci=None,
         color="black",
         scatter=False,
         ax=ax,
         label="Average",
     )
     sns.regplot(
-        x=kind, y="Zero", data=gm, color="lightblue", scatter=False, ax=ax, label="Zero"
+        x=kind,
+        y="Zero",
+        data=gm,
+        color="lightblue",
+        scatter=False,
+        ax=ax,
+        label="Zero",
+        ci=None,
     )
-    # sns.regplot(x=kind, y="Minimum", data=gm, color="green", scatter=False, ax=ax, label="Minimum")
     sns.regplot(
-        x=kind, y="PCA", data=gm, color="orange", scatter=False, ax=ax, label="PCA"
+        x=kind,
+        y="PCA",
+        data=gm,
+        color="orange",
+        scatter=False,
+        ax=ax,
+        label="PCA",
+        ci=None,
     )
     ax.set_title(title)
     ax.set_ylabel("log(MSE)—Actual vs Imputed")
     ax.legend(prop={"size": 10}, loc="upper left")
-    if not legend:
-        ax.legend().remove()
 
 
-def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
-    """Calculate missingness error across different number of clusters."""
+def run_repeated_imputation(distance_method, weights, n_clusters, n_runs=1):
+    """Calculate missingness error across different numbers of clusters and/or weights."""
     assert len(weights) == len(n_clusters)
-    X = filter_NaNpeptides(
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC-preprocessedMotfis.csv").iloc[:, 1:],
-        tmt=tmt,
-    )
-    X.index = np.arange(X.shape[0])
-    md = X.copy()
-    info = md.select_dtypes(include=["object"])
-    X = X.select_dtypes(include=["float64"])
-    StoE = pd.read_csv("ddmc/data/MS/CPTAC/IDtoExperiment.csv")
-    assert all(StoE.iloc[:, 0] == X.columns), "Sample labels don't match."
-    X = X.to_numpy()
-    tmtIDX = StoE["Experiment (TMT10plex)"].to_numpy()
-    assert X.shape[1] == tmtIDX.size
+    cptac = CPTAC()
+    p_signal = cptac.get_p_signal(min_experiments=6)
+    print(p_signal.shape)
+    sample_to_experiment = cptac.get_sample_to_experiment()
 
     df = pd.DataFrame(
         columns=[
@@ -155,46 +135,72 @@ def ErrorAcross(distance_method, weights, n_clusters, n_runs=1, tmt=6):
     )
 
     for ii in range(n_runs):
-        Xmiss = IncorporateMissingValues(X, tmtIDX)
-        baseline_errors = ComputeBaselineErrors(X, Xmiss)
+        X_miss = p_signal.copy()
+        X_miss.iloc[:, :] = add_missingness(p_signal.values, sample_to_experiment)
+        baseline_imputations = [
+            impute_mean(X_miss.values),
+            impute_zero(X_miss.values),
+            impute_min(X_miss.values),
+            impute_pca(X_miss.values, 5),
+        ]
+        baseline_errs = [
+            imputation_error(p_signal.values, X_impute)
+            for X_impute in baseline_imputations
+        ]
 
         for jj, cluster in enumerate(n_clusters):
-            model = DDMC(info, cluster, weights[jj], distance_method).fit(Xmiss.T)
-            eDDMC = np.nansum(np.square(X - model.impute(Xmiss)))
-            dfs = pd.Series(
-                [ii, cluster, weights[jj], eDDMC, *baseline_errors], index=df.columns
-            )
-            print(df)
-            print(dfs)
-            df = pd.concat([df, dfs], ignore_index=True)
-
+            df.loc[len(df)] = [
+                ii,
+                cluster,
+                weights[jj],
+                imputation_error(
+                    p_signal.values,
+                    impute_ddmc(X_miss, cluster, weights[jj], distance_method).values,
+                ),
+                *baseline_errs,
+            ]
     return df
 
 
-def IncorporateMissingValues(X, tmtIDX):
+def add_missingness(p_signal, sample_to_experiment):
     """Remove a random TMT experiment for each peptide."""
+    p_signal = p_signal.copy()
+    for ii in range(p_signal.shape[0]):
+        experiments = sample_to_experiment[np.isfinite(p_signal[ii, :])]
+        p_signal[
+            ii, sample_to_experiment == np.random.choice(np.unique(experiments))
+        ] = np.nan
+    return p_signal
+
+
+def imputation_error(X, X_impute):
+    # returns MSE between X and X_impute
+    mse = np.nansum(np.square(X - X_impute))
+    return mse
+
+
+def impute_zero(X):
     X = X.copy()
-    for ii in range(X.shape[0]):
-        tmtNum = tmtIDX[np.isfinite(X[ii, :])]
-        X[ii, tmtIDX == np.random.choice(np.unique(tmtNum))] = np.nan
+    X[np.isnan(X)] = 0.0
     return X
 
 
-def ComputeBaselineErrors(X, d, ncomp=5):
-    """Compute error between baseline methods (i.e. average signal, minimum signal, zero, and PCA) and real value."""
-    dmean = d.copy()
-    np.copyto(dmean, np.nanmean(d, axis=0, keepdims=True), where=np.isnan(d))
-    emean = np.nansum(np.square(X - dmean))
+def impute_min(X):
+    X = X.copy()
+    np.copyto(X, np.nanmin(X, axis=0, keepdims=True), where=np.isnan(X))
+    return X
 
-    dmin = d.copy()
-    np.copyto(dmin, np.nanmin(d, axis=0, keepdims=True), where=np.isnan(d))
-    emin = np.nansum(np.square(X - dmin))
 
-    dzero = d.copy()
-    np.copyto(dzero, 0.0, where=np.isnan(d))
-    ezero = np.nansum(np.square(X - dzero))
+def impute_mean(X):
+    X = X.copy()
+    np.copyto(X, np.nanmean(X, axis=0, keepdims=True), where=np.isnan(X))
+    return X
 
-    dpca = IterativeSVD(rank=ncomp, verbose=False).fit_transform(d.copy())
-    epca = np.nansum(np.square(X - dpca))
 
-    return emean, ezero, emin, epca
+def impute_pca(X, rank):
+    X = X.copy()
+    return IterativeSVD(rank=rank, verbose=False).fit_transform(X)
+
+
+def impute_ddmc(p_signal, n_clusters, weight, distance_method):
+    return DDMC(n_clusters, weight, distance_method).fit(p_signal).impute()
