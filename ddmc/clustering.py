@@ -96,12 +96,18 @@ class DDMC(GaussianMixture):
             p_signal, pd.DataFrame
         ), "`p_signal` must be a pandas dataframe."
         sequences = p_signal.index.values
-        assert (
-            isinstance(sequences[0], str) and len(sequences[0]) == 11
-        ), "The index of p_signal must be the peptide sequences of length 11"
-        assert all(
-            [token.upper() in AAlist for token in sequences[0]]
-        ), "Sequence(s) contain invalid characters"
+
+        for i, seq in enumerate(sequences):
+            assert isinstance(
+                seq, str
+            ), f"Sequence {seq} at index {i} is not a string. All sequences must be strings."
+            assert (
+                len(seq) == 11
+            ), f"Sequence {seq} at index {i} is of length {len(seq)}. All sequences must be of length 11."
+            assert all(
+                [token.upper() in AAlist for token in seq]
+            ), f"Sequence {seq} at index {i} contains invalid characters."
+
         assert (
             p_signal.select_dtypes(include=[np.number]).shape[1] == p_signal.shape[1]
         ), "All values in `p_signal` should be numerical"
