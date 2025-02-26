@@ -44,7 +44,6 @@ def makeFigure():
         hue_loadings_title="p < 0.01",
     )
 
-    print(is_tumor)
     plot_p_signal_across_clusters_and_binary_feature(
         is_tumor, centers, "is_tumor", axes[3]
     )
