@@ -71,8 +71,8 @@ def plot_roc(
     mean_fpr = np.linspace(0, 1, 100)
 
     for _, (train, test) in enumerate(cv.split(X, y)):
-        classifier.fit(X[train], y[train])
-        viz = RocCurveDisplay.from_estimator(classifier, X[test], y[test])
+        classifier.fit(X.iloc[train], y.iloc[train])
+        viz = RocCurveDisplay.from_estimator(classifier, X.iloc[test], y.iloc[test])
         plt.close()
         interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
         interp_tpr[0] = 0.0
