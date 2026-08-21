@@ -1,9 +1,9 @@
 import re
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from typing import Sequence
 
 from ddmc.motifs import get_proteome_name_to_seq
 
@@ -12,9 +12,9 @@ DATA_DIR = Path(__file__).parent / "data"
 
 def filter_incomplete_peptides(
     p_signal: pd.DataFrame,
-    sample_presence_ratio: float = None,
-    min_experiments: int = None,
-    sample_to_experiment: np.ndarray = None,
+    sample_presence_ratio: float | None = None,
+    min_experiments: int | None = None,
+    sample_to_experiment: np.ndarray | None = None,
 ):
     """
     Filters out missing values from p-signal array.
@@ -58,7 +58,7 @@ def filter_incomplete_peptides(
 
 
 def select_peptide_subset(
-    p_signal: pd.DataFrame, keep_ratio: float = None, keep_num: int = None
+    p_signal: pd.DataFrame, keep_ratio: float | None = None, keep_num: int | None = None
 ):
     """
     Selects a random subset of peptides from p_signal.
@@ -89,11 +89,11 @@ class CPTAC:
             sample_to_experiment=self.get_sample_to_experiment(),
         )
 
-    def get_patients_with_nat_and_tumor(self, samples: np.ndarray[str]) -> np.ndarray:
+    def get_patients_with_nat_and_tumor(self, samples) -> np.ndarray:
         """
         Get patients that have both NAT and tumor samples.
         """
-        samples = samples.astype(str)
+        samples = np.asarray(samples, dtype=str)
         samples = samples[np.char.find(samples, "IR") == -1]
         tumor_samples = np.sort(samples[~np.char.endswith(samples, ".N")])
         nat_samples = np.sort(samples[np.char.endswith(samples, ".N")])
@@ -101,7 +101,9 @@ class CPTAC:
         nat_patients = np.char.replace(nat_samples, ".N", "")
         return np.intersect1d(tumor_patients, nat_patients)
 
-    def get_mutations(self, mutation_names: Sequence[str] = None) -> pd.DataFrame:
+    def get_mutations(
+        self, mutation_names: Sequence[str] | None = None
+    ) -> pd.DataFrame:
         mutations = pd.read_csv(self.data_dir / "Patient_Mutations.csv")
         mutations = mutations.set_index("Sample.ID")
         patients = self.get_patients_with_nat_and_tumor(mutations.index.values)
@@ -124,7 +126,7 @@ class CPTAC:
         hot_cold = hot_cold.dropna()
         return np.squeeze(hot_cold).astype(bool)
 
-    def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray[bool]:
+    def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray:
         """
         Get tumor vs NAT for each of samples. Returned array contains True if
         tumor.
@@ -145,14 +147,12 @@ class EBDT:
         p_signal.insert(
             0, "Gene", [s.split("(")[0] for s in p_signal["sh.index.sites"]]
         )
-        p_signal.insert(
-            1,
-            "Position",
-            [
-                re.search(r"\(([A-Za-z0-9]+)\)", s).group(1)
-                for s in p_signal["sh.index.sites"]
-            ],
-        )
+        positions = []
+        for s in p_signal["sh.index.sites"]:
+            match = re.search(r"\(([A-Za-z0-9]+)\)", s)
+            assert match is not None, f"Could not parse position from {s}"
+            positions.append(match.group(1))
+        p_signal.insert(1, "Position", positions)
         p_signal = p_signal.drop("sh.index.sites", axis=1)
         motifs, del_ids = self.pos_to_motif(p_signal["Gene"], p_signal["Position"])
         p_signal = p_signal.set_index(["Gene", "Position"]).drop(del_ids).reset_index()
@@ -163,25 +163,25 @@ class EBDT:
 
     def pos_to_motif(self, genes, pos):
         """Map p-site sequence position to uniprot's proteome and extract motifs."""
-        proteome = open(DATA_DIR / "Sequence_analysis" / "proteome_uniprot2019.fa", "r")
+        proteome = open(DATA_DIR / "Sequence_analysis" / "proteome_uniprot2019.fa")
         motif_size = 5
         ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
         motifs = []
         del_GeneToPos = []
-        for gene, pos in list(zip(genes, pos)):
+        for gene, p in zip(genes, pos, strict=True):
             try:
                 UP_seq = ProteomeDict[gene]
             except BaseException:
-                del_GeneToPos.append([gene, pos])
+                del_GeneToPos.append([gene, p])
                 continue
-            idx = int(pos[1:]) - 1
+            idx = int(p[1:]) - 1
             motif = list(UP_seq[max(0, idx - motif_size) : idx + motif_size + 1])
             if (
                 len(motif) != motif_size * 2 + 1
-                or pos[0] != motif[motif_size]
-                or pos[0] not in ["S", "T", "Y"]
+                or p[0] != motif[motif_size]
+                or p[0] not in ["S", "T", "Y"]
             ):
-                del_GeneToPos.append([gene, pos])
+                del_GeneToPos.append([gene, p])
                 continue
             motif[motif_size] = motif[motif_size].lower()
             motifs.append("".join(motif))

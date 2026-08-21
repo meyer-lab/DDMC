@@ -5,7 +5,7 @@ This creates Supplemental Figure 2: Cluster motifs
 import numpy as np
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.datasets import CPTAC
 from ddmc.figures.common import getSetup, plot_motifs
 
 

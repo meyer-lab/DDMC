@@ -1,22 +1,19 @@
-import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.datasets import CPTAC
 from ddmc.figures.common import (
+    get_pvals_across_clusters,
     getSetup,
     plot_cluster_kinase_distances,
-    get_pvals_across_clusters,
     plot_p_signal_across_clusters_and_binary_feature,
     plot_pca_on_cluster_centers,
 )
 from ddmc.logistic_regression import (
+    get_highest_weighted_clusters,
+    normalize_cluster_centers,
     plot_cluster_regression_coefficients,
     plot_roc,
-    normalize_cluster_centers,
-    get_highest_weighted_clusters,
 )
 
 

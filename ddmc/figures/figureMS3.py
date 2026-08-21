@@ -1,10 +1,9 @@
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.preprocessing import StandardScaler
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.datasets import CPTAC
 from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
+from ddmc.logistic_regression import normalize_cluster_centers, plot_roc
 
 
 def makeFigure():

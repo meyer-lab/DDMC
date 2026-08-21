@@ -1,35 +1,51 @@
-[tool.poetry]
+[project]
 name = "ddmc"
 version = "0.1.0"
 description = ""
-authors = ["Aaron Meyer <git@asmlab.org>"]
+authors = [{ name = "Aaron Meyer", email = "git@asmlab.org" }]
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "scipy>=1.16",
+    "matplotlib>=3.10",
+    "seaborn>=0.13.2",
+    "svgutils>=0.3.4",
+    "pandas>=2.2.3",
+    "panflute>=2.3.1",
+    "biopython>=1.85",
+    "scikit-learn>=1.5",
+    "bioinfokit>=2.1.4",
+    "statsmodels>=0.14.4",
+    "fancyimpute>=0.7.0",
+    "mygene>=3.2.2",
+    "logomaker>=0.8.6",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-scipy = "^1.15"
-matplotlib = "^3.8.2"
-seaborn = "^0.13.1"
-svgutils = "^0.3.4"
-pandas = "^2.1.4"
-panflute = "^2.3.0"
-biopython = "^1.83"
-scikit-learn = "1.5"
-bioinfokit = "^2.1.3"
-statsmodels = "^0.14.1"
-fancyimpute = "^0.7.0"
-mygene = "^3.2.2"
-logomaker = "^0.8"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4"
-pytest-cov = "^6.0"
-mypy = "^1.8.0"
+[dependency-groups]
+dev = [
+    "pytest>=7.4,<8.0",
+    "pytest-cov>=6.0,<7.0",
+    "ruff>=0.15",
+    "ty>=0.0.1a0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.scripts]                                                           
+[project.scripts]
 fbuild = "ddmc.figures.common:genFigure"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ddmc"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ty.environment]
+python-version = "3.11"

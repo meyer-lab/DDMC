@@ -1,11 +1,12 @@
 """Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs."""
 
 import glob
-import pandas as pd
-import numpy as np
 import re
+
+import numpy as np
+import pandas as pd
 from Bio import SeqIO
-from Bio.Seq import Seq
+
 from .binomial import AAlist
 
 
@@ -59,7 +60,7 @@ def match_protein_names(ProteomeDict, MS_names, MS_seqs):
                 counter += 1
                 continue
 
-    assert counter == 0, "Proteome is missing %s peptides" % (counter)
+    assert counter == 0, f"Proteome is missing {counter} peptides"
     assert len(matchedNames) == len(seqs)
     return matchedNames, seqs, Xidx
 
@@ -126,7 +127,7 @@ def find_motif(MS_seq, MS_name, ProteomeDict, motif_size):
 def generate_kinase_motifs(names, seqs):
     """Main function to generate motifs using 'findmotif'."""
     motif_size = 5
-    proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa", "r")
+    proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa")
     ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
     protnames, seqs, Xidx = match_protein_names(ProteomeDict, names, seqs)
     (
