@@ -1,9 +1,12 @@
 # Co-clustering for mass spectrometry peptide analysis
 
-![Build](https://github.com/meyer-lab/resistance-MS/workflows/Build/badge.svg)
-![Test](https://github.com/meyer-lab/resistance-MS/workflows/Test/badge.svg)
-
 Clusters peptides based on both sequence similarity and phosphorylation signal across samples.
+
+This repository contains the implementation of dual data and motif clustering (DDMC), described in:
+
+> Creixell M, Meyer AS. [Dual data and motif clustering improves the modeling and interpretation of phosphoproteomic data](https://pubmed.ncbi.nlm.nih.gov/35360705/). *Cell Rep Methods*. 2022 Feb 28;2(2):100167. doi: [10.1016/j.crmeth.2022.100167](https://doi.org/10.1016/j.crmeth.2022.100167)
+
+**Abstract:** Cell signaling is orchestrated in part through a network of protein kinases and phosphatases. Dysregulation of kinase signaling is widespread in diseases such as cancer and is readily targetable through inhibitors. Mass spectrometry-based analysis can provide a global view of kinase regulation, but mining these data is complicated by its stochastic coverage of the proteome, measurement of substrates rather than kinases, and the scale of the data. Here, we implement a dual data and motif clustering (DDMC) strategy that simultaneously clusters peptides into similarly regulated groups based on their variation and their sequence profile. We show that this can help to identify putative upstream kinases and supply more robust clustering. We apply this clustering to clinical proteomic profiling of lung cancer and identify conserved proteomic signatures of tumorigenicity, genetic mutations, and immune infiltration. We propose that DDMC provides a general and flexible clustering strategy for the analysis of phosphoproteomic data.
 
 
 ## Usage
