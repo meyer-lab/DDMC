@@ -6,15 +6,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from ddmc.clustering import DDMC, compute_control_pssm, get_pspl_pssm_distances
 from ddmc.binomial import AAlist
+from ddmc.clustering import DDMC, compute_control_pssm, get_pspl_pssm_distances
+from ddmc.datasets import CPTAC, EBDT
 from ddmc.figures.common import (
     getSetup,
-    plot_motifs,
     plot_cluster_kinase_distances,
+    plot_motifs,
     plot_pca_on_cluster_centers,
 )
-from ddmc.datasets import CPTAC, EBDT
 from ddmc.motifs import get_pspls
 
 
@@ -161,9 +161,11 @@ def plot_fig_3fgh(ax_f, ax_g, ax_h):
     )
 
     # reformat data for plotting
-    melt_distances = lambda ds: ds.reset_index(names="Kinase").melt(
-        id_vars="Kinase", var_name="pssm_name"
-    )
+    def melt_distances(ds):
+        return ds.reset_index(names="Kinase").melt(
+            id_vars="Kinase", var_name="pssm_name"
+        )
+
     distances_melt = pd.concat(
         [
             melt_distances(distances).assign(Shuffled=False),

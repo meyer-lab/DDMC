@@ -1,14 +1,12 @@
-from typing import List
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 
 from ddmc.clustering import DDMC
-from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
 from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.figures.common import getSetup
+from ddmc.logistic_regression import normalize_cluster_centers, plot_roc
 
 
 def makeFigure():
@@ -129,7 +127,7 @@ def plot_phenotype_regression(results: pd.DataFrame, ax) -> None:
 
 
 def plot_peptide_to_cluster_p_signal_distances(
-    p_signal: pd.DataFrame, models: List[DDMC], ax, n_peptides=100
+    p_signal: pd.DataFrame, models: list[DDMC], ax, n_peptides=100
 ):
     peptide_idx = np.random.choice(len(p_signal), n_peptides)
     seq_weights = [model.seq_weight for model in models]
@@ -152,7 +150,7 @@ def plot_peptide_to_cluster_p_signal_distances(
     ax.set_title("Peptide-to-cluster p-signal MSE")
 
 
-def plot_total_position_enrichment(models: List[DDMC], ax):
+def plot_total_position_enrichment(models: list[DDMC], ax):
     """Position enrichment of cluster PSSMs"""
     enrichment = pd.DataFrame(
         columns=["Sequence Weight", "Component", "Total information (bits)"]
@@ -161,7 +159,7 @@ def plot_total_position_enrichment(models: List[DDMC], ax):
     # loop because it's not guaranteed that each cluster will contain a peptide
     for model in models:
         pssm_names, pssms = model.get_pssms()
-        for cluster, pssm in zip(pssm_names, pssms):
+        for cluster, pssm in zip(pssm_names, pssms, strict=True):
             enrichment.loc[len(enrichment)] = [
                 model.seq_weight,
                 cluster,

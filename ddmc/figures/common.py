@@ -2,21 +2,26 @@
 This file contains functions that are used in multiple figures.
 """
 
+import importlib
 import sys
 import time
+from collections.abc import Sequence
 from string import ascii_uppercase
-from matplotlib import gridspec, pyplot as plt, axes, rcParams
-import seaborn as sns
+
+import logomaker as lm
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import svgutils.transform as st
-import logomaker as lm
+from matplotlib import axes, gridspec, rcParams
+from matplotlib import pyplot as plt
 from scipy.stats import mannwhitneyu
-from statsmodels.stats.multitest import multipletests
-from ..motifs import KinToPhosphotypeDict
-from ddmc.binomial import AAlist
 from sklearn.decomposition import PCA
+from statsmodels.stats.multitest import multipletests
 
+from ddmc.binomial import AAlist
+
+from ..motifs import KinToPhosphotypeDict
 
 rcParams["font.sans-serif"] = "Arial"
 
@@ -83,7 +88,7 @@ def overlayCartoon(
     template = st.fromfile(figFile)
     cartoon = st.fromfile(cartoonFile).getroot()
 
-    cartoon.moveto(x, y, scale_x=scalee, scale_y=scalee)  # type: ignore
+    cartoon.moveto(x, y, scale_x=scalee, scale_y=scalee)
 
     template.append(cartoon)
     template.save(figFile)
@@ -94,8 +99,8 @@ def genFigure():
     start = time.time()
     nameOut = "figure" + sys.argv[1]
 
-    exec(f"from ddmc.figures.{nameOut} import makeFigure", globals())
-    ff = makeFigure()
+    module = importlib.import_module(f"ddmc.figures.{nameOut}")
+    ff = module.makeFigure()
 
     if ff is not None:
         ff.savefig(
@@ -105,8 +110,8 @@ def genFigure():
     if sys.argv[1] == "M2":
         # Overlay Figure missingness cartoon
         overlayCartoon(
-            f"./output/figureM2.svg",
-            f"./ddmc/figures/missingness_diagram.svg",
+            "./output/figureM2.svg",
+            "./ddmc/figures/missingness_diagram.svg",
             75,
             5,
             scalee=1.1,
@@ -115,8 +120,8 @@ def genFigure():
     if sys.argv[1] == "M5":
         # Overlay Figure tumor vs NATs heatmap
         overlayCartoon(
-            f"./output/figureM5.svg",
-            f"./ddmc/figures/heatmap_NATvsTumor.svg",
+            "./output/figureM5.svg",
+            "./ddmc/figures/heatmap_NATvsTumor.svg",
             50,
             0,
             scalee=0.40,
@@ -143,14 +148,14 @@ def plot_motifs(pssm, ax: axes.Axes, titles=False, yaxis=False):
         center_values=False,
         ax=ax,
     )
-    logo.ax.set_ylabel("log_{2} (Enrichment Score)")
+    ax.set_ylabel("log_{2} (Enrichment Score)")
     logo.style_xticks(anchor=1, spacing=1)
     if titles:
-        logo.ax.set_title(titles + " Motif")
+        ax.set_title(titles + " Motif")
     else:
-        logo.ax.set_title("Motif Cluster 1")
+        ax.set_title("Motif Cluster 1")
     if yaxis:
-        logo.ax.set_ylim([yaxis[0], yaxis[1]])
+        ax.set_ylim(yaxis[0], yaxis[1])
 
 
 def plot_cluster_kinase_distances(
@@ -186,8 +191,8 @@ def plot_cluster_kinase_distances(
             KinToPhosphotypeDict[kin] for kin in distances_pssm["Kinase"]
         ]
         try:
-            most_frequent_phosphoacceptor = AAlist(pssms[i, 5].argmax())
-        except:
+            most_frequent_phosphoacceptor = AAlist[pssms[i, 5].argmax()]
+        except Exception:
             most_frequent_phosphoacceptor = "S/T"
         if most_frequent_phosphoacceptor == "S" or most_frequent_phosphoacceptor == "T":
             most_frequent_phosphoacceptor = "S/T"
@@ -205,8 +210,8 @@ def plot_cluster_kinase_distances(
 
 
 def get_pvals_across_clusters(
-    label: pd.Series | np.ndarray[bool], centers: pd.DataFrame | np.ndarray
-) -> np.ndarray[float]:
+    label: pd.Series | np.ndarray, centers: pd.DataFrame | np.ndarray
+) -> np.ndarray:
     pvals = []
     if isinstance(centers, pd.DataFrame):
         centers = centers.values
@@ -218,8 +223,8 @@ def get_pvals_across_clusters(
 
 
 def plot_p_signal_across_clusters_and_binary_feature(
-    feature: pd.Series | np.ndarray[bool],
-    centers: pd.DataFrame | np.ndarray,
+    feature: pd.Series | np.ndarray,
+    centers: pd.DataFrame,
     label_name: str,
     ax,
 ) -> None:
@@ -256,10 +261,10 @@ def plot_p_signal_across_clusters_and_binary_feature(
 def plot_pca_on_cluster_centers(
     centers: pd.DataFrame,
     axes,
-    hue_scores: np.ndarray = None,
-    hue_scores_title: str = None,
-    hue_loadings: np.ndarray = None,
-    hue_loadings_title: str = None,
+    hue_scores: Sequence | np.ndarray | None = None,
+    hue_scores_title: str | None = None,
+    hue_loadings: Sequence | np.ndarray | None = None,
+    hue_loadings_title: str | None = None,
 ):
     # run PCA on cluster centers
     pca = PCA(n_components=2)

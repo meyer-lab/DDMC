@@ -13,10 +13,10 @@ from ddmc.figures.common import (
     plot_p_signal_across_clusters_and_binary_feature,
 )
 from ddmc.logistic_regression import (
-    plot_roc,
-    plot_cluster_regression_coefficients,
-    normalize_cluster_centers,
     get_highest_weighted_clusters,
+    normalize_cluster_centers,
+    plot_cluster_regression_coefficients,
+    plot_roc,
 )
 
 
@@ -105,8 +105,8 @@ def make_EGFRvolcano_plot(centers, y):
     pv["logFC"] = fc.values
     pv = pv.sort_values(by="p-values")
 
-    visuz.gene_exp.volcano(
-        df=pv,
+    visuz.GeneExpression.volcano(
+        df=pv,  # ty: ignore[invalid-argument-type]
         lfc="logFC",
         pv="p-values",
         show=True,

@@ -1,11 +1,13 @@
 import numpy as np
-from scipy.stats import gmean
 import pandas as pd
 import seaborn as sns
-from .common import getSetup
-from ..clustering import DDMC
 from fancyimpute import IterativeSVD
+from scipy.stats import gmean
+
 from ddmc.datasets import CPTAC
+
+from ..clustering import DDMC
+from .common import getSetup
 
 
 def makeFigure():

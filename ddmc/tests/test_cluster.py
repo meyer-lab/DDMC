@@ -2,8 +2,8 @@
 Testing file for the clustering methods by data and sequence.
 """
 
-import pytest
 import numpy as np
+import pytest
 from scipy.spatial.distance import cdist
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.mixture import GaussianMixture

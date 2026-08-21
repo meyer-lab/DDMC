@@ -1,15 +1,15 @@
 """Logistic Regression Model functions to predict clinical features of CPTAC patients given their clustered phosphoproteomes."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from scipy.stats import sem
-from sklearn.metrics import auc
-from sklearn.metrics import RocCurveDisplay
-from sklearn.model_selection import StratifiedKFold, RepeatedKFold
+from sklearn.metrics import RocCurveDisplay, auc
+from sklearn.model_selection import RepeatedKFold, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
+
 from ddmc.clustering import DDMC
 
 
@@ -30,8 +30,8 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
     """Plot LR coeficients of clusters."""
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
-        coefs_["Cluster"] = [l.split("_")[0] for l in hue]
-        coefs_["Sample"] = [l.split("_")[1] for l in hue]
+        coefs_["Cluster"] = [label.split("_")[0] for label in hue]
+        coefs_["Sample"] = [label.split("_")[1] for label in hue]
         hue = "Sample"
     else:
         coefs_["Cluster"] = np.arange(coefs_.shape[0])
@@ -43,7 +43,7 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
         data=coefs_,
         color="darkblue",
         **{"linewidth": 0.5},
-        **{"edgecolor": "black"}
+        **{"edgecolor": "black"},
     )
 
     p.tick_params(axis="x", labelsize=6)
@@ -54,12 +54,12 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
 def plot_roc(
     classifier,
     X: np.ndarray,
-    y: np.ndarray,
+    y: np.ndarray | pd.Series,
     cv_folds: int = 4,
     title=False,
     return_mAUC: bool = False,
     kfold="Stratified",
-    ax: Axes = None,
+    ax: Axes | None = None,
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
     if kfold == "Stratified":
@@ -86,13 +86,16 @@ def plot_roc(
     if return_mAUC:
         return mean_auc
 
+    if ax is None:
+        ax = plt.gca()
+
     ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance", alpha=0.8)
     sem_auc = sem(aucs)
     ax.plot(
         mean_fpr,
         mean_tpr,
         color="b",
-        label=r"Mean ROC (AUC = %0.2f $\pm$ %0.2f)" % (mean_auc, sem_auc),
+        label=rf"Mean ROC (AUC = {mean_auc:0.2f} $\pm$ {sem_auc:0.2f})",
         lw=2,
         alpha=0.8,
     )

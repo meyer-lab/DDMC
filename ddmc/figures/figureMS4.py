@@ -1,18 +1,18 @@
 import numpy as np
-import pandas as pd
 import seaborn as sns
 from sklearn.cluster import (
-    KMeans,
     AffinityPropagation,
-    Birch,
-    SpectralClustering,
-    MeanShift,
     AgglomerativeClustering,
+    Birch,
+    KMeans,
+    MeanShift,
+    SpectralClustering,
 )
+from sklearn.metrics import adjusted_mutual_info_score
+
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, filter_incomplete_peptides
 from ddmc.figures.common import getSetup
-from sklearn.metrics import adjusted_mutual_info_score
 
 
 def makeFigure():

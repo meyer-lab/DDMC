@@ -1,11 +1,11 @@
 """Binomial probability calculation to compute sequence distance between sequences and clusters."""
 
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 import scipy.special as sc
 from Bio import motifs
-from collections import OrderedDict
 
 # Binomial method inspired by Schwartz & Gygi's Nature Biotech 2005: doi:10.1038/nbt1146
 
@@ -45,7 +45,7 @@ def frequencies(seqs: list[str]):
     return motifs.create(seqs, alphabet="".join(AAlist)).counts
 
 
-def GenerateBinarySeqID(seqs: list[str]) -> np.ndarray:
+def GenerateBinarySeqID(seqs) -> np.ndarray:
     """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
     res = np.zeros((len(seqs), len(AAlist), 11), dtype=bool)
     for ii, seq in enumerate(seqs):
@@ -54,7 +54,7 @@ def GenerateBinarySeqID(seqs: list[str]) -> np.ndarray:
     return res
 
 
-def BackgroundSeqs(forseqs: np.ndarray[str]) -> list[str]:
+def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
     """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
@@ -109,13 +109,10 @@ def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[s
             continue
 
         motif = str(seq)[7 - 5 : 7 + 6].upper()
-        assert len(motif) == 11, "Wrong sequence length. Sliced: %s, Full: %s" % (
-            motif,
-            seq,
+        assert len(motif) == 11, f"Wrong sequence length. Sliced: {motif}, Full: {seq}"
+        assert motif[5].lower() in pR, (
+            f"Wrong central AA in background set. Sliced: {motif}, Full: {seq}"
         )
-        assert (
-            motif[5].lower() in pR
-        ), "Wrong central AA in background set. Sliced: %s, Full: %s" % (motif, seq)
 
         if motif[5] == "Y" and len(y_seqs) < pYn:
             y_seqs.append(motif)
@@ -132,7 +129,7 @@ def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[s
 class Binomial:
     """Definition of the binomial sequence distance distribution."""
 
-    def __init__(self, seqs: np.ndarray[str]):
+    def __init__(self, seqs: np.ndarray):
         # Background sequences
         background = position_weight_matrix(BackgroundSeqs(seqs))
         self.background = np.array([background[AA] for AA in AAlist])
@@ -152,7 +149,7 @@ class Binomial:
         self.logWeights = np.log(tempp)
 
 
-def CountPsiteTypes(X: np.ndarray[str]) -> tuple[int, int, int]:
+def CountPsiteTypes(X) -> tuple[int, int, int]:
     """Count the number of different phosphorylation types in an MS data set.
 
     Args:

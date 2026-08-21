@@ -20,16 +20,17 @@ class PAM250:
 def get_pam250_scores(seqs: list[str]) -> np.ndarray:
     """Calculate and store all pairwise pam250 distances before starting."""
     pam250 = substitution_matrices.load("PAM250")
-    seqs = np.array(
-        [[pam250.alphabet.find(aa) for aa in seq] for seq in seqs], dtype=np.int8  # type: ignore
+    seq_idx = np.array(
+        [[pam250.alphabet.find(aa) for aa in seq] for seq in seqs],
+        dtype=np.int8,
     )
 
     # convert to np array
     pam250m = np.array(pam250.values(), dtype=np.int8).reshape(pam250.shape)
 
-    out = np.zeros((seqs.shape[0], seqs.shape[0]), dtype=np.int8)
-    i_idx, j_idx = np.tril_indices(seqs.shape[0])
-    out[i_idx, j_idx] = np.sum(pam250m[seqs[i_idx], seqs[j_idx]], axis=1)
+    out = np.zeros((seq_idx.shape[0], seq_idx.shape[0]), dtype=np.int8)
+    i_idx, j_idx = np.tril_indices(seq_idx.shape[0])
+    out[i_idx, j_idx] = np.sum(pam250m[seq_idx[i_idx], seq_idx[j_idx]], axis=1)
 
     i_upper = np.triu_indices_from(out, k=1)
     out[i_upper] = out.T[i_upper]  # pylint: disable=unsubscriptable-object

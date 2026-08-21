@@ -1,11 +1,12 @@
 import pandas as pd
 import seaborn as sns
-from sklearn.linear_model import LogisticRegressionCV
 from sklearn.cluster import KMeans
+from sklearn.linear_model import LogisticRegressionCV
+
 from ddmc.clustering import DDMC
-from ddmc.figures.common import getSetup
-from ddmc.logistic_regression import plot_roc, normalize_cluster_centers
 from ddmc.datasets import CPTAC, filter_incomplete_peptides
+from ddmc.figures.common import getSetup
+from ddmc.logistic_regression import normalize_cluster_centers, plot_roc
 
 
 def makeFigure():

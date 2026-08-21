@@ -1,21 +1,21 @@
-import numpy as np
+import textwrap
+
 import pandas as pd
 import seaborn as sns
-import textwrap
 from sklearn.linear_model import LogisticRegressionCV
 
 from ddmc.clustering import DDMC
-from ddmc.datasets import CPTAC, select_peptide_subset
+from ddmc.datasets import CPTAC
 from ddmc.figures.common import (
-    plot_cluster_kinase_distances,
     getSetup,
+    plot_cluster_kinase_distances,
     plot_p_signal_across_clusters_and_binary_feature,
 )
 from ddmc.logistic_regression import (
-    plot_roc,
-    plot_cluster_regression_coefficients,
+    get_highest_weighted_clusters,
     normalize_cluster_centers,
-    get_highest_weighted_clusters, 
+    plot_cluster_regression_coefficients,
+    plot_roc,
 )
 
 
@@ -36,7 +36,12 @@ def makeFigure():
         cv=n_cv, solver="saga", n_jobs=1, penalty="l1", max_iter=10000
     )
     plot_roc(
-        lr, centers.values, is_hot.values, cv_folds=n_cv, title="ROC TI", return_mAUC=True
+        lr,
+        centers.values,
+        is_hot.values,
+        cv_folds=n_cv,
+        title="ROC TI",
+        return_mAUC=True,
     )
     plot_cluster_regression_coefficients(axes[1], lr, title="")
 
@@ -81,7 +86,7 @@ def plot_ImmuneGOs(cluster, ax, title=False, max_width=25, n=False, loc="best"):
         orient="h",
         color="black",
         **{"linewidth": 2},
-        **{"edgecolor": "black"}
+        **{"edgecolor": "black"},
     )
     ax.set_yticklabels(
         textwrap.fill(x.get_text(), max_width) for x in ax.get_yticklabels()
