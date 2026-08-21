@@ -136,9 +136,7 @@ def _load_reference_seqs() -> tuple[tuple[str, ...], int]:
 
 
 @lru_cache(maxsize=32)
-def _cached_background_proportions(
-    pYn: int, pSn: int, pTn: int
-) -> tuple[str, ...]:
+def _cached_background_proportions(pYn: int, pSn: int, pTn: int) -> tuple[str, ...]:
     refseqs, _ = _load_reference_seqs()
     return tuple(BackgProportions(list(refseqs), pYn, pSn, pTn))
 
