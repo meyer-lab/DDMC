@@ -1,6 +1,7 @@
 """Binomial probability calculation to compute sequence distance between sequences and clusters."""
 
 from collections import OrderedDict
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -33,11 +34,40 @@ AAfreq["Y"] = 0.033
 AAfreq["V"] = 0.068
 
 AAlist = list(AAfreq.keys())
+_AAindex = {aa: i for i, aa in enumerate(AAlist)}
+_pseudoCounts = np.array([AAfreq[aa] for aa in AAlist])
+
+# Maps an ASCII byte value to its index in AAlist, for vectorized char lookup
+# (see fast_position_weight_matrix). All sequences are assumed uppercase.
+_AAbyteLookup = np.zeros(256, dtype=np.int64)
+for _aa, _i in _AAindex.items():
+    _AAbyteLookup[ord(_aa)] = _i
 
 
 def position_weight_matrix(seqs, pseudoC=AAfreq):
     """Build PWM of a given set of sequences."""
     return frequencies(seqs).normalize(pseudocounts=pseudoC)
+
+
+def fast_position_weight_matrix(seqs: list[str]) -> np.ndarray:
+    """Build a (len(AAlist), seq_length) PWM of a given set of same-length
+    sequences, equivalent to `position_weight_matrix` but without the
+    overhead of Biopython's general-purpose alignment machinery."""
+    seq_len = len(seqs[0])
+    # Convert to fixed-width bytes and view as a 2D uint8 array so the
+    # char->index lookup is a single vectorized gather instead of a nested
+    # Python loop over every character of every sequence.
+    seqs_bytes = np.asarray(seqs, dtype=f"S{seq_len}")
+    byte_view = seqs_bytes.view(np.uint8).reshape(len(seqs), seq_len)
+    idx = _AAbyteLookup[byte_view]
+
+    counts = np.zeros((len(AAlist), seq_len))
+    for pos in range(seq_len):
+        counts[:, pos] = np.bincount(idx[:, pos], minlength=len(AAlist))
+
+    return (counts + _pseudoCounts[:, None]) / (
+        counts.sum(axis=0, keepdims=True) + _pseudoCounts.sum()
+    )
 
 
 def frequencies(seqs: list[str]):
@@ -69,15 +99,8 @@ def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
     pSf = forw_pSn / forw_tot
     pTf = forw_pTn / forw_tot
 
-    # Import backgroun sequences file
-    PsP = pd.read_csv(
-        "./ddmc/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv"
-    )
-    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
-    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
-    refseqs = list(PsP["SITE_+/-7_AA"])
-    len_bg = int(len(refseqs))
-    backg_pYn, _, _ = CountPsiteTypes(refseqs)
+    refseqs, backg_pYn = _load_reference_seqs()
+    len_bg = len(refseqs)
 
     # Make sure there are enough pY peptides to meet proportions
     if backg_pYn >= len_bg * pYf:
@@ -92,9 +115,32 @@ def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
         pSn = int(tot_p * pSf)
         pTn = int(tot_p * pTf)
 
-    # Build background sequences
-    bg_seqs = BackgProportions(refseqs, pYn, pSn, pTn)
-    return bg_seqs
+    # Build background sequences (cached, since for fixed reference data
+    # this only depends on the pY/pS/pT proportions of the foreground set)
+    return list(_cached_background_proportions(pYn, pSn, pTn))
+
+
+@lru_cache(maxsize=1)
+def _load_reference_seqs() -> tuple[tuple[str, ...], int]:
+    """Load and filter the PhosphoSitePlus background sequences. This file
+    never changes at runtime, so cache it instead of re-reading and
+    re-filtering the CSV on every `BackgroundSeqs` call."""
+    PsP = pd.read_csv(
+        "./ddmc/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv"
+    )
+    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("_")]
+    PsP = PsP[~PsP["SITE_+/-7_AA"].str.contains("X")]
+    refseqs = tuple(PsP["SITE_+/-7_AA"])
+    backg_pYn, _, _ = CountPsiteTypes(refseqs)
+    return refseqs, backg_pYn
+
+
+@lru_cache(maxsize=32)
+def _cached_background_proportions(
+    pYn: int, pSn: int, pTn: int
+) -> tuple[str, ...]:
+    refseqs, _ = _load_reference_seqs()
+    return tuple(BackgProportions(list(refseqs), pYn, pSn, pTn))
 
 
 def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[str]:
@@ -131,21 +177,29 @@ class Binomial:
 
     def __init__(self, seqs: np.ndarray):
         # Background sequences
-        background = position_weight_matrix(BackgroundSeqs(seqs))
-        self.background = np.array([background[AA] for AA in AAlist])
-        self.foreground: np.ndarray = GenerateBinarySeqID(seqs)
+        self.background = fast_position_weight_matrix(BackgroundSeqs(seqs))
+        foreground: np.ndarray = GenerateBinarySeqID(seqs)
+        self.n_aa, self.n_pos = foreground.shape[1], foreground.shape[2]
+        # Flattened, float view of the one-hot foreground used for fast
+        # matrix multiplication in from_summaries (replacing einsum, which
+        # is much slower on the boolean input and is called every EM step).
+        self.foreground_flat = foreground.reshape(foreground.shape[0], -1).astype(
+            np.float32
+        )
 
         self.logWeights = 0.0
         assert np.all(np.isfinite(self.background))
-        assert np.all(np.isfinite(self.foreground))
+        assert np.all(np.isfinite(self.foreground_flat))
 
     def from_summaries(self, weightsIn: np.ndarray):
         """Update the underlying distribution."""
-        k = np.einsum("kji,kl->lji", self.foreground, weightsIn)
+        k_flat = weightsIn.T.astype(np.float32) @ self.foreground_flat
+        k = k_flat.reshape(-1, self.n_aa, self.n_pos)
         betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
         betaA = np.clip(betaA, 0.001, np.inf)
         probmat = sc.betainc(betaA, k + 1, 1 - self.background)
-        tempp = np.einsum("ijk,ljk->il", self.foreground, probmat)
+        probmat_flat = probmat.reshape(probmat.shape[0], -1).astype(np.float32)
+        tempp = self.foreground_flat @ probmat_flat.T
         self.logWeights = np.log(tempp)
 
 

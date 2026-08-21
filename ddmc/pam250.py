@@ -6,8 +6,10 @@ from Bio.Align import substitution_matrices
 
 class PAM250:
     def __init__(self, seqs: list[str]):
-        # Compute all pairwise distances
-        self.background = get_pam250_scores(seqs)
+        # Compute all pairwise distances. Cast to float32 once here rather
+        # than in from_summaries, which runs every EM iteration and would
+        # otherwise re-convert this (potentially large) int8 matrix each time.
+        self.background = get_pam250_scores(seqs).astype(np.float32)
         self.logWeights = 0.0
 
     def from_summaries(self, weightsIn: np.ndarray):
