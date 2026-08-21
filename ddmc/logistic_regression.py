@@ -62,6 +62,8 @@ def plot_roc(
     ax: Axes | None = None,
 ):
     """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
+    X = np.asarray(X)
+    y = np.asarray(y)
     if kfold == "Stratified":
         cv = StratifiedKFold(n_splits=cv_folds)
     elif kfold == "Repeated":

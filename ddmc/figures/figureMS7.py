@@ -54,7 +54,7 @@ def makeFigure():
 
     plot_cluster_kinase_distances(
         model.predict_upstream_kinases()[top_clusters],
-        model.get_pssms(PsP_background=True, clusters=top_clusters)[0],
+        model.get_pssms(PsP_background=True, clusters=top_clusters),
         ax=axes[3],
     )
     return f

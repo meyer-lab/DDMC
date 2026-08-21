@@ -84,7 +84,7 @@ def plot_fig_3abd(ax_a, ax_b, ax_d):
     # Plot kinase predictions for cluster 16
     plot_cluster_kinase_distances(
         model.predict_upstream_kinases()[[16]],
-        model.get_pssms(PsP_background=True, clusters=[16])[0],
+        model.get_pssms(PsP_background=True, clusters=[16]),
         ax=ax_d,
     )
 
