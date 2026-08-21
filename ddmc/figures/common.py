@@ -191,7 +191,7 @@ def plot_cluster_kinase_distances(
             KinToPhosphotypeDict[kin] for kin in distances_pssm["Kinase"]
         ]
         try:
-            most_frequent_phosphoacceptor = AAlist[pssms[i, 5].argmax()]
+            most_frequent_phosphoacceptor = AAlist[int(np.argmax(pssms[i, :, 5]))]
         except Exception:
             most_frequent_phosphoacceptor = "S/T"
         if most_frequent_phosphoacceptor == "S" or most_frequent_phosphoacceptor == "T":

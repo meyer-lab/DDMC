@@ -6,30 +6,13 @@ from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
-import sklearn.utils
+from fancyimpute import SoftImpute
 from sklearn.mixture import GaussianMixture
 from sklearn.utils.validation import check_is_fitted
 
 from .binomial import AAlist, BackgroundSeqs, Binomial, frequencies
 from .motifs import compute_control_pssm, get_pspls
 from .pam250 import PAM250
-
-# fancyimpute (unmaintained since 2020) calls check_array with the
-# `force_all_finite` kwarg, which scikit-learn renamed to `ensure_all_finite`
-# and later removed. Patch it before fancyimpute's submodules import
-# check_array into their own namespaces, rather than forking fancyimpute.
-_sklearn_check_array = sklearn.utils.check_array
-
-
-def _check_array_compat(X, **kwargs):
-    if "force_all_finite" in kwargs:
-        kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
-    return _sklearn_check_array(X, **kwargs)
-
-
-sklearn.utils.check_array = _check_array_compat  # ty: ignore[invalid-assignment]
-
-from fancyimpute import SoftImpute  # noqa: E402
 
 
 class DDMC(GaussianMixture):
