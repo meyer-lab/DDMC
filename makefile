@@ -13,8 +13,8 @@ testprofile:
 	uv run python3 -m cProfile -o profile -m pytest -s -v -x
 	gprof2dot -f pstats --node-thres=5.0 profile | dot -Tsvg -o profile.svg
 
-coverage.xml:
-	uv run pytest --cov=ddmc --cov-report=xml
+coverage:
+	uv run pytest --cov=ddmc --cov-report=term
 
 clean:
 	rm -rf *.pdf pylint.log output
