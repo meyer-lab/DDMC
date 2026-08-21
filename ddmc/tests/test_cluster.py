@@ -12,11 +12,16 @@ from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC, filter_incomplete_peptides
 
 
-def test_wins():
+@pytest.fixture(scope="session")
+def p_signal():
+    """Loading and filtering CPTAC's p-signal data is expensive and the
+    result is never mutated by DDMC.fit, so share one copy across the whole
+    test session instead of reloading it in every test."""
+    return filter_incomplete_peptides(CPTAC().get_p_signal(), sample_presence_ratio=1)
+
+
+def test_wins(p_signal):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    p_signal = filter_incomplete_peptides(
-        CPTAC().get_p_signal(), sample_presence_ratio=1
-    )
     model_ddmc = DDMC(n_components=2, seq_weight=0).fit(p_signal)
     model_gmm = GaussianMixture(n_components=2).fit(p_signal.values)
 
@@ -33,10 +38,7 @@ def test_wins():
 @pytest.mark.parametrize("w", [0, 0.1, 10.0])
 @pytest.mark.parametrize("ncl", [2, 5, 25])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
-def test_clusters(w, ncl, distance_method):
-    p_signal = filter_incomplete_peptides(
-        CPTAC().get_p_signal(), sample_presence_ratio=1
-    )
+def test_clusters(p_signal, w, ncl, distance_method):
     model = DDMC(ncl, seq_weight=w, distance_method=distance_method).fit(p_signal)
 
     # Assert that we got a reasonable result
@@ -45,12 +47,8 @@ def test_clusters(w, ncl, distance_method):
 
 
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
-def test_ClusterVar(distance_method):
+def test_ClusterVar(p_signal, distance_method):
     """Test minimum variance of output cluster centers"""
-    p_signal = filter_incomplete_peptides(
-        CPTAC().get_p_signal(), sample_presence_ratio=1
-    )
-
     model = DDMC(n_components=6, seq_weight=3, distance_method=distance_method).fit(
         p_signal
     )
