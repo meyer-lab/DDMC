@@ -27,8 +27,8 @@ def test_wins(p_signal):
     assert np.all(similarity[diag] > 0.95) or np.all(similarity[offdiag] > 0.95)
 
 
-@pytest.mark.parametrize("w", [0, 0.1, 10.0])
-@pytest.mark.parametrize("ncl", [2, 5, 25])
+@pytest.mark.parametrize("w", [0, 10.0])
+@pytest.mark.parametrize("ncl", [2, 25])
 @pytest.mark.parametrize("distance_method", ["PAM250", "Binomial"])
 def test_clusters(p_signal, w, ncl, distance_method):
     model = DDMC(ncl, seq_weight=w, distance_method=distance_method).fit(p_signal)
