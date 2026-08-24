@@ -50,5 +50,8 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
+[tool.ty.src]
+exclude = ["ddmc/tests/**"]
+
 [tool.ty.environment]
 python-version = "3.12"

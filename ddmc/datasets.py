@@ -111,7 +111,9 @@ class CPTAC:
     def get_sample_to_experiment(self, as_df: Literal[False] = False) -> np.ndarray: ...
     @overload
     def get_sample_to_experiment(self, as_df: Literal[True]) -> pd.DataFrame: ...
-    def get_sample_to_experiment(self, as_df: bool = False) -> np.ndarray | pd.DataFrame:
+    def get_sample_to_experiment(
+        self, as_df: bool = False
+    ) -> np.ndarray | pd.DataFrame:
         """Load the mapping from sample to the TMT experiment it was run in.
 
         Args:

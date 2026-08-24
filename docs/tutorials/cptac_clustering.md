@@ -136,7 +136,9 @@ import numpy as np
 mutations = cptac.get_mutations(["EGFR.mutation.status"])
 
 # Restrict to tumor samples (no ".N" suffix) with a known mutation call.
-tumor_cols = [c for c in p_signal.columns if not c.endswith(".N") and c in mutations.index]
+tumor_cols = [
+    c for c in p_signal.columns if not c.endswith(".N") and c in mutations.index
+]
 egfr_mutant = mutations.loc[tumor_cols, "EGFR.mutation.status"].to_numpy()
 
 centers_tumor = centers.loc[tumor_cols]

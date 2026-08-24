@@ -22,7 +22,7 @@ DataFrame is a drop-in match for `DDMC.fit`:
 from ddmc.datasets import EBDT
 
 p_signal = EBDT().get_p_signal()
-print(p_signal.shape)      # (peptides, inhibitors)
+print(p_signal.shape)  # (peptides, inhibitors)
 print(p_signal.isna().sum().sum())  # 0 — no missing values in this dataset
 ```
 
