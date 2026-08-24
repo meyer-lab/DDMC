@@ -25,3 +25,9 @@ lint:
 
 typecheck:
 	uv run ty check ddmc
+
+docs:
+	uv run mkdocs serve
+
+docs-build:
+	uv run mkdocs build --strict

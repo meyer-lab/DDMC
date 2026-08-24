@@ -1,4 +1,9 @@
-"""This is the __init__.py file."""
+"""Package entry point for `ddmc`.
+
+Sets `__version__`, and patches scikit-learn's `check_array` so the
+unmaintained `fancyimpute` dependency (used by `ddmc.clustering.DDMC` for
+missing-value imputation) keeps working against modern scikit-learn.
+"""
 
 import sklearn.utils
 
@@ -12,6 +17,17 @@ _sklearn_check_array = sklearn.utils.check_array
 
 
 def _check_array_compat(X, **kwargs):
+    """Translate the removed `force_all_finite` kwarg to `ensure_all_finite` and
+    delegate to the original `sklearn.utils.check_array`.
+
+    Args:
+        X: The array-like to validate; forwarded unchanged.
+        **kwargs: Keyword arguments for `check_array`. If `force_all_finite`
+            is present, it is renamed to `ensure_all_finite`.
+
+    Returns:
+        The validated array, as returned by the original `check_array`.
+    """
     if "force_all_finite" in kwargs:
         kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
     return _sklearn_check_array(X, **kwargs)
