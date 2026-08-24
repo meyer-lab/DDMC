@@ -1,4 +1,10 @@
-"""Clustering functions."""
+"""Dual data and motif clustering (DDMC).
+
+Contains the `DDMC` model itself — a `sklearn.mixture.GaussianMixture`
+subclass that jointly clusters peptides on their phosphorylation signal and
+their sequence motif — and `get_pspl_pssm_distances`, the helper it uses to
+compare cluster motifs against kinase specificity profiles.
+"""
 
 import warnings
 from collections.abc import Sequence
@@ -17,17 +23,53 @@ from .pam250 import PAM250
 
 class DDMC(GaussianMixture):
     """Cluster peptides by both sequence similarity and condition-wise phosphorylation following an
-    expectation-maximization algorithm."""
+    expectation-maximization algorithm.
+
+    `DDMC` subclasses `sklearn.mixture.GaussianMixture` and reuses its EM
+    loop, but scores each peptide against each cluster using both the usual
+    Gaussian mixture log-probability over its phosphorylation signal and a
+    sequence-motif term (weighted by `seq_weight`), and refits both the
+    Gaussian mixture parameters and the per-cluster sequence motif at every
+    M step. See `ddmc.binomial.Binomial` and `ddmc.pam250.PAM250` for the
+    two available motif models.
+
+    Attributes set by `fit`:
+        p_signal: The `p_signal` DataFrame passed to `fit`.
+        sequences: `p_signal.index`, as an upper-cased numpy array.
+        seq_dist: The fitted `Binomial` or `PAM250` sequence-distance model.
+        scores_: Per-peptide, per-cluster responsibilities (soft cluster
+            assignments) of shape (n_peptides, n_components).
+        seq_scores_: Per-peptide, per-cluster weighted sequence
+            log-probabilities (`seq_weight * seq_dist.logWeights`) from the
+            last E step, of shape (n_peptides, n_components).
+    """
 
     def __init__(
         self,
         n_components: int,
         seq_weight: float,
         distance_method: Literal["PAM250", "Binomial"] = "Binomial",
-        random_state=None,
-        max_iter=200,
-        tol=1e-4,
+        random_state: int | np.random.RandomState | None = None,
+        max_iter: int = 200,
+        tol: float = 1e-4,
     ):
+        """
+        Args:
+            n_components: The number of clusters to fit.
+            seq_weight: Weight applied to the sequence-motif log-probability
+                relative to the Gaussian mixture log-probability when
+                scoring each peptide against each cluster. `0` reduces
+                `DDMC` to an ordinary Gaussian mixture model.
+            distance_method: Which sequence-distance model to use for the
+                motif term: `"Binomial"` (`ddmc.binomial.Binomial`) or
+                `"PAM250"` (`ddmc.pam250.PAM250`).
+            random_state: Seed or `numpy.random.RandomState` controlling the
+                random initialization of the underlying Gaussian mixture,
+                for reproducibility.
+            max_iter: Maximum number of EM iterations to run.
+            tol: Convergence threshold on the change in per-sample average
+                log-likelihood between EM iterations.
+        """
         super().__init__(
             n_components=n_components,
             covariance_type="diag",
@@ -39,7 +81,15 @@ class DDMC(GaussianMixture):
         self.distance_method = distance_method
         self.seq_weight = seq_weight
 
-    def _gen_peptide_distances(self, sequences, distance_method):
+    def _gen_peptide_distances(self, sequences, distance_method) -> None:
+        """Build `self.seq_dist`, the sequence-distance model used for the
+        motif term of the E and M steps.
+
+        Args:
+            sequences: The length-11 peptide sequences being clustered.
+            distance_method: Which sequence-distance model to construct:
+                `"Binomial"` or `"PAM250"`.
+        """
         sequences = np.asarray(sequences, dtype=str)
         sequences = np.char.upper(sequences)
         self.sequences = sequences
@@ -50,8 +100,22 @@ class DDMC(GaussianMixture):
         else:
             raise ValueError("Wrong distance type.")
 
-    def _estimate_log_prob(self, X: np.ndarray, xp=None):
-        """Estimate the log-probability of each point in each cluster."""
+    def _estimate_log_prob(self, X: np.ndarray, xp=None) -> np.ndarray:
+        """EM E-step helper. Estimate the log-probability of each peptide
+        under each cluster, combining the Gaussian mixture log-probability
+        over `X` with the weighted sequence-motif log-probability.
+
+        Args:
+            X: Phosphorylation signal of shape (n_samples, n_features), with
+                any missing values already imputed.
+            xp: Array-API namespace to use, forwarded to
+                `GaussianMixture._estimate_log_prob` (unused directly here).
+
+        Returns:
+            Combined log-probability of each sample under each cluster, of
+            shape (n_samples, n_components). Also stored as
+            `self.seq_scores_` (the sequence-only term).
+        """
         logp = super()._estimate_log_prob(X, xp=xp)  # Do the regular work
 
         # Add in the sequence effect
@@ -60,14 +124,21 @@ class DDMC(GaussianMixture):
 
         return logp
 
-    def _m_step(self, X: np.ndarray, log_resp: np.ndarray, xp=None):
-        """M step.
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-        log_resp : array-like of shape (n_samples, n_components)
-            Logarithm of the posterior probabilities (or responsibilities) of
-            the point of each sample in X.
+    def _m_step(self, X: np.ndarray, log_resp: np.ndarray, xp=None) -> None:
+        """EM M-step. Impute missing values from the current cluster
+        centers, then refit both the Gaussian mixture parameters and the
+        sequence-motif model from the current responsibilities.
+
+        Args:
+            X: Phosphorylation signal of shape (n_samples, n_features). If
+                `self._missing`, entries at `self.missing_d` are overwritten
+                in place with each peptide's assigned cluster's center
+                before the regular Gaussian mixture M step runs.
+            log_resp: Logarithm of the posterior probabilities (or
+                responsibilities) of each sample in `X`, of shape
+                (n_samples, n_components).
+            xp: Array-API namespace to use, forwarded to
+                `GaussianMixture._m_step` (unused directly here).
         """
         if self._missing:
             labels = np.argmax(log_resp, axis=1)
@@ -82,7 +153,7 @@ class DDMC(GaussianMixture):
         # Do sequence m step
         self.seq_dist.from_summaries(np.exp(log_resp))
 
-    def fit(self, p_signal: pd.DataFrame):  # ty: ignore[invalid-method-override]
+    def fit(self, p_signal: pd.DataFrame) -> "DDMC":  # ty: ignore[invalid-method-override]
         """
         Compute EM clustering.
 
@@ -91,6 +162,9 @@ class DDMC(GaussianMixture):
                 containing the phosphorylation signal. `p_signal.index` contains
                 the length-11 AA sequence of each peptide, containing the
                 phosphoacceptor in the middle and five AAs flanking it.
+
+        Returns:
+            self, fit to `p_signal`.
         """
         assert isinstance(p_signal, pd.DataFrame), (
             "`p_signal` must be a pandas dataframe."
@@ -132,7 +206,11 @@ class DDMC(GaussianMixture):
         assert np.all(np.isfinite(self.seq_scores_))
         return self
 
-    def transform(self, as_df=False) -> np.ndarray | pd.DataFrame:
+    @overload
+    def transform(self, as_df: Literal[False] = False) -> np.ndarray: ...
+    @overload
+    def transform(self, as_df: Literal[True]) -> pd.DataFrame: ...
+    def transform(self, as_df: bool = False) -> np.ndarray | pd.DataFrame:
         """
         Return cluster centers.
 
@@ -157,6 +235,10 @@ class DDMC(GaussianMixture):
         """
         Imputes missing values in the dataset passed in fit() and returns the
         imputed dataset.
+
+        Returns:
+            A copy of the `p_signal` passed to `fit`, with each peptide's
+            missing samples filled in from its assigned cluster's center.
         """
         p_signal = self.p_signal.copy()
         labels = self.labels()  # cluster assignments
@@ -168,8 +250,16 @@ class DDMC(GaussianMixture):
         assert np.all(np.isfinite(p_signal))
         return p_signal
 
+    @overload
     def get_pssms(
-        self, PsP_background=False, clusters: list[int] | None = None
+        self, PsP_background: bool = False, clusters: None = None
+    ) -> tuple[np.ndarray, np.ndarray]: ...
+    @overload
+    def get_pssms(
+        self, PsP_background: bool = False, *, clusters: list[int]
+    ) -> np.ndarray: ...
+    def get_pssms(
+        self, PsP_background: bool = False, clusters: list[int] | None = None
     ) -> tuple[np.ndarray, np.ndarray] | np.ndarray:
         """
         Compute position-specific scoring matrix of each cluster.
@@ -253,10 +343,21 @@ class DDMC(GaussianMixture):
 
     def predict_upstream_kinases(
         self,
-        PsP_background=True,
+        PsP_background: bool = True,
     ) -> pd.DataFrame:
         """Compute matrix-matrix similarity between kinase specificity profiles
-        and cluster PSSMs to identify upstream kinases regulating clusters."""
+        and cluster PSSMs to identify upstream kinases regulating clusters.
+
+        Args:
+            PsP_background: Whether or not PhosphoSitePlus should be used
+                for the background amino acid frequency when building each
+                cluster's PSSM (see `get_pssms`).
+
+        Returns:
+            DataFrame of shape (n_kinases, n_nonempty_clusters) with a
+            Frobenius distance between each kinase's specificity profile and
+            each cluster's PSSM; smaller values indicate a better match.
+        """
         kinases, pspls = get_pspls()
         clusters, pssms = self.get_pssms(PsP_background=PsP_background)
         distances = get_pspl_pssm_distances(
@@ -269,26 +370,52 @@ class DDMC(GaussianMixture):
         return distances
 
     def get_nonempty_clusters(self) -> np.ndarray:
+        """List the clusters that at least one peptide is assigned to.
+
+        Returns:
+            Sorted array of the distinct cluster indices present in
+            `self.labels()`; shorter than `n_components` if any clusters
+            are empty.
+        """
         return np.unique(self.labels())
 
     def has_empty_clusters(self) -> bool:
         """
         Checks whether the most recent call to fit() resulted in empty clusters.
+
+        Returns:
+            True if any of the `n_components` clusters has no peptides
+            assigned to it.
         """
         check_is_fitted(self, ["scores_"])
         return self.get_nonempty_clusters().size != self.n_components
 
     def predict(self) -> np.ndarray:  # ty: ignore[invalid-method-override]
-        """Provided the current model parameters, predict the cluster each peptide belongs to."""
+        """Provided the current model parameters, predict the cluster each peptide belongs to.
+
+        Returns:
+            Array of shape (n_peptides,) giving the index of the
+            highest-likelihood cluster for each peptide in `self.p_signal`.
+        """
         check_is_fitted(self, ["scores_"])
         return np.argmax(self.scores_, axis=1)
 
     def labels(self) -> np.ndarray:
-        """Find cluster assignment with highest likelihood for each peptide."""
+        """Find cluster assignment with highest likelihood for each peptide.
+
+        Returns:
+            Array of shape (n_peptides,) giving each peptide's cluster
+            index. Equivalent to `predict()`.
+        """
         return self.predict()
 
     def score(self) -> float:  # ty: ignore[invalid-method-override]
-        """Generate score of the fitting."""
+        """Generate score of the fitting.
+
+        Returns:
+            The lower bound on the log-likelihood of the fitted model
+            (`self.lower_bound_`, set by `GaussianMixture.fit`).
+        """
         check_is_fitted(self, ["lower_bound_"])
         return self.lower_bound_
 
@@ -312,7 +439,7 @@ def get_pspl_pssm_distances(
 def get_pspl_pssm_distances(
     pspls: np.ndarray,
     pssms: np.ndarray,
-    as_df=False,
+    as_df: bool = False,
     pssm_names: Sequence | np.ndarray | None = None,
     kinases: Sequence | np.ndarray | None = None,
 ) -> np.ndarray | pd.DataFrame:

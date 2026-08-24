@@ -1,6 +1,21 @@
+"""Loaders for the mass-spec datasets bundled with the package.
+
+Contains:
+    - `CPTAC`: the CPTAC lung cancer clinical phosphoproteomics cohort, plus
+      accompanying clinical metadata (mutation calls, tumor/NAT status,
+      hot/cold immune infiltration labels) used in the DDMC paper.
+    - `EBDT`: the MCF7 kinase-inhibitor phosphoproteomics dataset from
+      Hijazi et al., *Nat Biotechnol* 2020, remapped onto DDMC's length-11
+      sequence-motif representation.
+    - `filter_incomplete_peptides` / `select_peptide_subset`: preprocessing
+      helpers for filtering a `p_signal` DataFrame by missingness or down
+      to a random subset of peptides, for use before `ddmc.clustering.DDMC.fit`.
+"""
+
 import re
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
@@ -15,7 +30,7 @@ def filter_incomplete_peptides(
     sample_presence_ratio: float | None = None,
     min_experiments: int | None = None,
     sample_to_experiment: np.ndarray | None = None,
-):
+) -> pd.DataFrame:
     """
     Filters out missing values from p-signal array.
 
@@ -58,10 +73,23 @@ def filter_incomplete_peptides(
 
 
 def select_peptide_subset(
-    p_signal: pd.DataFrame, keep_ratio: float | None = None, keep_num: int | None = None
-):
+    p_signal: pd.DataFrame,
+    keep_ratio: float | None = None,
+    keep_num: int | None = None,
+) -> pd.DataFrame:
     """
     Selects a random subset of peptides from p_signal.
+
+    Args:
+        p_signal: Phosphorylation signal, indexed by peptide sequence.
+        keep_ratio: Fraction of peptides to keep; if given, overrides
+            `keep_num` with `int(p_signal.shape[0] * keep_ratio)`.
+        keep_num: Number of peptides to keep. Required if `keep_ratio` is
+            not given.
+
+    Returns:
+        A random subset of the rows of `p_signal` (sampled with
+        replacement), of shape (keep_num, p_signal.shape[1]).
     """
     if keep_ratio is not None:
         keep_num = int(p_signal.shape[0] * keep_ratio)
@@ -69,15 +97,49 @@ def select_peptide_subset(
 
 
 class CPTAC:
+    """Loader for the CPTAC lung cancer clinical phosphoproteomics cohort and
+    its accompanying clinical metadata.
+
+    Sample columns throughout this dataset are patient IDs, with tumor
+    samples given plain (e.g. `"C3L.00001"`) and their matched adjacent
+    normal tissue (NAT) samples suffixed with `".N"` (e.g. `"C3L.00001.N"`).
+    """
+
     data_dir = DATA_DIR / "MS" / "CPTAC"
 
-    def get_sample_to_experiment(self, as_df=False):
+    @overload
+    def get_sample_to_experiment(self, as_df: Literal[False] = False) -> np.ndarray: ...
+    @overload
+    def get_sample_to_experiment(self, as_df: Literal[True]) -> pd.DataFrame: ...
+    def get_sample_to_experiment(self, as_df: bool = False) -> np.ndarray | pd.DataFrame:
+        """Load the mapping from sample to the TMT experiment it was run in.
+
+        Args:
+            as_df: If True, return the raw DataFrame read from
+                `IDtoExperiment.csv` instead of just the experiment column.
+
+        Returns:
+            If `as_df`, the full `IDtoExperiment.csv` DataFrame. Otherwise, an
+            array of shape `(n_samples,)` giving each sample's experiment
+            identifier, aligned to that CSV's row order.
+        """
         sample_to_experiment = pd.read_csv(self.data_dir / "IDtoExperiment.csv")
         if as_df:
             return sample_to_experiment
         return sample_to_experiment.iloc[:, 1].values
 
-    def get_p_signal(self, min_experiments=2) -> pd.DataFrame:
+    def get_p_signal(self, min_experiments: int = 2) -> pd.DataFrame:
+        """Load the CPTAC phosphorylation signal matrix.
+
+        Args:
+            min_experiments: The minimum number of TMT experiments a
+                peptide must be observed in to be kept; passed to
+                `filter_incomplete_peptides`.
+
+        Returns:
+            DataFrame of phosphorylation signal, indexed by the length-11
+            peptide sequence, with one column per sample.
+        """
         p_signal = pd.read_csv(self.data_dir / "CPTAC-preprocessedMotifs.csv").iloc[
             :, 1:
         ]
@@ -92,6 +154,17 @@ class CPTAC:
     def get_patients_with_nat_and_tumor(self, samples) -> np.ndarray:
         """
         Get patients that have both NAT and tumor samples.
+
+        Args:
+            samples (Sequence[str] | numpy.ndarray): Sample identifiers to
+                consider (tumor samples plain, NAT samples suffixed with
+                `".N"`). Pooled internal-reference channels (containing
+                `"IR"`, e.g. `"Tumor.Only.IR"`) are ignored, as they are not
+                real patient samples.
+
+        Returns:
+            Sorted array of patient IDs (the tumor-sample form, without
+            `".N"`) present in `samples` as both a tumor and a NAT sample.
         """
         samples = np.asarray(samples, dtype=str)
         samples = samples[np.char.find(samples, "IR") == -1]
@@ -104,6 +177,18 @@ class CPTAC:
     def get_mutations(
         self, mutation_names: Sequence[str] | None = None
     ) -> pd.DataFrame:
+        """Load per-patient genetic mutation calls.
+
+        Args:
+            mutation_names: If given, restrict the result to these mutation
+                columns (as named in `Patient_Mutations.csv`, e.g.
+                `"EGFR.mutation.status"`). Defaults to all mutation columns.
+
+        Returns:
+            Boolean DataFrame indexed by patient ID (restricted to patients
+            with both a tumor and NAT sample), with one column per
+            mutation, True where that patient carries the mutation.
+        """
         mutations = pd.read_csv(self.data_dir / "Patient_Mutations.csv")
         mutations = mutations.set_index("Sample.ID")
         patients = self.get_patients_with_nat_and_tumor(mutations.index.values)
@@ -113,6 +198,17 @@ class CPTAC:
         return mutations.astype(bool)
 
     def get_hot_cold_labels(self) -> pd.Series:
+        """Load per-patient immune infiltration ("hot"/"cold" tumor) labels.
+
+        Tumor samples labeled "NAT enriched" (ambiguous/mixed signal) are
+        dropped, as are NAT samples themselves (this label only applies to
+        tumor samples).
+
+        Returns:
+            Boolean Series indexed by patient ID, True for immunologically
+            "hot" tumors ("Hot-tumor enriched") and False for "cold" tumors
+            ("Cold-tumor enriched").
+        """
         hot_cold = (
             pd.read_csv(self.data_dir / "Hot_Cold.csv")
             .dropna(axis=1)
@@ -126,17 +222,42 @@ class CPTAC:
         hot_cold = hot_cold.dropna()
         return np.squeeze(hot_cold).astype(bool)
 
-    def get_tumor_or_nat(self, samples: Sequence[str]) -> np.ndarray:
+    def get_tumor_or_nat(self, samples: Sequence[str] | pd.Index) -> np.ndarray:
         """
         Get tumor vs NAT for each of samples. Returned array contains True if
         tumor.
+
+        Args:
+            samples: Sample identifiers (tumor samples plain, NAT samples
+                suffixed with `".N"`).
+
+        Returns:
+            Boolean array of shape `(len(samples),)`, aligned to `samples`,
+            True where the sample is a tumor sample (not NAT).
         """
         return ~np.array([sample.endswith(".N") for sample in samples])
 
 
 # MCF7 mass spec data set from EBDT (Hijazi et al Nat Biotech 2020)
 class EBDT:
+    """Loader for the MCF7 kinase-inhibitor phosphoproteomics dataset from
+    Hijazi et al., *Nat Biotechnol* 2020. Each sample column is the
+    fold-change in phosphorylation signal for MCF7 cells treated with a
+    given kinase inhibitor, relative to control.
+    """
+
     def get_p_signal(self) -> pd.DataFrame:
+        """Load the EBDT phosphorylation fold-change matrix.
+
+        Reads the raw per-site CSV, maps each site onto the human proteome
+        to build DDMC's length-11 sequence-motif representation (via
+        `pos_to_motif`), and drops any site that fails to map.
+
+        Returns:
+            DataFrame of phosphorylation fold-change, indexed by the
+            length-11 peptide sequence, with one column per inhibitor
+            treatment.
+        """
         p_signal = (
             pd.read_csv(DATA_DIR / "Validations" / "Computational" / "ebdt_mcf7.csv")
             .drop("FDR", axis=1)
@@ -161,8 +282,28 @@ class EBDT:
         p_signal = p_signal.set_index("Sequence")
         return p_signal
 
-    def pos_to_motif(self, genes, pos):
-        """Map p-site sequence position to uniprot's proteome and extract motifs."""
+    def pos_to_motif(
+        self, genes: Sequence[str], pos: Sequence[str]
+    ) -> tuple[list[str], list[list[str]]]:
+        """Map p-site sequence position to uniprot's proteome and extract motifs.
+
+        Args:
+            genes: Gene name for each phosphosite (used to look up the
+                protein sequence in the UniProt proteome).
+            pos: Phosphosite position for each entry, formatted as the
+                phosphoacceptor residue letter followed by its 1-indexed
+                position in the protein (e.g. `"S104"`).
+
+        Returns:
+            A tuple `(motifs, del_ids)`:
+                motifs: The length-11 sequence motif (5 AAs flanking the
+                    phosphoacceptor on each side, phosphoacceptor
+                    lowercased) for each successfully mapped site.
+                del_ids: `[gene, pos]` pairs that could not be mapped
+                    (gene missing from the proteome, position out of range,
+                    or the residue at that position isn't S/T/Y), to be
+                    dropped from the corresponding `p_signal` rows.
+        """
         proteome = open(DATA_DIR / "Sequence_analysis" / "proteome_uniprot2019.fa")
         motif_size = 5
         ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")

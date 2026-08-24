@@ -1,7 +1,23 @@
-"""Binomial probability calculation to compute sequence distance between sequences and clusters."""
+"""Binomial sequence-distance model used by `ddmc.clustering.DDMC`.
+
+Contains:
+    - `AAfreq` / `AAlist`: reference amino acid frequencies and the fixed
+      amino acid ordering used throughout the package.
+    - Position weight matrix helpers (`position_weight_matrix`,
+      `fast_position_weight_matrix`, `frequencies`, `GenerateBinarySeqID`).
+    - Background phosphosite sequence sampling from PhosphoSitePlus
+      (`BackgroundSeqs`, `BackgProportions`, `CountPsiteTypes`, and their
+      cached loaders).
+    - The `Binomial` class: for each cluster, models how enriched each
+      amino acid is at each position (relative to the background) using the
+      binomial-probability approach of Schwartz & Gygi, *Nat Biotechnol*
+      2005 (doi:10.1038/nbt1146), and scores every peptide sequence against
+      each cluster's model.
+"""
 
 from collections import OrderedDict
 from functools import lru_cache
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -44,15 +60,36 @@ for _aa, _i in _AAindex.items():
     _AAbyteLookup[ord(_aa)] = _i
 
 
-def position_weight_matrix(seqs, pseudoC=AAfreq):
-    """Build PWM of a given set of sequences."""
+def position_weight_matrix(
+    seqs: list[str], pseudoC: OrderedDict[str, float] = AAfreq
+) -> Any:
+    """Build a position weight matrix (PWM) of a given set of same-length sequences.
+
+    Args:
+        seqs: Sequences (all the same length) to build the PWM from.
+        pseudoC: Per-amino-acid pseudocounts to add before normalizing,
+            keyed by one-letter amino acid code. Defaults to `AAfreq`.
+
+    Returns:
+        A Biopython `PositionWeightMatrix` (amino acid frequency per
+        position, normalized to sum to 1 down each column) of shape
+        (len(AAlist), sequence length).
+    """
     return frequencies(seqs).normalize(pseudocounts=pseudoC)
 
 
 def fast_position_weight_matrix(seqs: list[str]) -> np.ndarray:
     """Build a (len(AAlist), seq_length) PWM of a given set of same-length
     sequences, equivalent to `position_weight_matrix` but without the
-    overhead of Biopython's general-purpose alignment machinery."""
+    overhead of Biopython's general-purpose alignment machinery.
+
+    Args:
+        seqs: Sequences, all of the same length, to build the PWM from.
+
+    Returns:
+        Array of shape (len(AAlist), sequence length) giving the
+        pseudocount-smoothed frequency of each amino acid at each position.
+    """
     seq_len = len(seqs[0])
     # Convert to fixed-width bytes and view as a 2D uint8 array so the
     # char->index lookup is a single vectorized gather instead of a nested
@@ -70,13 +107,30 @@ def fast_position_weight_matrix(seqs: list[str]) -> np.ndarray:
     )
 
 
-def frequencies(seqs: list[str]):
-    """Build counts matrix of a given set of sequences."""
+def frequencies(seqs: list[str]) -> Any:
+    """Build a per-position amino acid counts matrix of a given set of same-length sequences.
+
+    Args:
+        seqs: Sequences, all of the same length, to count.
+
+    Returns:
+        A Biopython `FrequencyPositionMatrix` giving the raw count of each
+        amino acid at each position across `seqs`.
+    """
     return motifs.create(seqs, alphabet="".join(AAlist)).counts
 
 
-def GenerateBinarySeqID(seqs) -> np.ndarray:
-    """Build matrix with 0s and 1s to identify residue/position pairs for every sequence"""
+def GenerateBinarySeqID(seqs: list[str] | np.ndarray) -> np.ndarray:
+    """Build a one-hot encoding of amino acid identity at each position, for every sequence.
+
+    Args:
+        seqs: Length-11 peptide sequences to encode.
+
+    Returns:
+        Boolean array of shape (len(seqs), len(AAlist), 11), where
+        `result[i, j, k]` is True if sequence `i` has amino acid `AAlist[j]`
+        at position `k`.
+    """
     res = np.zeros((len(seqs), len(AAlist), 11), dtype=bool)
     for ii, seq in enumerate(seqs):
         for pos, aa in enumerate(seq):
@@ -85,12 +139,24 @@ def GenerateBinarySeqID(seqs) -> np.ndarray:
 
 
 def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
-    """Build Background data set with the same proportion of pY, pT, and pS motifs as in the foreground set of sequences.
+    """Build a background data set of length-11 phosphosite motifs sampled from
+    PhosphoSitePlus, matching the proportion of pY, pT, and pS sites found in
+    the foreground set of sequences.
+
     Note this PsP data set contains 51976 pY, 226131 pS, 81321 pT
     Source: https://www.phosphosite.org/staticDownloads.action -
     Phosphorylation_site_dataset.gz - Last mod: Wed Dec 04 14:56:35 EST 2019
     Cite: Hornbeck PV, Zhang B, Murray B, Kornhauser JM, Latham V, Skrzypek E PhosphoSitePlus, 2014: mutations,
-    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926"""
+    PTMs and recalibrations. Nucleic Acids Res. 2015 43:D512-20. PMID: 25514926
+
+    Args:
+        forseqs: The foreground peptide sequences whose pY/pS/pT proportions
+            the background set should match.
+
+    Returns:
+        Length-11 background peptide sequences sampled from PhosphoSitePlus,
+        with the phosphoacceptor lowercased, in pY/pS/pT order.
+    """
     # Get porportion of psite types in foreground set
     forw_pYn, forw_pSn, forw_pTn = CountPsiteTypes(forseqs)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -124,7 +190,14 @@ def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
 def _load_reference_seqs() -> tuple[tuple[str, ...], int]:
     """Load and filter the PhosphoSitePlus background sequences. This file
     never changes at runtime, so cache it instead of re-reading and
-    re-filtering the CSV on every `BackgroundSeqs` call."""
+    re-filtering the CSV on every `BackgroundSeqs` call.
+
+    Returns:
+        A tuple of `(refseqs, backg_pYn)`, where `refseqs` are the raw
+        +/-7 AA PhosphoSitePlus reference sequences (ambiguous entries
+        containing "_" or "X" removed) and `backg_pYn` is the number of
+        pY sites among them.
+    """
     PsP = pd.read_csv(
         "./ddmc/data/Sequence_analysis/pX_dataset_PhosphoSitePlus2019.csv"
     )
@@ -137,12 +210,35 @@ def _load_reference_seqs() -> tuple[tuple[str, ...], int]:
 
 @lru_cache(maxsize=32)
 def _cached_background_proportions(pYn: int, pSn: int, pTn: int) -> tuple[str, ...]:
+    """Memoized wrapper around `BackgProportions` over the cached reference
+    sequences, keyed by the requested pY/pS/pT counts.
+
+    Args:
+        pYn: Number of pY background motifs to include.
+        pSn: Number of pS background motifs to include.
+        pTn: Number of pT background motifs to include.
+
+    Returns:
+        The length-11 background motifs, in pY/pS/pT order.
+    """
     refseqs, _ = _load_reference_seqs()
     return tuple(BackgProportions(list(refseqs), pYn, pSn, pTn))
 
 
 def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[str]:
-    """Provided the proportions, add peptides to background set."""
+    """Slice length-11 motifs out of the +/-7 AA reference sequences, keeping
+    up to the requested number of pY, pS, and pT sites.
+
+    Args:
+        refseqs: Raw +/-7 AA PhosphoSitePlus reference sequences.
+        pYn: Maximum number of pY motifs to keep.
+        pSn: Maximum number of pS motifs to keep.
+        pTn: Maximum number of pT motifs to keep.
+
+    Returns:
+        The length-11 background motifs (phosphoacceptor lowercased),
+        concatenated in pY, pS, pT order.
+    """
     y_seqs: list[str] = []
     s_seqs: list[str] = []
     t_seqs: list[str] = []
@@ -171,9 +267,31 @@ def BackgProportions(refseqs: list[str], pYn: int, pSn: int, pTn: int) -> list[s
 
 
 class Binomial:
-    """Definition of the binomial sequence distance distribution."""
+    """Binomial sequence-distance model, used by `ddmc.clustering.DDMC` when
+    `distance_method="Binomial"`.
+
+    For each cluster, scores how enriched each amino acid is at each
+    position of a peptide's sequence relative to a background distribution
+    of phosphosites, following Schwartz & Gygi, *Nat Biotechnol* 2005
+    (doi:10.1038/nbt1146).
+
+    Attributes:
+        background: Background PWM (amino acid frequency per position) of
+            shape (len(AAlist), n_pos), built from `BackgroundSeqs(seqs)`.
+        n_aa: Number of amino acids (len(AAlist)).
+        n_pos: Number of sequence positions (11).
+        foreground_flat: Flattened one-hot encoding of `seqs`, of shape
+            (n_seqs, n_aa * n_pos).
+        logWeights: Log-probability of each sequence under each cluster's
+            current binomial model, of shape (n_seqs, n_clusters). Set to
+            the scalar `0.0` until `from_summaries` is first called.
+    """
 
     def __init__(self, seqs: np.ndarray):
+        """
+        Args:
+            seqs: The length-11 peptide sequences being clustered.
+        """
         # Background sequences
         self.background = fast_position_weight_matrix(BackgroundSeqs(seqs))
         foreground: np.ndarray = GenerateBinarySeqID(seqs)
@@ -189,8 +307,15 @@ class Binomial:
         assert np.all(np.isfinite(self.background))
         assert np.all(np.isfinite(self.foreground_flat))
 
-    def from_summaries(self, weightsIn: np.ndarray):
-        """Update the underlying distribution."""
+    def from_summaries(self, weightsIn: np.ndarray) -> None:
+        """Refit each cluster's binomial model from the current soft cluster
+        assignments, and update `self.logWeights` with each sequence's
+        log-probability under its (updated) cluster model.
+
+        Args:
+            weightsIn: Soft cluster assignments (responsibilities) of shape
+                (n_seqs, n_clusters), i.e. `exp(log_resp)` from the EM E step.
+        """
         k_flat = weightsIn.T.astype(np.float32) @ self.foreground_flat
         k = k_flat.reshape(-1, self.n_aa, self.n_pos)
         betaA = np.sum(weightsIn, axis=0)[:, None, None] - k

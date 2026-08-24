@@ -1,7 +1,28 @@
-"""Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs."""
+"""Mapping to Uniprot's Proteome To Generate +/-5AA p-site Motifs.
+
+Contains:
+    - `get_proteome_name_to_seq`: parses a UniProt FASTA proteome into a
+      `{protein name: sequence}` dictionary; used by `ddmc.datasets.EBDT`.
+    - `get_pspls`: loads kinase specificity profiles (position-specific
+      peptide libraries) from `ddmc/data/PSPL/`, used by
+      `ddmc.clustering.DDMC.predict_upstream_kinases`.
+    - `compute_control_pssm`: builds a background PSSM from a set of
+      sequences, used by `ddmc.clustering.DDMC.get_pssms`.
+    - `KinToPhosphotypeDict`: maps each kinase named in the PSPL data set to
+      the phosphoacceptor type(s) it targets (S/T or Y).
+    - `match_protein_names`, `find_motif`, `make_motif`,
+      `generate_kinase_motifs`, `get_keys_by_value`: an older
+      proteome-mapping pipeline for turning MS peptide hits into
+      sequence motifs. Not currently called elsewhere in this package
+      (`ddmc.datasets.EBDT.pos_to_motif` reimplements the same idea more
+      simply) but kept here in case new datasets need the same matching
+      logic.
+"""
 
 import glob
 import re
+from collections.abc import Sequence
+from typing import IO
 
 import numpy as np
 import pandas as pd
@@ -10,8 +31,21 @@ from Bio import SeqIO
 from .binomial import AAlist
 
 
-def get_proteome_name_to_seq(X, n):
-    """To generate proteom's dictionary"""
+def get_proteome_name_to_seq(X: IO[str], n: str) -> dict[str, str]:
+    """Parse a UniProt FASTA proteome into a name-to-sequence dictionary.
+
+    Args:
+        X: An open file handle to a UniProt FASTA file.
+        n: Which identifier to key the dictionary by: `"full"` for the
+            full human-readable protein name (parsed out of the FASTA
+            description between `"HUMAN "` and `" OS"`), or `"gene"` for
+            the gene symbol (parsed out of the `GN=` field). Records
+            without a `GN=` field are skipped when `n == "gene"`.
+
+    Returns:
+        Dictionary mapping protein name or gene symbol to its amino acid
+        sequence.
+    """
     DictProtToSeq_UP = {}
     for rec2 in SeqIO.parse(X, "fasta"):
         UP_seq = str(rec2.seq)
@@ -27,8 +61,17 @@ def get_proteome_name_to_seq(X, n):
     return DictProtToSeq_UP
 
 
-def get_keys_by_value(dictionary, value):
-    """Find the key of a given value within a dictionary."""
+def get_keys_by_value(dictionary: dict, value: str) -> list:
+    """Find every key whose value contains a given substring.
+
+    Args:
+        dictionary: Dictionary to search, e.g. a protein-name-to-sequence
+            map from `get_proteome_name_to_seq`.
+        value: Substring to search for within each dictionary value.
+
+    Returns:
+        The keys whose value contains `value` (empty if none match).
+    """
     listOfKeys = list()
     listOfItems = dictionary.items()
     for item in listOfItems:
@@ -37,8 +80,30 @@ def get_keys_by_value(dictionary, value):
     return listOfKeys
 
 
-def match_protein_names(ProteomeDict, MS_names, MS_seqs):
-    """Match protein names of MS and Uniprot's proteome."""
+def match_protein_names(
+    ProteomeDict: dict[str, str], MS_names: Sequence[str], MS_seqs: Sequence[str]
+) -> tuple[list[str], list[str], list[int]]:
+    """Match protein names of MS and Uniprot's proteome.
+
+    For each MS peptide, first tries its given protein name directly; if
+    that name isn't in the proteome (or the peptide sequence doesn't occur
+    in that entry), falls back to searching the whole proteome for the
+    peptide sequence.
+
+    Args:
+        ProteomeDict: Protein-name-to-sequence dictionary, as returned by
+            `get_proteome_name_to_seq`.
+        MS_names: Protein name reported for each MS peptide.
+        MS_seqs: The corresponding MS peptide sequence for each entry.
+
+    Returns:
+        A tuple `(matchedNames, seqs, Xidx)` of the resolved protein name,
+        original sequence, and original index for each peptide that could
+        be matched to the proteome.
+
+    Raises:
+        AssertionError: If any peptide could not be matched to the proteome.
+    """
     matchedNames, seqs, Xidx = [], [], []
     counter = 0
     for i, MS_seq in enumerate(MS_seqs):
@@ -65,9 +130,30 @@ def match_protein_names(ProteomeDict, MS_names, MS_seqs):
     return matchedNames, seqs, Xidx
 
 
-def find_motif(MS_seq, MS_name, ProteomeDict, motif_size):
+def find_motif(
+    MS_seq: str, MS_name: str, ProteomeDict: dict[str, str], motif_size: int
+) -> tuple[str, str]:
     """For a given MS peptide, finds it in the ProteomeDict, and maps the +/-5 AA from the p-site, accounting
-    for peptides phosphorylated multiple times concurrently."""
+    for peptides phosphorylated multiple times concurrently.
+
+    Args:
+        MS_seq: The MS peptide sequence, with its primary phosphoacceptor
+            lowercased (and any additional, concurrently phosphorylated
+            residues also lowercased).
+        MS_name: The protein name to look `MS_seq` up under in
+            `ProteomeDict`.
+        ProteomeDict: Protein-name-to-sequence dictionary, as returned by
+            `get_proteome_name_to_seq`.
+        motif_size: Number of residues to include on each side of the
+            phosphoacceptor in the extracted motif.
+
+    Returns:
+        A tuple `(pos, mappedMotif)`:
+            pos: The phosphosite position(s) in the full protein sequence,
+                formatted as `"{residue}{1-indexed position}-p"`, joined
+                with `";"` if there are multiple concurrent phosphosites.
+            mappedMotif: The extracted sequence motif (see `make_motif`).
+    """
     MS_seqU = MS_seq.upper()
     try:
         UP_seq = ProteomeDict[MS_name]
@@ -124,8 +210,25 @@ def find_motif(MS_seq, MS_name, ProteomeDict, motif_size):
     return pos, mappedMotif
 
 
-def generate_kinase_motifs(names, seqs):
-    """Main function to generate motifs using 'findmotif'."""
+def generate_kinase_motifs(
+    names: Sequence[str], seqs: Sequence[str]
+) -> tuple[list[str], list[str], list[str], list[int]]:
+    """Main function to generate motifs using 'findmotif'.
+
+    Loads the bundled UniProt proteome, matches each peptide to it (via
+    `match_protein_names`), and extracts a sequence motif for each (via
+    `find_motif`). Must be run with the repository root as the working
+    directory (loads `./data/Sequence_analysis/proteome_uniprot2019.fa`).
+
+    Args:
+        names: Protein name reported for each MS peptide.
+        seqs: The corresponding MS peptide sequence for each entry.
+
+    Returns:
+        A tuple `(MS_names, mapped_motifs, uni_pos, Xidx)` of the resolved
+        protein name, extracted motif, phosphosite position, and original
+        index for each peptide that could be matched to the proteome.
+    """
     motif_size = 5
     proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa")
     ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
@@ -150,8 +253,43 @@ def generate_kinase_motifs(names, seqs):
     return MS_names, mapped_motifs, uni_pos, Xidx
 
 
-def make_motif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS_idx):
-    """Make a motif out of the matched sequences."""
+def make_motif(
+    UP_seq: str,
+    MS_seq: str,
+    motif_size: int,
+    ps_protein_idx: int,
+    center_motif_idx: int,
+    DoS_idx: Sequence[re.Match] | None,
+) -> tuple[str, list[str]]:
+    """Make a motif out of the matched sequences.
+
+    Slices `motif_size` residues on each side of the phosphosite out of the
+    full protein sequence (padding with `"-"` if the phosphosite is near a
+    sequence end), lowercases the phosphoacceptor, and lowercases any other
+    concurrently phosphorylated residues that fall within the motif.
+
+    Args:
+        UP_seq: The full UniProt protein sequence.
+        MS_seq: The MS peptide sequence (used to locate concurrent
+            phosphosites' original characters).
+        motif_size: Number of residues to include on each side of the
+            phosphoacceptor.
+        ps_protein_idx: 0-indexed position of the primary phosphoacceptor
+            within `UP_seq`.
+        center_motif_idx: 0-indexed position of the primary phosphoacceptor
+            within `MS_seq`.
+        DoS_idx: Regex match objects locating any additional, concurrently
+            phosphorylated residues within `MS_seq` (or `None`/empty if
+            there are none).
+
+    Returns:
+        A tuple `(motif, pidx)`:
+            motif: The length `2 * motif_size + 1` sequence motif, with
+                each phosphorylated residue lowercased.
+            pidx: The phosphosite position(s), formatted as
+                `"{residue}{1-indexed position}-p"`, for the primary site
+                and any concurrent site that falls within the motif.
+    """
     UP_seq_copy = list(
         UP_seq[max(0, ps_protein_idx - motif_size) : ps_protein_idx + motif_size + 1]
     )
@@ -192,7 +330,21 @@ def make_motif(UP_seq, MS_seq, motif_size, ps_protein_idx, center_motif_idx, DoS
 
 
 def get_pspls() -> tuple[np.ndarray, np.ndarray]:
-    """Generate dictionary with kinase name-specificity profile pairs"""
+    """Load kinase specificity profiles (PSPLs) bundled in `ddmc/data/PSPL/`.
+
+    Reads both the individual per-kinase CSVs in that directory and the
+    combined NetPhores results file (`pssm_data.csv`), log2-transforming
+    and clipping each into a consistent (20 amino acids x 9 positions)
+    specificity profile. Must be run with the repository root as the
+    working directory.
+
+    Returns:
+        A tuple `(kinases, pspls)`:
+            kinases: Kinase name for each profile, of shape (n_kinases,).
+            pspls: Specificity profile for each kinase, of shape
+                (n_kinases, 20, 9), aligned to `kinases` and to `AAlist`
+                along the amino acid axis.
+    """
     pspls_arr = []
     kinases = []
     # individual files
@@ -226,8 +378,20 @@ def get_pspls() -> tuple[np.ndarray, np.ndarray]:
     return np.array(kinases), np.array(pspls_arr)
 
 
-def compute_control_pssm(bg_sequences) -> np.ndarray:
-    """Generate PSSM."""
+def compute_control_pssm(bg_sequences: Sequence[str]) -> np.ndarray:
+    """Build a background position-specific scoring matrix (PSSM) from a set
+    of (typically random/background) sequences, for use as the normalizing
+    background in `ddmc.clustering.DDMC.get_pssms`.
+
+    Args:
+        bg_sequences: Length-11 background peptide sequences, e.g. from
+            `ddmc.binomial.BackgroundSeqs`.
+
+    Returns:
+        Array of shape (len(AAlist), 11) giving the log2 amino acid
+        enrichment at each position, normalized per-position across
+        residues.
+    """
     back_pssm = np.zeros((len(AAlist), 11), dtype=float)
     for _, seq in enumerate(bg_sequences):
         for kk, aa in enumerate(seq):
@@ -238,6 +402,10 @@ def compute_control_pssm(bg_sequences) -> np.ndarray:
     return np.nan_to_num(back_pssm)
 
 
+# Maps each kinase named in the PSPL data (ddmc/data/PSPL/) to the
+# phosphoacceptor type(s) it targets, used by
+# ddmc.figures.common.plot_cluster_kinase_distances to filter kinase
+# predictions to those matching a cluster's dominant phosphoacceptor.
 KinToPhosphotypeDict = {
     "ABL": "Y",
     "AKT": "S/T",

@@ -1,4 +1,17 @@
-"""Logistic Regression Model functions to predict clinical features of CPTAC patients given their clustered phosphoproteomes."""
+"""Logistic Regression Model functions to predict clinical features of CPTAC patients given their clustered phosphoproteomes.
+
+Contains:
+    - `normalize_cluster_centers`: mean-centers `DDMC` cluster centers along
+      the patient dimension, for use as classifier features.
+    - `get_highest_weighted_clusters`: picks out the clusters a fitted
+      classifier weighted most heavily.
+    - `plot_cluster_regression_coefficients` / `plot_roc`: plotting helpers
+      for a classifier's per-cluster coefficients and its cross-validated
+      ROC curve.
+"""
+
+from collections.abc import Sequence
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,12 +26,37 @@ from sklearn.preprocessing import StandardScaler
 from ddmc.clustering import DDMC
 
 
-def normalize_cluster_centers(centers: np.ndarray):
+def normalize_cluster_centers(centers: np.ndarray) -> np.ndarray:
+    """Mean-center cluster centers along the patient/sample dimension.
+
+    Args:
+        centers: Cluster centers of shape (n_samples, n_components), e.g.
+            from `DDMC.transform()`.
+
+    Returns:
+        `centers` with each cluster's (column's) values shifted to have
+        zero mean across samples, same shape as `centers`.
+    """
     # normalize centers along along patient dimension
     return StandardScaler(with_std=False).fit_transform(centers.T).T
 
 
-def get_highest_weighted_clusters(model: DDMC, coefficients: np.ndarray, n_clusters=3):
+def get_highest_weighted_clusters(
+    model: DDMC, coefficients: np.ndarray, n_clusters: int = 3
+) -> list[int]:
+    """Pick out the (nonempty) clusters a fitted classifier weighted most heavily.
+
+    Args:
+        model: The fitted `DDMC` model the classifier's features came from
+            (used to exclude empty clusters).
+        coefficients: Per-cluster classifier coefficients, e.g.
+            `lr.coef_`, of shape (1, n_components) or (n_components,).
+        n_clusters: Maximum number of top clusters to return.
+
+    Returns:
+        Up to `n_clusters` nonempty cluster indices, ordered by decreasing
+        absolute coefficient magnitude.
+    """
     top_clusters = np.flip(np.argsort(np.abs(coefficients.squeeze())))
     top_clusters = [
         cluster for cluster in top_clusters if cluster in model.get_nonempty_clusters()
@@ -26,8 +64,22 @@ def get_highest_weighted_clusters(model: DDMC, coefficients: np.ndarray, n_clust
     return top_clusters[:n_clusters]
 
 
-def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
-    """Plot LR coeficients of clusters."""
+def plot_cluster_regression_coefficients(
+    ax: Axes, lr: Any, hue: Sequence[str] | None = None, title=False
+) -> None:
+    """Plot LR coeficients of clusters.
+
+    Args:
+        ax: Axes to plot onto.
+        lr: A fitted scikit-learn linear classifier exposing `coef_` of
+            shape (1, n_components).
+        hue: If given, per-cluster-run labels formatted as
+            `"{cluster}_{sample}"` (split on `"_"`) to group/color bars by
+            sample when coefficients from multiple runs are concatenated;
+            not used by any current figure (all call `plot_roc` with the
+            default `hue=None`, one bar per cluster).
+        title (str | bool): If given (and not `False`), set as the axes title.
+    """
     coefs_ = pd.DataFrame(lr.coef_.T, columns=["LR Coefficient"])
     if hue:
         coefs_["Cluster"] = [label.split("_")[0] for label in hue]
@@ -52,16 +104,37 @@ def plot_cluster_regression_coefficients(ax: Axes, lr, hue=None, title=False):
 
 
 def plot_roc(
-    classifier,
+    classifier: Any,
     X: np.ndarray,
     y: np.ndarray | pd.Series,
     cv_folds: int = 4,
     title=False,
     return_mAUC: bool = False,
-    kfold="Stratified",
+    kfold: str = "Stratified",
     ax: Axes | None = None,
-):
-    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model."""
+) -> float | None:
+    """Plot Receiver Operating Characteristc with cross-validation folds of a given classifier model.
+
+    Fits a fresh copy of `classifier` on each cross-validation fold, plots
+    the mean ROC curve (+/- 1 SEM band) across folds, and optionally
+    returns just the mean AUC instead of plotting.
+
+    Args:
+        classifier: A scikit-learn-compatible classifier exposing `fit`.
+        X: Feature matrix of shape (n_samples, n_features).
+        y: Binary target labels of shape (n_samples,).
+        cv_folds: Number of cross-validation folds.
+        title (str | bool): If given (and not `False`), set as the axes title.
+        return_mAUC: If True, skip plotting and just return the mean AUC.
+        kfold: Cross-validation strategy: `"Stratified"`
+            (`StratifiedKFold`) or `"Repeated"` (`RepeatedKFold`, 10
+            repeats).
+        ax: Axes to plot onto; defaults to the current axes (`plt.gca()`).
+
+    Returns:
+        The mean AUC across folds if `return_mAUC` is True, else `None`
+        (the ROC curve is plotted onto `ax` instead).
+    """
     X = np.asarray(X)
     y = np.asarray(y)
     if kfold == "Stratified":
