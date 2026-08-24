@@ -12,13 +12,11 @@ dependencies = [
     "seaborn>=0.13.2",
     "svgutils>=0.3.4",
     "pandas>=3",
-    "panflute>=2.3.1",
     "biopython>=1.85",
     "scikit-learn>=1.5",
     "bioinfokit>=2.1.4",
     "statsmodels>=0.14.4",
     "fancyimpute>=0.7.0",
-    "mygene>=3.2.2",
     "logomaker>=0.8.6",
 ]
 
