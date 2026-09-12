@@ -51,11 +51,6 @@ def test_pam250_scores_are_symmetric(seqs):
     np.testing.assert_array_equal(scores, scores.T)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: get_pam250_scores overflows its int8 accumulator for "
-    "highly self-similar peptides (e.g. poly-W/poly-C); see docstring.",
-)
 @given(skewed_peptide)
 @example("W" * SEQ_LEN)
 @example("C" * SEQ_LEN)
@@ -65,10 +60,12 @@ def test_pam250_self_score_matches_diagonal_sum(seq):
     of the substitution matrix's self-similarity values for each of its
     residues. This must hold regardless of amino acid composition.
 
-    BUG: `get_pam250_scores` accumulates scores in an `int8` array. Highly
-    self-similar residues (e.g. tryptophan, self-score 17) push the summed
-    per-sequence score above 127 for realistic peptide lengths, silently
-    wrapping around to a negative number instead of raising or saturating.
+    Regression test for a bug where `get_pam250_scores` accumulated scores
+    in an `int8` array: highly self-similar residues (e.g. tryptophan,
+    self-score 17) pushed the summed per-sequence score above 127 for
+    realistic peptide lengths, silently wrapping around to a negative
+    number instead of raising or saturating. Fixed by widening the
+    accumulator to `int32`.
     """
     from Bio.Align import substitution_matrices
 
@@ -79,11 +76,6 @@ def test_pam250_self_score_matches_diagonal_sum(seq):
     assert scores[0, 0] == expected
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: get_pam250_scores int8 overflow can push a sequence's "
-    "self-score below its off-diagonal scores; see docstring.",
-)
 @given(skewed_peptide_list)
 @example(["W" * SEQ_LEN, "A" * SEQ_LEN])
 @settings(max_examples=300)
@@ -92,8 +84,9 @@ def test_pam250_self_score_is_the_max_for_the_row(seqs):
     (potentially different) sequence in the set -- PAM250 self-substitution
     scores are the largest entry in every row/column of the matrix.
 
-    This is also broken by the int8 overflow above: an overflowed diagonal
-    entry can end up *below* the sequence's off-diagonal scores.
+    Also a regression test for the int8-overflow bug above: an overflowed
+    diagonal entry used to be able to end up *below* the sequence's
+    off-diagonal scores.
     """
     scores = get_pam250_scores(seqs)
     for i in range(len(seqs)):
@@ -170,11 +163,6 @@ def test_count_psite_types_accounts_for_every_sequence(seqs):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: compute_control_pssm crashes on the lowercase phosphoacceptor "
-    "that BackgroundSeqs (its real caller) always produces; see docstring.",
-)
 @given(
     st.lists(
         st.text(alphabet=AAlist, min_size=SEQ_LEN, max_size=SEQ_LEN),
@@ -191,10 +179,11 @@ def test_compute_control_pssm_matches_uppercase_input(seqs):
     character at position 5 is a realistic, in-band input for this
     function -- not an out-of-domain one.
 
-    BUG: `compute_control_pssm` looks up each residue with
-    `AAlist.index(aa)` without upper-casing it first, so any sequence with
-    a lowercase phosphoacceptor (exactly what `BackgroundSeqs` produces)
-    raises `ValueError: '<aa>' is not in list` instead of being scored.
+    Regression test for a bug where `compute_control_pssm` looked up each
+    residue with `AAlist.index(aa)` without upper-casing it first, so any
+    sequence with a lowercase phosphoacceptor (exactly what `BackgroundSeqs`
+    produces) raised `ValueError: '<aa>' is not in list` instead of being
+    scored -- breaking `DDMC.get_pssms(PsP_background=True)` end-to-end.
     """
     lowercased = [seq[:5] + seq[5].lower() + seq[6:] for seq in seqs]
 
@@ -214,11 +203,6 @@ finite_floats = st.floats(
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: normalize_cluster_centers centers along the wrong axis "
-    "(per-sample instead of per-cluster); see docstring.",
-)
 @given(
     st.integers(min_value=2, max_value=6).flatmap(
         lambda n_samples: st.lists(
@@ -235,15 +219,13 @@ def test_normalize_cluster_centers_zero_means_each_cluster(centers):
     (column) to zero mean *across samples* (rows) -- the usual
     pre-classification feature standardization.
 
-    BUG: it actually does the opposite. `StandardScaler(...).fit_transform`
-    always centers each *column* of the array it is given across that
-    array's rows; wrapping the call in `centers.T ... .T` makes it center
-    each *sample* (row of `centers`) across that sample's clusters instead,
-    leaving the per-cluster (per-column) mean across samples unchanged (and
-    nonzero, whenever the input wasn't already centered that way). The
-    `.T`/`.T` should not have been added -- `StandardScaler(with_std=False
-    ).fit_transform(centers)` directly would do what the docstring
-    describes.
+    Regression test for a bug where it actually did the opposite:
+    wrapping the `StandardScaler(...).fit_transform` call in
+    `centers.T ... .T` centered each *sample* (row of `centers`) across
+    that sample's clusters instead, leaving the per-cluster (per-column)
+    mean across samples unchanged (and generally nonzero). Fixed by
+    calling `StandardScaler(with_std=False).fit_transform(centers)`
+    directly, without the transposes.
     """
     normalized = normalize_cluster_centers(centers)
     assert normalized.shape == centers.shape
