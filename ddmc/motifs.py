@@ -395,7 +395,7 @@ def compute_control_pssm(bg_sequences: Sequence[str]) -> np.ndarray:
     back_pssm = np.zeros((len(AAlist), 11), dtype=float)
     for _, seq in enumerate(bg_sequences):
         for kk, aa in enumerate(seq):
-            back_pssm[AAlist.index(aa), kk] += 1.0
+            back_pssm[AAlist.index(aa.upper()), kk] += 1.0
     for pos in range(back_pssm.shape[1]):
         back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
     back_pssm = np.log2(back_pssm)

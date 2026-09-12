@@ -38,7 +38,7 @@ def normalize_cluster_centers(centers: np.ndarray) -> np.ndarray:
         zero mean across samples, same shape as `centers`.
     """
     # normalize centers along along patient dimension
-    return StandardScaler(with_std=False).fit_transform(centers.T).T
+    return StandardScaler(with_std=False).fit_transform(centers)
 
 
 def get_highest_weighted_clusters(

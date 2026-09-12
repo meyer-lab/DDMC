@@ -72,7 +72,10 @@ def get_pam250_scores(seqs: list[str]) -> np.ndarray:
     # convert to np array
     pam250m = np.array(pam250.values(), dtype=np.int8).reshape(pam250.shape)
 
-    out = np.zeros((seq_idx.shape[0], seq_idx.shape[0]), dtype=np.int8)
+    # int32, not int8: an int8 accumulator overflows for realistic peptide
+    # lengths (e.g. 11 tryptophans score 11 * 17 = 187, above int8's 127
+    # ceiling), silently wrapping self-similarity scores to negative values.
+    out = np.zeros((seq_idx.shape[0], seq_idx.shape[0]), dtype=np.int32)
     i_idx, j_idx = np.tril_indices(seq_idx.shape[0])
     out[i_idx, j_idx] = np.sum(pam250m[seq_idx[i_idx], seq_idx[j_idx]], axis=1)
 
