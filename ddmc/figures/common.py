@@ -19,14 +19,15 @@ Contains:
 import importlib
 import sys
 import time
+import xml.etree.ElementTree as ET
 from collections.abc import Sequence
 from string import ascii_uppercase
 
+import drawsvg as draw
 import logomaker as lm
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import svgutils.transform as st
 from matplotlib import axes, gridspec, rcParams
 from matplotlib import pyplot as plt
 from scipy.stats import mannwhitneyu
@@ -38,6 +39,9 @@ from ddmc.binomial import AAlist
 from ..motifs import KinToPhosphotypeDict
 
 rcParams["font.sans-serif"] = "Arial"
+
+ET.register_namespace("", "http://www.w3.org/2000/svg")
+ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
 
 def getSetup(
@@ -112,6 +116,13 @@ def subplotLabel(axs: list[axes.Axes]) -> None:
         )
 
 
+def _read_svg(path: str) -> tuple[dict, str]:
+    """Parse an SVG file, returning its root attributes and inner markup."""
+    root = ET.parse(path).getroot()
+    inner = "".join(ET.tostring(child, encoding="unicode") for child in root)
+    return root.attrib, inner
+
+
 def overlayCartoon(
     figFile: str, cartoonFile: str, x: float, y: float, scalee: float = 1.0
 ) -> None:
@@ -126,13 +137,21 @@ def overlayCartoon(
     """
 
     # Overlay Figure cartoons
-    template = st.fromfile(figFile)
-    cartoon = st.fromfile(cartoonFile).getroot()
+    fig_attrib, fig_inner = _read_svg(figFile)
+    _, cartoon_inner = _read_svg(cartoonFile)
 
-    cartoon.moveto(x, y, scale_x=scalee, scale_y=scalee)
+    d = draw.Drawing(
+        fig_attrib.get("width"),
+        fig_attrib.get("height"),
+        viewBox=fig_attrib.get("viewBox"),
+    )
+    d.append(draw.Raw(fig_inner))
 
-    template.append(cartoon)
-    template.save(figFile)
+    cartoon = draw.Group(transform=f"translate({x}, {y}) scale({scalee} {scalee})")
+    cartoon.append(draw.Raw(cartoon_inner))
+    d.append(cartoon)
+
+    d.save_svg(figFile)
 
 
 def genFigure() -> None:
