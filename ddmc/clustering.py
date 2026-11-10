@@ -245,7 +245,7 @@ class DDMC(GaussianMixture):
         centers = self.transform()  # samples x clusters
         for ii in range(p_signal.shape[0]):
             p_signal.iloc[ii, np.isnan(p_signal.iloc[ii, :])] = centers[
-                np.isnan(p_signal.iloc[ii, :]), labels[ii] - 1
+                np.isnan(p_signal.iloc[ii, :]), labels[ii]
             ]
         assert np.all(np.isfinite(p_signal))
         return p_signal
@@ -282,6 +282,14 @@ class DDMC(GaussianMixture):
             back_pssm = compute_control_pssm(bg_seqs)
         else:
             back_pssm = np.zeros((len(AAlist), 11), dtype=float)
+            for seq in self.sequences:
+                seq = seq.upper()
+                for kk, aa in enumerate(seq):
+                    back_pssm[AAlist.index(aa), kk] += 1.0
+            for pos in range(back_pssm.shape[1]):
+                if pos == 5:
+                    continue
+                back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
 
         l1 = list(np.arange(self.n_components))
         l2 = list(set(self.labels()))
@@ -296,17 +304,13 @@ class DDMC(GaussianMixture):
             for jj, seq in enumerate(self.sequences):
                 seq = seq.upper()
                 for kk, aa in enumerate(seq):
-                    pssm[AAlist.index(aa), kk] += self.scores_[jj, ii - 1]
-                    if ii == 1 and not PsP_background:
-                        back_pssm[AAlist.index(aa), kk] += 1.0
+                    pssm[AAlist.index(aa), kk] += self.scores_[jj, ii]
 
             # Normalize by position across residues
             for pos in range(pssm.shape[1]):
                 if pos == 5:
                     continue
                 pssm[:, pos] /= np.mean(pssm[:, pos])
-                if ii == 1 and not PsP_background:
-                    back_pssm[:, pos] /= np.mean(back_pssm[:, pos])
 
             # Normalize to background PSSM to account for AA frequencies per position
             old_settings = np.seterr(divide="ignore", invalid="ignore")

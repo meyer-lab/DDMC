@@ -95,6 +95,66 @@ def test_impute_fills_missing_and_matches_shape(fitted_model):
     assert np.all(np.isfinite(imputed))
 
 
+def test_impute_uses_assigned_cluster_center():
+    """Regression test for #562: `DDMC.impute()` previously indexed
+    `centers[:, labels[ii] - 1]`, shifting every peptide's assigned cluster by
+    -1 and filling missing entries from the wrong cluster's center."""
+    rng = np.random.default_rng(0)
+    seqs = ["AAAAAsAAAAA"] * 6 + ["RRRRRsRRRRR"] * 6
+    data = np.vstack(
+        [
+            rng.normal(loc=10.0, scale=0.1, size=(6, 4)),
+            rng.normal(loc=-10.0, scale=0.1, size=(6, 4)),
+        ]
+    )
+    data[0, 1] = np.nan
+    data[6, 2] = np.nan
+    df = pd.DataFrame(data, index=seqs, columns=["s1", "s2", "s3", "s4"])
+
+    model = DDMC(n_components=2, seq_weight=1.0, random_state=0).fit(df)
+    imputed = model.impute()
+    labels = model.labels()
+    centers = model.transform()
+
+    assert imputed.iloc[0, 1] == pytest.approx(centers[1, labels[0]])
+    assert imputed.iloc[6, 2] == pytest.approx(centers[2, labels[6]])
+
+
+def test_get_pssms_uses_matching_cluster_scores():
+    """Regression test for #562: `DDMC.get_pssms()` previously accumulated
+    `self.scores_[jj, ii - 1]` for cluster `ii` and only populated `back_pssm`
+    when `ii == 1` (leaving cluster 0's flanking PSSM columns all-zero when
+    `PsP_background=False`)."""
+    rng = np.random.default_rng(1)
+    seqs = ["AAAAAsAAAAA"] * 8 + ["RRRRRsRRRRR"] * 8
+    data = np.vstack(
+        [
+            rng.normal(loc=5.0, scale=0.05, size=(8, 3)),
+            rng.normal(loc=-5.0, scale=0.05, size=(8, 3)),
+        ]
+    )
+    df = pd.DataFrame(data, index=seqs, columns=["c1", "c2", "c3"])
+
+    model = DDMC(n_components=2, seq_weight=10.0, random_state=0).fit(df)
+    clusters, pssms = model.get_pssms(PsP_background=False)
+
+    assert list(clusters) == [0, 1]
+    a_cluster = int(model.labels()[0])
+    r_cluster = int(model.labels()[8])
+    assert a_cluster != r_cluster
+
+    from ddmc.binomial import AAlist
+
+    a_idx, r_idx = AAlist.index("A"), AAlist.index("R")
+    # Flanking positions (all positions except 5) in `a_cluster` must be
+    # enriched for 'A' (> 0) and not 'R', including when `a_cluster == 0`.
+    flanking = [p for p in range(11) if p != 5]
+    assert np.all(pssms[a_cluster, a_idx, flanking] > 0.5)
+    assert np.all(pssms[a_cluster, r_idx, flanking] == 0.0)
+    assert np.all(pssms[r_cluster, r_idx, flanking] > 0.5)
+    assert np.all(pssms[r_cluster, a_idx, flanking] == 0.0)
+
+
 def test_fit_rejects_non_string_sequence():
     p_signal = pd.DataFrame({"a": [1.0, 2.0]}, index=[1234567890123, "AAAAAAAAAAA"])
     with pytest.raises(AssertionError, match="is not a string"):
