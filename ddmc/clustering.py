@@ -17,7 +17,13 @@ from sklearn.mixture import GaussianMixture
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from .binomial import AAlist, BackgroundSeqs, Binomial, frequencies
+from .binomial import (
+    AAlist,
+    BackgroundSeqs,
+    Binomial,
+    frequencies,
+    normalize_ptm_sequences,
+)
 from .motifs import compute_control_pssm, get_pspls
 from .pam250 import PAM250
 
@@ -54,6 +60,7 @@ class DDMC(GaussianMixture):
         max_iter: int = 200,
         tol: float = 1e-4,
         n_epochs: int = 10,
+        include_ptms: bool = True,
     ):
         """
         Args:
@@ -85,6 +92,7 @@ class DDMC(GaussianMixture):
         self.distance_method = distance_method
         self.seq_weight = seq_weight
         self.n_epochs = n_epochs
+        self.include_ptms = include_ptms
 
     def _gen_peptide_distances(self, sequences, distance_method) -> None:
         """Build `self.seq_dist`, the sequence-distance model used for the
@@ -95,13 +103,14 @@ class DDMC(GaussianMixture):
             distance_method: Which sequence-distance model to construct:
                 `"Binomial"` or `"PAM250"`.
         """
-        sequences = np.asarray(sequences, dtype=str)
-        sequences = np.char.upper(sequences)
+        sequences = normalize_ptm_sequences(sequences, include_ptms=self.include_ptms)
         self.sequences = sequences
         if distance_method == "PAM250":
-            self.seq_dist: PAM250 | Binomial = PAM250(sequences)
+            self.seq_dist: PAM250 | Binomial = PAM250(
+                sequences, include_ptms=self.include_ptms
+            )
         elif distance_method == "Binomial":
-            self.seq_dist = Binomial(sequences)
+            self.seq_dist = Binomial(sequences, include_ptms=self.include_ptms)
         else:
             raise ValueError("Wrong distance type.")
 
@@ -734,7 +743,9 @@ class DDMC(GaussianMixture):
             df = pd.DataFrame({"Sequence": self.sequences})
             df["Cluster"] = self.labels()
             clSeq = df[df["Cluster"] == ii]["Sequence"]
-            clSeq = pd.DataFrame(frequencies(clSeq)).T
+            clSeq = pd.DataFrame(
+                frequencies(np.char.upper(clSeq.to_numpy(dtype=str)).tolist())
+            ).T
             tm = np.mean([clSeq.loc["S", 5], clSeq.loc["T", 5], clSeq.loc["Y", 5]])
             for p_site in ["S", "T", "Y"]:
                 pssm.loc[p_site, 5] = np.log2(clSeq.loc[p_site, 5] / tm)

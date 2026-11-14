@@ -6,8 +6,62 @@ sequences currently assigned to that cluster, and `get_pam250_scores`, which
 precomputes the full pairwise PAM250 similarity matrix used to do so.
 """
 
+from functools import lru_cache
+
 import numpy as np
 from Bio.Align import substitution_matrices
+
+from ddmc.binomial import PTM_TOKENS, normalize_ptm_sequences
+
+_PTM_BASE = {"s": "S", "t": "T", "y": "Y", "k": "K"}
+
+
+@lru_cache(maxsize=2)
+def _load_pam250_alphabet_and_matrix(
+    include_ptms: bool = False,
+) -> tuple[str, np.ndarray]:
+    """Return `(alphabet, matrix)` for standard or PTM-extended PAM250."""
+    pam250 = substitution_matrices.load("PAM250")
+    base_alpha = str(pam250.alphabet)
+    base_mat = np.array(pam250.values(), dtype=np.int8).reshape(pam250.shape)
+    if not include_ptms:
+        return base_alpha, base_mat
+
+    ext_alpha = base_alpha + "".join(PTM_TOKENS)
+    n_base = len(base_alpha)
+    n_ext = len(ext_alpha)
+    ext_mat = np.zeros((n_ext, n_ext), dtype=np.int8)
+    ext_mat[:n_base, :n_base] = base_mat
+
+    for i, ptm in enumerate(PTM_TOKENS):
+        idx = n_base + i
+        base_idx = base_alpha.find(_PTM_BASE[ptm])
+        for j, aa in enumerate(base_alpha):
+            score = int(base_mat[base_idx, j])
+            # Biochemical crosstalk adjustments:
+            # phospho-residues gain mild electrostatic affinity for D/E;
+            # acetyl-lysine loses positive-charge affinity for R.
+            if ptm in ("s", "t", "y") and aa in ("D", "E"):
+                score += 1
+            elif ptm == "k" and aa == "R":
+                score -= 1
+            ext_mat[idx, j] = score
+            ext_mat[j, idx] = score
+
+    for i, p1 in enumerate(PTM_TOKENS):
+        idx1 = n_base + i
+        b1 = base_alpha.find(_PTM_BASE[p1])
+        for j, p2 in enumerate(PTM_TOKENS):
+            idx2 = n_base + j
+            b2 = base_alpha.find(_PTM_BASE[p2])
+            if p1 == p2:
+                ext_mat[idx1, idx2] = int(base_mat[b1, b1]) + 3
+            elif p1 in ("s", "t", "y") and p2 in ("s", "t", "y"):
+                ext_mat[idx1, idx2] = int(base_mat[b1, b2]) + 2
+            else:
+                ext_mat[idx1, idx2] = int(base_mat[b1, b2])
+
+    return ext_alpha, ext_mat
 
 
 class PAM250:
@@ -28,16 +82,21 @@ class PAM250:
             `from_summaries` is first called.
     """
 
-    def __init__(self, seqs: list[str] | np.ndarray):
+    def __init__(self, seqs: list[str] | np.ndarray, include_ptms: bool = False):
         """
         Args:
             seqs: The length-11 peptide sequences being clustered.
+            include_ptms: If `True`, preserve modified flanking residue tokens
+                (`s`, `t`, `y`, `k`) using the PTM-extended PAM250 matrix.
         """
-        self.seqs = np.char.upper(np.asarray(seqs, dtype=str))
+        self.include_ptms = include_ptms
+        self.seqs = normalize_ptm_sequences(seqs, include_ptms=include_ptms)
         # Compute all pairwise distances. Cast to float32 once here rather
         # than in from_summaries, which runs every EM iteration and would
         # otherwise re-convert this (potentially large) int8 matrix each time.
-        self.background = get_pam250_scores(self.seqs).astype(np.float32)
+        self.background = get_pam250_scores(
+            self.seqs, include_ptms=include_ptms
+        ).astype(np.float32)
         self.logWeights = 0.0
 
     def init_ema(self, n_clusters: int) -> None:
@@ -91,8 +150,10 @@ class PAM250:
         Returns:
             Average PAM250 similarity scores of shape `(len(seqs), n_clusters)`.
         """
-        seqs_upper = np.char.upper(np.asarray(seqs, dtype=str))
-        bg_test = get_pam250_scores(seqs_upper, self.seqs).astype(np.float32)
+        seqs_norm = normalize_ptm_sequences(seqs, include_ptms=self.include_ptms)
+        bg_test = get_pam250_scores(
+            seqs_norm, self.seqs, include_ptms=self.include_ptms
+        ).astype(np.float32)
         return (bg_test @ self._last_weights) / self._last_sums
 
     def from_summaries(self, weightsIn: np.ndarray) -> None:
@@ -111,7 +172,9 @@ class PAM250:
 
 
 def get_pam250_scores(
-    seqs: list[str] | np.ndarray, seqs_b: list[str] | np.ndarray | None = None
+    seqs: list[str] | np.ndarray,
+    seqs_b: list[str] | np.ndarray | None = None,
+    include_ptms: bool = False,
 ) -> np.ndarray:
     """Compute the pairwise PAM250 similarity matrix between sequences.
 
@@ -120,6 +183,8 @@ def get_pam250_scores(
         seqs_b: Optional second sequence list. If omitted, computes the
             symmetric `(len(seqs), len(seqs))` self-similarity matrix;
             otherwise computes the `(len(seqs), len(seqs_b))` cross-matrix.
+        include_ptms: If `True`, score flanking PTM tokens (`s`, `t`, `y`, `k`)
+            with the PTM-extended PAM250 substitution matrix.
 
     Returns:
         Array of shape `(len(seqs), len(seqs))` (or `(len(seqs), len(seqs_b))`
@@ -127,14 +192,11 @@ def get_pam250_scores(
         substitution score between `seqs[i]` and the target sequence `j`
         (aligned position-by-position, no gaps).
     """
-    pam250 = substitution_matrices.load("PAM250")
+    alphabet, pam250m = _load_pam250_alphabet_and_matrix(include_ptms)
     seq_idx = np.array(
-        [[pam250.alphabet.find(aa) for aa in seq] for seq in seqs],
+        [[alphabet.find(aa) for aa in seq] for seq in seqs],
         dtype=np.int8,
     )
-
-    # convert to np array
-    pam250m = np.array(pam250.values(), dtype=np.int8).reshape(pam250.shape)
 
     # int32, not int8: an int8 accumulator overflows for realistic peptide
     # lengths (e.g. 11 tryptophans score 11 * 17 = 187, above int8's 127
@@ -149,7 +211,7 @@ def get_pam250_scores(
         return out
 
     seq_idx_b = np.array(
-        [[pam250.alphabet.find(aa) for aa in seq] for seq in seqs_b],
+        [[alphabet.find(aa) for aa in seq] for seq in seqs_b],
         dtype=np.int8,
     )
     out = np.zeros((seq_idx.shape[0], seq_idx_b.shape[0]), dtype=np.int32)
