@@ -14,8 +14,8 @@ from ddmc.clustering import DDMC, get_pspl_pssm_distances
 
 def test_wins(p_signal):
     """Test that EMclustering is working by comparing with GMM clusters."""
-    model_ddmc = DDMC(n_components=2, seq_weight=0).fit(p_signal)
-    model_gmm = GaussianMixture(n_components=2).fit(p_signal.values)
+    model_ddmc = DDMC(n_components=2, seq_weight=0, random_state=0).fit(p_signal)
+    model_gmm = GaussianMixture(n_components=2, random_state=0).fit(p_signal.values)
 
     similarity = cosine_similarity(model_gmm.means_, model_ddmc.transform().T)
 
