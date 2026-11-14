@@ -637,24 +637,81 @@ class DDMC(GaussianMixture):
             )
         return centers
 
-    def impute(self) -> pd.DataFrame:
+    @overload
+    def impute(
+        self,
+        mode: Literal["soft", "hard"] = "soft",
+        return_var: Literal[False] = False,
+    ) -> pd.DataFrame: ...
+    @overload
+    def impute(
+        self,
+        mode: Literal["soft", "hard"] = "soft",
+        *,
+        return_var: Literal[True],
+    ) -> tuple[pd.DataFrame, pd.DataFrame]: ...
+    def impute(
+        self,
+        mode: Literal["soft", "hard"] = "soft",
+        return_var: bool = False,
+    ) -> pd.DataFrame | tuple[pd.DataFrame, pd.DataFrame]:
         """
         Imputes missing values in the dataset passed in fit() and returns the
-        imputed dataset.
+        imputed dataset (and optionally posterior predictive variances).
+
+        Args:
+            mode: Imputation strategy for missing entries:
+                - `"soft"` (default): Posterior expectation
+                  `sum_c gamma_{ic} * mu_{cj}` weighted by each peptide's
+                  cluster responsibilities `self.scores_`.
+                - `"hard"`: Assigned cluster center `mu_{c*, j}` where
+                  `c* = argmax_c gamma_{ic}`.
+            return_var: If `True`, also return a DataFrame of the same shape
+                containing the posterior predictive variance for each entry
+                (`0.0` for observed entries).
 
         Returns:
-            A copy of the `p_signal` passed to `fit`, with each peptide's
-            missing samples filled in from its assigned cluster's center.
+            The imputed `p_signal` DataFrame, or `(imputed_df, variance_df)`
+            when `return_var=True`.
         """
-        p_signal = self.p_signal.copy()
-        labels = self.labels()  # cluster assignments
-        centers = self.transform()  # samples x clusters
-        for ii in range(p_signal.shape[0]):
-            p_signal.iloc[ii, np.isnan(p_signal.iloc[ii, :])] = centers[
-                np.isnan(p_signal.iloc[ii, :]), labels[ii]
-            ]
-        assert np.all(np.isfinite(p_signal))
-        return p_signal
+        check_is_fitted(self, ["means_", "covariances_", "scores_"])
+        assert self.means_ is not None and self.covariances_ is not None
+        if mode not in ("soft", "hard"):
+            raise ValueError(
+                f"Unknown imputation mode {mode!r}; expected 'soft' or 'hard'."
+            )
+
+        values = self.p_signal.to_numpy(dtype=np.float64, copy=True)
+        missing_mask = np.isnan(values)
+
+        if mode == "soft":
+            expected = self.scores_ @ self.means_
+            values[missing_mask] = expected[missing_mask]
+            if return_var:
+                second_moment = self.scores_ @ (
+                    self.covariances_ + self.means_ * self.means_
+                )
+                post_var = np.maximum(second_moment - expected * expected, 0.0)
+        else:
+            labels = self.labels()
+            expected = self.means_[labels]
+            values[missing_mask] = expected[missing_mask]
+            if return_var:
+                post_var = self.covariances_[labels]
+
+        assert np.all(np.isfinite(values))
+        imputed_df = pd.DataFrame(
+            values, index=self.p_signal.index, columns=self.p_signal.columns
+        )
+        if not return_var:
+            return imputed_df
+
+        var_values = np.zeros_like(values)
+        var_values[missing_mask] = post_var[missing_mask]
+        var_df = pd.DataFrame(
+            var_values, index=self.p_signal.index, columns=self.p_signal.columns
+        )
+        return imputed_df, var_df
 
     @overload
     def get_pssms(
