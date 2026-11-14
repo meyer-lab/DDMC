@@ -209,3 +209,49 @@ def test_get_pspl_pssm_distances_as_df():
     assert isinstance(dists, pd.DataFrame)
     assert list(dists.index) == ["K1", "K2"]
     assert list(dists.columns) == ["cluster_0"]
+
+
+def test_emeans_eliminates_empty_clusters_under_high_seq_weight(p_signal):
+    model = DDMC(
+        n_components=25, seq_weight=100.0, distance_method="Binomial", random_state=5
+    ).fit(p_signal)
+    assert not model.has_empty_clusters()
+    assert model.get_nonempty_clusters().size == 25
+
+
+def test_emeans_schedule_scaling_laws():
+    batch_size, alpha_0 = DDMC._emeans_schedule(n=30561, k=30, n_epochs=10)
+    assert 30 <= batch_size <= 30561
+    assert 0.0 < alpha_0 <= 1.0
+
+    small_b, small_alpha = DDMC._emeans_schedule(n=12, k=2, n_epochs=10)
+    assert small_b == 12
+    assert 0.0 < small_alpha <= 1.0
+
+
+def test_emeans_revive_dead_clusters():
+    model = DDMC(n_components=3, seq_weight=0.0, random_state=0)
+    model.reg_covar = 1e-6
+    rng = np.random.RandomState(0)
+
+    n_ema = np.array([100.0, 50.0, 0.1])
+    means = np.array([[1.0, 2.0], [-1.0, -2.0], [0.0, 0.0]])
+    vars_ = np.ones((3, 2))
+    s_ema = n_ema[:, None] * means
+    q_ema = n_ema[:, None] * (vars_ + means * means)
+
+    model._revive_dead_clusters(
+        n_ema, s_ema, q_ema, min_cluster_size=1.0, rng=rng, revive_seq=False
+    )
+
+    assert np.all(n_ema >= 1.0)
+    assert float(n_ema.sum()) == pytest.approx(150.0)
+
+
+def test_emeans_reproducible_with_random_state(p_signal):
+    sub = p_signal.iloc[:100]
+    m1 = DDMC(n_components=4, seq_weight=5.0, random_state=42).fit(sub)
+    m2 = DDMC(n_components=4, seq_weight=5.0, random_state=42).fit(sub)
+    np.testing.assert_allclose(m1.means_, m2.means_)
+    np.testing.assert_allclose(m1.scores_, m2.scores_)
+    assert m1.score() == pytest.approx(m2.score())
