@@ -59,6 +59,51 @@ _AAbyteLookup = np.zeros(256, dtype=np.int64)
 for _aa, _i in _AAindex.items():
     _AAbyteLookup[ord(_aa)] = _i
 
+# Expanded alphabet supporting modified flanking residues:
+#   s = pS (phospho-serine), t = pT (phospho-threonine),
+#   y = pY (phospho-tyrosine), k = acK (acetyl-lysine).
+PTM_TOKENS: tuple[str, ...] = ("s", "t", "y", "k")
+PTM_AAfreq: OrderedDict[str, float] = OrderedDict(AAfreq)
+for _ptm in PTM_TOKENS:
+    PTM_AAfreq[_ptm] = 0.025
+
+PTM_AAlist = list(PTM_AAfreq.keys())
+_PTM_AAindex = {aa: i for i, aa in enumerate(PTM_AAlist)}
+_PTM_pseudoCounts = np.array([PTM_AAfreq[aa] for aa in PTM_AAlist])
+
+_PTM_AAbyteLookup = np.zeros(256, dtype=np.int64)
+for _aa, _i in _AAindex.items():
+    _PTM_AAbyteLookup[ord(_aa)] = _i
+    # Any non-PTM lowercase character falls back to its uppercase amino acid.
+    _PTM_AAbyteLookup[ord(_aa.lower())] = _i
+for _ptm in PTM_TOKENS:
+    _PTM_AAbyteLookup[ord(_ptm)] = _PTM_AAindex[_ptm]
+
+
+def normalize_ptm_sequences(
+    seqs: list[str] | np.ndarray, include_ptms: bool = True
+) -> np.ndarray:
+    """Normalize peptide sequences for either the 20-AA or expanded PTM alphabet.
+
+    When `include_ptms` is `False`, all characters are uppercased. When `True`,
+    the central phosphoacceptor (position `len(seq) // 2`) is uppercased while
+    flanking modified residue tokens (`s`, `t`, `y`, `k`) are preserved.
+    """
+    arr = np.asarray(seqs, dtype=str)
+    if not include_ptms:
+        return np.char.upper(arr)
+    if arr.size == 0:
+        return arr
+    center = len(str(arr.flat[0])) // 2
+    out = []
+    for seq in arr.tolist():
+        chars = list(seq)
+        for pos, ch in enumerate(chars):
+            if pos == center or ch not in PTM_TOKENS:
+                chars[pos] = ch.upper()
+        out.append("".join(chars))
+    return np.asarray(out, dtype=str)
+
 
 def position_weight_matrix(
     seqs: list[str], pseudoC: OrderedDict[str, float] = AAfreq
@@ -78,32 +123,46 @@ def position_weight_matrix(
     return frequencies(seqs).normalize(pseudocounts=pseudoC)
 
 
-def fast_position_weight_matrix(seqs: list[str]) -> np.ndarray:
-    """Build a (len(AAlist), seq_length) PWM of a given set of same-length
+def fast_position_weight_matrix(
+    seqs: list[str], include_ptms: bool = False
+) -> np.ndarray:
+    """Build a `(n_aa, seq_length)` PWM of a given set of same-length
     sequences, equivalent to `position_weight_matrix` but without the
     overhead of Biopython's general-purpose alignment machinery.
 
     Args:
         seqs: Sequences, all of the same length, to build the PWM from.
+        include_ptms: If `True`, use the expanded 24-token PTM alphabet
+            (`PTM_AAlist`) preserving flanking `s`, `t`, `y`, `k`.
 
     Returns:
-        Array of shape (len(AAlist), sequence length) giving the
-        pseudocount-smoothed frequency of each amino acid at each position.
+        Array of shape `(len(AAlist), sequence length)` (or `(len(PTM_AAlist),
+        sequence length)` when `include_ptms=True`) giving the
+        pseudocount-smoothed frequency of each token at each position.
     """
     seq_len = len(seqs[0])
+    norm_seqs = (
+        normalize_ptm_sequences(seqs, include_ptms=True).tolist()
+        if include_ptms
+        else seqs
+    )
+    lookup = _PTM_AAbyteLookup if include_ptms else _AAbyteLookup
+    pseudo = _PTM_pseudoCounts if include_ptms else _pseudoCounts
+    n_aa = len(PTM_AAlist) if include_ptms else len(AAlist)
+
     # Convert to fixed-width bytes and view as a 2D uint8 array so the
     # char->index lookup is a single vectorized gather instead of a nested
     # Python loop over every character of every sequence.
-    seqs_bytes = np.asarray(seqs, dtype=f"S{seq_len}")
-    byte_view = seqs_bytes.view(np.uint8).reshape(len(seqs), seq_len)
-    idx = _AAbyteLookup[byte_view]
+    seqs_bytes = np.asarray(norm_seqs, dtype=f"S{seq_len}")
+    byte_view = seqs_bytes.view(np.uint8).reshape(len(norm_seqs), seq_len)
+    idx = lookup[byte_view]
 
-    counts = np.zeros((len(AAlist), seq_len))
+    counts = np.zeros((n_aa, seq_len))
     for pos in range(seq_len):
-        counts[:, pos] = np.bincount(idx[:, pos], minlength=len(AAlist))
+        counts[:, pos] = np.bincount(idx[:, pos], minlength=n_aa)
 
-    return (counts + _pseudoCounts[:, None]) / (
-        counts.sum(axis=0, keepdims=True) + _pseudoCounts.sum()
+    return (counts + pseudo[:, None]) / (
+        counts.sum(axis=0, keepdims=True) + pseudo.sum()
     )
 
 
@@ -120,21 +179,28 @@ def frequencies(seqs: list[str]) -> Any:
     return motifs.create(seqs, alphabet="".join(AAlist)).counts
 
 
-def GenerateBinarySeqID(seqs: list[str] | np.ndarray) -> np.ndarray:
-    """Build a one-hot encoding of amino acid identity at each position, for every sequence.
+def GenerateBinarySeqID(
+    seqs: list[str] | np.ndarray, include_ptms: bool = False
+) -> np.ndarray:
+    """Build a one-hot encoding of amino acid (or flanking PTM) identity at
+    each position, for every sequence.
 
     Args:
         seqs: Length-11 peptide sequences to encode.
+        include_ptms: If `True`, use the expanded 24-token PTM alphabet
+            (`PTM_AAlist`) preserving flanking `s`, `t`, `y`, `k`.
 
     Returns:
-        Boolean array of shape (len(seqs), len(AAlist), 11), where
-        `result[i, j, k]` is True if sequence `i` has amino acid `AAlist[j]`
-        at position `k`.
+        Boolean array of shape `(len(seqs), n_aa, 11)`, where
+        `result[i, j, k]` is True if sequence `i` has token `j` at position `k`.
     """
-    res = np.zeros((len(seqs), len(AAlist), 11), dtype=bool)
-    for ii, seq in enumerate(seqs):
+    norm_seqs = normalize_ptm_sequences(seqs, include_ptms=include_ptms)
+    alphabet = PTM_AAlist if include_ptms else AAlist
+    index_map = _PTM_AAindex if include_ptms else _AAindex
+    res = np.zeros((len(norm_seqs), len(alphabet), 11), dtype=bool)
+    for ii, seq in enumerate(norm_seqs):
         for pos, aa in enumerate(seq):
-            res[ii, AAlist.index(aa.upper()), pos] = 1
+            res[ii, index_map[aa], pos] = 1
     return res
 
 
@@ -287,14 +353,27 @@ class Binomial:
             the scalar `0.0` until `from_summaries` is first called.
     """
 
-    def __init__(self, seqs: np.ndarray):
+    def __init__(self, seqs: np.ndarray, include_ptms: bool = False):
         """
         Args:
             seqs: The length-11 peptide sequences being clustered.
+            include_ptms: If `True`, preserve modified flanking residue tokens
+                (`s`, `t`, `y`, `k`) using the expanded 24-token PTM alphabet.
         """
+        self.include_ptms = include_ptms
         # Background sequences
-        self.background = fast_position_weight_matrix(BackgroundSeqs(seqs))
-        foreground: np.ndarray = GenerateBinarySeqID(seqs)
+        self.background = fast_position_weight_matrix(
+            BackgroundSeqs(seqs), include_ptms=include_ptms
+        )
+        if include_ptms:
+            flank = np.arange(self.background.shape[1]) != 5
+            for ptm, base in (("s", "S"), ("t", "T"), ("y", "Y"), ("k", "K")):
+                p_idx = _PTM_AAindex[ptm]
+                b_idx = _PTM_AAindex[base]
+                transfer = 0.15 * self.background[b_idx, flank]
+                self.background[p_idx, flank] += transfer
+                self.background[b_idx, flank] -= transfer
+        foreground: np.ndarray = GenerateBinarySeqID(seqs, include_ptms=include_ptms)
         self.n_aa, self.n_pos = foreground.shape[1], foreground.shape[2]
         # Flattened, float view of the one-hot foreground used for fast
         # matrix multiplication in from_summaries (replacing einsum, which
@@ -373,7 +452,7 @@ class Binomial:
         Returns:
             Log-probabilities of shape `(len(seqs), n_clusters)`.
         """
-        foreground = GenerateBinarySeqID(seqs)
+        foreground = GenerateBinarySeqID(seqs, include_ptms=self.include_ptms)
         fg_flat = foreground.reshape(foreground.shape[0], -1).astype(np.float32)
         tempp = fg_flat @ self.probmat_flat.T
         return np.log(np.maximum(tempp, 1e-30))

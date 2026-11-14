@@ -454,6 +454,72 @@ def compute_control_pssm(bg_sequences: Sequence[str]) -> np.ndarray:
     return np.nan_to_num(back_pssm)
 
 
+def annotate_flanking_ptms(
+    p_signal: pd.DataFrame,
+    phospho_motifs: Sequence[str] | None = None,
+    acetyl_motifs: Sequence[str] | None = None,
+) -> pd.DataFrame:
+    """Dynamically annotate flanking PTM sites on length-11 peptide motifs
+    using co-measured phosphorylation and acetylation motifs.
+
+    For each peptide `seq` in `p_signal.index`, each flanking position
+    `pos = 5 + d` (`d in [-5, 5], d != 0`) is checked for an exact overlapping
+    `(11 - |d|)`-mer match against `phospho_motifs` (annotating `S/T/Y` as
+    lowercase `s/t/y`) and `acetyl_motifs` (annotating `K` as lowercase `k`).
+
+    Args:
+        p_signal: Phosphorylation signal DataFrame indexed by length-11 motifs.
+        phospho_motifs: Co-measured length-11 phosphosite motifs. If `None`,
+            uses `p_signal.index` itself.
+        acetyl_motifs: Optional co-measured length-11 acetyl-lysine motifs
+            (with `K` or `k` at position 5).
+
+    Returns:
+        Copy of `p_signal` with flanking PTM tokens annotated in its index.
+    """
+    p_motifs = list(p_signal.index) if phospho_motifs is None else list(phospho_motifs)
+    a_motifs = [] if acetyl_motifs is None else list(acetyl_motifs)
+
+    # Pre-index overlapping prefixes/suffixes for each offset d in [-5..5] \ {0}
+    phospho_index: dict[int, set[str]] = {}
+    acetyl_index: dict[int, set[str]] = {}
+    for d in range(-5, 6):
+        if d == 0:
+            continue
+        if d > 0:
+            phospho_index[d] = {
+                m[: 11 - d].upper() for m in p_motifs if m[5].upper() in ("S", "T", "Y")
+            }
+            acetyl_index[d] = {
+                m[: 11 - d].upper() for m in a_motifs if m[5].upper() == "K"
+            }
+        else:
+            phospho_index[d] = {
+                m[-d:].upper() for m in p_motifs if m[5].upper() in ("S", "T", "Y")
+            }
+            acetyl_index[d] = {m[-d:].upper() for m in a_motifs if m[5].upper() == "K"}
+
+    annotated: list[str] = []
+    for raw_seq in p_signal.index:
+        chars = list(str(raw_seq))
+        upper_seq = "".join(chars).upper()
+        for d in range(-5, 6):
+            if d == 0:
+                continue
+            pos = 5 + d
+            overlap = upper_seq[d:] if d > 0 else upper_seq[: 11 + d]
+            aa = upper_seq[pos]
+            if aa in ("S", "T", "Y") and overlap in phospho_index[d]:
+                chars[pos] = aa.lower()
+            elif aa == "K" and overlap in acetyl_index[d]:
+                chars[pos] = "k"
+        annotated.append("".join(chars))
+
+    out = p_signal.copy()
+    out.index = pd.Index(annotated, name=p_signal.index.name)
+    return out
+
+
 # Maps each kinase named in the PSPL data (ddmc/data/PSPL/) to the
 # phosphoacceptor type(s) it targets, used by
 # ddmc.figures.common.plot_cluster_kinase_distances to filter kinase
