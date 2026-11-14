@@ -1,9 +1,4 @@
-import numpy as np
-import pandas as pd
-from bioinfokit import visuz
-from scipy.stats import mannwhitneyu
 from sklearn.linear_model import LogisticRegressionCV
-from statsmodels.stats.multitest import multipletests
 
 from ddmc.clustering import DDMC
 from ddmc.datasets import CPTAC
@@ -64,53 +59,3 @@ def makeFigure():
         distances, model.get_pssms(clusters=top_clusters), axes[3], num_hits=2
     )
     return f
-
-
-# THIS FUNCTION IS NOT MAINTAINED
-def make_EGFRvolcano_plot(centers, y):
-    """Make volcano plot with differential protein expression between EGFRm and WT."""
-    y = y.drop("C3N.00545")
-    centers = centers.drop("C3N.00545")
-    prot = (
-        pd.read_csv("ddmc/data/MS/CPTAC/CPTAC_LUAD_Protein.csv")
-        .iloc[:, 15:]
-        .dropna()
-        .drop("id.1", axis=1)
-        .drop_duplicates()
-    )
-    prot = prot.set_index("GeneSymbol").T.sort_index().reset_index()
-    prot = prot[~prot["index"].str.endswith(".N")].set_index("index")
-    prot.columns.name = None
-
-    l1 = list(centers.index)
-    l2 = list(prot.index)
-    dif = [i for i in l1 + l2 if i not in l1 or i not in l2]
-    prot = prot.drop(dif)
-    assert np.all(centers.index.values == prot.index.values), "Samples don't match"
-
-    egfr = y["EGFR.mutation.status"].replace(0, "WT")
-    egfr = egfr.replace(1, "Mut")
-    prot["EGFR Status"] = egfr.values
-    prot = prot.set_index("EGFR Status")
-
-    pvals = mannwhitneyu(prot.loc["Mut"], prot.loc["WT"])[1]
-    pvals = multipletests(pvals)[1]
-
-    means = prot.reset_index().groupby("EGFR Status").mean()
-    fc = means.iloc[0, :] - means.iloc[1, :]
-
-    pv = pd.DataFrame()
-    pv["Gene"] = prot.columns
-    pv["p-values"] = pvals
-    pv["logFC"] = fc.values
-    pv = pv.sort_values(by="p-values")
-
-    visuz.GeneExpression.volcano(
-        df=pv,  # ty: ignore[invalid-argument-type]
-        lfc="logFC",
-        pv="p-values",
-        show=True,
-        geneid="Gene",
-        genenames="deg",
-        figtype="svg",
-    )
