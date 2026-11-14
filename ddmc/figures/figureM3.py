@@ -207,33 +207,3 @@ def shuffle_pssm(pssm):
     shuffled_pssm = pssm[:, np.random.permutation([0, 1, 2, 3, 4, 6, 7, 8, 9])]
     shuffled_pssm = np.insert(shuffled_pssm, 5, pssm[:, 5], axis=1)
     return np.insert(shuffled_pssm, 1, pssm[:, -1], axis=1)
-
-
-def plot_fig_3c():
-    """Code to create hierarchical clustering of cluster 0 across treatments"""
-    p_signal = EBDT().get_p_signal()
-    model = DDMC(
-        n_components=20,
-        seq_weight=5,
-        distance_method="Binomial",
-        random_state=10,
-    ).fit(p_signal)
-    centers = model.transform(as_df=True)
-    # the labels are structured as "MCF7.<drug>.fold"
-    centers.index = [i[5:-5] for i in centers.index]
-    # first cluster
-    center = centers.iloc[:, 0]
-    lim = np.max(np.abs(center)) * 0.3
-    sns.clustermap(
-        center,
-        method="centroid",
-        cmap="bwr",
-        robust=True,
-        vmax=lim,
-        vmin=-lim,
-        row_cluster=True,
-        col_cluster=False,
-        figsize=(2, 15),
-        yticklabels=True,
-        xticklabels=False,
-    )

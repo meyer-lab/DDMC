@@ -10,19 +10,16 @@ Contains:
       sequences, used by `ddmc.clustering.DDMC.get_pssms`.
     - `KinToPhosphotypeDict`: maps each kinase named in the PSPL data set to
       the phosphoacceptor type(s) it targets (S/T or Y).
-    - `match_protein_names`, `find_motif`, `make_motif`,
-      `generate_kinase_motifs`, `get_keys_by_value`: an older
-      proteome-mapping pipeline for turning MS peptide hits into
-      sequence motifs. Not currently called elsewhere in this package
-      (`ddmc.datasets.EBDT.pos_to_motif` reimplements the same idea more
-      simply) but kept here in case new datasets need the same matching
-      logic.
+    - `make_motif`, `get_keys_by_value`: helper utilities for motif slicing
+      and reverse dictionary lookup.
 """
 
 import glob
 import re
 from collections.abc import Sequence
-from typing import IO
+from functools import lru_cache
+from pathlib import Path
+from typing import IO, Literal
 
 import numpy as np
 import pandas as pd
@@ -78,179 +75,6 @@ def get_keys_by_value(dictionary: dict, value: str) -> list:
         if value in item[1]:
             listOfKeys.append(item[0])
     return listOfKeys
-
-
-def match_protein_names(
-    ProteomeDict: dict[str, str], MS_names: Sequence[str], MS_seqs: Sequence[str]
-) -> tuple[list[str], list[str], list[int]]:
-    """Match protein names of MS and Uniprot's proteome.
-
-    For each MS peptide, first tries its given protein name directly; if
-    that name isn't in the proteome (or the peptide sequence doesn't occur
-    in that entry), falls back to searching the whole proteome for the
-    peptide sequence.
-
-    Args:
-        ProteomeDict: Protein-name-to-sequence dictionary, as returned by
-            `get_proteome_name_to_seq`.
-        MS_names: Protein name reported for each MS peptide.
-        MS_seqs: The corresponding MS peptide sequence for each entry.
-
-    Returns:
-        A tuple `(matchedNames, seqs, Xidx)` of the resolved protein name,
-        original sequence, and original index for each peptide that could
-        be matched to the proteome.
-
-    Raises:
-        AssertionError: If any peptide could not be matched to the proteome.
-    """
-    matchedNames, seqs, Xidx = [], [], []
-    counter = 0
-    for i, MS_seq in enumerate(MS_seqs):
-        MS_seqU = MS_seq.upper()
-        MS_name = MS_names[i].strip()
-        if MS_name in ProteomeDict and MS_seqU in ProteomeDict[MS_name]:
-            Xidx.append(i)
-            seqs.append(MS_seq)
-            matchedNames.append(MS_name)
-        else:
-            try:
-                newname = get_keys_by_value(ProteomeDict, MS_seqU)[0]
-                assert MS_seqU in ProteomeDict[newname]
-                Xidx.append(i)
-                seqs.append(MS_seq)
-                matchedNames.append(newname)
-            except BaseException:
-                print(MS_name, MS_seqU)
-                counter += 1
-                continue
-
-    assert counter == 0, f"Proteome is missing {counter} peptides"
-    assert len(matchedNames) == len(seqs)
-    return matchedNames, seqs, Xidx
-
-
-def find_motif(
-    MS_seq: str, MS_name: str, ProteomeDict: dict[str, str], motif_size: int
-) -> tuple[str, str]:
-    """For a given MS peptide, finds it in the ProteomeDict, and maps the +/-5 AA from the p-site, accounting
-    for peptides phosphorylated multiple times concurrently.
-
-    Args:
-        MS_seq: The MS peptide sequence, with its primary phosphoacceptor
-            lowercased (and any additional, concurrently phosphorylated
-            residues also lowercased).
-        MS_name: The protein name to look `MS_seq` up under in
-            `ProteomeDict`.
-        ProteomeDict: Protein-name-to-sequence dictionary, as returned by
-            `get_proteome_name_to_seq`.
-        motif_size: Number of residues to include on each side of the
-            phosphoacceptor in the extracted motif.
-
-    Returns:
-        A tuple `(pos, mappedMotif)`:
-            pos: The phosphosite position(s) in the full protein sequence,
-                formatted as `"{residue}{1-indexed position}-p"`, joined
-                with `";"` if there are multiple concurrent phosphosites.
-            mappedMotif: The extracted sequence motif (see `make_motif`).
-    """
-    MS_seqU = MS_seq.upper()
-    try:
-        UP_seq = ProteomeDict[MS_name]
-        assert MS_seqU in UP_seq, (
-            "check "
-            + MS_name
-            + " with seq "
-            + MS_seq
-            + ". Protein sequence found: "
-            + UP_seq
-        )
-        regexPattern = re.compile(MS_seqU)
-        MatchObs = list(regexPattern.finditer(UP_seq))
-        if "y" in MS_seq:
-            pY_idx = list(re.compile("y").finditer(MS_seq))
-            assert len(pY_idx) != 0
-            center_idx = pY_idx[0].start()
-            y_idx = center_idx + MatchObs[0].start()
-            DoS_idx = None
-            if len(pY_idx) > 1:
-                DoS_idx = pY_idx[1:]
-                assert len(DoS_idx) != 0
-            elif "t" in MS_seq or "s" in MS_seq:
-                DoS_idx = list(re.compile("y|t|s").finditer(MS_seq))
-                assert len(DoS_idx) != 0
-            mappedMotif, pidx = make_motif(
-                UP_seq, MS_seq, motif_size, y_idx, center_idx, DoS_idx
-            )
-            if len(pidx) == 1:
-                pos = pidx[0]
-            if len(pidx) > 1:
-                pos = ";".join(pidx)
-
-        if "y" not in MS_seq:
-            pTS_idx = list(re.compile("t|s").finditer(MS_seq))
-            assert len(pTS_idx) != 0
-            center_idx = pTS_idx[0].start()
-            ts_idx = center_idx + MatchObs[0].start()
-            DoS_idx = None
-            if len(pTS_idx) > 1:
-                DoS_idx = pTS_idx[1:]
-            mappedMotif, pidx = make_motif(
-                UP_seq, MS_seq, motif_size, ts_idx, center_idx, DoS_idx
-            )
-            if len(pidx) == 1:
-                pos = pidx[0]
-            if len(pidx) > 1:
-                pos = ";".join(pidx)
-
-    except BaseException:
-        print(MS_name + " not in ProteomeDict.")
-        raise
-
-    return pos, mappedMotif
-
-
-def generate_kinase_motifs(
-    names: Sequence[str], seqs: Sequence[str]
-) -> tuple[list[str], list[str], list[str], list[int]]:
-    """Main function to generate motifs using 'findmotif'.
-
-    Loads the bundled UniProt proteome, matches each peptide to it (via
-    `match_protein_names`), and extracts a sequence motif for each (via
-    `find_motif`). Must be run with the repository root as the working
-    directory (loads `./data/Sequence_analysis/proteome_uniprot2019.fa`).
-
-    Args:
-        names: Protein name reported for each MS peptide.
-        seqs: The corresponding MS peptide sequence for each entry.
-
-    Returns:
-        A tuple `(MS_names, mapped_motifs, uni_pos, Xidx)` of the resolved
-        protein name, extracted motif, phosphosite position, and original
-        index for each peptide that could be matched to the proteome.
-    """
-    motif_size = 5
-    proteome = open("./data/Sequence_analysis/proteome_uniprot2019.fa")
-    ProteomeDict = get_proteome_name_to_seq(proteome, n="gene")
-    protnames, seqs, Xidx = match_protein_names(ProteomeDict, names, seqs)
-    (
-        MS_names,
-        mapped_motifs,
-        uni_pos,
-    ) = (
-        [],
-        [],
-        [],
-    )
-
-    for i, MS_seq in enumerate(seqs):
-        pos, mappedMotif = find_motif(MS_seq, protnames[i], ProteomeDict, motif_size)
-        MS_names.append(protnames[i])
-        mapped_motifs.append(mappedMotif)
-        uni_pos.append(pos)
-
-    proteome.close()
-    return MS_names, mapped_motifs, uni_pos, Xidx
 
 
 def make_motif(
@@ -329,24 +153,52 @@ def make_motif(
     return "".join(UP_seq_copy), pidx
 
 
-def get_pspls() -> tuple[np.ndarray, np.ndarray]:
-    """Load kinase specificity profiles (PSPLs) bundled in `ddmc/data/PSPL/`.
+_KINOME_ATLAS_DIR = Path(__file__).resolve().parent / "data" / "PSPL" / "kinome_atlas"
+_FLANKING_POSITIONS = (-5, -4, -3, -2, -1, 1, 2, 3, 4)
 
-    Reads both the individual per-kinase CSVs in that directory and the
-    combined NetPhores results file (`pssm_data.csv`), log2-transforming
-    and clipping each into a consistent (20 amino acids x 9 positions)
-    specificity profile. Must be run with the repository root as the
-    working directory.
 
-    Returns:
-        A tuple `(kinases, pspls)`:
-            kinases: Kinase name for each profile, of shape (n_kinases,).
-            pspls: Specificity profile for each kinase, of shape
-                (n_kinases, 20, 9), aligned to `kinases` and to `AAlist`
-                along the amino acid axis.
+@lru_cache(maxsize=1)
+def get_kinome_metadata() -> pd.DataFrame:
+    """Load kinase metadata for the bundled human kinome PSPL atlas (404
+    Ser/Thr and Tyr kinase profiles from Johnson et al. 2023 & Yaron-Barir
+    et al. 2024), indexed by `MATRIX_NAME`.
     """
+    return pd.read_csv(
+        _KINOME_ATLAS_DIR / "kinome_information.tsv", sep="\t"
+    ).set_index("MATRIX_NAME")
+
+
+@lru_cache(maxsize=2)
+def _load_pspls_cached(
+    source: Literal["kinome_atlas", "legacy"],
+) -> tuple[np.ndarray, np.ndarray]:
+    if source == "kinome_atlas":
+        cols = [f"{pos}{aa}" for pos in _FLANKING_POSITIONS for aa in AAlist]
+        st = pd.read_csv(
+            _KINOME_ATLAS_DIR / "ser_thr_all_log2_matrices.tsv",
+            sep="\t",
+            index_col=0,
+        )[cols]
+        tyr = pd.read_csv(
+            _KINOME_ATLAS_DIR / "tyrosine_all_log2_matrices.tsv",
+            sep="\t",
+            index_col=0,
+        )[cols]
+        combined = pd.concat([st, tyr], axis=0)
+        kinases = combined.index.to_numpy(dtype=str)
+        # Reshape (n_kinases, 9 * 20) -> (n_kinases, 9, 20) -> (n_kinases, 20, 9)
+        pspls = (
+            combined.to_numpy(dtype=np.float64)
+            .reshape(len(kinases), len(_FLANKING_POSITIONS), len(AAlist))
+            .transpose(0, 2, 1)
+        )
+        return kinases, pspls
+
+    if source != "legacy":
+        raise ValueError(f"Unknown PSPL source: {source!r}")
+
     pspls_arr = []
-    kinases = []
+    kinases_list = []
     # individual files
     PSPLs = glob.glob("./ddmc/data/PSPL/*.csv")
     for sp in PSPLs:
@@ -358,7 +210,7 @@ def get_pspls() -> tuple[np.ndarray, np.ndarray]:
         if np.all(sp_mat >= 0):
             sp_mat = np.log2(sp_mat)
 
-        kinases.append(sp.split("PSPL/")[1].split(".csv")[0])
+        kinases_list.append(sp.split("PSPL/")[1].split(".csv")[0])
         pspls_arr.append(sp_mat.values)
 
     # NetPhores PSPL results
@@ -372,10 +224,32 @@ def get_pspls() -> tuple[np.ndarray, np.ndarray]:
         mat = np.ma.log2(mat)
         mat = mat.filled(0)
         mat = np.clip(mat, a_min=0, a_max=3)
-        kinases.append(kin)
+        kinases_list.append(kin)
         pspls_arr.append(mat)
 
-    return np.array(kinases), np.array(pspls_arr)
+    return np.array(kinases_list), np.array(pspls_arr)
+
+
+def get_pspls(
+    source: Literal["kinome_atlas", "legacy"] = "kinome_atlas",
+) -> tuple[np.ndarray, np.ndarray]:
+    """Load kinase specificity profiles (PSPLs) bundled in `ddmc/data/PSPL/`.
+
+    Args:
+        source: `"kinome_atlas"` (default) loads the complete 404-kinase human
+            Ser/Thr (Johnson et al. 2023) and Tyr (Yaron-Barir et al. 2024)
+            PSPL atlas. `"legacy"` loads the original 63-kinase set from
+            `ddmc/data/PSPL/*.csv` and `pssm_data.csv`.
+
+    Returns:
+        A tuple `(kinases, pspls)`:
+            kinases: Kinase name for each profile, of shape (n_kinases,).
+            pspls: Specificity profile for each kinase, of shape
+                (n_kinases, 20, 9), aligned to `kinases` and to `AAlist`
+                along the amino acid axis.
+    """
+    kinases, pspls = _load_pspls_cached(source)
+    return kinases.copy(), pspls.copy()
 
 
 def compute_control_pssm(bg_sequences: Sequence[str]) -> np.ndarray:
@@ -472,3 +346,6 @@ KinToPhosphotypeDict = {
     "p70S6K": "S/T",
     "EphA3": "Y",
 }
+
+for _kin_name, _kin_type in get_kinome_metadata()["TYPE"].items():
+    KinToPhosphotypeDict[str(_kin_name)] = "Y" if _kin_type == "tyrosine" else "S/T"

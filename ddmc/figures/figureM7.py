@@ -1,7 +1,3 @@
-import textwrap
-
-import pandas as pd
-import seaborn as sns
 from sklearn.linear_model import LogisticRegressionCV
 
 from ddmc.clustering import DDMC
@@ -53,46 +49,3 @@ def makeFigure():
         distances, model.get_pssms(clusters=top_clusters), axes[2], num_hits=2
     )
     return f
-
-
-def plot_ImmuneGOs(cluster, ax, title=False, max_width=25, n=False, loc="best"):
-    # THIS FUNCION IS NOT MAINTAINED
-    """Plot immune-related GO"""
-    go = pd.read_csv("ddmc/data/cluster_analysis/CPTAC_GO_C" + str(cluster) + ".csv")
-    im = go[go["GO biological process complete"].str.contains("immune")]
-    tc = go[go["GO biological process complete"].str.contains("T cell")]
-    bc = go[go["GO biological process complete"].str.contains("B cell")]
-    X = pd.concat([im, tc, bc])
-    X = X[
-        [
-            "GO biological process complete",
-            "upload_1 (fold Enrichment)",
-            "upload_1 (over/under)",
-        ]
-    ]
-    if n:
-        X = X.iloc[:n, :]
-    X.columns = ["Biological process", "Fold Enrichment", "over/under"]
-    X = X[X["Fold Enrichment"] != " < 0.01"]
-    X["Fold Enrichment"] = X["Fold Enrichment"].astype(float)
-    X["Biological process"] = [s.split("(GO")[0] for s in X["Biological process"]]
-    X = X.sort_values(by="Fold Enrichment", ascending=False)
-    sns.barplot(
-        data=X,
-        y="Biological process",
-        x="Fold Enrichment",
-        ax=ax,
-        hue="over/under",
-        orient="h",
-        color="black",
-        **{"linewidth": 2},
-        **{"edgecolor": "black"},
-    )
-    ax.set_yticklabels(
-        textwrap.fill(x.get_text(), max_width) for x in ax.get_yticklabels()
-    )
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("GO")
-    ax.legend(prop={"size": 10}, loc=loc)
