@@ -28,6 +28,14 @@ from .motifs import compute_control_pssm, get_pspls
 from .pam250 import PAM250
 
 
+def _rtx(resp: np.ndarray, X: np.ndarray) -> np.ndarray:
+    """Compute `resp.T @ X` as `(X.T @ resp).T`. The two are equal, but for
+    tall-skinny `resp` (many peptides, few clusters) the transposed-operand
+    form is far faster with multithreaded OpenBLAS on many-core machines.
+    """
+    return (X.T @ resp).T
+
+
 class DDMC(GaussianMixture):
     """Cluster peptides by both sequence similarity and condition-wise phosphorylation following an
     expectation-maximization algorithm.
@@ -184,9 +192,9 @@ class DDMC(GaussianMixture):
         resp = np.exp(log_resp)
         if self._missing:
             n_ema = np.sum(resp, axis=0)
-            n_feat_ema = resp.T @ self._obs_mask
-            s_ema = resp.T @ X
-            q_ema = resp.T @ (X * X)
+            n_feat_ema = _rtx(resp, self._obs_mask)
+            s_ema = _rtx(resp, X)
+            q_ema = _rtx(resp, X * X)
             self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
         else:
             super()._m_step(X, log_resp, xp=xp)  # Do the regular m step
@@ -502,14 +510,14 @@ class DDMC(GaussianMixture):
 
                 scale = n / len(batch_idx)
                 n_b = np.sum(resp_b, axis=0) * scale
-                s_b = (resp_b.T @ X_b) * scale
-                q_b = (resp_b.T @ (X_b * X_b)) * scale
+                s_b = _rtx(resp_b, X_b) * scale
+                q_b = _rtx(resp_b, X_b * X_b) * scale
 
                 n_ema = (1.0 - alpha) * n_ema + alpha * n_b
                 s_ema = (1.0 - alpha) * s_ema + alpha * s_b
                 q_ema = (1.0 - alpha) * q_ema + alpha * q_b
                 if self._missing:
-                    nf_b = (resp_b.T @ m_b) * scale
+                    nf_b = _rtx(resp_b, m_b) * scale
                     n_feat_ema = (1.0 - alpha) * n_feat_ema + alpha * nf_b
                 else:
                     n_feat_ema = n_ema[:, None]

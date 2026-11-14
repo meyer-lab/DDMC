@@ -223,6 +223,21 @@ def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
         Length-11 background peptide sequences sampled from PhosphoSitePlus,
         with the phosphoacceptor lowercased, in pY/pS/pT order.
     """
+    # Build background sequences (cached, since for fixed reference data
+    # this only depends on the pY/pS/pT proportions of the foreground set)
+    return list(_cached_background_proportions(*_background_counts(forseqs)))
+
+
+def _background_counts(forseqs: np.ndarray) -> tuple[int, int, int]:
+    """Number of pY, pS, and pT background motifs needed so that the
+    background matches the pY/pS/pT proportions of the foreground set.
+
+    Args:
+        forseqs: The foreground peptide sequences.
+
+    Returns:
+        `(pYn, pSn, pTn)`, suitable for `_cached_background_proportions`.
+    """
     # Get porportion of psite types in foreground set
     forw_pYn, forw_pSn, forw_pTn = CountPsiteTypes(forseqs)
     forw_tot = forw_pYn + forw_pSn + forw_pTn
@@ -236,20 +251,34 @@ def BackgroundSeqs(forseqs: np.ndarray) -> list[str]:
 
     # Make sure there are enough pY peptides to meet proportions
     if backg_pYn >= len_bg * pYf:
-        pYn = int(len_bg * pYf)
-        pSn = int(len_bg * pSf)
-        pTn = int(len_bg * pTf)
+        return int(len_bg * pYf), int(len_bg * pSf), int(len_bg * pTf)
 
     # Not enough pYs, adjust number of peptides based on maximum number of pY peptides
-    else:
-        tot_p = int(backg_pYn / pYf)
-        pYn = backg_pYn
-        pSn = int(tot_p * pSf)
-        pTn = int(tot_p * pTf)
+    tot_p = int(backg_pYn / pYf)
+    return backg_pYn, int(tot_p * pSf), int(tot_p * pTf)
 
-    # Build background sequences (cached, since for fixed reference data
-    # this only depends on the pY/pS/pT proportions of the foreground set)
-    return list(_cached_background_proportions(pYn, pSn, pTn))
+
+@lru_cache(maxsize=8)
+def _cached_background_pwm(
+    pYn: int, pSn: int, pTn: int, include_ptms: bool
+) -> np.ndarray:
+    """Background position weight matrix for the given pY/pS/pT counts.
+    Building it normalizes and tallies several hundred thousand reference
+    sequences, but it depends only on its arguments, so it is memoized.
+    Treat the result as read-only; callers should copy before mutating.
+    """
+    seqs = list(_cached_background_proportions(pYn, pSn, pTn))
+    background = fast_position_weight_matrix(seqs, include_ptms=include_ptms)
+    if include_ptms:
+        flank = np.arange(background.shape[1]) != 5
+        for ptm, base in (("s", "S"), ("t", "T"), ("y", "Y"), ("k", "K")):
+            p_idx = _PTM_AAindex[ptm]
+            b_idx = _PTM_AAindex[base]
+            transfer = 0.15 * background[b_idx, flank]
+            background[p_idx, flank] += transfer
+            background[b_idx, flank] -= transfer
+    background.setflags(write=False)
+    return background
 
 
 @lru_cache(maxsize=1)
@@ -361,18 +390,10 @@ class Binomial:
                 (`s`, `t`, `y`, `k`) using the expanded 24-token PTM alphabet.
         """
         self.include_ptms = include_ptms
-        # Background sequences
-        self.background = fast_position_weight_matrix(
-            BackgroundSeqs(seqs), include_ptms=include_ptms
-        )
-        if include_ptms:
-            flank = np.arange(self.background.shape[1]) != 5
-            for ptm, base in (("s", "S"), ("t", "T"), ("y", "Y"), ("k", "K")):
-                p_idx = _PTM_AAindex[ptm]
-                b_idx = _PTM_AAindex[base]
-                transfer = 0.15 * self.background[b_idx, flank]
-                self.background[p_idx, flank] += transfer
-                self.background[b_idx, flank] -= transfer
+        # Background sequences (memoized across fits; copy since it's mutated)
+        self.background = _cached_background_pwm(
+            *_background_counts(seqs), include_ptms
+        ).copy()
         foreground: np.ndarray = GenerateBinarySeqID(seqs, include_ptms=include_ptms)
         self.n_aa, self.n_pos = foreground.shape[1], foreground.shape[2]
         # Flattened, float view of the one-hot foreground used for fast
