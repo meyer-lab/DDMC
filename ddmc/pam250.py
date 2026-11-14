@@ -39,6 +39,47 @@ class PAM250:
         self.background = get_pam250_scores(seqs).astype(np.float32)
         self.logWeights = 0.0
 
+    def init_ema(self, n_clusters: int) -> None:
+        """Initialize EMA sufficient-statistic accumulators for mini-batch fitting."""
+        self._m_ema = np.zeros((self.background.shape[0], n_clusters), dtype=np.float32)
+        self._n_ema = np.zeros(n_clusters, dtype=np.float32)
+
+    def update_ema(
+        self,
+        batch_idx: np.ndarray,
+        weights_batch: np.ndarray,
+        alpha: float,
+        scale: float = 1.0,
+    ) -> None:
+        """Update EMA sufficient statistics from a mini-batch of responsibilities."""
+        w = (weights_batch * scale).astype(np.float32)
+        m_batch = self.background[:, batch_idx] @ w
+        n_batch = np.sum(w, axis=0)
+        self._m_ema = (1.0 - alpha) * self._m_ema + alpha * m_batch
+        self._n_ema = (1.0 - alpha) * self._n_ema + alpha * n_batch
+
+    def split_cluster(self, donor: int, target: int) -> None:
+        """Halve `donor`'s EMA sufficient statistics into `target` and `donor`."""
+        half_m = 0.5 * self._m_ema[:, donor]
+        self._m_ema[:, target] = half_m
+        self._m_ema[:, donor] = half_m
+        half_n = 0.5 * self._n_ema[donor]
+        self._n_ema[target] = half_n
+        self._n_ema[donor] = half_n
+
+    def finalize_ema(self) -> None:
+        """No-op for PAM250 (cluster ratios are computed on demand)."""
+
+    def estimate_log_prob_batch(self, batch_idx: np.ndarray) -> np.ndarray:
+        """Evaluate sequence log-probabilities on a mini-batch of peptides."""
+        sums = np.clip(self._n_ema, 1e-5, np.inf)
+        return self._m_ema[batch_idx] / sums
+
+    def compute_log_weights(self) -> None:
+        """Update `self.logWeights` for all sequences from the current EMA."""
+        sums = np.clip(self._n_ema, 1e-5, np.inf)
+        self.logWeights = self._m_ema / sums
+
     def from_summaries(self, weightsIn: np.ndarray) -> None:
         """Update `self.logWeights` with each sequence's responsibility
         weighted average PAM250 similarity to all sequences, per cluster.

@@ -6,15 +6,16 @@ their sequence motif — and `get_pspl_pssm_distances`, the helper it uses to
 compare cluster motifs against kinase specificity profiles.
 """
 
-import warnings
 from collections.abc import Sequence
 from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
-from fancyimpute import SoftImpute
+from scipy.special import logsumexp
+from sklearn.cluster import kmeans_plusplus
 from sklearn.mixture import GaussianMixture
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from .binomial import AAlist, BackgroundSeqs, Binomial, frequencies
 from .motifs import compute_control_pssm, get_pspls
@@ -52,6 +53,7 @@ class DDMC(GaussianMixture):
         random_state: int | np.random.RandomState | None = None,
         max_iter: int = 200,
         tol: float = 1e-4,
+        n_epochs: int = 10,
     ):
         """
         Args:
@@ -64,22 +66,25 @@ class DDMC(GaussianMixture):
                 motif term: `"Binomial"` (`ddmc.binomial.Binomial`) or
                 `"PAM250"` (`ddmc.pam250.PAM250`).
             random_state: Seed or `numpy.random.RandomState` controlling the
-                random initialization of the underlying Gaussian mixture,
-                for reproducibility.
-            max_iter: Maximum number of EM iterations to run.
-            tol: Convergence threshold on the change in per-sample average
-                log-likelihood between EM iterations.
+                random initialization and mini-batch shuffling, for
+                reproducibility.
+            max_iter: Maximum number of EM iterations (kept for API
+                compatibility).
+            tol: Convergence threshold (kept for API compatibility).
+            n_epochs: Number of mini-batch EMA epochs to run before the final
+                exact full-batch EM pass.
         """
         super().__init__(
             n_components=n_components,
             covariance_type="diag",
-            n_init=2,
+            n_init=1,
             max_iter=max_iter,
             tol=tol,
             random_state=random_state,
         )
         self.distance_method = distance_method
         self.seq_weight = seq_weight
+        self.n_epochs = n_epochs
 
     def _gen_peptide_distances(self, sequences, distance_method) -> None:
         """Build `self.seq_dist`, the sequence-distance model used for the
@@ -100,14 +105,26 @@ class DDMC(GaussianMixture):
         else:
             raise ValueError("Wrong distance type.")
 
+    def _estimate_observed_gaussian_log_prob(
+        self, X: np.ndarray, obs_mask: np.ndarray
+    ) -> np.ndarray:
+        """Exact marginal diagonal Gaussian log-probability over observed features."""
+        assert self.means_ is not None and self.precisions_cholesky_ is not None
+        p2 = self.precisions_cholesky_ * self.precisions_cholesky_
+        log_det = np.log(2.0 * np.pi) - 2.0 * np.log(self.precisions_cholesky_)
+        const_kf = log_det + p2 * (self.means_ * self.means_)
+        linear_kf = 2.0 * p2 * self.means_
+        return -0.5 * (obs_mask @ const_kf.T - X @ linear_kf.T + (X * X) @ p2.T)
+
     def _estimate_log_prob(self, X: np.ndarray, xp=None) -> np.ndarray:
         """EM E-step helper. Estimate the log-probability of each peptide
         under each cluster, combining the Gaussian mixture log-probability
-        over `X` with the weighted sequence-motif log-probability.
+        over `X` (marginalizing any missing entries) with the weighted
+        sequence-motif log-probability.
 
         Args:
             X: Phosphorylation signal of shape (n_samples, n_features), with
-                any missing values already imputed.
+                missing entries zeroed when `self._missing` is True.
             xp: Array-API namespace to use, forwarded to
                 `GaussianMixture._estimate_log_prob` (unused directly here).
 
@@ -116,7 +133,10 @@ class DDMC(GaussianMixture):
             shape (n_samples, n_components). Also stored as
             `self.seq_scores_` (the sequence-only term).
         """
-        logp = super()._estimate_log_prob(X, xp=xp)  # Do the regular work
+        if self._missing:
+            logp = self._estimate_observed_gaussian_log_prob(X, self._obs_mask)
+        else:
+            logp = super()._estimate_log_prob(X, xp=xp)
 
         # Add in the sequence effect
         self.seq_scores_ = self.seq_weight * self.seq_dist.logWeights
@@ -125,33 +145,381 @@ class DDMC(GaussianMixture):
         return logp
 
     def _m_step(self, X: np.ndarray, log_resp: np.ndarray, xp=None) -> None:
-        """EM M-step. Impute missing values from the current cluster
-        centers, then refit both the Gaussian mixture parameters and the
-        sequence-motif model from the current responsibilities.
+        """EM M-step. Refit both the Gaussian mixture parameters (from observed
+        features only when `self._missing` is True) and the sequence-motif
+        model from the current responsibilities.
 
         Args:
-            X: Phosphorylation signal of shape (n_samples, n_features). If
-                `self._missing`, entries at `self.missing_d` are overwritten
-                in place with each peptide's assigned cluster's center
-                before the regular Gaussian mixture M step runs.
+            X: Phosphorylation signal of shape (n_samples, n_features), with
+                missing entries zeroed when `self._missing` is True.
             log_resp: Logarithm of the posterior probabilities (or
                 responsibilities) of each sample in `X`, of shape
                 (n_samples, n_components).
             xp: Array-API namespace to use, forwarded to
                 `GaussianMixture._m_step` (unused directly here).
         """
+        resp = np.exp(log_resp)
         if self._missing:
-            labels = np.argmax(log_resp, axis=1)
-            centers = np.array(self.means_)  # samples x clusters
-            centers_fill = centers[labels, :]
-
-            assert centers_fill.shape == X.shape
-            X[self.missing_d] = centers_fill[self.missing_d]
-
-        super()._m_step(X, log_resp, xp=xp)  # Do the regular m step
+            n_ema = np.sum(resp, axis=0)
+            n_feat_ema = resp.T @ self._obs_mask
+            s_ema = resp.T @ X
+            q_ema = resp.T @ (X * X)
+            self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
+        else:
+            super()._m_step(X, log_resp, xp=xp)  # Do the regular m step
 
         # Do sequence m step
-        self.seq_dist.from_summaries(np.exp(log_resp))
+        self.seq_dist.from_summaries(resp)
+
+    @staticmethod
+    def _emeans_schedule(n: int, k: int, n_epochs: int) -> tuple[int, float]:
+        """Compute mini-batch size and initial EMA step size from `e-means` scaling laws."""
+        t_budget = max(n_epochs, 1)
+        raw_b = 0.035 * (k**0.13) * (n**0.88) * (t_budget**0.81)
+        min_b = min(n, max(k, 16))
+        batch_size = int(np.clip(np.round(raw_b), min_b, n))
+        alpha_0 = float(
+            min(
+                0.824
+                * (k**-0.46)
+                * (batch_size**0.90)
+                * (n**-0.45)
+                * (t_budget**-0.11),
+                1.0,
+            )
+        )
+        return batch_size, alpha_0
+
+    @staticmethod
+    def _make_batches(
+        n: int, batch_size: int, rng: np.random.RandomState
+    ) -> list[np.ndarray]:
+        """Shuffle indices into mini-batches, merging any small trailing remainder."""
+        perm = rng.permutation(n)
+        if batch_size >= n:
+            return [perm]
+        batches = [perm[i : i + batch_size] for i in range(0, n, batch_size)]
+        if len(batches) > 1 and len(batches[-1]) < max(1, batch_size // 2):
+            batches[-2] = np.concatenate([batches[-2], batches[-1]])
+            batches.pop()
+        return batches
+
+    @staticmethod
+    def _cosine_alpha(alpha_0: float, step: int, total_steps: int) -> float:
+        """Cosine-annealed EMA step size from `alpha_0` down to `0.1 * alpha_0`."""
+        if total_steps <= 1:
+            return alpha_0
+        progress = step / (total_steps - 1)
+        return 0.1 * alpha_0 + 0.5 * (0.9 * alpha_0) * (1.0 + np.cos(np.pi * progress))
+
+    def _revive_dead_clusters(
+        self,
+        n_ema: np.ndarray,
+        s_ema: np.ndarray,
+        q_ema: np.ndarray | None,
+        min_cluster_size: float,
+        rng: np.random.RandomState,
+        revive_seq: bool = False,
+        n_feat_ema: np.ndarray | None = None,
+    ) -> None:
+        """Revive clusters whose effective count fell below `min_cluster_size`
+        by proportionally sampling an active cluster and splitting it in two.
+        """
+        dead = np.where(n_ema < min_cluster_size)[0]
+        if dead.size == 0:
+            return
+        d = s_ema.shape[1]
+        for j in dead:
+            weights = np.maximum(n_ema - min_cluster_size, 0.0)
+            total_w = float(np.sum(weights))
+            if total_w > 0.0:
+                j_star = int(rng.choice(len(n_ema), p=weights / total_w))
+            else:
+                j_star = int(np.argmax(n_ema))
+            if j_star == j or n_ema[j_star] <= 0.0:
+                continue
+
+            nf_old = (
+                np.maximum(n_feat_ema[j_star], 1e-12)
+                if n_feat_ema is not None
+                else float(n_ema[j_star])
+            )
+            mean_star = s_ema[j_star] / nf_old
+            if q_ema is not None:
+                var_star = np.maximum(
+                    q_ema[j_star] / nf_old - mean_star * mean_star, self.reg_covar
+                )
+            else:
+                var_star = np.ones(d, dtype=s_ema.dtype)
+
+            delta = 0.05 * np.sqrt(var_star) * rng.normal(size=d)
+            mean_j = mean_star + delta
+            mean_j_star = mean_star - delta
+
+            half_n = 0.5 * float(n_ema[j_star])
+            n_ema[j] = half_n
+            n_ema[j_star] = half_n
+            if n_feat_ema is not None:
+                half_nf = 0.5 * n_feat_ema[j_star]
+                n_feat_ema[j] = half_nf
+                n_feat_ema[j_star] = half_nf
+            else:
+                half_nf = half_n
+            s_ema[j] = half_nf * mean_j
+            s_ema[j_star] = half_nf * mean_j_star
+            if q_ema is not None:
+                q_ema[j] = half_nf * (var_star + mean_j * mean_j)
+                q_ema[j_star] = half_nf * (var_star + mean_j_star * mean_j_star)
+            if revive_seq:
+                self.seq_dist.split_cluster(j_star, int(j))
+
+    def _init_emeans_centroids(
+        self, X: np.ndarray, min_cluster_size: float, rng: np.random.RandomState
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Initialize cluster centroids using `e-means` (k-means++ seed on a
+        subsample followed by fast mini-batch EMA k-means with split revival).
+        """
+        n, d = X.shape
+        k = self.n_components
+        sub_n = min(n, max(2000, 20 * k))
+        if sub_n < n:
+            sub_idx = rng.choice(n, size=sub_n, replace=False)
+            X_sub = X[sub_idx]
+            if self._missing:
+                assert self._col_means is not None
+                X_sub = np.where(
+                    self._obs_mask[sub_idx] > 0, X_sub, self._col_means[None, :]
+                )
+        else:
+            X_sub = X
+            if self._missing:
+                assert self._col_means is not None
+                X_sub = np.where(self._obs_mask > 0, X_sub, self._col_means[None, :])
+        centers, _ = kmeans_plusplus(X_sub, n_clusters=k, random_state=rng)
+        centers = centers.astype(X.dtype, copy=True)
+
+        t_init = 3
+        batch_size, alpha_0 = self._emeans_schedule(n, k, t_init)
+        all_batches = [self._make_batches(n, batch_size, rng) for _ in range(t_init)]
+        total_steps = sum(len(b) for b in all_batches)
+
+        n_ema = np.full(k, n / k, dtype=np.float64)
+        n_feat_ema = (
+            np.full((k, d), n / k, dtype=np.float64)
+            if self._missing
+            else n_ema[:, None].copy()
+        )
+        s_ema = n_feat_ema * centers
+
+        step = 0
+        for epoch_batches in all_batches:
+            for batch_idx in epoch_batches:
+                alpha = self._cosine_alpha(alpha_0, step, total_steps)
+                step += 1
+
+                X_b = X[batch_idx]
+                c_sq = centers * centers
+                if self._missing:
+                    m_b = self._obs_mask[batch_idx]
+                    dists = m_b @ c_sq.T - 2.0 * (X_b @ centers.T)
+                else:
+                    dists = np.sum(c_sq, axis=1)[None, :] - 2.0 * (X_b @ centers.T)
+                labels = np.argmin(dists, axis=1)
+
+                scale = n / len(batch_idx)
+                n_b = np.bincount(labels, minlength=k).astype(np.float64) * scale
+                s_b = np.zeros((k, d), dtype=np.float64)
+                np.add.at(s_b, labels, X_b)
+                s_b *= scale
+
+                n_ema = (1.0 - alpha) * n_ema + alpha * n_b
+                s_ema = (1.0 - alpha) * s_ema + alpha * s_b
+                if self._missing:
+                    nf_b = np.zeros((k, d), dtype=np.float64)
+                    np.add.at(nf_b, labels, m_b)
+                    nf_b *= scale
+                    n_feat_ema = (1.0 - alpha) * n_feat_ema + alpha * nf_b
+                else:
+                    n_feat_ema = n_ema[:, None]
+
+                self._revive_dead_clusters(
+                    n_ema,
+                    s_ema,
+                    None,
+                    min_cluster_size,
+                    rng,
+                    revive_seq=False,
+                    n_feat_ema=n_feat_ema if self._missing else None,
+                )
+                if self._missing:
+                    assert self._col_means is not None
+                    centers = np.where(
+                        n_feat_ema > 1e-6,
+                        s_ema / np.maximum(n_feat_ema, 1e-12),
+                        self._col_means[None, :],
+                    )
+                else:
+                    centers = s_ema / np.maximum(n_ema[:, None], 1e-12)
+
+        return centers, n_ema
+
+    def _update_gmm_params_from_ema(
+        self,
+        n_ema: np.ndarray,
+        n_feat_ema: np.ndarray,
+        s_ema: np.ndarray,
+        q_ema: np.ndarray,
+    ) -> None:
+        """Recover GMM `weights_`, `means_`, `covariances_`, and
+        `precisions_cholesky_` from EMA sufficient statistics.
+        """
+        n_safe = np.maximum(n_ema, 1e-12)
+        self.weights_ = n_safe / np.sum(n_safe)
+        nf_safe = np.maximum(n_feat_ema, 1e-12)
+        self.means_ = s_ema / nf_safe
+        if self._missing and self._col_means is not None:
+            self.means_ = np.where(
+                n_feat_ema > 1e-6, self.means_, self._col_means[None, :]
+            )
+        self.covariances_ = np.maximum(
+            q_ema / nf_safe - self.means_ * self.means_, self.reg_covar
+        )
+        if self._missing and self._col_vars is not None:
+            self.covariances_ = np.where(
+                n_feat_ema > 1e-6,
+                self.covariances_,
+                np.maximum(self._col_vars[None, :], self.reg_covar),
+            )
+        self.precisions_cholesky_ = 1.0 / np.sqrt(self.covariances_)
+
+    def _fit_emeans(self, X: np.ndarray) -> None:
+        """Fit DDMC using mini-batch EMA updates, scaling-law batch size and
+        cosine-scheduled step size, proportional split revival, and one final
+        exact full-batch EM pass.
+        """
+        n, d = X.shape
+        k = self.n_components
+        rng = check_random_state(self.random_state)
+        min_cluster_size = (
+            min(1.0, 0.25 * n / k) if n < 4 * k else max(1.0, 0.02 * n / k)
+        )
+
+        centers, n_init = self._init_emeans_centroids(X, min_cluster_size, rng)
+
+        global_var = (
+            np.maximum(self._col_vars, self.reg_covar)
+            if self._missing and self._col_vars is not None
+            else np.maximum(np.var(X, axis=0), self.reg_covar)
+        )
+        n_ema = np.maximum(n_init, min_cluster_size).astype(np.float64)
+        n_feat_ema = (
+            np.broadcast_to(n_ema[:, None], (k, d)).copy()
+            if self._missing
+            else n_ema[:, None]
+        )
+        s_ema = n_feat_ema * centers
+        q_ema = n_feat_ema * (global_var[None, :] + centers * centers)
+        self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
+
+        use_seq = self.seq_weight != 0
+        if use_seq:
+            self.seq_dist.init_ema(k)
+
+        batch_size, alpha_0 = self._emeans_schedule(n, k, self.n_epochs)
+        all_batches = [
+            self._make_batches(n, batch_size, rng) for _ in range(self.n_epochs)
+        ]
+        total_steps = sum(len(b) for b in all_batches)
+
+        # Seed sequence EMA from the first mini-batch using initial Gaussian
+        # responsibilities so the motif model is active from step 0.
+        if use_seq and total_steps > 0:
+            assert self.weights_ is not None
+            seed_idx = all_batches[0][0]
+            log_prob_seed = (
+                self._estimate_observed_gaussian_log_prob(
+                    X[seed_idx], self._obs_mask[seed_idx]
+                )
+                if self._missing
+                else GaussianMixture._estimate_log_prob(self, X[seed_idx])
+            ) + np.log(self.weights_)
+            log_resp_seed = log_prob_seed - logsumexp(
+                log_prob_seed, axis=1, keepdims=True
+            )
+            self.seq_dist.update_ema(
+                seed_idx, np.exp(log_resp_seed), alpha=1.0, scale=n / len(seed_idx)
+            )
+            self.seq_dist.finalize_ema()
+
+        step = 0
+        for epoch_batches in all_batches:
+            for batch_idx in epoch_batches:
+                alpha = self._cosine_alpha(alpha_0, step, total_steps)
+                step += 1
+
+                assert self.weights_ is not None
+                X_b = X[batch_idx]
+                if self._missing:
+                    m_b = self._obs_mask[batch_idx]
+                    log_prob_b = self._estimate_observed_gaussian_log_prob(
+                        X_b, m_b
+                    ) + np.log(self.weights_)
+                else:
+                    log_prob_b = GaussianMixture._estimate_log_prob(self, X_b) + np.log(
+                        self.weights_
+                    )
+                if use_seq:
+                    log_prob_b = (
+                        log_prob_b
+                        + self.seq_weight
+                        * self.seq_dist.estimate_log_prob_batch(batch_idx)
+                    )
+                log_resp_b = log_prob_b - logsumexp(log_prob_b, axis=1, keepdims=True)
+                resp_b = np.exp(log_resp_b)
+
+                scale = n / len(batch_idx)
+                n_b = np.sum(resp_b, axis=0) * scale
+                s_b = (resp_b.T @ X_b) * scale
+                q_b = (resp_b.T @ (X_b * X_b)) * scale
+
+                n_ema = (1.0 - alpha) * n_ema + alpha * n_b
+                s_ema = (1.0 - alpha) * s_ema + alpha * s_b
+                q_ema = (1.0 - alpha) * q_ema + alpha * q_b
+                if self._missing:
+                    nf_b = (resp_b.T @ m_b) * scale
+                    n_feat_ema = (1.0 - alpha) * n_feat_ema + alpha * nf_b
+                else:
+                    n_feat_ema = n_ema[:, None]
+
+                if use_seq:
+                    self.seq_dist.update_ema(
+                        batch_idx, resp_b, alpha=alpha, scale=scale
+                    )
+
+                self._revive_dead_clusters(
+                    n_ema,
+                    s_ema,
+                    q_ema,
+                    min_cluster_size,
+                    rng,
+                    revive_seq=use_seq,
+                    n_feat_ema=n_feat_ema if self._missing else None,
+                )
+                if not self._missing:
+                    n_feat_ema = n_ema[:, None]
+                self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
+                if use_seq:
+                    self.seq_dist.finalize_ema()
+
+        # Exact full-batch finalization pass over all peptides.
+        if use_seq:
+            self.seq_dist.compute_log_weights()
+        _, log_resp = self._e_step(X)
+        self._m_step(X, log_resp)
+        self.lower_bound_, log_resp = self._e_step(X)
+        self.scores_ = np.exp(log_resp)
+        self.converged_ = True
+        self.n_iter_ = self.n_epochs
 
     def fit(self, p_signal: pd.DataFrame) -> "DDMC":  # ty: ignore[invalid-method-override]
         """
@@ -191,16 +559,40 @@ class DDMC(GaussianMixture):
 
         if np.any(np.isnan(p_signal)):
             self._missing = True
-            self.missing_d = np.isnan(p_signal)
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                p_signal = SoftImpute(verbose=False).fit_transform(p_signal)
+            X_raw = p_signal.to_numpy(dtype=np.float64)
+            obs_mask = ~np.isnan(X_raw)
+            self._obs_mask = obs_mask.astype(np.float64)
+            col_counts = np.sum(self._obs_mask, axis=0)
+            X = np.where(obs_mask, X_raw, 0.0)
+            col_means = np.divide(
+                np.sum(X, axis=0),
+                col_counts,
+                out=np.zeros(X.shape[1]),
+                where=col_counts > 0,
+            )
+            self._col_means: np.ndarray | None = col_means
+            centered = np.where(obs_mask, X - col_means[None, :], 0.0)
+            self._col_vars: np.ndarray | None = np.divide(
+                np.sum(centered * centered, axis=0),
+                col_counts,
+                out=np.ones(X.shape[1]),
+                where=col_counts > 0,
+            )
         else:
             self._missing = False
+            self._col_means = None
+            self._col_vars = None
+            X = p_signal
 
-        super().fit(p_signal)
-        self.scores_ = self.predict_proba(p_signal)
+        X = validate_data(self, X, dtype=[np.float64, np.float32], ensure_min_samples=2)
+        if X.shape[0] < self.n_components:
+            raise ValueError(
+                "Expected n_samples >= n_components "
+                f"but got n_components = {self.n_components}, "
+                f"n_samples = {X.shape[0]}"
+            )
+        self._check_parameters(X)
+        self._fit_emeans(X)
 
         assert np.all(np.isfinite(self.scores_))
         assert np.all(np.isfinite(self.seq_scores_))

@@ -100,3 +100,44 @@ def test_binomial_from_summaries_prefers_matching_cluster():
     # Each sequence should score at least as well under its own cluster
     assert np.all(model.logWeights[:5, 0] >= model.logWeights[:5, 1])
     assert np.all(model.logWeights[5:, 1] >= model.logWeights[5:, 0])
+
+
+def test_binomial_ema_matches_full_batch():
+    seqs = np.array(["AAAAASAAAAA"] * 4 + ["RRRRRSRRRRR"] * 4)
+    weights = np.zeros((8, 2))
+    weights[:4, 0] = 1.0
+    weights[4:, 1] = 1.0
+
+    ref = Binomial(seqs)
+    ref.from_summaries(weights)
+
+    ema = Binomial(seqs)
+    ema.init_ema(2)
+    ema.update_ema(np.arange(8), weights, alpha=1.0, scale=1.0)
+    ema.finalize_ema()
+    ema.compute_log_weights()
+
+    np.testing.assert_allclose(ema.logWeights, ref.logWeights, atol=1e-6)
+    np.testing.assert_allclose(
+        ema.estimate_log_prob_batch(np.array([0, 5])),
+        ref.logWeights[[0, 5]],
+        atol=1e-6,
+    )
+
+
+def test_binomial_split_cluster():
+    seqs = np.array(["AAAAASAAAAA"] * 4 + ["RRRRRSRRRRR"] * 4)
+    ema = Binomial(seqs)
+    ema.init_ema(2)
+    weights = np.zeros((8, 2))
+    weights[:, 0] = 1.0
+    ema.update_ema(np.arange(8), weights, alpha=1.0, scale=1.0)
+
+    total_n_before = float(ema._n_ema.sum())
+    total_k_before = ema._k_ema.sum(axis=0).copy()
+    ema.split_cluster(donor=0, target=1)
+
+    assert ema._n_ema[0] == pytest.approx(ema._n_ema[1])
+    assert float(ema._n_ema.sum()) == pytest.approx(total_n_before)
+    np.testing.assert_allclose(ema._k_ema[0], ema._k_ema[1])
+    np.testing.assert_allclose(ema._k_ema.sum(axis=0), total_k_before)

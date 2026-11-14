@@ -307,6 +307,62 @@ class Binomial:
         assert np.all(np.isfinite(self.background))
         assert np.all(np.isfinite(self.foreground_flat))
 
+    def _probmat_from_counts(
+        self, k_flat: np.ndarray, n_totals: np.ndarray
+    ) -> np.ndarray:
+        """Compute flattened binomial log-survival probabilities from per-cluster
+        amino acid counts `k_flat` and cluster responsibility totals `n_totals`.
+        """
+        k = k_flat.reshape(-1, self.n_aa, self.n_pos)
+        betaA = np.clip(n_totals[:, None, None] - k, 0.001, np.inf)
+        probmat = sc.betainc(betaA, k + 1, 1 - self.background)
+        return probmat.reshape(probmat.shape[0], -1).astype(np.float32)
+
+    def init_ema(self, n_clusters: int) -> None:
+        """Initialize EMA sufficient-statistic accumulators for mini-batch fitting."""
+        n_feat = self.n_aa * self.n_pos
+        self._k_ema = np.zeros((n_clusters, n_feat), dtype=np.float32)
+        self._n_ema = np.zeros(n_clusters, dtype=np.float32)
+        self.probmat_flat = np.zeros((n_clusters, n_feat), dtype=np.float32)
+
+    def update_ema(
+        self,
+        batch_idx: np.ndarray,
+        weights_batch: np.ndarray,
+        alpha: float,
+        scale: float = 1.0,
+    ) -> None:
+        """Update EMA sufficient statistics from a mini-batch of responsibilities."""
+        k_batch = (
+            weights_batch.T.astype(np.float32) @ self.foreground_flat[batch_idx]
+        ) * np.float32(scale)
+        n_batch = (np.sum(weights_batch, axis=0) * scale).astype(np.float32)
+        self._k_ema = (1.0 - alpha) * self._k_ema + alpha * k_batch
+        self._n_ema = (1.0 - alpha) * self._n_ema + alpha * n_batch
+
+    def split_cluster(self, donor: int, target: int) -> None:
+        """Halve `donor`'s EMA sufficient statistics into `target` and `donor`."""
+        half_k = 0.5 * self._k_ema[donor]
+        self._k_ema[target] = half_k
+        self._k_ema[donor] = half_k
+        half_n = 0.5 * self._n_ema[donor]
+        self._n_ema[target] = half_n
+        self._n_ema[donor] = half_n
+
+    def finalize_ema(self) -> None:
+        """Recompute `probmat_flat` from the current EMA sufficient statistics."""
+        self.probmat_flat = self._probmat_from_counts(self._k_ema, self._n_ema)
+
+    def estimate_log_prob_batch(self, batch_idx: np.ndarray) -> np.ndarray:
+        """Evaluate sequence log-probabilities on a mini-batch of peptides."""
+        tempp = self.foreground_flat[batch_idx] @ self.probmat_flat.T
+        return np.log(np.maximum(tempp, 1e-30))
+
+    def compute_log_weights(self) -> None:
+        """Update `self.logWeights` for all sequences from `self.probmat_flat`."""
+        tempp = self.foreground_flat @ self.probmat_flat.T
+        self.logWeights = np.log(np.maximum(tempp, 1e-30))
+
     def from_summaries(self, weightsIn: np.ndarray) -> None:
         """Refit each cluster's binomial model from the current soft cluster
         assignments, and update `self.logWeights` with each sequence's
@@ -317,13 +373,9 @@ class Binomial:
                 (n_seqs, n_clusters), i.e. `exp(log_resp)` from the EM E step.
         """
         k_flat = weightsIn.T.astype(np.float32) @ self.foreground_flat
-        k = k_flat.reshape(-1, self.n_aa, self.n_pos)
-        betaA = np.sum(weightsIn, axis=0)[:, None, None] - k
-        betaA = np.clip(betaA, 0.001, np.inf)
-        probmat = sc.betainc(betaA, k + 1, 1 - self.background)
-        probmat_flat = probmat.reshape(probmat.shape[0], -1).astype(np.float32)
-        tempp = self.foreground_flat @ probmat_flat.T
-        self.logWeights = np.log(tempp)
+        n_totals = np.sum(weightsIn, axis=0)
+        self.probmat_flat = self._probmat_from_counts(k_flat, n_totals)
+        self.compute_log_weights()
 
 
 def CountPsiteTypes(X) -> tuple[int, int, int]:
