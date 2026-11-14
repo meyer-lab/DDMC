@@ -19,6 +19,7 @@ from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
+from sklearn.utils import check_random_state
 
 from ddmc.motifs import get_proteome_name_to_seq
 
@@ -94,6 +95,97 @@ def select_peptide_subset(
     if keep_ratio is not None:
         keep_num = int(p_signal.shape[0] * keep_ratio)
     return p_signal.iloc[np.random.choice(p_signal.shape[0], keep_num)]
+
+
+def simulate_dropout(
+    p_signal: pd.DataFrame,
+    missing_fraction: float,
+    mechanism: Literal["mcar", "mnar", "block"] = "mcar",
+    col_groups: Sequence | np.ndarray | None = None,
+    random_state: int | np.random.RandomState | None = None,
+) -> pd.DataFrame:
+    """Simulate missingness on a phosphoproteomics signal matrix.
+
+    Useful for benchmarking sparse spatial and microscale proteomics workflows
+    (e.g., 10% to 85% missingness) under different dropout mechanisms.
+
+    Args:
+        p_signal: Phosphorylation signal DataFrame of shape
+            `(n_peptides, n_samples)`. Already-missing entries remain `NaN`.
+        missing_fraction: Fraction of currently observed entries to mask as
+            `NaN`, in `[0.0, 1.0)`.
+        mechanism: Dropout mechanism:
+            - `"mcar"`: Uniform random entry dropout.
+            - `"mnar"`: Intensity-dependent dropout where lower-intensity
+              observed entries are masked with higher probability (simulating
+              MS limit-of-detection).
+            - `"block"`: Block-wise dropout across `col_groups` (or individual
+              columns if `col_groups` is `None`), masking entire MS runs or
+              spatial ROIs per peptide.
+        col_groups: Optional group labels of length `p_signal.shape[1]` for
+            `mechanism="block"`.
+        random_state: Seed or `RandomState` for reproducibility.
+
+    Returns:
+        Copy of `p_signal` with additional entries masked as `NaN`.
+    """
+    if not (0.0 <= missing_fraction < 1.0):
+        raise ValueError("`missing_fraction` must be in [0.0, 1.0).")
+    if mechanism not in ("mcar", "mnar", "block"):
+        raise ValueError(
+            f"Unknown dropout mechanism {mechanism!r}; expected 'mcar', 'mnar', or 'block'."
+        )
+
+    values = p_signal.to_numpy(dtype=np.float64, copy=True)
+    obs_rows, obs_cols = np.where(~np.isnan(values))
+    n_obs = len(obs_rows)
+    if missing_fraction == 0.0 or n_obs == 0:
+        return pd.DataFrame(values, index=p_signal.index, columns=p_signal.columns)
+
+    rng = check_random_state(random_state)
+    n_mask = int(round(missing_fraction * n_obs))
+    if n_mask == 0:
+        return pd.DataFrame(values, index=p_signal.index, columns=p_signal.columns)
+
+    if mechanism == "mcar":
+        chosen = rng.choice(n_obs, size=n_mask, replace=False)
+        values[obs_rows[chosen], obs_cols[chosen]] = np.nan
+    elif mechanism == "mnar":
+        obs_vals = values[obs_rows, obs_cols]
+        std = float(np.std(obs_vals))
+        scale = std if std > 1e-12 else 1.0
+        z = np.clip((obs_vals - np.median(obs_vals)) / scale, -20.0, 20.0)
+        weights = 1.0 / (1.0 + np.exp(z))
+        probs = weights / np.sum(weights)
+        chosen = rng.choice(n_obs, size=n_mask, replace=False, p=probs)
+        values[obs_rows[chosen], obs_cols[chosen]] = np.nan
+    else:
+        if col_groups is None:
+            groups = np.arange(values.shape[1])
+        else:
+            groups = np.asarray(col_groups)
+            if len(groups) != values.shape[1]:
+                raise ValueError("`col_groups` length must match `p_signal.shape[1]`.")
+        unique_groups = np.unique(groups)
+        group_masks = [groups == g for g in unique_groups]
+        # Build list of all (row, group_idx) pairs that have >=1 observed entry
+        obs_mask = ~np.isnan(values)
+        pairs: list[tuple[int, int]] = []
+        for g_idx, g_mask in enumerate(group_masks):
+            rows_with_obs = np.where(np.any(obs_mask[:, g_mask], axis=1))[0]
+            for r in rows_with_obs:
+                pairs.append((int(r), g_idx))
+        rng.shuffle(pairs)
+        masked_count = 0
+        for r, g_idx in pairs:
+            if masked_count >= n_mask:
+                break
+            g_mask = group_masks[g_idx]
+            newly_masked = int(np.sum(~np.isnan(values[r, g_mask])))
+            values[r, g_mask] = np.nan
+            masked_count += newly_masked
+
+    return pd.DataFrame(values, index=p_signal.index, columns=p_signal.columns)
 
 
 class CPTAC:
