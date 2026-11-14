@@ -239,7 +239,11 @@ def plot_motifs(pssm, ax: axes.Axes, titles=False, yaxis=False) -> None:
 
 
 def plot_cluster_kinase_distances(
-    distances: pd.DataFrame, pssms: np.ndarray, ax: axes.Axes, num_hits: int = 1
+    distances: pd.DataFrame,
+    pssms: np.ndarray,
+    ax: axes.Axes,
+    num_hits: int = 1,
+    double_center: bool = False,
 ) -> None:
     """Strip plot of kinase-vs-cluster PSSM distances, annotated with the
     top predicted kinase(s) per cluster.
@@ -250,21 +254,22 @@ def plot_cluster_kinase_distances(
     `num_hits` of those.
 
     Args:
-        distances: Kinase-by-cluster Frobenius distance matrix (kinases as
-            rows, cluster/PSSM names as columns), as returned by
+        distances: Kinase-by-cluster distance matrix (kinases as rows,
+            cluster/PSSM names as columns), as returned by
             `ddmc.clustering.DDMC.predict_upstream_kinases`.
         pssms: The PSSMs corresponding to `distances`'s columns, of shape
             (n_clusters, 20, 11), used to determine each cluster's dominant
             phosphoacceptor.
         ax: Axes to plot onto.
         num_hits: Number of top kinase hits to annotate per cluster.
+        double_center: Whether to apply legacy row/column double-centering
+            before plotting and ranking. Defaults to `False`.
     """
     pssm_names = distances.columns
 
-    # these centering lines make no sense, but they were used in the original
-    # publication-version of this code
-    distances = distances.sub(distances.mean(axis=1), axis=0)
-    distances = distances.sub(distances.mean(axis=0), axis=1)
+    if double_center:
+        distances = distances.sub(distances.mean(axis=1), axis=0)
+        distances = distances.sub(distances.mean(axis=0), axis=1)
 
     # melt distances
     distances = pd.melt(

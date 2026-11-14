@@ -22,7 +22,9 @@ Contains:
 import glob
 import re
 from collections.abc import Sequence
-from typing import IO
+from functools import lru_cache
+from pathlib import Path
+from typing import IO, Literal
 
 import numpy as np
 import pandas as pd
@@ -329,24 +331,52 @@ def make_motif(
     return "".join(UP_seq_copy), pidx
 
 
-def get_pspls() -> tuple[np.ndarray, np.ndarray]:
-    """Load kinase specificity profiles (PSPLs) bundled in `ddmc/data/PSPL/`.
+_KINOME_ATLAS_DIR = Path(__file__).resolve().parent / "data" / "PSPL" / "kinome_atlas"
+_FLANKING_POSITIONS = (-5, -4, -3, -2, -1, 1, 2, 3, 4)
 
-    Reads both the individual per-kinase CSVs in that directory and the
-    combined NetPhores results file (`pssm_data.csv`), log2-transforming
-    and clipping each into a consistent (20 amino acids x 9 positions)
-    specificity profile. Must be run with the repository root as the
-    working directory.
 
-    Returns:
-        A tuple `(kinases, pspls)`:
-            kinases: Kinase name for each profile, of shape (n_kinases,).
-            pspls: Specificity profile for each kinase, of shape
-                (n_kinases, 20, 9), aligned to `kinases` and to `AAlist`
-                along the amino acid axis.
+@lru_cache(maxsize=1)
+def get_kinome_metadata() -> pd.DataFrame:
+    """Load kinase metadata for the bundled human kinome PSPL atlas (404
+    Ser/Thr and Tyr kinase profiles from Johnson et al. 2023 & Yaron-Barir
+    et al. 2024), indexed by `MATRIX_NAME`.
     """
+    return pd.read_csv(
+        _KINOME_ATLAS_DIR / "kinome_information.tsv", sep="\t"
+    ).set_index("MATRIX_NAME")
+
+
+@lru_cache(maxsize=2)
+def _load_pspls_cached(
+    source: Literal["kinome_atlas", "legacy"],
+) -> tuple[np.ndarray, np.ndarray]:
+    if source == "kinome_atlas":
+        cols = [f"{pos}{aa}" for pos in _FLANKING_POSITIONS for aa in AAlist]
+        st = pd.read_csv(
+            _KINOME_ATLAS_DIR / "ser_thr_all_log2_matrices.tsv",
+            sep="\t",
+            index_col=0,
+        )[cols]
+        tyr = pd.read_csv(
+            _KINOME_ATLAS_DIR / "tyrosine_all_log2_matrices.tsv",
+            sep="\t",
+            index_col=0,
+        )[cols]
+        combined = pd.concat([st, tyr], axis=0)
+        kinases = combined.index.to_numpy(dtype=str)
+        # Reshape (n_kinases, 9 * 20) -> (n_kinases, 9, 20) -> (n_kinases, 20, 9)
+        pspls = (
+            combined.to_numpy(dtype=np.float64)
+            .reshape(len(kinases), len(_FLANKING_POSITIONS), len(AAlist))
+            .transpose(0, 2, 1)
+        )
+        return kinases, pspls
+
+    if source != "legacy":
+        raise ValueError(f"Unknown PSPL source: {source!r}")
+
     pspls_arr = []
-    kinases = []
+    kinases_list = []
     # individual files
     PSPLs = glob.glob("./ddmc/data/PSPL/*.csv")
     for sp in PSPLs:
@@ -358,7 +388,7 @@ def get_pspls() -> tuple[np.ndarray, np.ndarray]:
         if np.all(sp_mat >= 0):
             sp_mat = np.log2(sp_mat)
 
-        kinases.append(sp.split("PSPL/")[1].split(".csv")[0])
+        kinases_list.append(sp.split("PSPL/")[1].split(".csv")[0])
         pspls_arr.append(sp_mat.values)
 
     # NetPhores PSPL results
@@ -372,10 +402,32 @@ def get_pspls() -> tuple[np.ndarray, np.ndarray]:
         mat = np.ma.log2(mat)
         mat = mat.filled(0)
         mat = np.clip(mat, a_min=0, a_max=3)
-        kinases.append(kin)
+        kinases_list.append(kin)
         pspls_arr.append(mat)
 
-    return np.array(kinases), np.array(pspls_arr)
+    return np.array(kinases_list), np.array(pspls_arr)
+
+
+def get_pspls(
+    source: Literal["kinome_atlas", "legacy"] = "kinome_atlas",
+) -> tuple[np.ndarray, np.ndarray]:
+    """Load kinase specificity profiles (PSPLs) bundled in `ddmc/data/PSPL/`.
+
+    Args:
+        source: `"kinome_atlas"` (default) loads the complete 404-kinase human
+            Ser/Thr (Johnson et al. 2023) and Tyr (Yaron-Barir et al. 2024)
+            PSPL atlas. `"legacy"` loads the original 63-kinase set from
+            `ddmc/data/PSPL/*.csv` and `pssm_data.csv`.
+
+    Returns:
+        A tuple `(kinases, pspls)`:
+            kinases: Kinase name for each profile, of shape (n_kinases,).
+            pspls: Specificity profile for each kinase, of shape
+                (n_kinases, 20, 9), aligned to `kinases` and to `AAlist`
+                along the amino acid axis.
+    """
+    kinases, pspls = _load_pspls_cached(source)
+    return kinases.copy(), pspls.copy()
 
 
 def compute_control_pssm(bg_sequences: Sequence[str]) -> np.ndarray:
@@ -472,3 +524,6 @@ KinToPhosphotypeDict = {
     "p70S6K": "S/T",
     "EphA3": "Y",
 }
+
+for _kin_name, _kin_type in get_kinome_metadata()["TYPE"].items():
+    KinToPhosphotypeDict[str(_kin_name)] = "Y" if _kin_type == "tyrosine" else "S/T"
