@@ -363,6 +363,21 @@ class Binomial:
         tempp = self.foreground_flat @ self.probmat_flat.T
         self.logWeights = np.log(np.maximum(tempp, 1e-30))
 
+    def score_sequences(self, seqs: list[str] | np.ndarray) -> np.ndarray:
+        """Score unseen length-11 peptide sequences against the fitted cluster
+        binomial models.
+
+        Args:
+            seqs: Peptide sequences to score.
+
+        Returns:
+            Log-probabilities of shape `(len(seqs), n_clusters)`.
+        """
+        foreground = GenerateBinarySeqID(seqs)
+        fg_flat = foreground.reshape(foreground.shape[0], -1).astype(np.float32)
+        tempp = fg_flat @ self.probmat_flat.T
+        return np.log(np.maximum(tempp, 1e-30))
+
     def from_summaries(self, weightsIn: np.ndarray) -> None:
         """Refit each cluster's binomial model from the current soft cluster
         assignments, and update `self.logWeights` with each sequence's

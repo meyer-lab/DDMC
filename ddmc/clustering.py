@@ -105,16 +105,30 @@ class DDMC(GaussianMixture):
         else:
             raise ValueError("Wrong distance type.")
 
+    @staticmethod
+    def _diagonal_gaussian_log_prob(
+        X_zero: np.ndarray,
+        obs_mask: np.ndarray,
+        means: np.ndarray,
+        precisions_cholesky: np.ndarray,
+    ) -> np.ndarray:
+        """Exact marginal diagonal Gaussian log-probability over observed features."""
+        p2 = precisions_cholesky * precisions_cholesky
+        log_det = np.log(2.0 * np.pi) - 2.0 * np.log(precisions_cholesky)
+        const_kf = log_det + p2 * (means * means)
+        linear_kf = 2.0 * p2 * means
+        return -0.5 * (
+            obs_mask @ const_kf.T - X_zero @ linear_kf.T + (X_zero * X_zero) @ p2.T
+        )
+
     def _estimate_observed_gaussian_log_prob(
         self, X: np.ndarray, obs_mask: np.ndarray
     ) -> np.ndarray:
         """Exact marginal diagonal Gaussian log-probability over observed features."""
         assert self.means_ is not None and self.precisions_cholesky_ is not None
-        p2 = self.precisions_cholesky_ * self.precisions_cholesky_
-        log_det = np.log(2.0 * np.pi) - 2.0 * np.log(self.precisions_cholesky_)
-        const_kf = log_det + p2 * (self.means_ * self.means_)
-        linear_kf = 2.0 * p2 * self.means_
-        return -0.5 * (obs_mask @ const_kf.T - X @ linear_kf.T + (X * X) @ p2.T)
+        return self._diagonal_gaussian_log_prob(
+            X, obs_mask, self.means_, self.precisions_cholesky_
+        )
 
     def _estimate_log_prob(self, X: np.ndarray, xp=None) -> np.ndarray:
         """EM E-step helper. Estimate the log-probability of each peptide
@@ -785,6 +799,103 @@ class DDMC(GaussianMixture):
         """
         check_is_fitted(self, ["scores_"])
         return self.get_nonempty_clusters().size != self.n_components
+
+    def fold_in(
+        self,
+        p_signal_test: pd.DataFrame,
+        cols: np.ndarray | Sequence[int] | None = None,
+    ) -> np.ndarray:
+        """Compute out-of-sample posterior cluster responsibilities for unseen
+        peptides using only the specified sample columns `cols` and the
+        fitted sequence-motif model.
+
+        Args:
+            p_signal_test: DataFrame of unseen peptides with length-11 sequences
+                as index and the same sample columns as `self.p_signal`.
+            cols: Integer column indices to condition on. If `None`, all
+                columns are used; if empty, responsibilities are computed from
+                cluster priors and sequence motifs alone.
+
+        Returns:
+            Posterior cluster responsibilities of shape
+            `(len(p_signal_test), n_components)`.
+        """
+        check_is_fitted(self, ["means_", "precisions_cholesky_", "weights_"])
+        assert (
+            self.means_ is not None
+            and self.precisions_cholesky_ is not None
+            and self.weights_ is not None
+        )
+        col_idx = (
+            np.arange(p_signal_test.shape[1], dtype=int)
+            if cols is None
+            else np.asarray(cols, dtype=int)
+        )
+        log_prob = np.broadcast_to(
+            np.log(self.weights_), (len(p_signal_test), self.n_components)
+        ).copy()
+
+        if col_idx.size > 0:
+            X_raw = p_signal_test.to_numpy(dtype=np.float64)[:, col_idx]
+            obs_mask = (~np.isnan(X_raw)).astype(np.float64)
+            X_zero = np.where(obs_mask > 0, X_raw, 0.0)
+            log_prob += self._diagonal_gaussian_log_prob(
+                X_zero,
+                obs_mask,
+                self.means_[:, col_idx],
+                self.precisions_cholesky_[:, col_idx],
+            )
+
+        if self.seq_weight != 0:
+            log_prob += self.seq_weight * self.seq_dist.score_sequences(
+                np.asarray(p_signal_test.index.values, dtype=str)
+            )
+
+        log_resp = log_prob - logsumexp(log_prob, axis=1, keepdims=True)
+        return np.exp(log_resp)
+
+    def score_held_out(
+        self,
+        p_signal_test: pd.DataFrame,
+        train_cols: np.ndarray | Sequence[int],
+        test_cols: np.ndarray | Sequence[int],
+    ) -> tuple[float, float, int, float, float]:
+        """Evaluate bi-cross-validation metrics on held-out entries
+        `(I_test, J_test)` after folding in `p_signal_test` using `train_cols`.
+
+        Returns:
+            Tuple `(ll_sum, sq_err_sum, n_obs, sum_y, sum_y2)` aggregated over
+            all observed entries in `p_signal_test.iloc[:, test_cols]`.
+        """
+        check_is_fitted(self, ["means_", "precisions_cholesky_", "weights_"])
+        assert self.means_ is not None and self.precisions_cholesky_ is not None
+
+        gamma = self.fold_in(p_signal_test, cols=train_cols)
+        test_idx = np.asarray(test_cols, dtype=int)
+        X_te_raw = p_signal_test.to_numpy(dtype=np.float64)[:, test_idx]
+        obs_te = ~np.isnan(X_te_raw)
+        n_obs = int(np.sum(obs_te))
+        if n_obs == 0:
+            return 0.0, 0.0, 0, 0.0, 0.0
+
+        X_te_zero = np.where(obs_te, X_te_raw, 0.0)
+        log_prob_te = self._diagonal_gaussian_log_prob(
+            X_te_zero,
+            obs_te.astype(np.float64),
+            self.means_[:, test_idx],
+            self.precisions_cholesky_[:, test_idx],
+        )
+        has_obs = np.any(obs_te, axis=1)
+        log_gamma = np.log(np.maximum(gamma[has_obs], 1e-300))
+        ll_sum = float(np.sum(logsumexp(log_gamma + log_prob_te[has_obs], axis=1)))
+
+        pred = gamma @ self.means_[:, test_idx]
+        diff = X_te_raw[obs_te] - pred[obs_te]
+        sq_err_sum = float(np.sum(diff * diff))
+        y_obs = X_te_raw[obs_te]
+        sum_y = float(np.sum(y_obs))
+        sum_y2 = float(np.sum(y_obs * y_obs))
+        return ll_sum, sq_err_sum, n_obs, sum_y, sum_y2
 
     def predict(self) -> np.ndarray:  # ty: ignore[invalid-method-override]
         """Provided the current model parameters, predict the cluster each peptide belongs to.
