@@ -754,6 +754,7 @@ class DDMC(GaussianMixture):
     def predict_upstream_kinases(
         self,
         PsP_background: bool = True,
+        metric: Literal["frobenius", "js", "kl", "cosine", "zscore"] = "frobenius",
     ) -> pd.DataFrame:
         """Compute matrix-matrix similarity between kinase specificity profiles
         and cluster PSSMs to identify upstream kinases regulating clusters.
@@ -762,11 +763,13 @@ class DDMC(GaussianMixture):
             PsP_background: Whether or not PhosphoSitePlus should be used
                 for the background amino acid frequency when building each
                 cluster's PSSM (see `get_pssms`).
+            metric: Distance metric passed to `get_pspl_pssm_distances`
+                (`"frobenius"`, `"js"`, `"kl"`, `"cosine"`, or `"zscore"`).
 
         Returns:
-            DataFrame of shape (n_kinases, n_nonempty_clusters) with a
-            Frobenius distance between each kinase's specificity profile and
-            each cluster's PSSM; smaller values indicate a better match.
+            DataFrame of shape (n_kinases, n_nonempty_clusters) with the
+            distance between each kinase's specificity profile and each
+            cluster's PSSM; smaller values indicate a better match.
         """
         kinases, pspls = get_pspls()
         clusters, pssms = self.get_pssms(PsP_background=PsP_background)
@@ -776,6 +779,7 @@ class DDMC(GaussianMixture):
             as_df=True,
             pssm_names=clusters,
             kinases=kinases,
+            metric=metric,
         )
         return distances
 
@@ -934,6 +938,7 @@ def get_pspl_pssm_distances(
     as_df: Literal[False] = False,
     pssm_names: Sequence | np.ndarray | None = None,
     kinases: Sequence | np.ndarray | None = None,
+    metric: Literal["frobenius", "js", "kl", "cosine", "zscore"] = "frobenius",
 ) -> np.ndarray: ...
 @overload
 def get_pspl_pssm_distances(
@@ -942,6 +947,7 @@ def get_pspl_pssm_distances(
     as_df: Literal[True],
     pssm_names: Sequence | np.ndarray | None = None,
     kinases: Sequence | np.ndarray | None = None,
+    metric: Literal["frobenius", "js", "kl", "cosine", "zscore"] = "frobenius",
 ) -> pd.DataFrame: ...
 def get_pspl_pssm_distances(
     pspls: np.ndarray,
@@ -949,6 +955,7 @@ def get_pspl_pssm_distances(
     as_df: bool = False,
     pssm_names: Sequence | np.ndarray | None = None,
     kinases: Sequence | np.ndarray | None = None,
+    metric: Literal["frobenius", "js", "kl", "cosine", "zscore"] = "frobenius",
 ) -> np.ndarray | pd.DataFrame:
     """
     Computes a distance matrix between PSPLs and PSSMs.
@@ -960,14 +967,50 @@ def get_pspl_pssm_distances(
             dataframe. Requires pssm_names and kinases.
         pssm_names: list of names for the pssms of shape (n_pssms,)
         kinases: list of names for the pspls of shape (n_kinase,)
+        metric: Distance metric (`"frobenius"`, `"js"`, `"kl"`, `"cosine"`, or
+            `"zscore"`). Smaller values always indicate a better match.
 
     Returns:
         Distance matrix of shape (n_kinase, n_pssms).
     """
     assert pssms.shape[1:3] == (20, 11)
     assert pspls.shape[1:3] == (20, 9)
-    pssms = np.delete(pssms, [5, 10], axis=2)
-    dists = np.linalg.norm(pspls[:, None, :, :] - pssms[None, :, :, :], axis=(2, 3))
+    pssms_9 = np.delete(pssms, [5, 10], axis=2)
+
+    if metric == "frobenius":
+        dists = np.linalg.norm(
+            pspls[:, None, :, :] - pssms_9[None, :, :, :], axis=(2, 3)
+        )
+    elif metric in ("js", "kl"):
+        p_raw = np.exp2(np.clip(pspls, -20.0, 20.0))
+        q_raw = np.exp2(np.clip(pssms_9, -20.0, 20.0))
+        p = np.maximum(p_raw / np.sum(p_raw, axis=1, keepdims=True), 1e-12)
+        q = np.maximum(q_raw / np.sum(q_raw, axis=1, keepdims=True), 1e-12)
+        p_exp = p[:, None, :, :]
+        q_exp = q[None, :, :, :]
+        if metric == "kl":
+            dists = np.sum(q_exp * np.log2(q_exp / p_exp), axis=2).mean(axis=2)
+        else:
+            m = 0.5 * (p_exp + q_exp)
+            kl_pm = np.sum(p_exp * np.log2(p_exp / m), axis=2)
+            kl_qm = np.sum(q_exp * np.log2(q_exp / m), axis=2)
+            dists = 0.5 * (kl_pm + kl_qm).mean(axis=2)
+    elif metric == "cosine":
+        a = pspls.reshape(pspls.shape[0], -1)
+        b = pssms_9.reshape(pssms_9.shape[0], -1)
+        a_norm = np.maximum(np.linalg.norm(a, axis=1, keepdims=True), 1e-12)
+        b_norm = np.maximum(np.linalg.norm(b, axis=1, keepdims=True), 1e-12)
+        dists = 1.0 - (a / a_norm) @ (b / b_norm).T
+    elif metric == "zscore":
+        a = pspls.reshape(pspls.shape[0], -1)
+        b = pssms_9.reshape(pssms_9.shape[0], -1)
+        sim = a @ b.T
+        mean_k = np.mean(sim, axis=0, keepdims=True)
+        std_k = np.maximum(np.std(sim, axis=0, keepdims=True), 1e-12)
+        dists = -(sim - mean_k) / std_k
+    else:
+        raise ValueError(f"Unsupported metric: {metric!r}")
+
     if as_df:
         kinases = list(kinases) if kinases is not None else None
         pssm_names = list(pssm_names) if pssm_names is not None else None
