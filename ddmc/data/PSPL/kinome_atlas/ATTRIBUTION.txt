@@ -1,0 +1,10 @@
+The files in this directory (`ser_thr_all_log2_matrices.tsv`,
+`tyrosine_all_log2_matrices.tsv`, `kinome_information.tsv`) are from The
+Kinase Library (https://github.com/phosphosite/kinase-library), distributed
+under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported
+(CC BY-NC-SA 3.0) license:
+
+- Johnson, J. L. et al. An atlas of substrate specificities for the human
+  serine/threonine kinome. Nature 613, 759-766 (2023).
+- Yaron-Barir, T. M. et al. The intrinsic substrate specificity of the human
+  tyrosine kinome. Nature 629, 1174-1181 (2024).
