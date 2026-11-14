@@ -255,3 +255,14 @@ def test_emeans_reproducible_with_random_state(p_signal):
     np.testing.assert_allclose(m1.means_, m2.means_)
     np.testing.assert_allclose(m1.scores_, m2.scores_)
     assert m1.score() == pytest.approx(m2.score())
+
+
+def test_observed_gaussian_log_prob_matches_sklearn_when_complete(p_signal):
+    sub = p_signal.iloc[:40]
+    model = DDMC(n_components=3, seq_weight=0.0, random_state=0).fit(sub)
+    X = sub.to_numpy(dtype=np.float64)
+    obs_mask = np.ones_like(X)
+
+    obs_logp = model._estimate_observed_gaussian_log_prob(X, obs_mask)
+    ref_logp = GaussianMixture._estimate_log_prob(model, X)
+    np.testing.assert_allclose(obs_logp, ref_logp, atol=1e-10)

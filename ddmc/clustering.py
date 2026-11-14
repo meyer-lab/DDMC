@@ -6,13 +6,11 @@ their sequence motif — and `get_pspl_pssm_distances`, the helper it uses to
 compare cluster motifs against kinase specificity profiles.
 """
 
-import warnings
 from collections.abc import Sequence
 from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
-from fancyimpute import SoftImpute
 from scipy.special import logsumexp
 from sklearn.cluster import kmeans_plusplus
 from sklearn.mixture import GaussianMixture
@@ -107,14 +105,26 @@ class DDMC(GaussianMixture):
         else:
             raise ValueError("Wrong distance type.")
 
+    def _estimate_observed_gaussian_log_prob(
+        self, X: np.ndarray, obs_mask: np.ndarray
+    ) -> np.ndarray:
+        """Exact marginal diagonal Gaussian log-probability over observed features."""
+        assert self.means_ is not None and self.precisions_cholesky_ is not None
+        p2 = self.precisions_cholesky_ * self.precisions_cholesky_
+        log_det = np.log(2.0 * np.pi) - 2.0 * np.log(self.precisions_cholesky_)
+        const_kf = log_det + p2 * (self.means_ * self.means_)
+        linear_kf = 2.0 * p2 * self.means_
+        return -0.5 * (obs_mask @ const_kf.T - X @ linear_kf.T + (X * X) @ p2.T)
+
     def _estimate_log_prob(self, X: np.ndarray, xp=None) -> np.ndarray:
         """EM E-step helper. Estimate the log-probability of each peptide
         under each cluster, combining the Gaussian mixture log-probability
-        over `X` with the weighted sequence-motif log-probability.
+        over `X` (marginalizing any missing entries) with the weighted
+        sequence-motif log-probability.
 
         Args:
             X: Phosphorylation signal of shape (n_samples, n_features), with
-                any missing values already imputed.
+                missing entries zeroed when `self._missing` is True.
             xp: Array-API namespace to use, forwarded to
                 `GaussianMixture._estimate_log_prob` (unused directly here).
 
@@ -123,7 +133,10 @@ class DDMC(GaussianMixture):
             shape (n_samples, n_components). Also stored as
             `self.seq_scores_` (the sequence-only term).
         """
-        logp = super()._estimate_log_prob(X, xp=xp)  # Do the regular work
+        if self._missing:
+            logp = self._estimate_observed_gaussian_log_prob(X, self._obs_mask)
+        else:
+            logp = super()._estimate_log_prob(X, xp=xp)
 
         # Add in the sequence effect
         self.seq_scores_ = self.seq_weight * self.seq_dist.logWeights
@@ -132,33 +145,31 @@ class DDMC(GaussianMixture):
         return logp
 
     def _m_step(self, X: np.ndarray, log_resp: np.ndarray, xp=None) -> None:
-        """EM M-step. Impute missing values from the current cluster
-        centers, then refit both the Gaussian mixture parameters and the
-        sequence-motif model from the current responsibilities.
+        """EM M-step. Refit both the Gaussian mixture parameters (from observed
+        features only when `self._missing` is True) and the sequence-motif
+        model from the current responsibilities.
 
         Args:
-            X: Phosphorylation signal of shape (n_samples, n_features). If
-                `self._missing`, entries at `self.missing_d` are overwritten
-                in place with each peptide's assigned cluster's center
-                before the regular Gaussian mixture M step runs.
+            X: Phosphorylation signal of shape (n_samples, n_features), with
+                missing entries zeroed when `self._missing` is True.
             log_resp: Logarithm of the posterior probabilities (or
                 responsibilities) of each sample in `X`, of shape
                 (n_samples, n_components).
             xp: Array-API namespace to use, forwarded to
                 `GaussianMixture._m_step` (unused directly here).
         """
+        resp = np.exp(log_resp)
         if self._missing:
-            labels = np.argmax(log_resp, axis=1)
-            centers = np.array(self.means_)  # samples x clusters
-            centers_fill = centers[labels, :]
-
-            assert centers_fill.shape == X.shape
-            X[self.missing_d] = centers_fill[self.missing_d]
-
-        super()._m_step(X, log_resp, xp=xp)  # Do the regular m step
+            n_ema = np.sum(resp, axis=0)
+            n_feat_ema = resp.T @ self._obs_mask
+            s_ema = resp.T @ X
+            q_ema = resp.T @ (X * X)
+            self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
+        else:
+            super()._m_step(X, log_resp, xp=xp)  # Do the regular m step
 
         # Do sequence m step
-        self.seq_dist.from_summaries(np.exp(log_resp))
+        self.seq_dist.from_summaries(resp)
 
     @staticmethod
     def _emeans_schedule(n: int, k: int, n_epochs: int) -> tuple[int, float]:
@@ -209,6 +220,7 @@ class DDMC(GaussianMixture):
         min_cluster_size: float,
         rng: np.random.RandomState,
         revive_seq: bool = False,
+        n_feat_ema: np.ndarray | None = None,
     ) -> None:
         """Revive clusters whose effective count fell below `min_cluster_size`
         by proportionally sampling an active cluster and splitting it in two.
@@ -227,11 +239,15 @@ class DDMC(GaussianMixture):
             if j_star == j or n_ema[j_star] <= 0.0:
                 continue
 
-            n_old = float(n_ema[j_star])
-            mean_star = s_ema[j_star] / n_old
+            nf_old = (
+                np.maximum(n_feat_ema[j_star], 1e-12)
+                if n_feat_ema is not None
+                else float(n_ema[j_star])
+            )
+            mean_star = s_ema[j_star] / nf_old
             if q_ema is not None:
                 var_star = np.maximum(
-                    q_ema[j_star] / n_old - mean_star * mean_star, self.reg_covar
+                    q_ema[j_star] / nf_old - mean_star * mean_star, self.reg_covar
                 )
             else:
                 var_star = np.ones(d, dtype=s_ema.dtype)
@@ -240,14 +256,20 @@ class DDMC(GaussianMixture):
             mean_j = mean_star + delta
             mean_j_star = mean_star - delta
 
-            half_n = 0.5 * n_old
+            half_n = 0.5 * float(n_ema[j_star])
             n_ema[j] = half_n
             n_ema[j_star] = half_n
-            s_ema[j] = half_n * mean_j
-            s_ema[j_star] = half_n * mean_j_star
+            if n_feat_ema is not None:
+                half_nf = 0.5 * n_feat_ema[j_star]
+                n_feat_ema[j] = half_nf
+                n_feat_ema[j_star] = half_nf
+            else:
+                half_nf = half_n
+            s_ema[j] = half_nf * mean_j
+            s_ema[j_star] = half_nf * mean_j_star
             if q_ema is not None:
-                q_ema[j] = half_n * (var_star + mean_j * mean_j)
-                q_ema[j_star] = half_n * (var_star + mean_j_star * mean_j_star)
+                q_ema[j] = half_nf * (var_star + mean_j * mean_j)
+                q_ema[j_star] = half_nf * (var_star + mean_j_star * mean_j_star)
             if revive_seq:
                 self.seq_dist.split_cluster(j_star, int(j))
 
@@ -263,8 +285,16 @@ class DDMC(GaussianMixture):
         if sub_n < n:
             sub_idx = rng.choice(n, size=sub_n, replace=False)
             X_sub = X[sub_idx]
+            if self._missing:
+                assert self._col_means is not None
+                X_sub = np.where(
+                    self._obs_mask[sub_idx] > 0, X_sub, self._col_means[None, :]
+                )
         else:
             X_sub = X
+            if self._missing:
+                assert self._col_means is not None
+                X_sub = np.where(self._obs_mask > 0, X_sub, self._col_means[None, :])
         centers, _ = kmeans_plusplus(X_sub, n_clusters=k, random_state=rng)
         centers = centers.astype(X.dtype, copy=True)
 
@@ -274,7 +304,12 @@ class DDMC(GaussianMixture):
         total_steps = sum(len(b) for b in all_batches)
 
         n_ema = np.full(k, n / k, dtype=np.float64)
-        s_ema = n_ema[:, None] * centers
+        n_feat_ema = (
+            np.full((k, d), n / k, dtype=np.float64)
+            if self._missing
+            else n_ema[:, None].copy()
+        )
+        s_ema = n_feat_ema * centers
 
         step = 0
         for epoch_batches in all_batches:
@@ -283,8 +318,12 @@ class DDMC(GaussianMixture):
                 step += 1
 
                 X_b = X[batch_idx]
-                c_sq = np.sum(centers * centers, axis=1)
-                dists = c_sq[None, :] - 2.0 * (X_b @ centers.T)
+                c_sq = centers * centers
+                if self._missing:
+                    m_b = self._obs_mask[batch_idx]
+                    dists = m_b @ c_sq.T - 2.0 * (X_b @ centers.T)
+                else:
+                    dists = np.sum(c_sq, axis=1)[None, :] - 2.0 * (X_b @ centers.T)
                 labels = np.argmin(dists, axis=1)
 
                 scale = n / len(batch_idx)
@@ -295,25 +334,62 @@ class DDMC(GaussianMixture):
 
                 n_ema = (1.0 - alpha) * n_ema + alpha * n_b
                 s_ema = (1.0 - alpha) * s_ema + alpha * s_b
+                if self._missing:
+                    nf_b = np.zeros((k, d), dtype=np.float64)
+                    np.add.at(nf_b, labels, m_b)
+                    nf_b *= scale
+                    n_feat_ema = (1.0 - alpha) * n_feat_ema + alpha * nf_b
+                else:
+                    n_feat_ema = n_ema[:, None]
+
                 self._revive_dead_clusters(
-                    n_ema, s_ema, None, min_cluster_size, rng, revive_seq=False
+                    n_ema,
+                    s_ema,
+                    None,
+                    min_cluster_size,
+                    rng,
+                    revive_seq=False,
+                    n_feat_ema=n_feat_ema if self._missing else None,
                 )
-                centers = s_ema / np.maximum(n_ema[:, None], 1e-12)
+                if self._missing:
+                    assert self._col_means is not None
+                    centers = np.where(
+                        n_feat_ema > 1e-6,
+                        s_ema / np.maximum(n_feat_ema, 1e-12),
+                        self._col_means[None, :],
+                    )
+                else:
+                    centers = s_ema / np.maximum(n_ema[:, None], 1e-12)
 
         return centers, n_ema
 
     def _update_gmm_params_from_ema(
-        self, n_ema: np.ndarray, s_ema: np.ndarray, q_ema: np.ndarray
+        self,
+        n_ema: np.ndarray,
+        n_feat_ema: np.ndarray,
+        s_ema: np.ndarray,
+        q_ema: np.ndarray,
     ) -> None:
         """Recover GMM `weights_`, `means_`, `covariances_`, and
         `precisions_cholesky_` from EMA sufficient statistics.
         """
         n_safe = np.maximum(n_ema, 1e-12)
         self.weights_ = n_safe / np.sum(n_safe)
-        self.means_ = s_ema / n_safe[:, None]
+        nf_safe = np.maximum(n_feat_ema, 1e-12)
+        self.means_ = s_ema / nf_safe
+        if self._missing and self._col_means is not None:
+            self.means_ = np.where(
+                n_feat_ema > 1e-6, self.means_, self._col_means[None, :]
+            )
         self.covariances_ = np.maximum(
-            q_ema / n_safe[:, None] - self.means_ * self.means_, self.reg_covar
+            q_ema / nf_safe - self.means_ * self.means_, self.reg_covar
         )
+        if self._missing and self._col_vars is not None:
+            self.covariances_ = np.where(
+                n_feat_ema > 1e-6,
+                self.covariances_,
+                np.maximum(self._col_vars[None, :], self.reg_covar),
+            )
         self.precisions_cholesky_ = 1.0 / np.sqrt(self.covariances_)
 
     def _fit_emeans(self, X: np.ndarray) -> None:
@@ -330,11 +406,20 @@ class DDMC(GaussianMixture):
 
         centers, n_init = self._init_emeans_centroids(X, min_cluster_size, rng)
 
-        global_var = np.maximum(np.var(X, axis=0), self.reg_covar)
+        global_var = (
+            np.maximum(self._col_vars, self.reg_covar)
+            if self._missing and self._col_vars is not None
+            else np.maximum(np.var(X, axis=0), self.reg_covar)
+        )
         n_ema = np.maximum(n_init, min_cluster_size).astype(np.float64)
-        s_ema = n_ema[:, None] * centers
-        q_ema = n_ema[:, None] * (global_var[None, :] + centers * centers)
-        self._update_gmm_params_from_ema(n_ema, s_ema, q_ema)
+        n_feat_ema = (
+            np.broadcast_to(n_ema[:, None], (k, d)).copy()
+            if self._missing
+            else n_ema[:, None]
+        )
+        s_ema = n_feat_ema * centers
+        q_ema = n_feat_ema * (global_var[None, :] + centers * centers)
+        self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
 
         use_seq = self.seq_weight != 0
         if use_seq:
@@ -351,8 +436,12 @@ class DDMC(GaussianMixture):
         if use_seq and total_steps > 0:
             assert self.weights_ is not None
             seed_idx = all_batches[0][0]
-            log_prob_seed = GaussianMixture._estimate_log_prob(
-                self, X[seed_idx]
+            log_prob_seed = (
+                self._estimate_observed_gaussian_log_prob(
+                    X[seed_idx], self._obs_mask[seed_idx]
+                )
+                if self._missing
+                else GaussianMixture._estimate_log_prob(self, X[seed_idx])
             ) + np.log(self.weights_)
             log_resp_seed = log_prob_seed - logsumexp(
                 log_prob_seed, axis=1, keepdims=True
@@ -368,11 +457,17 @@ class DDMC(GaussianMixture):
                 alpha = self._cosine_alpha(alpha_0, step, total_steps)
                 step += 1
 
-                assert self.weights_ is not None and self.means_ is not None
+                assert self.weights_ is not None
                 X_b = X[batch_idx]
-                log_prob_b = GaussianMixture._estimate_log_prob(self, X_b) + np.log(
-                    self.weights_
-                )
+                if self._missing:
+                    m_b = self._obs_mask[batch_idx]
+                    log_prob_b = self._estimate_observed_gaussian_log_prob(
+                        X_b, m_b
+                    ) + np.log(self.weights_)
+                else:
+                    log_prob_b = GaussianMixture._estimate_log_prob(self, X_b) + np.log(
+                        self.weights_
+                    )
                 if use_seq:
                     log_prob_b = (
                         log_prob_b
@@ -382,16 +477,6 @@ class DDMC(GaussianMixture):
                 log_resp_b = log_prob_b - logsumexp(log_prob_b, axis=1, keepdims=True)
                 resp_b = np.exp(log_resp_b)
 
-                if self._missing:
-                    miss_b = self.missing_d[batch_idx]
-                    if np.any(miss_b):
-                        labels_b = np.argmax(log_resp_b, axis=1)
-                        miss_r, miss_c = np.where(miss_b)
-                        X[batch_idx[miss_r], miss_c] = self.means_[
-                            labels_b[miss_r], miss_c
-                        ]
-                        X_b = X[batch_idx]
-
                 scale = n / len(batch_idx)
                 n_b = np.sum(resp_b, axis=0) * scale
                 s_b = (resp_b.T @ X_b) * scale
@@ -400,6 +485,11 @@ class DDMC(GaussianMixture):
                 n_ema = (1.0 - alpha) * n_ema + alpha * n_b
                 s_ema = (1.0 - alpha) * s_ema + alpha * s_b
                 q_ema = (1.0 - alpha) * q_ema + alpha * q_b
+                if self._missing:
+                    nf_b = (resp_b.T @ m_b) * scale
+                    n_feat_ema = (1.0 - alpha) * n_feat_ema + alpha * nf_b
+                else:
+                    n_feat_ema = n_ema[:, None]
 
                 if use_seq:
                     self.seq_dist.update_ema(
@@ -413,8 +503,11 @@ class DDMC(GaussianMixture):
                     min_cluster_size,
                     rng,
                     revive_seq=use_seq,
+                    n_feat_ema=n_feat_ema if self._missing else None,
                 )
-                self._update_gmm_params_from_ema(n_ema, s_ema, q_ema)
+                if not self._missing:
+                    n_feat_ema = n_ema[:, None]
+                self._update_gmm_params_from_ema(n_ema, n_feat_ema, s_ema, q_ema)
                 if use_seq:
                     self.seq_dist.finalize_ema()
 
@@ -466,13 +559,29 @@ class DDMC(GaussianMixture):
 
         if np.any(np.isnan(p_signal)):
             self._missing = True
-            self.missing_d = np.asarray(np.isnan(p_signal), dtype=bool)
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                X = SoftImpute(verbose=False).fit_transform(p_signal)
+            X_raw = p_signal.to_numpy(dtype=np.float64)
+            obs_mask = ~np.isnan(X_raw)
+            self._obs_mask = obs_mask.astype(np.float64)
+            col_counts = np.sum(self._obs_mask, axis=0)
+            X = np.where(obs_mask, X_raw, 0.0)
+            col_means = np.divide(
+                np.sum(X, axis=0),
+                col_counts,
+                out=np.zeros(X.shape[1]),
+                where=col_counts > 0,
+            )
+            self._col_means: np.ndarray | None = col_means
+            centered = np.where(obs_mask, X - col_means[None, :], 0.0)
+            self._col_vars: np.ndarray | None = np.divide(
+                np.sum(centered * centered, axis=0),
+                col_counts,
+                out=np.ones(X.shape[1]),
+                where=col_counts > 0,
+            )
         else:
             self._missing = False
+            self._col_means = None
+            self._col_vars = None
             X = p_signal
 
         X = validate_data(self, X, dtype=[np.float64, np.float32], ensure_min_samples=2)
