@@ -535,7 +535,7 @@ class DDMC(GaussianMixture):
         self.converged_ = True
         self.n_iter_ = self.n_epochs
 
-    def fit(self, p_signal: pd.DataFrame) -> "DDMC":  # ty: ignore[invalid-method-override]
+    def fit(self, p_signal: pd.DataFrame) -> "DDMC":  # ty: ignore[incompatible-method-override]
         """
         Compute EM clustering.
 
@@ -901,7 +901,7 @@ class DDMC(GaussianMixture):
         sum_y2 = float(np.sum(y_obs * y_obs))
         return ll_sum, sq_err_sum, n_obs, sum_y, sum_y2
 
-    def predict(self) -> np.ndarray:  # ty: ignore[invalid-method-override]
+    def predict(self) -> np.ndarray:  # ty: ignore[incompatible-method-override]
         """Provided the current model parameters, predict the cluster each peptide belongs to.
 
         Returns:
@@ -920,7 +920,7 @@ class DDMC(GaussianMixture):
         """
         return self.predict()
 
-    def score(self) -> float:  # ty: ignore[invalid-method-override]
+    def score(self) -> float:  # ty: ignore[incompatible-method-override]
         """Generate score of the fitting.
 
         Returns:

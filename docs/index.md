@@ -85,7 +85,7 @@ Once fit, a model can be used to:
 
 ## Installation
 
-DDMC targets Python 3.12+ and is managed with [uv](https://docs.astral.sh/uv/).
+DDMC targets Python 3.13+ and is managed with [uv](https://docs.astral.sh/uv/).
 Clone the repository and install the project along with its dependencies:
 
 ```sh

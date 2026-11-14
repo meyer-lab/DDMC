@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from fancyimpute import IterativeSVD
 from scipy.stats import gmean
 
 from ddmc.datasets import CPTAC
@@ -199,9 +198,27 @@ def impute_mean(X):
     return X
 
 
-def impute_pca(X, rank):
-    X = X.copy()
-    return IterativeSVD(rank=rank, verbose=False).fit_transform(X)
+def impute_pca(X, rank, max_iters=200, tol=1e-5):
+    """Iterative low-rank SVD imputation: zero-fill, then repeatedly replace the
+    missing entries with a rank-truncated SVD reconstruction (rank grows
+    gradually up to `rank`) until the update converges."""
+    X = np.array(X, dtype=float)
+    missing = np.isnan(X)
+    filled = np.where(missing, 0.0, X)
+
+    for i in range(max_iters):
+        curr_rank = min(i + 1, rank)
+        U, S, Vt = np.linalg.svd(filled, full_matrices=False)
+        recon = (U[:, :curr_rank] * S[:curr_rank]) @ Vt[:curr_rank]
+
+        old, new = filled[missing], recon[missing]
+        old_norm = np.linalg.norm(old)
+        converged = old_norm > 0 and np.linalg.norm(old - new) / old_norm < tol
+        filled[missing] = new
+        if converged:
+            break
+
+    return filled
 
 
 def impute_ddmc(p_signal, n_clusters, weight, distance_method):

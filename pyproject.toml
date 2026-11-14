@@ -5,7 +5,7 @@ description = ""
 authors = [{ name = "Aaron Meyer", email = "git@asmlab.org" }]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "scipy>=1.16",
     "matplotlib>=3.10",
@@ -13,10 +13,8 @@ dependencies = [
     "drawsvg>=2.4",
     "pandas>=3",
     "biopython>=1.85",
-    "scikit-learn>=1.5",
-    "bioinfokit>=2.1.4",
+    "scikit-learn>=1.8",
     "statsmodels>=0.14.4",
-    "fancyimpute>=0.7.0",
     "logomaker>=0.8.6",
 ]
 
@@ -24,7 +22,7 @@ dependencies = [
 dev = [
     "hypothesis>=6.168.0",
     "pytest>=7.4,<10.0",
-    "pytest-cov>=6.0,<7.0",
+    "pytest-cov>=7.0,<8.0",
     "ruff>=0.15",
     "ty>=0.0.1a0",
 ]
@@ -45,7 +43,7 @@ fbuild = "ddmc.figures.common:genFigure"
 packages = ["ddmc"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -55,4 +53,4 @@ ignore = ["E501"]
 exclude = ["ddmc/tests/**"]
 
 [tool.ty.environment]
-python-version = "3.12"
+python-version = "3.13"
